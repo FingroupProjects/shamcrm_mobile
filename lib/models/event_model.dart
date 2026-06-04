@@ -196,6 +196,7 @@ class NoticeEvent {
   final NoticeAuthor author;
   final List<NoticeUser> users;
   final int sendNotification;
+  final int sendSms;
   final DateTime createdAt;
   final bool canFinish;
 
@@ -209,6 +210,7 @@ class NoticeEvent {
     required this.author,
     required this.users,
     required this.sendNotification,
+    required this.sendSms,
     required this.createdAt,
     required this.canFinish,
   });
@@ -226,6 +228,7 @@ class NoticeEvent {
           .map((user) => NoticeUser.fromJson(user))
           .toList(),
       sendNotification: json['send_notification'] ?? 0,
+      sendSms: json['send_sms'] ?? 0,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),

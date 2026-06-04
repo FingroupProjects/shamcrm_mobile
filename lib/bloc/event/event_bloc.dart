@@ -184,6 +184,7 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
       leadId: event.leadId,
       date: event.date,
       sendNotification: event.sendNotification,
+      sendSms: event.sendSms,
       users: event.users,
       filePaths: event.filePaths, // Передаем файлы
     );
@@ -210,6 +211,7 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
         leadId: event.leadId,
         date: event.date,
         sendNotification: event.sendNotification,
+        sendSms: event.sendSms,
         users: event.users,
         filePaths: event.filePaths, // Передаем новые файлы
       existingFiles: event.existingFiles, // Передаем существующие файлы

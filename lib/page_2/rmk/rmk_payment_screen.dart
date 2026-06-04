@@ -1,6 +1,8 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -260,9 +262,11 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                     ),
                     if (_requiresLead) ...[
                       const SizedBox(height: 14),
-                      LeadRadioGroupWidget(
-                        selectedLead: _selectedLead?.id.toString(),
-                        showDebt: true,
+                      _RmkFreshLeadSelector(
+                        key: ValueKey(
+                          'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
+                        ),
+                        selectedLead: _selectedLead,
                         onSelectLead: (lead) {
                           setState(() {
                             _selectedLead = lead;
@@ -343,6 +347,234 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RmkFreshLeadSelector extends StatefulWidget {
+  const _RmkFreshLeadSelector({
+    super.key,
+    required this.onSelectLead,
+    this.selectedLead,
+  });
+
+  final LeadData? selectedLead;
+  final ValueChanged<LeadData> onSelectLead;
+
+  @override
+  State<_RmkFreshLeadSelector> createState() => _RmkFreshLeadSelectorState();
+}
+
+class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
+  final ApiService _apiService = ApiService();
+  List<LeadData> _leads = [];
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RmkFreshLeadSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedLead?.id != widget.selectedLead?.id) {
+      if (kDebugMode) {
+        debugPrint(
+          'RMK Lead Selector: external selected changed from ${oldWidget.selectedLead?.id} to ${widget.selectedLead?.id}',
+        );
+      }
+    }
+  }
+
+  bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
+
+  Widget _buildLeadInfo(
+    LeadData lead, {
+    double nameFontSize = 14,
+    double phoneFontSize = 12,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          lead.name,
+          style: TextStyle(
+            color: const Color(0xff1E2E52),
+            fontSize: nameFontSize,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            height: 1.2,
+          ),
+        ),
+        if (_hasPhone(lead))
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text(
+              lead.phone!.trim(),
+              style: TextStyle(
+                color: const Color(0xff99A4BA),
+                fontSize: phoneFontSize,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Gilroy',
+                height: 1.2,
+              ),
+            ),
+          ),
+        if (lead.debt != null && lead.debt != 0)
+          Padding(
+            padding: EdgeInsets.only(top: _hasPhone(lead) ? 4 : 2),
+            child: Text(
+              'Долг: ${lead.debt!.toStringAsFixed(2)}',
+              style: TextStyle(
+                color: lead.debt! > 0 ? Colors.red : Colors.green,
+                fontSize: phoneFontSize,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<CustomDropdownPaginatedResponse<LeadData>> _searchLeads(
+    String query,
+    int page,
+  ) async {
+    if (kDebugMode) {
+      debugPrint(
+        'RMK Lead Selector: search request page=$page, query="$query", selectedLead=${widget.selectedLead?.id}',
+      );
+    }
+    try {
+      final response = await _apiService.getLeadPage(
+        page,
+        showDebt: true,
+        search: query,
+        bypassCache: true,
+      );
+      final items = response.result ?? <LeadData>[];
+      final pagination = response.pagination;
+
+      if (mounted) {
+        setState(() {
+          _leads = page == 1 ? items : [..._leads, ...items];
+        });
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          'RMK Lead Selector: search success page=$page, items=${items.length}, currentPage=${pagination?.currentPage}, totalPages=${pagination?.totalPages}',
+        );
+      }
+
+      return CustomDropdownPaginatedResponse<LeadData>(
+        items: items,
+        hasMore:
+            (pagination?.currentPage ?? page) < (pagination?.totalPages ?? 1),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          'RMK Lead Selector: search error page=$page, query="$query", error=$error',
+        );
+      }
+      return const CustomDropdownPaginatedResponse<LeadData>(
+        items: <LeadData>[],
+        hasMore: false,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedLead = widget.selectedLead;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Клиент',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<LeadData>.searchRequestPaginated(
+          key: ValueKey(selectedLead?.id),
+          paginatedRequest: _searchLeads,
+          futureRequestDelay: const Duration(milliseconds: 300),
+          closeDropDownOnClearFilterSearch: true,
+          items: selectedLead != null
+              ? <LeadData>[
+                  selectedLead,
+                  ..._leads.where((lead) => lead.id != selectedLead.id),
+                ]
+              : _leads,
+          searchHintText: 'Поиск',
+          overlayHeight: 400,
+          excludeSelected: false,
+          initialItem: selectedLead,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder:
+                Border.all(color: const Color(0xffF4F7FD), width: 1),
+            expandedBorderRadius: BorderRadius.circular(12),
+            searchFieldDecoration: const SearchFieldDecoration(
+              autoFocus: false,
+            ),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) {
+            return _buildLeadInfo(item);
+          },
+          headerBuilder: (context, item, enabled) {
+            return _buildLeadInfo(item, phoneFontSize: 11);
+          },
+          hintBuilder: (context, hint, enabled) {
+            return const Text(
+              'Выберите клиента',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          noResultFoundBuilder: (context, text) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Ничего не найдено',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            );
+          },
+          onChanged: (value) {
+            if (value == null) return;
+            if (kDebugMode) {
+              debugPrint(
+                'RMK Lead Selector: selected lead id=${value.id}, name=${value.name}, debt=${value.debt}',
+              );
+            }
+            widget.onSelectLead(value);
+            FocusScope.of(context).unfocus();
+          },
+        ),
+      ],
     );
   }
 }

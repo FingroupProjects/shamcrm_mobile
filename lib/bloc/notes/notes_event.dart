@@ -19,6 +19,7 @@ class CreateNotes extends NotesEvent {
   final int leadId;
   final int? dealId;
   final DateTime? date;
+  final int sendSms;
   final List<int> users;
   final List<String>? filePaths; // Новое поле для файлов
 
@@ -28,6 +29,7 @@ class CreateNotes extends NotesEvent {
     required this.leadId,
     this.dealId,
     this.date,
+    required this.sendSms,
     required this.users,
     this.filePaths, // Добавляем в конструктор
   });

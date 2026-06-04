@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
@@ -8,19 +9,18 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
-import 'package:crm_task_manager/screens/event/event_details/Lead_Manager_Selector.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io'; // Добавляем для File
-import 'package:file_picker/file_picker.dart'; // Добавляем для FilePicker
-import 'dart:convert';
-
-import '../../../custom_widget/custom_textfield_deadline.dart'; // Для json.encode в API
+import '../../../custom_widget/custom_textfield_deadline.dart';
 
 class NoticeAddScreen extends StatefulWidget {
   @override
@@ -29,13 +29,20 @@ class NoticeAddScreen extends StatefulWidget {
 
 class _NoticeAddScreenState extends State<NoticeAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
+  late final TextEditingController _bodyController;
+  late final TextEditingController _dateController;
   String? selectedLead;
   String? selectedSubject;
   List<int> selectedManagers = [];
   String body = '';
   String date = '';
   bool sendNotification = false;
+  bool sendSms = false;
+  bool smsNoticeNotificationEnabled = false;
   bool isSubjectInvalid = false; // Флаг для валидации тематики
+  List<NoticeSmsSample> smsTemplates = [NoticeSmsSample.empty()];
+  NoticeSmsSample? selectedSmsTemplate;
   // Переменные для файлов
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -44,8 +51,77 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   @override
   void initState() {
     super.initState();
+    _bodyController = TextEditingController();
+    _dateController = TextEditingController();
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    selectedSmsTemplate = smsTemplates.first;
+    _loadSmsNoticeConfigFromCache();
+    _loadSmsNoticeConfig();
+  }
+
+  @override
+  void dispose() {
+    _bodyController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSmsNoticeConfigFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('sms_notice_notification') ?? false;
+    if (!mounted) return;
+    setState(() {
+      smsNoticeNotificationEnabled = isEnabled;
+    });
+  }
+
+  Future<void> _loadSmsNoticeConfig() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final isEnabled = _toBool(result?['sms_notice_notification']);
+
+      var templates = <NoticeSmsSample>[NoticeSmsSample.empty()];
+      if (isEnabled) {
+        final remoteTemplates = await _apiService.getNoticeSmsSamples();
+        templates.addAll(remoteTemplates);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = isEnabled;
+        smsTemplates = templates;
+        selectedSmsTemplate ??= templates.first;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = false;
+        sendSms = false;
+        smsTemplates = [NoticeSmsSample.empty()];
+        selectedSmsTemplate = smsTemplates.first;
+      });
+    }
+  }
+
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      return value == '1' || value.toLowerCase() == 'true';
+    }
+    return false;
+  }
+
+  void _handleTemplateSelected(NoticeSmsSample template) {
+    setState(() {
+      selectedSmsTemplate = template;
+      if (!template.isEmptyTemplate) {
+        body = template.text;
+        _bodyController.text = template.text;
+      }
+    });
   }
 
   Future<void> _pickFile() async {
@@ -368,7 +444,7 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                           const SizedBox(height: 8),
                           // Description field
                           CustomTextField(
-                            controller: TextEditingController(text: body),
+                            controller: _bodyController,
                             hintText: AppLocalizations.of(context)!
                                 .translate('description_list'),
                             label: AppLocalizations.of(context)!
@@ -391,13 +467,14 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                           const SizedBox(height: 8),
                           // Date field
                           CustomTextFieldDate(
-                            controller: TextEditingController(text: date),
+                            controller: _dateController,
                             label: AppLocalizations.of(context)!
                                 .translate('reminder_date'),
                             withTime: true,
                             onDateSelected: (value) {
                               setState(() {
                                 date = value;
+                                _dateController.text = value;
                               });
                             },
                           ),
@@ -410,6 +487,19 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                                 selectedManagers = managers;
                               });
                             },
+                          ),
+                          const SizedBox(height: 8),
+                          NoticeSmsTemplateSection(
+                            isVisible: smsNoticeNotificationEnabled,
+                            sendSms: sendSms,
+                            templates: smsTemplates,
+                            selectedTemplate: selectedSmsTemplate,
+                            onToggle: (value) {
+                              setState(() {
+                                sendSms = value;
+                              });
+                            },
+                            onTemplateSelected: _handleTemplateSelected,
                           ),
                           const SizedBox(height: 15),
                           _buildFileSelection(),
@@ -467,9 +557,10 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
   void _submitForm() {
     if (_formKey.currentState!.validate() && selectedLead != null) {
       DateTime? parsedDate;
-      if (date.isNotEmpty) {
+      final dateValue = _dateController.text.trim();
+      if (dateValue.isNotEmpty) {
         try {
-          parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(date);
+          parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(dateValue);
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -522,10 +613,11 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
       context.read<EventBloc>().add(
             CreateNotice(
               title: selectedSubject!.trim(),
-              body: body,
+              body: _bodyController.text.trim(),
               leadId: int.parse(selectedLead!),
               date: parsedDate,
               sendNotification: sendNotification ? 1 : 0,
+              sendSms: sendSms ? 1 : 0,
               users: selectedManagers,
               filePaths: selectedFiles,
               localizations: AppLocalizations.of(context)!,

@@ -933,6 +933,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                                   author: notice.author,
                                   createdAt: notice.createdAt,
                                   sendNotification: false, // or true, depending on the logic
+                                  sendSms: notice.sendSms,
                                   canFinish: false, // or true
                                   files: notice.files, // Ensure files are passed
                                 ),

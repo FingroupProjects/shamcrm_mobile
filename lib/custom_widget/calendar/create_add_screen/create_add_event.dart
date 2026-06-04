@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
@@ -7,12 +8,15 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/tematika_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/Lead_Manager_Selector.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateEventFromCalendare extends StatefulWidget {
   final DateTime? initialDate;
@@ -25,13 +29,18 @@ class CreateEventFromCalendare extends StatefulWidget {
 
 class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
   String? selectedLead;
   String? selectedSubject;
   List<int> selectedManagers = [];
   String body = '';
   String date = '';
   bool sendNotification = false;
+  bool sendSms = false;
+  bool smsNoticeNotificationEnabled = false;
   bool _subjectError = false; // Переменная для отслеживания ошибки тематики
+  List<NoticeSmsSample> smsTemplates = [NoticeSmsSample.empty()];
+  NoticeSmsSample? selectedSmsTemplate;
 
   @override
   void initState() {
@@ -49,6 +58,65 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
     } else {
       date = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     }
+    selectedSmsTemplate = smsTemplates.first;
+    _loadSmsNoticeConfigFromCache();
+    _loadSmsNoticeConfig();
+  }
+
+  Future<void> _loadSmsNoticeConfigFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('sms_notice_notification') ?? false;
+    if (!mounted) return;
+    setState(() {
+      smsNoticeNotificationEnabled = isEnabled;
+    });
+  }
+
+  Future<void> _loadSmsNoticeConfig() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final isEnabled = _toBool(result?['sms_notice_notification']);
+
+      var templates = <NoticeSmsSample>[NoticeSmsSample.empty()];
+      if (isEnabled) {
+        final remoteTemplates = await _apiService.getNoticeSmsSamples();
+        templates.addAll(remoteTemplates);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = isEnabled;
+        smsTemplates = templates;
+        selectedSmsTemplate ??= templates.first;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = false;
+        sendSms = false;
+        smsTemplates = [NoticeSmsSample.empty()];
+        selectedSmsTemplate = smsTemplates.first;
+      });
+    }
+  }
+
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      return value == '1' || value.toLowerCase() == 'true';
+    }
+    return false;
+  }
+
+  void _handleTemplateSelected(NoticeSmsSample template) {
+    setState(() {
+      selectedSmsTemplate = template;
+      if (!template.isEmptyTemplate) {
+        body = template.text;
+      }
+    });
   }
 
   @override
@@ -136,6 +204,19 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
                               });
                             },
                             hasError: _subjectError,
+                          ),
+                          const SizedBox(height: 8),
+                          NoticeSmsTemplateSection(
+                            isVisible: smsNoticeNotificationEnabled,
+                            sendSms: sendSms,
+                            templates: smsTemplates,
+                            selectedTemplate: selectedSmsTemplate,
+                            onToggle: (value) {
+                              setState(() {
+                                sendSms = value;
+                              });
+                            },
+                            onTemplateSelected: _handleTemplateSelected,
                           ),
                           const SizedBox(height: 8),
                           LeadManagerSelector(
@@ -237,6 +318,7 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
               leadId: int.parse(selectedLead!),
               date: parsedDate,
               sendNotification: sendNotification ? 1 : 0,
+              sendSms: sendSms ? 1 : 0,
               users: selectedManagers,
               localizations: AppLocalizations.of(context)!,
             ),

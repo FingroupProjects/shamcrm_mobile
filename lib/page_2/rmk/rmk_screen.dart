@@ -521,7 +521,16 @@ class _RmkScreenState extends State<RmkScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final item = items[index];
-                        return _RmkSelectedCartCard(item: item);
+                        return _RmkSelectedCartCard(
+                          item: item,
+                          onTap: () async {
+                            Navigator.pop(context);
+                            final good =
+                                await _repository.getGoodById(item.goodId);
+                            if (!mounted || good == null) return;
+                            await _openQuantityScreen(good);
+                          },
+                        );
                       },
                     ),
                   ),
@@ -1200,85 +1209,97 @@ class _CategoryBottomButton extends StatelessWidget {
 }
 
 class _RmkSelectedCartCard extends StatelessWidget {
-  const _RmkSelectedCartCard({required this.item});
+  const _RmkSelectedCartCard({
+    required this.item,
+    required this.onTap,
+  });
 
   final RmkCartItem item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final total = item.customTotal ?? item.quantity * item.price;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xffE7EDF6)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _RmkSelectedItemImage(imageUrl: item.imageUrl),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xffE7EDF6)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _RmkSelectedItemImage(imageUrl: item.imageUrl),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _RmkMetaChip(
-                      label: 'Кол-во',
-                      value: _formatMoney(item.quantity),
+                    Text(
+                      item.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xff1E2E52),
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
                     ),
-                    _RmkMetaChip(
-                      label: 'Цена',
-                      value: _formatMoney(item.price),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _RmkMetaChip(
+                          label: 'Кол-во',
+                          value: _formatMoney(item.quantity),
+                        ),
+                        _RmkMetaChip(
+                          label: 'Цена',
+                          value: _formatMoney(item.price),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text(
-                'Сумма',
-                style: TextStyle(
-                  color: Color(0xff99A4BA),
-                  fontFamily: 'Gilroy',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                _formatMoney(total),
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Сумма',
+                    style: TextStyle(
+                      color: Color(0xff99A4BA),
+                      fontFamily: 'Gilroy',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatMoney(total),
+                    style: const TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

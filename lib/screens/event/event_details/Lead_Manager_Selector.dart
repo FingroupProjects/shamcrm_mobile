@@ -59,6 +59,21 @@ class _LeadManagerSelectorState extends State<LeadManagerSelector> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant LeadManagerSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.initialBody != widget.initialBody &&
+        widget.initialBody != bodyController.text) {
+      bodyController.text = widget.initialBody ?? '';
+    }
+
+    if (oldWidget.initialDate != widget.initialDate &&
+        widget.initialDate != dateController.text) {
+      dateController.text = widget.initialDate ?? '';
+    }
+  }
+
   void _onLeadSelected(LeadData lead) {
     setState(() {
       selectedLead = lead;

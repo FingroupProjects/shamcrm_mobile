@@ -90,7 +90,6 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
   bool? _hasNoReplies;
   bool? _hasUnreadMessages;
   bool? _hasDeal;
-  bool? _unreadOnly;
 
   int? _daysWithoutActivity;
   String? selectedSalesFunnel;
@@ -230,6 +229,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
         );
       },
     );
+    if (!mounted) return;
     if (pickedRange != null) {
       setState(() {
         _fromDate = pickedRange.start;
@@ -278,7 +278,6 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
     _hasDeal = widget.initialHasDeal;
     _daysWithoutActivity = widget.initialDaysWithoutActivity;
     selectedSalesFunnel = widget.initialSalesFunnelId?.toString();
-    _unreadOnly = widget.initialHasUnreadMessages ?? false;
     
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
     context.read<GetAllSourceBloc>().add(GetAllSourceEv());
@@ -289,6 +288,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
   Future<void> _fetchDirectoryLinks() async {
     try {
       final response = await ApiService().getLeadDirectoryLinks();
+      if (!mounted) return;
       if (response.data != null) {
         setState(() {
           _directoryLinks = response.data!;
@@ -310,6 +310,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
       );
@@ -389,7 +390,6 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                 'hasNoReplies': false,
                 'hasUnreadMessages': false,
                 'hasDeal': false,
-                'unreadOnly': false,
                 'daysWithoutActivity': null,
                 'directory_values': [],
               });
@@ -417,6 +417,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
           TextButton(
             onPressed: () async {
               await LeadCache.clearAllLeads();
+              if (!mounted) return;
               
               // ИСПРАВЛЕНО: Преобразуем все объекты в Map перед отправкой
               Map<String, dynamic> filterData = {
@@ -435,7 +436,6 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                 'hasNoReplies': _hasNoReplies,
                 'hasUnreadMessages': _hasUnreadMessages,
                 'hasDeal': _hasDeal,
-                'unreadOnly': _unreadOnly,
                 'daysWithoutActivity': _daysWithoutActivity,
                 'directory_values': _selectedDirectoryFields.entries
                     .where((entry) => entry.value != null)
@@ -461,7 +461,6 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                   _toDate != null ||
                   _hasSuccessDeals == true ||
                   _hasInProgressDeals == true ||
-                  _unreadOnly == true ||
                   _hasFailureDeals == true ||
                   _hasNotices == true ||
                   _hasContact == true ||

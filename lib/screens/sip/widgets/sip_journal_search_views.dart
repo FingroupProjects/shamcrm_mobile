@@ -552,19 +552,23 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
             ),
     );
 
-    final card = Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
+    final card = Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF111827).withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
         children: [
           tile,
           AnimatedCrossFade(
@@ -625,6 +629,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
             ),
           ),
         ],
+      ),
       ),
     );
 
@@ -1042,19 +1047,23 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
   Widget _leadSearchTile(Lead lead) {
     final phone = (lead.phone ?? '').trim();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ListTile(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF111827).withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         onTap: () => _fillLeadPhone(lead),
         leading: Container(
@@ -1104,6 +1113,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                   ),
                 ),
               ),
+        ),
       ),
     );
   }

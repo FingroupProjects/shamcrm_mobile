@@ -12,7 +12,10 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.FileProvider
@@ -35,15 +38,20 @@ class MainActivity : FlutterFragmentActivity() {
     private val NETWORK_EVENT_CHANNEL = "com.shamcrm/network_status"
     private val IN_APP_UPDATE_METHOD_CHANNEL = "com.shamcrm/in_app_update/methods"
     private val IN_APP_UPDATE_EVENT_CHANNEL = "com.shamcrm/in_app_update/events"
+    private val NATIVE_SIP_METHOD_CHANNEL = "com.shamcrm/native_sip/methods"
+    private val NATIVE_SIP_EVENT_CHANNEL = "com.shamcrm/native_sip/events"
     
     private var methodChannel: MethodChannel? = null
     private var networkEventChannel: EventChannel? = null
     private var inAppUpdateMethodChannel: MethodChannel? = null
     private var inAppUpdateEventChannel: EventChannel? = null
+    private var nativeSipMethodChannel: MethodChannel? = null
+    private var nativeSipEventChannel: EventChannel? = null
     private val handler = Handler(Looper.getMainLooper())
     
     private var networkEventSink: EventChannel.EventSink? = null
     private var inAppUpdateEventSink: EventChannel.EventSink? = null
+    private var nativeSipEventSink: EventChannel.EventSink? = null
     private val connectivityManager by lazy {
         getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
@@ -149,12 +157,14 @@ class MainActivity : FlutterFragmentActivity() {
         
         Log.d("MainActivity", "=== onCreate ===")
         appUpdateManager = AppUpdateManagerFactory.create(this)
+        NativeSipBridge.initialize(applicationContext)
 
         if (Build.VERSION.SDK_INT >= 35) {
             enableEdgeToEdge()
         }
         
         handleWidgetIntent(intent)
+        updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -260,6 +270,118 @@ class MainActivity : FlutterFragmentActivity() {
             }
         })
 
+        nativeSipMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NATIVE_SIP_METHOD_CHANNEL
+        )
+
+        nativeSipMethodChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "initialize" -> {
+                    result.success(true)
+                }
+                "register" -> {
+                    val server = call.argument<String>("server")
+                    val login = call.argument<String>("login")
+                    val password = call.argument<String>("password")
+                    val port = call.argument<Int>("port")
+                    val transport = call.argument<String>("transport")
+                    val authUser = call.argument<String>("authUser")
+
+                    if (server.isNullOrBlank() ||
+                        login.isNullOrBlank() ||
+                        password.isNullOrBlank() ||
+                        port == null ||
+                        transport.isNullOrBlank()
+                    ) {
+                        result.error("INVALID_ARGS", "Missing native SIP registration args", null)
+                    } else {
+                        result.success(
+                            NativeSipBridge.register(
+                                server = server,
+                                login = login,
+                                password = password,
+                                port = port,
+                                transport = transport,
+                                authUser = authUser,
+                            )
+                        )
+                    }
+                }
+                "unregister" -> {
+                    NativeSipBridge.unregister()
+                    result.success(true)
+                }
+                "getStateSnapshot" -> {
+                    result.success(NativeSipBridge.getStateSnapshot())
+                }
+                "restoreRegistrationIfNeeded" -> {
+                    result.success(NativeSipBridge.restoreRegistrationIfNeeded())
+                }
+                "makeCall" -> {
+                    val target = call.argument<String>("target")
+                    if (target.isNullOrBlank()) {
+                        result.error("INVALID_TARGET", "Target is empty", null)
+                    } else {
+                        result.success(NativeSipBridge.makeCall(target))
+                    }
+                }
+                "acceptCall" -> result.success(NativeSipBridge.acceptCall())
+                "declineCall" -> result.success(NativeSipBridge.declineCall())
+                "hangup" -> result.success(NativeSipBridge.hangup())
+                "setMuted" -> {
+                    val muted = call.argument<Boolean>("muted") ?: false
+                    result.success(NativeSipBridge.setMuted(muted))
+                }
+                "setSpeaker" -> {
+                    val speakerOn = call.argument<Boolean>("speakerOn") ?: false
+                    result.success(NativeSipBridge.setSpeaker(speakerOn))
+                }
+                "requestBackgroundReliabilitySettings" -> {
+                    result.success(requestBackgroundReliabilitySettings())
+                }
+                "dispose" -> {
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        nativeSipEventChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NATIVE_SIP_EVENT_CHANNEL
+        )
+
+        nativeSipEventChannel?.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                nativeSipEventSink = events
+                NativeSipBridge.setFlutterEventSink(object : EventChannel.EventSink {
+                    override fun success(event: Any?) {
+                        handler.post {
+                            nativeSipEventSink?.success(event)
+                        }
+                    }
+
+                    override fun error(code: String, message: String?, details: Any?) {
+                        handler.post {
+                            nativeSipEventSink?.error(code, message, details)
+                        }
+                    }
+
+                    override fun endOfStream() {
+                        handler.post {
+                            nativeSipEventSink?.endOfStream()
+                        }
+                    }
+                })
+            }
+
+            override fun onCancel(arguments: Any?) {
+                nativeSipEventSink = null
+                NativeSipBridge.setFlutterEventSink(null)
+            }
+        })
+
         Log.d("MainActivity", "✅ Channels configured")
     }
 
@@ -268,6 +390,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         setIntent(intent)
         handleWidgetIntent(intent)
+        updateIncomingCallWindowMode(intent)
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -281,6 +404,16 @@ class MainActivity : FlutterFragmentActivity() {
         unregisterInstallStateListener()
         super.onDestroy()
         stopNetworkMonitoring()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        NativeSipBridge.onAppForeground()
+    }
+
+    override fun onPause() {
+        NativeSipBridge.onAppBackground()
+        super.onPause()
     }
 
     // ✅ Network monitoring methods
@@ -304,6 +437,62 @@ class MainActivity : FlutterFragmentActivity() {
             Log.d("MainActivity", "✅ Network monitoring stopped")
         } catch (e: Exception) {
             Log.e("MainActivity", "❌ Failed to stop network monitoring: ${e.message}")
+        }
+    }
+
+    private fun requestBackgroundReliabilitySettings(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false
+        }
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (powerManager.isIgnoringBatteryOptimizations(packageName)) {
+            return false
+        }
+
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+            true
+        } catch (error: Throwable) {
+            Log.e(
+                "MainActivity",
+                "Failed to open background reliability settings: ${error.message}",
+                error,
+            )
+            false
+        }
+    }
+
+    private fun updateIncomingCallWindowMode(intent: Intent?) {
+        val shouldWakeForCall = intent?.getBooleanExtra("open_sip_call", false) == true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(shouldWakeForCall)
+            setTurnScreenOn(shouldWakeForCall)
+        } else {
+            if (shouldWakeForCall) {
+                window.addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                )
+            } else {
+                window.clearFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                )
+            }
+        }
+
+        if (shouldWakeForCall) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 

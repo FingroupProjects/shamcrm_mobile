@@ -31,6 +31,11 @@ class SearchFieldDecoration {
   /// Focused border for [CustomDropdown] search field.
   final InputBorder? focusedBorder;
 
+  /// Whether search field should request focus immediately after dropdown opens.
+  ///
+  /// Default to true.
+  final bool autoFocus;
+
   const SearchFieldDecoration({
     this.fillColor,
     this.constraints,
@@ -41,6 +46,7 @@ class SearchFieldDecoration {
     this.suffixIcon,
     this.border,
     this.focusedBorder,
+    this.autoFocus = true,
   });
 
   static const _defaultFillColor = Color(0xFFFAFAFA);

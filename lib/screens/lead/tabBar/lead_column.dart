@@ -43,7 +43,6 @@ class _LeadColumnState extends State<LeadColumn> {
   bool _isTutorialInProgress = false;
   int _tutorialStep = 0;
   bool _isInitialized = false;
-  bool _hasRetriedAfterError = false;
   String? _lastShownErrorMessage;
 
   @override
@@ -218,7 +217,6 @@ class _LeadColumnState extends State<LeadColumn> {
             }
 
             if (state is LeadDataLoaded) {
-              _hasRetriedAfterError = false;
               _lastShownErrorMessage = null;
               final leads = state.leads
                   .where((l) => l.statusId == widget.statusId)
@@ -240,7 +238,6 @@ class _LeadColumnState extends State<LeadColumn> {
             }
 
             if (state is LeadError) {
-              final bool shouldRetryNow = !_hasRetriedAfterError;
               final bool isCurrentRoute =
                   ModalRoute.of(context)?.isCurrent ?? true;
 
@@ -269,44 +266,39 @@ class _LeadColumnState extends State<LeadColumn> {
                     ),
                   );
                 }
-
-                if (shouldRetryNow) {
-                  _hasRetriedAfterError = true;
-                  context.read<LeadBloc>().add(
-                        FetchLeads(widget.statusId, ignoreCache: true),
-                      );
-                }
               });
 
-              if (!shouldRetryNow) {
-                return ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.35),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          state.message,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
-                          ),
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.35),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff99A4BA),
                         ),
                       ),
                     ),
-                  ],
-                );
-              }
-
-              return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        context.read<LeadBloc>().add(
+                              FetchLeads(widget.statusId, ignoreCache: true),
+                            );
+                      },
+                      child: const Text('Повторить'),
+                    ),
+                  ),
+                ],
               );
             }
 

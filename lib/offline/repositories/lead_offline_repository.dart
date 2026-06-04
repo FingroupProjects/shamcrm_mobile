@@ -103,6 +103,10 @@ class LeadOfflineRepository {
     return cached;
   }
 
+  Future<void> clearCache() {
+    return _cacheRepository.clearModule(OfflineModule.lead.value);
+  }
+
   Map<String, dynamic> _serialize(LeadsDataResponse response) {
     return {
       'result': {

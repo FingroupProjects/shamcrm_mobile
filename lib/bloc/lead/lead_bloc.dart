@@ -47,6 +47,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   Map<String, List<String>>? _currentCustomFieldFilters;
   FetchLeads? _queuedFetchLeadsEvent;
   FetchMoreLeads? _queuedFetchMoreLeadsEvent;
+  String? _lastCompletedFetchKey;
+  int? _lastCompletedFetchStatusId;
 
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
@@ -117,6 +119,16 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   }
 
   Future<void> _fetchLeads(FetchLeads event, Emitter<LeadState> emit) async {
+    final requestKey = _buildFetchRequestKey(event);
+    if (!event.ignoreCache &&
+        state is LeadDataLoaded &&
+        _lastCompletedFetchKey == requestKey &&
+        _lastCompletedFetchStatusId == event.statusId) {
+      debugPrint(
+          '⚠️ LeadBloc: _fetchLeads - Repeated completed request ignored for status ${event.statusId}');
+      return;
+    }
+
     if (isFetching) {
       if (_isSameFetchRequest(event)) {
         debugPrint(
@@ -309,6 +321,8 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           currentPage: 1,
           leadCounts: Map.from(_leadCounts),
           isLoadingMore: false));
+      _lastCompletedFetchKey = requestKey;
+      _lastCompletedFetchStatusId = event.statusId;
     } catch (e) {
       if (_isWorkdayAccessError(e)) {
         return;
@@ -1376,31 +1390,70 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   }
 
   bool _isSameFetchRequest(FetchLeads event) {
-    return _currentTabStatusId == event.statusId &&
-        _currentQuery == event.query &&
-        listEquals(_currentManagerIds, event.managerIds) &&
-        listEquals(_currentRegionIds, event.regionsIds) &&
-        _currentRegionId == event.regionId &&
-        listEquals(_currentCityIds, event.cityIds) &&
-        listEquals(_currentSourceIds, event.sourcesIds) &&
-        listEquals(_currentChannelIds, event.channelIds) &&
-        listEquals(
-            _currentAdvertisingCampaignIds, event.advertisingCampaignIds) &&
-        listEquals(_currentReasonForRefusalIds, event.reasonForRefusalIds) &&
-        _currentStatusId == event.statusIds &&
-        _currentFromDate == event.fromDate &&
-        _currentToDate == event.toDate &&
-        _currentHasSuccessDeals == event.hasSuccessDeals &&
-        _currentHasInProgressDeals == event.hasInProgressDeals &&
-        _currentHasFailureDeals == event.hasFailureDeals &&
-        _currentHasNotices == event.hasNotices &&
-        _currentHasContact == event.hasContact &&
-        _currentHasChat == event.hasChat &&
-        _currentHasNoReplies == event.hasNoReplies &&
-        _currentHasUnreadMessages == event.hasUnreadMessages &&
-        _currentHasDeal == event.hasDeal &&
-        _currentHasOrders == event.hasOrders &&
-        _currentDaysWithoutActivity == event.daysWithoutActivity &&
-        _currentNumberOfDaysDeal == event.numberOfDaysDeal;
+    return _buildCurrentFetchRequestKey() == _buildFetchRequestKey(event);
+  }
+
+  String _buildCurrentFetchRequestKey() {
+    return [
+      _currentTabStatusId,
+      _currentQuery,
+      _currentManagerIds?.join(','),
+      _currentRegionIds?.join(','),
+      _currentRegionId,
+      _currentCityIds?.join(','),
+      _currentSourceIds?.join(','),
+      _currentChannelIds?.join(','),
+      _currentAdvertisingCampaignIds?.join(','),
+      _currentReasonForRefusalIds?.join(','),
+      _currentStatusId,
+      _currentFromDate?.toIso8601String(),
+      _currentToDate?.toIso8601String(),
+      _currentHasSuccessDeals,
+      _currentHasInProgressDeals,
+      _currentHasFailureDeals,
+      _currentHasNotices,
+      _currentHasContact,
+      _currentHasChat,
+      _currentHasNoReplies,
+      _currentHasUnreadMessages,
+      _currentHasDeal,
+      _currentHasOrders,
+      _currentDaysWithoutActivity,
+      _currentNumberOfDaysDeal,
+      _currentDirectoryValues?.toString(),
+      _currentCustomFieldFilters?.toString(),
+    ].join('|');
+  }
+
+  String _buildFetchRequestKey(FetchLeads event) {
+    return [
+      event.statusId,
+      event.query,
+      event.managerIds?.join(','),
+      event.regionsIds?.join(','),
+      event.regionId,
+      event.cityIds?.join(','),
+      event.sourcesIds?.join(','),
+      event.channelIds?.join(','),
+      event.advertisingCampaignIds?.join(','),
+      event.reasonForRefusalIds?.join(','),
+      event.statusIds,
+      event.fromDate?.toIso8601String(),
+      event.toDate?.toIso8601String(),
+      event.hasSuccessDeals,
+      event.hasInProgressDeals,
+      event.hasFailureDeals,
+      event.hasNotices,
+      event.hasContact,
+      event.hasChat,
+      event.hasNoReplies,
+      event.hasUnreadMessages,
+      event.hasDeal,
+      event.hasOrders,
+      event.daysWithoutActivity,
+      event.numberOfDaysDeal,
+      event.directoryValues?.toString(),
+      event.customFieldFilters?.toString(),
+    ].join('|');
   }
 }

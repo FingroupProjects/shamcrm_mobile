@@ -219,96 +219,105 @@ class _SipCallHistoryScreenState extends State<_SipCallHistoryScreen> {
                                       ? 'Исходящий'
                                       : 'Входящий';
 
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF111827)
-                                          .withValues(alpha: 0.04),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 4,
-                                  ),
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => CallDetailsScreen(
-                                          callEntry: call,
-                                        ),
+                              return Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(22),
+                                clipBehavior: Clip.antiAlias,
+                                child: Ink(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF111827)
+                                            .withValues(alpha: 0.04),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 6),
                                       ),
-                                    );
-                                  },
-                                  leading: Container(
-                                    width: 42,
-                                    height: 42,
-                                    decoration: BoxDecoration(
-                                      color: fillColor,
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: Icon(
-                                      icon,
-                                      color: accentColor,
-                                      size: 18,
-                                    ),
+                                    ],
                                   ),
-                                  title: Text(
-                                    call.leadName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF111827),
-                                      fontWeight: FontWeight.w700,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 4,
                                     ),
-                                  ),
-                                  subtitle: Text(
-                                    isMissed
-                                        ? '$label • ${call.phoneNumber}'
-                                        : '$label • ${_formatHistoryDuration(call.duration)} • ${call.phoneNumber}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF9CA3AF),
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        _formatHistoryTime(call.callDate),
-                                        style: const TextStyle(
-                                          color: Color(0xFFD1D5DB),
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      if (call.operatorName != null &&
-                                          call.operatorName!.trim().isNotEmpty)
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 4),
-                                          child: Text(
-                                            call.operatorName!,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: Color(0xFF9CA3AF),
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 11,
-                                            ),
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => CallDetailsScreen(
+                                            callEntry: call,
                                           ),
                                         ),
-                                    ],
+                                      );
+                                    },
+                                    leading: Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: fillColor,
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      child: Icon(
+                                        icon,
+                                        color: accentColor,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      call.leadName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF111827),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      isMissed
+                                          ? '$label • ${call.phoneNumber}'
+                                          : '$label • ${_formatHistoryDuration(call.duration)} • ${call.phoneNumber}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF9CA3AF),
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    trailing: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          _formatHistoryTime(call.callDate),
+                                          style: const TextStyle(
+                                            color: Color(0xFFD1D5DB),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        if (call.operatorName != null &&
+                                            call.operatorName!
+                                                .trim()
+                                                .isNotEmpty)
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              call.operatorName!,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Color(0xFF9CA3AF),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );

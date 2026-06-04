@@ -134,10 +134,15 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void _handleFiltersApplied(Map<String, dynamic> filters) {
-    //print('ChatsScreen._handleFiltersApplied: Received filters: $filters');
+    final normalizedFilters = Map<String, dynamic>.from(filters);
+    if (endPointInTab == 'lead') {
+      normalizedFilters.remove('unreadOnly');
+    }
+
+    //print('ChatsScreen._handleFiltersApplied: Received filters: $normalizedFilters');
     setState(() {
-      _activeFilters = filters;
-      _hasActiveFilters = _checkIfFiltersActive(filters);
+      _activeFilters = normalizedFilters;
+      _hasActiveFilters = _checkIfFiltersActive(normalizedFilters);
       //print( 'ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
     });
 
@@ -157,7 +162,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       chatsBloc.add(FetchChats(
         endPoint: endPointInTab,
         salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-        filters: filters,
+        filters: normalizedFilters,
       ));
     });
   }
@@ -177,7 +182,6 @@ class _ChatsScreenState extends State<ChatsScreen>
           filters['hasContact'] == true ||
           filters['hasChat'] == true ||
           filters['hasNoReplies'] == true ||
-          filters['unreadOnly'] == true ||
           filters['hasUnreadMessages'] == true ||
           filters['hasDeal'] == true ||
           filters['daysWithoutActivity'] != null ||
@@ -659,10 +663,6 @@ class _ChatsScreenState extends State<ChatsScreen>
       if (_activeFilters!['hasDeal'] == true) {
         activeFiltersList
             .add(AppLocalizations.of(context)!.translate('without_deal'));
-      }
-      if (_activeFilters!['unreadOnly'] == true) {
-        activeFiltersList
-            .add(AppLocalizations.of(context)!.translate('unread_only'));
       }
       if (_activeFilters!['daysWithoutActivity'] != null &&
           _activeFilters!['daysWithoutActivity'] > 0) {

@@ -58,6 +58,7 @@ import 'package:crm_task_manager/models/my-task_Status_Name_model.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
+import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/models/notifications_model.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models/task_chart_model.dart';
@@ -3319,6 +3320,7 @@ class ApiService {
     required int leadId,
     int? dealId,
     DateTime? date,
+    required int sendSms,
     required List<int> users,
     List<String>? filePaths, // Новое поле для файлов
   }) async {
@@ -3349,6 +3351,7 @@ class ApiService {
       if (date != null) {
         request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
       }
+      request.fields['send_sms'] = sendSms.toString();
       final organizationId = await getSelectedOrganization();
       request.fields['organization_id'] = organizationId?.toString() ?? '2';
       for (int i = 0; i < users.length; i++) {
@@ -4257,6 +4260,7 @@ class ApiService {
     int page, {
     bool showDebt = false,
     String? search,
+    bool bypassCache = false,
   }) async {
     try {
       // Формируем путь с параметром страницы
@@ -4275,11 +4279,13 @@ class ApiService {
       final path = await _appendQueryParams(basePath);
 
       if (kDebugMode) {
-        debugPrint('ApiService: getLeadPage - Loading page $page, path: $path');
+        debugPrint(
+          'ApiService: getLeadPage - Loading page $page, path: $path, bypassCache=$bypassCache',
+        );
       }
 
       // Выполняем GET запрос
-      final response = await _analyticsRequest(path);
+      final response = await _analyticsRequest(path, bypassCache: bypassCache);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -9881,6 +9887,26 @@ class ApiService {
     }
   }
 
+  Future<List<NoticeSmsSample>> getNoticeSmsSamples() async {
+    final path = await _appendQueryParams('/sample');
+    final response = await _getRequest(path);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get sms notice samples: ${response.statusCode}');
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    final result = data['result'];
+    if (result is! List) {
+      return <NoticeSmsSample>[];
+    }
+
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(NoticeSmsSample.fromJson)
+        .toList();
+  }
+
 //_________________________________ END_____API_SCREEN__CHATS____________________________________________//
 
 //_________________________________ START_____API_SCREEN__PROFILE_CHAT____________________________________________//
@@ -11477,9 +11503,12 @@ class ApiService {
 
         return Notice.fromJson(jsonNotice);
       } else {
+        debugPrint(
+            'ApiService.getNoticeById: HTTP ${response.statusCode}, body=${response.body}');
         throw ('Ошибка загрузки notice ID!');
       }
     } catch (e) {
+      debugPrint('ApiService.getNoticeById error for notice $noticeId: $e');
       throw ('Ошибка загрузки notice ID!');
     }
   }
@@ -11490,6 +11519,7 @@ class ApiService {
     required int leadId,
     DateTime? date,
     required int sendNotification,
+    required int sendSms,
     required List<int> users,
     List<String>? filePaths,
   }) async {
@@ -11512,6 +11542,7 @@ class ApiService {
         request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
       }
       request.fields['send_notification'] = sendNotification.toString();
+      request.fields['send_sms'] = sendSms.toString();
 
       // Добавляем массив users
       for (int i = 0; i < users.length; i++) {
@@ -11559,6 +11590,7 @@ class ApiService {
     int? dealId,
     DateTime? date,
     required int sendNotification,
+    required int sendSms,
     required List<int> users,
     List<String>? filePaths,
     List<NoticeFiles>? existingFiles,
@@ -11581,6 +11613,7 @@ class ApiService {
     if (date != null)
       request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
     request.fields['send_notification'] = sendNotification.toString();
+    request.fields['send_sms'] = sendSms.toString();
 
     // Добавляем пользователей
     if (users.isNotEmpty) {

@@ -9,6 +9,7 @@ import WidgetKit
     private var widgetMethodChannel: FlutterMethodChannel?
     private var networkEventChannel: FlutterEventChannel?
     private var networkEventSink: FlutterEventSink?
+    private var nativeSipManager: IOSNativeSipManager?
 
     private let appGroupId = "group.com.softtech.crmTaskManager"
     private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
@@ -27,9 +28,21 @@ import WidgetKit
 
         setupWidgetMethodChannel(controller: controller)
         setupNetworkEventChannel(controller: controller)
+        nativeSipManager = IOSNativeSipManager(controller: controller)
+        nativeSipManager?.initializeRuntimeIfNeeded()
         startNetworkMonitoring()
 
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+
+    override func applicationDidBecomeActive(_ application: UIApplication) {
+        super.applicationDidBecomeActive(application)
+        nativeSipManager?.updateAppVisibility(isForeground: true)
+    }
+
+    override func applicationWillResignActive(_ application: UIApplication) {
+        nativeSipManager?.updateAppVisibility(isForeground: false)
+        super.applicationWillResignActive(application)
     }
 
     private func setupWidgetMethodChannel(controller: FlutterViewController) {

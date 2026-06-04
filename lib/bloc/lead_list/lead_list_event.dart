@@ -13,8 +13,12 @@ class GetAllLeadEv extends GetAllLeadEvent {
 
 class RefreshAllLeadEv extends GetAllLeadEvent {
   final bool showDebt;
+  final bool clearOfflineCache;
 
-  RefreshAllLeadEv({this.showDebt = false});
+  RefreshAllLeadEv({
+    this.showDebt = false,
+    this.clearOfflineCache = false,
+  });
 }
 
 // ИСПРАВЛЕНО: Добавлен параметр showDebt для корректного обновления кэша

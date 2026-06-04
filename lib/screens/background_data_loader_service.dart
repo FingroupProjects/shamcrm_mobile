@@ -230,6 +230,8 @@ class BackgroundDataLoaderService {
 
         await prefs.setBool(
             'notify_user', _toBool(response['result']['notify_user']));
+        await prefs.setBool('sms_notice_notification',
+            _toBool(response['result']['sms_notice_notification']));
 
         await prefs.setBool('managing_lead_status_visibility',
             _toBool(response['result']['managing_lead_status_visibility']));
@@ -287,6 +289,7 @@ class BackgroundDataLoaderService {
         await prefs.setBool('push_to_lead_author', false);
         await prefs.setBool('push_to_lead_manager', false);
         await prefs.setBool('notify_user', false);
+        await prefs.setBool('sms_notice_notification', false);
         await prefs.setBool('managing_lead_status_visibility', false);
         await prefs.setBool('create_order_from_deal', false);
         await prefs.setBool('create_task_in_deal', false);

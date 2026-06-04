@@ -1883,6 +1883,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       dealId: deal.id,
       date: note.date != null ? DateTime.tryParse(note.date!) : null,
       sendNotification: 0,
+      sendSms: 0,
       users: users,
     );
 

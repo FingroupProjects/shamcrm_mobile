@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
@@ -13,12 +14,15 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
+import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NoticeEditScreen extends StatefulWidget {
   final Notice notice;
@@ -31,6 +35,7 @@ class NoticeEditScreen extends StatefulWidget {
 
 class _NoticeEditScreenState extends State<NoticeEditScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
   late TextEditingController titleController;
   late TextEditingController bodyController;
   late TextEditingController dateController;
@@ -38,9 +43,13 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   String? selectedLead;
   List<int> selectedManagers = [];
   bool sendNotification = false;
+  bool sendSms = false;
+  bool smsNoticeNotificationEnabled = false;
   bool isLoading = false;
   String? selectedSubject;
   bool isSubjectInvalid = false; // Флаг для валидации тематики
+  List<NoticeSmsSample> smsTemplates = [NoticeSmsSample.empty()];
+  NoticeSmsSample? selectedSmsTemplate;
 
 // Переменные для файлов
   List<String> selectedFiles = [];
@@ -64,6 +73,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     selectedLead = widget.notice.lead?.id.toString();
     selectedManagers = widget.notice.users.map((user) => user.id).toList();
     selectedSubject = widget.notice.title;
+    sendSms = widget.notice.sendSms;
 
 // Инициализация файлов
     if (widget.notice.files != null) {
@@ -78,6 +88,74 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
 
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    selectedSmsTemplate = smsTemplates.first;
+    _loadSmsNoticeConfigFromCache();
+    _loadSmsNoticeConfig();
+  }
+
+  Future<void> _loadSmsNoticeConfigFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('sms_notice_notification') ?? false;
+    if (!mounted) return;
+    setState(() {
+      smsNoticeNotificationEnabled = isEnabled;
+    });
+  }
+
+  Future<void> _loadSmsNoticeConfig() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final isEnabled = _toBool(result?['sms_notice_notification']);
+
+      var templates = <NoticeSmsSample>[NoticeSmsSample.empty()];
+      if (isEnabled) {
+        final remoteTemplates = await _apiService.getNoticeSmsSamples();
+        templates.addAll(remoteTemplates);
+      }
+
+      NoticeSmsSample? matchedTemplate;
+      for (final template in templates) {
+        if (!template.isEmptyTemplate && template.text == bodyController.text) {
+          matchedTemplate = template;
+          break;
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = isEnabled;
+        sendSms = isEnabled ? sendSms : false;
+        smsTemplates = templates;
+        selectedSmsTemplate = matchedTemplate ?? selectedSmsTemplate ?? templates.first;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = false;
+        sendSms = false;
+        smsTemplates = [NoticeSmsSample.empty()];
+        selectedSmsTemplate = smsTemplates.first;
+      });
+    }
+  }
+
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      return value == '1' || value.toLowerCase() == 'true';
+    }
+    return false;
+  }
+
+  void _handleTemplateSelected(NoticeSmsSample template) {
+    setState(() {
+      selectedSmsTemplate = template;
+      if (!template.isEmptyTemplate) {
+        bodyController.text = template.text;
+      }
+    });
   }
 
   @override
@@ -227,6 +305,19 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                               selectedManagers = managers;
                             });
                           },
+                        ),
+                        const SizedBox(height: 8),
+                        NoticeSmsTemplateSection(
+                          isVisible: smsNoticeNotificationEnabled,
+                          sendSms: sendSms,
+                          templates: smsTemplates,
+                          selectedTemplate: selectedSmsTemplate,
+                          onToggle: (value) {
+                            setState(() {
+                              sendSms = value;
+                            });
+                          },
+                          onTemplateSelected: _handleTemplateSelected,
                         ),
                         const SizedBox(height: 8),
                         _buildFileSelection(), // Добавляем выбор файлов
@@ -558,6 +649,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
               leadId: int.parse(selectedLead!),
               date: date,
               sendNotification: sendNotification ? 1 : 0,
+              sendSms: sendSms ? 1 : 0,
               users: selectedManagers,
               localizations: AppLocalizations.of(context)!,
               filePaths: newFiles, // Передаем новые файлы

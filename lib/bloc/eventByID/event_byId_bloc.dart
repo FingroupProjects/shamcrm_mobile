@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class NoticeBloc extends Bloc<NoticeEvent, NoticeState> {
@@ -17,6 +18,7 @@ class NoticeBloc extends Bloc<NoticeEvent, NoticeState> {
       final notice = await apiService.getNoticeById(event.noticeId);
       emit(NoticeLoaded(notice));
     } catch (e) {
+      debugPrint('NoticeBloc._getNoticeById failed for ${event.noticeId}: $e');
       emit(NoticeError('Не удалось загрузить данные события!'));
     }
   }

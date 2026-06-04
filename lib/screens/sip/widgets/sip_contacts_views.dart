@@ -98,10 +98,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
   }
 
   Widget _contactsView(BuildContext context) {
-    if ((!_contactsEnabled && !_contactsLoaded) || !_leadSearchEnabled) {
-      unawaited(_refreshContactsTabState());
-    }
-    if (_contactsEnabled && !_contactsLoaded) {
+    if (_contactsEnabled && !_contactsLoaded && !_isContactsLoading) {
       unawaited(_loadContacts());
     }
 

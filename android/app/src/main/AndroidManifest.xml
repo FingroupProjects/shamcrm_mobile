@@ -5,20 +5,26 @@
     <!-- ОСНОВНЫЕ РАЗРЕШЕНИЯ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Биометрия -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- Звонки и контакты -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" tools:node="replace"/>
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 
     <!-- Камера и голосовые сообщения -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Геолокация для отправки местоположения в чат -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -63,6 +69,37 @@
                 <data android:mimeType="audio/*" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".IncomingCallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+
+        <service
+            android:name=".NativeSipForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall|microphone" />
+
+        <receiver
+            android:name=".NativeSipActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
+            android:name=".NativeSipBootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
 <!-- ВИДЖЕТ SHAMCRM -->
 
@@ -122,6 +159,14 @@
     <!-- Поддержка камеры (опционально) -->
     <uses-feature
         android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.audio.output"
+        android:required="true" />
+
+    <uses-feature
+        android:name="android.hardware.microphone"
         android:required="false" />
 
 </manifest>

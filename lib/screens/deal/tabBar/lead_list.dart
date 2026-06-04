@@ -12,12 +12,16 @@ class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
   final bool showDebt;
+  final bool alwaysRefreshFromServer;
+  final bool clearCacheBeforeRefresh;
 
   const LeadRadioGroupWidget({
     super.key,
     required this.onSelectLead,
     this.selectedLead,
     this.showDebt = false,
+    this.alwaysRefreshFromServer = false,
+    this.clearCacheBeforeRefresh = false,
   });
 
   @override
@@ -32,8 +36,19 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   bool _initialLeadSet = false;
 
   void _reloadLeads() {
+    if (widget.alwaysRefreshFromServer && mounted) {
+      setState(() {
+        leadsList = [];
+        selectedLeadData = null;
+        _isInitialized = false;
+        _initialLeadSet = false;
+      });
+    }
     context.read<GetAllLeadBloc>().add(
-          RefreshAllLeadEv(showDebt: widget.showDebt),
+          RefreshAllLeadEv(
+            showDebt: widget.showDebt,
+            clearOfflineCache: widget.clearCacheBeforeRefresh,
+          ),
         );
   }
 
@@ -82,7 +97,13 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _reloadLeads();
+        if (widget.alwaysRefreshFromServer) {
+          _reloadLeads();
+        } else {
+          context.read<GetAllLeadBloc>().add(
+                GetAllLeadEv(showDebt: widget.showDebt),
+              );
+        }
       }
     });
   }

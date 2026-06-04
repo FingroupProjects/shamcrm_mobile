@@ -32,7 +32,7 @@ class _EventScreenState extends State<EventScreen> with TickerProviderStateMixin
   late TabController _tabController;
   late ScrollController _tabScrollController;
   late ScrollController _listScrollController;
-  late final List<Map<String, dynamic>> _tabTitles;
+  List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;

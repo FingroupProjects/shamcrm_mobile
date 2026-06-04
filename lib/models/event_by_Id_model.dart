@@ -10,6 +10,7 @@ class Notice {
   final NoticeAuthor? author;
   final List<UserEvent> users;
   final bool sendNotification;
+  final bool sendSms;
   final DateTime createdAt;
   final bool canFinish;
   final String? conclusion;
@@ -26,6 +27,7 @@ class Notice {
     this.author,
     required this.users,
     required this.sendNotification,
+    required this.sendSms,
     required this.createdAt,
     required this.canFinish,
     this.conclusion,
@@ -71,6 +73,8 @@ class Notice {
             : null,
         users: parseUsers(json['users']),
         sendNotification: (json['send_notification'] as num?)?.toInt() == 1,
+        sendSms: (json['send_sms'] as num?)?.toInt() == 1 ||
+            json['send_sms'] == true,
         createdAt: DateTime.parse(json['created_at'].toString()),
         canFinish: json['can_finish'] as bool? ?? false,
         conclusion: json['conclusion'] as String?,
@@ -176,23 +180,32 @@ class UserEvent {
   });
 
   factory UserEvent.fromJson(Map<String, dynamic> json) {
+    bool parseBool(dynamic value) {
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) {
+        return value == '1' || value.toLowerCase() == 'true';
+      }
+      return false;
+    }
+
     return UserEvent(
-      id: json['id'],
-      name: json['name'],
-      lastname: json['lastname'],
-      login: json['login'],
-      email: json['email'],
-      phone: json['phone'],
-      image: json['image'],
+      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      name: (json['name'] ?? '').toString(),
+      lastname: (json['lastname'] ?? '').toString(),
+      login: (json['login'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      phone: (json['phone'] ?? '').toString(),
+      image: (json['image'] ?? '').toString(),
       lastSeen:
-          json['last_seen'] != null ? DateTime.parse(json['last_seen']) : null,
+          json['last_seen'] != null ? DateTime.tryParse(json['last_seen'].toString()) : null,
       deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'])
+          ? DateTime.tryParse(json['deleted_at'].toString())
           : null,
-      telegramUserId: json['telegram_user_id'],
-      jobTitle: json['job_title'],
-      online: json['online'],
-      fullName: json['full_name'],
+      telegramUserId: json['telegram_user_id']?.toString(),
+      jobTitle: json['job_title']?.toString(),
+      online: parseBool(json['online']),
+      fullName: (json['full_name'] ?? '').toString(),
     );
   }
 }

@@ -64,13 +64,18 @@ class RmkRepository {
 
   Stream<List<RmkCartItem>> watchCart() {
     final statement = _db.select(_db.rmkCartItems)
-      ..orderBy([(tbl) => OrderingTerm.desc(tbl.updatedAt)]);
+      ..orderBy([(tbl) => OrderingTerm.asc(tbl.updatedAt)]);
     return statement.watch();
   }
 
   Future<RmkCartItem?> getCartItem(int goodId) {
     return (_db.select(_db.rmkCartItems)
           ..where((tbl) => tbl.goodId.equals(goodId)))
+        .getSingleOrNull();
+  }
+
+  Future<RmkGood?> getGoodById(int goodId) {
+    return (_db.select(_db.rmkGoods)..where((tbl) => tbl.id.equals(goodId)))
         .getSingleOrNull();
   }
 
@@ -85,6 +90,7 @@ class RmkRepository {
       return;
     }
 
+    final existingItem = await getCartItem(good.id);
     await _db.into(_db.rmkCartItems).insertOnConflictUpdate(
           RmkCartItemsCompanion.insert(
             goodId: Value(good.id),
@@ -93,7 +99,8 @@ class RmkRepository {
             price: Value(price),
             customTotal: Value(customTotal),
             imageUrl: Value(good.imageUrl),
-            updatedAt: DateTime.now(),
+            // Preserve first-add order for the selected-items list.
+            updatedAt: existingItem?.updatedAt ?? DateTime.now(),
           ),
         );
   }

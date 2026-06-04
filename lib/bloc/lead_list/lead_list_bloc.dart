@@ -67,15 +67,27 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
       _cachedLeadsWithoutDebt = null;
       _lastLoadTimeWithoutDebt = null;
     }
-    await _loadLeadsProgressive(emit, event.showDebt);
+
+    if (event.clearOfflineCache) {
+      await _offlineRepository.clearCache();
+      emit(GetAllLeadLoading());
+    }
+    await _loadLeadsProgressive(
+      emit,
+      event.showDebt,
+      skipCacheRead: event.clearOfflineCache,
+    );
   }
 
   Future<void> _loadLeadsProgressive(
-      Emitter<GetAllLeadState> emit, bool showDebt) async {
-    final cached = await _offlineRepository.readCachedPage(
-      page: 1,
-      showDebt: showDebt,
-    );
+      Emitter<GetAllLeadState> emit, bool showDebt,
+      {bool skipCacheRead = false}) async {
+    final cached = skipCacheRead
+        ? null
+        : await _offlineRepository.readCachedPage(
+            page: 1,
+            showDebt: showDebt,
+          );
 
     if (cached != null) {
       if (showDebt) {
@@ -91,8 +103,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
     if (!await _checkInternetConnection()) {
       if (cached == null) {
         emit(GetAllLeadError(
-            message:
-                'Нет сети и локальный кэш для лидов ещё не создан.'));
+            message: 'Нет сети и локальный кэш для лидов ещё не создан.'));
       }
       return;
     }
@@ -132,7 +143,8 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   }
 
   Future<bool> _checkInternetConnection() async {
-    return OfflineRuntime.instance.networkProfileService.currentProfile.isOnline;
+    return OfflineRuntime
+        .instance.networkProfileService.currentProfile.isOnline;
   }
 
   // ИСПРАВЛЕНО: Метод теперь принимает параметр showDebt

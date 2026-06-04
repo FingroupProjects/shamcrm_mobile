@@ -1,7 +1,10 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
+import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +15,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 import 'dart:io'; // Для File
 import 'package:file_picker/file_picker.dart'; // Для FilePicker
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateNotesDialog extends StatefulWidget {
   final int leadId;
@@ -26,6 +30,7 @@ class CreateNotesDialog extends StatefulWidget {
 
 class _CreateNotesDialogState extends State<CreateNotesDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
   final TextEditingController titleController = TextEditingController();
@@ -33,6 +38,10 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   String? selectedSubject;
   bool isSubjectInvalid = false;
   bool hasAutoSelectedManager = false;
+  bool sendSms = false;
+  bool smsNoticeNotificationEnabled = false;
+  List<NoticeSmsSample> smsTemplates = [NoticeSmsSample.empty()];
+  NoticeSmsSample? selectedSmsTemplate;
   // Переменные для файлов
   List<String> selectedFiles = [];
   List<String> fileNames = [];
@@ -45,6 +54,65 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
       selectedManagers = [widget.managerId!];
       hasAutoSelectedManager = true;
     }
+    selectedSmsTemplate = smsTemplates.first;
+    _loadSmsNoticeConfigFromCache();
+    _loadSmsNoticeConfig();
+  }
+
+  Future<void> _loadSmsNoticeConfigFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('sms_notice_notification') ?? false;
+    if (!mounted) return;
+    setState(() {
+      smsNoticeNotificationEnabled = isEnabled;
+    });
+  }
+
+  Future<void> _loadSmsNoticeConfig() async {
+    try {
+      final settings = await _apiService.getSettings(null);
+      final result = settings['result'] as Map<String, dynamic>?;
+      final isEnabled = _toBool(result?['sms_notice_notification']);
+
+      var templates = <NoticeSmsSample>[NoticeSmsSample.empty()];
+      if (isEnabled) {
+        final remoteTemplates = await _apiService.getNoticeSmsSamples();
+        templates.addAll(remoteTemplates);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = isEnabled;
+        smsTemplates = templates;
+        selectedSmsTemplate ??= templates.first;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        smsNoticeNotificationEnabled = false;
+        sendSms = false;
+        smsTemplates = [NoticeSmsSample.empty()];
+        selectedSmsTemplate = smsTemplates.first;
+      });
+    }
+  }
+
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      return value == '1' || value.toLowerCase() == 'true';
+    }
+    return false;
+  }
+
+  void _handleTemplateSelected(NoticeSmsSample template) {
+    setState(() {
+      selectedSmsTemplate = template;
+      if (!template.isEmptyTemplate) {
+        bodyController.text = template.text;
+      }
+    });
   }
 
   Future<void> _pickFile() async {
@@ -359,6 +427,19 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                     },
                   ),
                   SizedBox(height: 8),
+                  NoticeSmsTemplateSection(
+                    isVisible: smsNoticeNotificationEnabled,
+                    sendSms: sendSms,
+                    templates: smsTemplates,
+                    selectedTemplate: selectedSmsTemplate,
+                    onToggle: (value) {
+                      setState(() {
+                        sendSms = value;
+                      });
+                    },
+                    onTemplateSelected: _handleTemplateSelected,
+                  ),
+                  SizedBox(height: 8),
                   _buildFileSelection(), // Добавляем виджет выбора файлов
                   SizedBox(height: 8),
                   CustomButton(
@@ -437,6 +518,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                           title: selectedSubject!.trim(),
                           body: body,
                           date: date,
+                          sendSms: sendSms ? 1 : 0,
                           users: selectedManagers,
                           filePaths: selectedFiles, // Передаем файлы
                           // localizations: AppLocalizations.of(context), // Передаем локализацию

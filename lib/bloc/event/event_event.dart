@@ -63,6 +63,7 @@ class CreateNotice extends EventEvent {
   final int leadId;
   final DateTime? date;
   final int sendNotification;
+  final int sendSms;
   final List<int> users;
   final List<String>? filePaths; // Новое поле для файлов
   final AppLocalizations localizations;
@@ -73,6 +74,7 @@ class CreateNotice extends EventEvent {
     required this.leadId,
     this.date,
     required this.sendNotification,
+    required this.sendSms,
     required this.users,
     this.filePaths, // Добавляем в конструктор
     required this.localizations,
@@ -86,6 +88,7 @@ class UpdateNotice extends EventEvent {
   final int leadId;
   final DateTime? date;
   final int sendNotification;
+  final int sendSms;
   final List<int> users;
   final AppLocalizations localizations;
   final List<String>? filePaths; // Новое поле для новых файлов
@@ -98,6 +101,7 @@ class UpdateNotice extends EventEvent {
     required this.leadId,
    this.date,
     required this.sendNotification,
+    required this.sendSms,
     required this.users,
     required this.localizations,
     this.filePaths, // Добавляем
