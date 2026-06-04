@@ -534,7 +534,8 @@ class RmkRepository {
 
     final measurements = payload['measurements'];
     if (unitId != null && measurements is List) {
-      for (final measurement in measurements.whereType<Map<String, dynamic>>()) {
+      for (final measurement
+          in measurements.whereType<Map<String, dynamic>>()) {
         if (_asInt(measurement['unit_id']) == unitId) {
           final measurementUnit = measurement['unit'];
           if (measurementUnit is Map<String, dynamic>) {
@@ -549,8 +550,7 @@ class RmkRepository {
       final baseUnit = units.whereType<Map<String, dynamic>>().where((item) {
         return item['is_base'] == true || item['is_base'] == 1;
       }).firstOrNull;
-      final baseLabel =
-          baseUnit != null ? _unitNameFromMap(baseUnit) : null;
+      final baseLabel = baseUnit != null ? _unitNameFromMap(baseUnit) : null;
       if (baseLabel != null) return baseLabel;
 
       final firstUnit = units.whereType<Map<String, dynamic>>().firstOrNull;
@@ -825,7 +825,8 @@ class RmkRepository {
     final cachedGoods = await _db.select(_db.rmkGoods).get();
     return cachedGoods.any((good) {
       final payload = good.payload;
-      return !payload.contains('"unit_id"') || !payload.contains('"unit_label"');
+      return !payload.contains('"unit_id"') ||
+          !payload.contains('"unit_label"');
     });
   }
 

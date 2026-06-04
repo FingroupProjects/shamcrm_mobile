@@ -559,7 +559,8 @@ class _RmkScreenState extends State<RmkScreen> {
                               query: _query,
                               categoryIds: _categoryId == null
                                   ? null
-                                  : RmkRepository.categoryIdsIncludingDescendants(
+                                  : RmkRepository
+                                      .categoryIdsIncludingDescendants(
                                       _categoryId!,
                                       categories,
                                     ),

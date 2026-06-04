@@ -91,8 +91,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
     if (!await _checkInternetConnection()) {
       if (cached == null) {
         emit(GetAllLeadError(
-            message:
-                'Нет сети и локальный кэш для лидов ещё не создан.'));
+            message: 'Нет сети и локальный кэш для лидов ещё не создан.'));
       }
       return;
     }
@@ -132,7 +131,8 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   }
 
   Future<bool> _checkInternetConnection() async {
-    return OfflineRuntime.instance.networkProfileService.currentProfile.isOnline;
+    return OfflineRuntime
+        .instance.networkProfileService.currentProfile.isOnline;
   }
 
   // ИСПРАВЛЕНО: Метод теперь принимает параметр showDebt
