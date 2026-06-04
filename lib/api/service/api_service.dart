@@ -153,6 +153,7 @@ import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
+import 'package:crm_task_manager/models/lead_sms_model.dart';
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/leadById_model.dart' hide Integration;
 import 'package:crm_task_manager/models/lead_model.dart';
@@ -9892,7 +9893,8 @@ class ApiService {
     final response = await _getRequest(path);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to get sms notice samples: ${response.statusCode}');
+      throw Exception(
+          'Failed to get sms notice samples: ${response.statusCode}');
     }
 
     final data = json.decode(response.body) as Map<String, dynamic>;
@@ -9904,6 +9906,103 @@ class ApiService {
     return result
         .whereType<Map<String, dynamic>>()
         .map(NoticeSmsSample.fromJson)
+        .toList();
+  }
+
+  Future<List<SmsSenderIntegration>> getSmsIntegrations({
+    String? organizationId,
+    String? salesFunnelId,
+  }) async {
+    final resolvedOrganizationId =
+        organizationId ?? await getSelectedOrganization();
+    final resolvedSalesFunnelId =
+        salesFunnelId ?? await getSelectedSalesFunnel();
+
+    var path =
+        '/integrations/get-by-category/sms?organization_id=${resolvedOrganizationId ?? '1'}';
+    if (resolvedSalesFunnelId != null && resolvedSalesFunnelId.isNotEmpty) {
+      path += '&sales_funnel_id=$resolvedSalesFunnelId';
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get sms integrations: ${response.statusCode}');
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    final result = data['result'];
+    if (result is! List) {
+      return <SmsSenderIntegration>[];
+    }
+
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(SmsSenderIntegration.fromJson)
+        .toList();
+  }
+
+  Future<void> sendLeadSmsMessage({
+    required int leadId,
+    required int integrationId,
+    required String text,
+    String? organizationId,
+    String? salesFunnelId,
+  }) async {
+    final resolvedOrganizationId =
+        organizationId ?? await getSelectedOrganization() ?? '1';
+    final resolvedSalesFunnelId =
+        salesFunnelId ?? await getSelectedSalesFunnel();
+
+    var path =
+        '/lead/send-message/$leadId?organization_id=$resolvedOrganizationId';
+    if (resolvedSalesFunnelId != null && resolvedSalesFunnelId.isNotEmpty) {
+      path += '&sales_funnel_id=$resolvedSalesFunnelId';
+    }
+
+    final body = <String, dynamic>{
+      'integration_id': integrationId,
+      'text': text,
+      'organization_id': resolvedOrganizationId,
+      if (resolvedSalesFunnelId != null && resolvedSalesFunnelId.isNotEmpty)
+        'sales_funnel_id': resolvedSalesFunnelId,
+    };
+
+    final response = await _postRequest(path, body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to send sms: ${response.statusCode}');
+    }
+  }
+
+  Future<List<LeadSmsMessage>> getLeadSmsMessages({
+    required int leadId,
+    String? organizationId,
+    String? salesFunnelId,
+  }) async {
+    final resolvedOrganizationId =
+        organizationId ?? await getSelectedOrganization() ?? '1';
+    final resolvedSalesFunnelId =
+        salesFunnelId ?? await getSelectedSalesFunnel();
+
+    var path =
+        '/lead/get-message/$leadId?organization_id=$resolvedOrganizationId';
+    if (resolvedSalesFunnelId != null && resolvedSalesFunnelId.isNotEmpty) {
+      path += '&sales_funnel_id=$resolvedSalesFunnelId';
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get sms messages: ${response.statusCode}');
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    final result = data['result'];
+    if (result is! List) {
+      return <LeadSmsMessage>[];
+    }
+
+    return result
+        .whereType<Map<String, dynamic>>()
+        .map(LeadSmsMessage.fromJson)
         .toList();
   }
 

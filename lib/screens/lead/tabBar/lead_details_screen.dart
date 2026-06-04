@@ -33,6 +33,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_histo
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_sms_modal.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart'
@@ -2018,7 +2019,126 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   Future<void> _handlePhoneTap(String phoneNumber) async {
-    await _makeSystemPhoneCall(phoneNumber);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6DEEF),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildPhoneActionTile(
+                    icon: Icons.phone_in_talk_rounded,
+                    title: 'Позвонить',
+                    subtitle: phoneNumber,
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await _makeSystemPhoneCall(phoneNumber);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPhoneActionTile(
+                    icon: Icons.sms_rounded,
+                    title: 'Сообщение',
+                    subtitle: 'Открыть SMS диалог',
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await LeadSmsModal.show(
+                        context,
+                        leadId: int.tryParse(widget.leadId) ?? 0,
+                        leadName: currentLead?.name ?? widget.leadName,
+                        phone: phoneNumber,
+                        salesFunnelId: currentLead?.salesFunnel?.id,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhoneActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F7FD),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: const Color(0xFF4759FF)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E2E52),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF99A4BA),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Color(0xFF99A4BA),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _makeSystemPhoneCall(String phoneNumber) async {
