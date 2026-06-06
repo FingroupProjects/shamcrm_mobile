@@ -473,6 +473,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
       await prefs.setInt('userRoleId', userRoleId!);
       await prefs.setString('userRoleName', userProfile.role![0].name);
+      final allRoles =
+          userProfile.role?.map((role) => role.name).join(', ') ?? '';
+      await prefs.setString('userAllRoles', allRoles);
 
       // Загружаем статусы
       BlocProvider.of<LeadBloc>(context).add(FetchLeadStatuses());
@@ -554,9 +557,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
       // ✅ Проверка отложенных токенов (на всякий случай)
       try {
-        debugPrint('PinSetupScreen: 📤 Проверка отложенных FCM токенов...');
+        debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
         await apiService.ensureInitialized();
         await apiService.sendPendingFCMTokenIfNeeded();
+        await apiService.sendPendingVoipTokenIfNeeded();
         debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
       } catch (e) {
         debugPrint('PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');

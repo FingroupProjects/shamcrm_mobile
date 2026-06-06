@@ -11,6 +11,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final String? customLabelText; // ✅ НОВОЕ: для кастомного заголовка
   final bool hasError; // Флаг для отображения ошибки
   final bool isRequired; // ✅ НОВОЕ: обязательность поля
+  final Color backgroundColor;
 
   const UserMultiSelectWidget({
     super.key,
@@ -19,6 +20,7 @@ class UserMultiSelectWidget extends StatefulWidget {
     this.customLabelText, // ✅ НОВОЕ
     this.hasError = false,
     this.isRequired = true,
+    this.backgroundColor = const Color(0xFFF4F7FD),
   });
 
   @override
@@ -185,7 +187,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: widget.backgroundColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1.5,
@@ -217,7 +219,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
+                        closedFillColor: widget.backgroundColor,
                         expandedFillColor: Colors.white,
                         closedBorder: Border.all(
                           color: Colors.transparent,
@@ -230,7 +232,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
                         final isSelectAll = item.id == -1;
                         final allSelected =
                             selectedUsersData.length == usersList.length &&
@@ -327,8 +330,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                             values.where((user) => user.id != -1).toList();
                         final currentIds =
                             selectedUsersData.map((u) => u.id).toList()..sort();
-                        final newIds =
-                            filteredValues.map((u) => u.id).toList()..sort();
+                        final newIds = filteredValues.map((u) => u.id).toList()
+                          ..sort();
 
                         if (!listEquals(currentIds, newIds)) {
                           setState(() {

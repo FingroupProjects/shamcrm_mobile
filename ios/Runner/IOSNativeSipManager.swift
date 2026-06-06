@@ -620,6 +620,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var audioSessionObserversInstalled = false
     private var callKitReportedForCurrentIncoming = false
     private var incomingInviteTimeoutTimer: Timer?
+    private var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -694,6 +695,27 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "callState": snapshot.callState,
             "remoteIdentity": snapshot.remoteIdentity ?? NSNull(),
         ])
+    }
+
+    func applicationDidEnterBackground() {
+        updateAppVisibility(isForeground: false)
+        beginBackgroundTransitionTask(reason: "app-background")
+        if let core {
+            linphone_core_enter_background(core)
+            appendDiagnosticLog("linphone_enter_background", [:])
+        }
+        if snapshot.persistentEnabled {
+            _ = restoreRegistrationIfNeeded(reason: "app-did-enter-background", emitRegisteringEvent: false)
+        }
+    }
+
+    func applicationWillEnterForeground() {
+        if let core {
+            linphone_core_enter_foreground(core)
+            appendDiagnosticLog("linphone_enter_foreground", [:])
+        }
+        endBackgroundTransitionTask(reason: "app-foreground")
+        updateAppVisibility(isForeground: true)
     }
 
     private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -887,6 +909,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         _ config: NativeSipRegistrationConfig,
         emitRegisteringEvent: Bool
     ) -> Bool {
+        // Начинаем регистрацию с чистого core, чтобы не переиспользовать
+        // устаревшие auth/account данные от прошлых попыток.
+        teardownLinphoneCore()
+
         guard ensureLinphoneCore(), let core else {
             emitRegistrationEvent(state: "failed", message: snapshot.message ?? "Linphone core unavailable")
             return false
@@ -922,10 +948,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         linphone_account_params_set_expires(params, 300)
         linphone_account_params_set_push_notification_allowed(params, 1)
         linphone_account_params_set_remote_push_notification_allowed(params, 1)
-
-        if config.transport == "tcp" {
-            linphone_account_params_enable_outbound_proxy(params, 1)
-        }
+        linphone_account_params_enable_outbound_proxy(params, 1)
 
         guard let createdAccount = linphone_core_create_account(core, params) else {
             linphone_address_unref(identityAddress)
@@ -1438,6 +1461,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             appendDiagnosticLog("sip_register_ok", [
                 "message": snapshot.message ?? "",
             ])
+            endBackgroundTransitionTask(reason: "registration-ok")
             emitRegistrationEvent(state: "registered", message: snapshot.message)
         case LinphoneRegistrationFailed:
             snapshot.registrationState = "failed"
@@ -1445,14 +1469,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             appendDiagnosticLog("sip_register_fail", [
                 "message": snapshot.message ?? "",
             ])
+            endBackgroundTransitionTask(reason: "registration-failed")
             emitRegistrationEvent(state: "failed", message: snapshot.message)
         case LinphoneRegistrationCleared:
             snapshot.registrationState = "disconnected"
             snapshot.message = message ?? "Unregistration done"
+            endBackgroundTransitionTask(reason: "registration-cleared")
             emitRegistrationEvent(state: "disconnected", message: snapshot.message)
         default:
             snapshot.registrationState = "disconnected"
             snapshot.message = message
+            endBackgroundTransitionTask(reason: "registration-disconnected")
             emitRegistrationEvent(state: "disconnected", message: snapshot.message)
         }
 
@@ -1544,6 +1571,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "call_id": snapshot.callId ?? "",
                 "remote_identity": remoteIdentity ?? "",
             ])
+            endBackgroundTransitionTask(reason: "call-connected")
             persistSnapshot()
             emitCallEvent(state: "in_call", remoteIdentity: remoteIdentity, callId: snapshot.callId, message: snapshot.message)
         case LinphoneCallStateError:
@@ -1600,6 +1628,32 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
     }
 
+    private func beginBackgroundTransitionTask(reason: String) {
+        guard backgroundTaskIdentifier == .invalid else { return }
+
+        backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "IOSNativeSipManager") { [weak self] in
+            self?.appendDiagnosticLog("background_task_expired", [
+                "reason": reason,
+            ])
+            self?.endBackgroundTransitionTask(reason: "expired")
+        }
+
+        appendDiagnosticLog("background_task_started", [
+            "reason": reason,
+        ])
+    }
+
+    private func endBackgroundTransitionTask(reason: String) {
+        guard backgroundTaskIdentifier != .invalid else { return }
+
+        let taskIdentifier = backgroundTaskIdentifier
+        backgroundTaskIdentifier = .invalid
+        UIApplication.shared.endBackgroundTask(taskIdentifier)
+        appendDiagnosticLog("background_task_ended", [
+            "reason": reason,
+        ])
+    }
+
     private func applyDeferredCallActionIfPossible() {
         guard let deferredAction else { return }
         switch deferredAction {
@@ -1619,6 +1673,16 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func reportIncomingCall(payload: VoIPIncomingPayload, completion: (() -> Void)? = nil) {
+        beginBackgroundTransitionTask(reason: "voip-push")
+        snapshot.appForeground = UIApplication.shared.applicationState == .active
+
+        if let core {
+            linphone_core_enter_background(core)
+            appendDiagnosticLog("linphone_enter_background", [
+                "reason": "voip-push",
+            ])
+        }
+
         if isDuplicateIncomingPayload(payload) {
             pendingIncomingPayload = payload
             snapshot.callUUID = payload.uuid.uuidString
@@ -1679,11 +1743,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return
         }
 
-        guard !snapshot.appForeground else {
+        let applicationState = UIApplication.shared.applicationState
+        let isActuallyForeground = applicationState == .active
+        snapshot.appForeground = isActuallyForeground
+
+        guard !isActuallyForeground else {
             appendDiagnosticLog("callkit_skipped_foreground", [
                 "call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
+                "application_state": String(describing: applicationState),
             ])
+            persistSnapshot()
             completion?()
             return
         }
@@ -1719,7 +1789,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private func scheduleIncomingInviteTimeout(for payload: VoIPIncomingPayload) {
         incomingInviteTimeoutTimer?.invalidate()
-        incomingInviteTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { [weak self] _ in
+        incomingInviteTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: false) { [weak self] _ in
             guard let self else { return }
             guard self.snapshot.callState == "incoming" else { return }
             guard self.snapshot.callUUID == payload.uuid.uuidString else { return }

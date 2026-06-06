@@ -200,6 +200,9 @@ class SipService extends ChangeNotifier
       await _syncNativeSnapshot();
       await _consumePendingIosCallActions();
       await _syncCurrentIosVoipPushTokenIfAvailable();
+      if (Platform.isIOS) {
+        await _apiService.sendPendingVoipTokenIfNeeded();
+      }
       _startConnectivityMonitoring();
       _startRegistrationWatchdog();
       _configLoaded = true;
@@ -2166,6 +2169,10 @@ class SipService extends ChangeNotifier
         _persistentSipEnabled = true;
         _shouldStayConnected = true;
         unawaited(_storage.write(key: _enabledKey, value: 'true'));
+        if (Platform.isIOS) {
+          unawaited(_syncCurrentIosVoipPushTokenIfAvailable());
+          unawaited(_apiService.sendPendingVoipTokenIfNeeded());
+        }
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,
@@ -3146,6 +3153,9 @@ class SipService extends ChangeNotifier
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_shouldStayConnected) return;
     if (state == AppLifecycleState.resumed) {
+      if (Platform.isIOS) {
+        unawaited(_apiService.sendPendingVoipTokenIfNeeded());
+      }
       if (_shouldUseNativeSip()) {
         unawaited(_restoreNativeRegistrationIfNeeded('app-resumed'));
       } else {

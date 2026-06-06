@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/calendar_model.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/localization_model.dart';
 import 'package:crm_task_manager/models/task_overdue_history_model.dart';
+import 'package:crm_task_manager/models/timesheet_models.dart';
 import 'package:crm_task_manager/models/workday_status_model.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
@@ -219,6 +220,7 @@ import 'dio_client.dart';
 class ApiService {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);
   static const Set<String> _workdayEnabledSubdomains = {
+    'fingroupcrm-back',
     'tajikistan-back',
     'sham-back',
     'khnodiraaaicloudcom-back',
@@ -757,6 +759,49 @@ class ApiService {
       photo: photo,
       debugLabel: 'endWorkday',
     );
+  }
+
+  Future<TimesheetListResponse> getTimesheet({
+    int page = 1,
+    List<String> userIds = const [],
+  }) async {
+    String path = '/workday?page=$page';
+    if (userIds.isNotEmpty) {
+      final userQuery = userIds
+          .asMap()
+          .entries
+          .map(
+            (entry) =>
+                'users%5B${entry.key}%5D=${Uri.encodeQueryComponent(entry.value)}',
+          )
+          .join('&');
+      path = '$path&$userQuery';
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки табеля');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Неожиданный формат табеля');
+    }
+
+    return TimesheetListResponse.fromJson(decoded);
+  }
+
+  Future<List<TimesheetEntry>> getTimesheetDetails({
+    required int userId,
+    required String month,
+  }) async {
+    final response = await _getRequest('/workday/$userId?month=$month');
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки деталей табеля');
+    }
+
+    final decoded = jsonDecode(response.body);
+    return parseTimesheetDetails(decoded);
   }
 
   Future<WorkdayStatusResponse> _submitWorkdayAction({
@@ -1903,6 +1948,10 @@ class ApiService {
 // ОТЛОЖЕННЫЙ ТОКЕН — ОДИН РАЗ, НАДЁЖНО
   static const String _pendingFcmKey = 'pending_fcm_token';
   static const String _pendingVoipKey = 'pending_ios_voip_token';
+  static const String _voipSyncStatusKey = 'ios_voip_sync_status';
+  static const String _voipSyncAtKey = 'ios_voip_sync_at';
+  static const String _voipSyncHttpCodeKey = 'ios_voip_sync_http_code';
+  static const String _voipSyncErrorKey = 'ios_voip_sync_error';
 
   Future<void> sendDeviceToken(String deviceToken) async {
     try {
@@ -2008,6 +2057,10 @@ class ApiService {
         debugPrint(
             'sendVoipToken: baseUrl не готов → сохраняем как отложенный');
         await _savePendingVoipToken(voipToken);
+        await _saveVoipSyncDiagnostics(
+          status: 'pending_base_url',
+          error: 'Base URL is not initialized',
+        );
         return;
       }
 
@@ -2015,6 +2068,10 @@ class ApiService {
       if (token == null || token.isEmpty) {
         debugPrint('sendVoipToken: Нет авторизационного токена → отложенный');
         await _savePendingVoipToken(voipToken);
+        await _saveVoipSyncDiagnostics(
+          status: 'pending_auth',
+          error: 'Authorization token is missing',
+        );
         return;
       }
 
@@ -2047,13 +2104,26 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint('sendVoipToken: УСПЕШНО отправлен');
         await _removePendingVoipToken();
+        await _saveVoipSyncDiagnostics(
+          status: 'synced',
+          httpCode: response.statusCode,
+        );
       } else {
         debugPrint('sendVoipToken: Ошибка ${response.statusCode} → отложенный');
         await _savePendingVoipToken(voipToken);
+        await _saveVoipSyncDiagnostics(
+          status: 'failed',
+          httpCode: response.statusCode,
+          error: response.body,
+        );
       }
     } catch (e, s) {
       debugPrint('sendVoipToken: Исключение: $e\n$s');
       await _savePendingVoipToken(voipToken);
+      await _saveVoipSyncDiagnostics(
+        status: 'exception',
+        error: e.toString(),
+      );
     } finally {
       debugPrint('═══════════════════════════════════════════════════════════');
     }
@@ -2074,6 +2144,38 @@ class ApiService {
 
   Future<void> clearPendingVoipToken() async {
     await _removePendingVoipToken();
+  }
+
+  Future<void> _saveVoipSyncDiagnostics({
+    required String status,
+    int? httpCode,
+    String? error,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_voipSyncStatusKey, status);
+    await prefs.setInt(_voipSyncAtKey, DateTime.now().millisecondsSinceEpoch);
+    if (httpCode != null) {
+      await prefs.setInt(_voipSyncHttpCodeKey, httpCode);
+    } else {
+      await prefs.remove(_voipSyncHttpCodeKey);
+    }
+    if (error != null && error.trim().isNotEmpty) {
+      await prefs.setString(_voipSyncErrorKey, error.trim());
+    } else {
+      await prefs.remove(_voipSyncErrorKey);
+    }
+  }
+
+  Future<Map<String, dynamic>> getVoipSyncDiagnostics() async {
+    final prefs = await SharedPreferences.getInstance();
+    final pendingToken = prefs.getString(_pendingVoipKey);
+    return <String, dynamic>{
+      'status': prefs.getString(_voipSyncStatusKey) ?? 'unknown',
+      'syncedAt': prefs.getInt(_voipSyncAtKey),
+      'httpCode': prefs.getInt(_voipSyncHttpCodeKey),
+      'error': prefs.getString(_voipSyncErrorKey),
+      'hasPendingToken': pendingToken != null && pendingToken.isNotEmpty,
+    };
   }
 
   Future<void> sendPendingVoipTokenIfNeeded() async {
@@ -11854,12 +11956,12 @@ class ApiService {
     if (recordPath.isEmpty) return '';
 
     // Если путь уже содержит полный URL, возвращаем его
-    if (recordPath.startsWith('') || recordPath.startsWith('')) {
+    if (recordPath.startsWith('http://') || recordPath.startsWith('https://')) {
       return recordPath;
     }
 
     // Убираем '/api' из baseUrl и добавляем путь к записи
-    String cleanBaseUrl = baseUrl?.replaceAll('', '') ?? '';
+    String cleanBaseUrl = baseUrl?.replaceAll('/api', '') ?? '';
     return recordPath.startsWith('/call-recordings/')
         ? '$cleanBaseUrl$recordPath'
         : '$cleanBaseUrl/storage/$recordPath';
@@ -14784,6 +14886,69 @@ class ApiService {
           'Device': 'mobile',
         },
         body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> createPurchaseDocument({
+    required String date,
+    required int storageId,
+    int? supplierId,
+    required String comment,
+    required double paidAmount,
+    required double debtAmount,
+    required List<Map<String, dynamic>> documentGoods,
+    required int organizationId,
+    required int salesFunnelId,
+    bool approve = false,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) throw 'Токен не найден';
+
+      final path = await _appendQueryParams('/purchase-documents');
+      final uri = Uri.parse('$baseUrl$path');
+
+      final payload = <String, dynamic>{
+        'date': date,
+        'storage_id': storageId,
+        'comment': comment,
+        'counterparty_id': supplierId ?? 0,
+        'supplier_id': supplierId ?? 0,
+        'document_goods': documentGoods,
+        'organization_id': organizationId,
+        'sales_funnel_id': salesFunnelId,
+        'approve': approve,
+        'payment_mode': debtAmount > 0 ? 'debt' : 'payment',
+        'paid_amount': paidAmount,
+        'debt_amount': debtAmount,
+        'document_type': 'purchase',
+      };
+
+      if (kDebugMode) {
+        debugPrint(
+          'ApiService: createPurchaseDocument - payload: ${jsonEncode(payload)}',
+        );
+      }
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Device': 'mobile',
+        },
+        body: jsonEncode(payload),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

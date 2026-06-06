@@ -83,6 +83,31 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 placeholder: l10n.translate('sip_port'),
                                 keyboardType: TextInputType.number,
                               ),
+                              if (defaultTargetPlatform ==
+                                  TargetPlatform.iOS) ...[
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: CupertinoButton(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 14,
+                                    ),
+                                    color: const Color(0xFFE9F2FF),
+                                    borderRadius: BorderRadius.circular(14),
+                                    onPressed: () async {
+                                      await _showIosDiagnosticsSheet(context);
+                                    },
+                                    child: const Text(
+                                      'iPhone SIP Диагностика',
+                                      style: TextStyle(
+                                        color: Color(0xFF0A84FF),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 14),
                               Row(
                                 children: [
@@ -183,6 +208,162 @@ extension _SipSettingsSheetExtension on _SipScreenState {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE3E8F4)),
       ),
+    );
+  }
+
+  Future<void> _showIosDiagnosticsSheet(BuildContext context) async {
+    final voipToken = await _sipRuntime.getVoipPushToken();
+    final logs = await _sipRuntime.getNativeDiagnosticLogs();
+    final backendSync = await _apiService.getVoipSyncDiagnostics();
+
+    final tokenText = (voipToken == null || voipToken.trim().isEmpty)
+        ? 'VoIP token: MISSING'
+        : 'VoIP token: ${voipToken.trim()}';
+    final registrationText =
+        'Registration: ${_sipRuntime.state.registrationStatus.name}';
+    final callText = 'Call: ${_sipRuntime.state.callStatus.name}';
+    final syncedAtMillis = backendSync['syncedAt'] as int?;
+    final syncedAt = syncedAtMillis == null
+        ? 'unknown'
+        : DateTime.fromMillisecondsSinceEpoch(syncedAtMillis).toLocal().toIso8601String();
+    final backendText =
+        'Backend sync: status=${backendSync['status']}, http=${backendSync['httpCode'] ?? 'n/a'}, pending=${backendSync['hasPendingToken']}, at=$syncedAt';
+    final backendError = backendSync['error']?.toString();
+
+    final logLines = logs.isEmpty
+        ? <String>['Native logs: empty']
+        : logs.take(40).map((entry) {
+            final timestamp =
+                DateTime.fromMillisecondsSinceEpoch(
+                  (((entry['timestamp'] as num?) ?? 0) * 1000).round(),
+                ).toLocal();
+            final event = entry['event']?.toString() ?? 'unknown';
+            final details = (entry['details'] as Map?)
+                    ?.map((key, value) => MapEntry('$key', '$value'))
+                    .entries
+                    .map((item) => '${item.key}=${item.value}')
+                    .join(', ') ??
+                '';
+            return '${timestamp.toIso8601String()} | $event${details.isEmpty ? '' : ' | $details'}';
+          }).toList(growable: false);
+
+    final report = [
+      'iOS SIP Diagnostics',
+      registrationText,
+      callText,
+      tokenText,
+      backendText,
+      if (backendError != null && backendError.trim().isNotEmpty)
+        'Backend error: $backendError',
+      '',
+      ...logLines,
+    ].join('\n');
+
+    if (!context.mounted) return;
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (context) {
+        return Material(
+          color: Colors.transparent,
+          child: SafeArea(
+            top: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: 560,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8F9FC),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD5DAE8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'iPhone SIP Диагностика',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE3E8F4)),
+                          ),
+                          child: SelectableText(
+                            report,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1.45,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CupertinoButton(
+                            color: const Color(0xFF0A84FF),
+                            borderRadius: BorderRadius.circular(14),
+                            onPressed: () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: report),
+                              );
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                              _showSipSnackBar('Диагностика скопирована');
+                            },
+                            child: const Text('Копировать'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: CupertinoButton(
+                            color: const Color(0xFFFF3B30),
+                            borderRadius: BorderRadius.circular(14),
+                            onPressed: () async {
+                              await _sipRuntime.clearNativeDiagnosticLogs();
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                              _showSipSnackBar('Диагностика очищена');
+                            },
+                            child: const Text('Очистить'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

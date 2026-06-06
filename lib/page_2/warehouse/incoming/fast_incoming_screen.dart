@@ -1,35 +1,40 @@
 import 'dart:async';
 
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_filter_sheet.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_payment_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_product_card.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
-const _rmkLoading = Center(
+const _fastIncomingLoading = Center(
   child: PlayStoreImageLoading(
     size: 80,
     duration: Duration(milliseconds: 1000),
   ),
 );
 
-class RmkScreen extends StatefulWidget {
-  const RmkScreen({super.key});
+class FastIncomingScreen extends StatefulWidget {
+  const FastIncomingScreen({super.key});
 
   @override
-  State<RmkScreen> createState() => _RmkScreenState();
+  State<FastIncomingScreen> createState() => _FastIncomingScreenState();
 }
 
-class _RmkScreenState extends State<RmkScreen> {
+class _FastIncomingScreenState extends State<FastIncomingScreen> {
   final RmkRepository _repository = RmkRepository();
+  final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
@@ -45,6 +50,7 @@ class _RmkScreenState extends State<RmkScreen> {
   bool _isLoadingStorages = false;
   bool _hasCompletedInitialLoad = false;
   bool _isSearching = false;
+  bool _hasApprovePermission = false;
   String _currencyTitle = 'TJS';
 
   @override
@@ -53,6 +59,7 @@ class _RmkScreenState extends State<RmkScreen> {
     _scrollController.addListener(_onScroll);
     unawaited(_loadCurrency());
     unawaited(_loadStoragesAndSync());
+    unawaited(_checkApprovePermission());
   }
 
   @override
@@ -88,6 +95,18 @@ class _RmkScreenState extends State<RmkScreen> {
     });
   }
 
+  Future<void> _checkApprovePermission() async {
+    try {
+      final hasPermission =
+          await _apiService.hasPermission('income_document.approve');
+      if (!mounted) return;
+      setState(() => _hasApprovePermission = hasPermission);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _hasApprovePermission = false);
+    }
+  }
+
   Future<void> _runSync({bool resetCatalogCache = false}) async {
     final storageId = _selectedStorage?.id;
     if (_isSyncing || storageId == null) return;
@@ -120,7 +139,7 @@ class _RmkScreenState extends State<RmkScreen> {
       if (selectedStorage != null) {
         await _runSync(resetCatalogCache: true);
       }
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       showCustomSnackBar(
         context: context,
@@ -354,19 +373,11 @@ class _RmkScreenState extends State<RmkScreen> {
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     final items = <_RmkCategoryStatusItem>[
-      const _RmkCategoryStatusItem(
-        id: null,
-        title: 'Все',
-      ),
+      const _RmkCategoryStatusItem(id: null, title: 'Все'),
     ];
 
     void appendNode(RmkCategory category) {
-      items.add(
-        _RmkCategoryStatusItem(
-          id: category.id,
-          title: category.name,
-        ),
-      );
+      items.add(_RmkCategoryStatusItem(id: category.id, title: category.name));
 
       final children = categories
           .where((item) => item.parentId == category.id)
@@ -385,10 +396,27 @@ class _RmkScreenState extends State<RmkScreen> {
     return items;
   }
 
-  Future<void> _finishSale(List<RmkCartItem> items) async {
+  Future<void> _finishIncoming(List<RmkCartItem> items) async {
     if (items.isEmpty || _isSubmitting) return;
-    final storageId = _selectedStorage?.id;
-    if (storageId == null) {
+    final finish = await Navigator.push<_FastIncomingFinishResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FastIncomingFinishScreen(
+          total: items.fold<double>(
+            0,
+            (sum, item) =>
+                sum + (item.customTotal ?? item.quantity * item.price),
+          ),
+          storages: _storages,
+          selectedStorage: _selectedStorage,
+          currencyTitle: _currencyTitle,
+        ),
+      ),
+    );
+    if (!mounted || finish == null) return;
+
+    final storage = finish.storage ?? _selectedStorage;
+    if (storage == null) {
       showCustomSnackBar(
         context: context,
         message: 'Выберите склад',
@@ -397,35 +425,50 @@ class _RmkScreenState extends State<RmkScreen> {
       return;
     }
 
-    final total = items.fold<double>(
-      0,
-      (sum, item) => sum + (item.customTotal ?? item.quantity * item.price),
-    );
-    final payment = await Navigator.push<RmkPaymentResult>(
-      context,
-      MaterialPageRoute(builder: (_) => RmkPaymentScreen(total: total)),
-    );
-    if (!mounted || payment == null) return;
-
     setState(() => _isSubmitting = true);
     try {
-      final result = await _repository.submitSale(
-        items,
-        storageId: storageId,
-        paymentMode: payment.mode.value,
-        paymentMethod: payment.method?.value,
-        paidAmount: payment.paidAmount,
-        debtAmount: payment.debtAmount,
-        leadId: payment.leadId,
+      final goodsPayload = <Map<String, dynamic>>[];
+      for (final item in items) {
+        final unitId = await _repository.requiredUnitIdForCartItem(item);
+        goodsPayload.add({
+          'good_id': item.goodId,
+          'quantity': item.quantity,
+          'price': item.price,
+          'unit_id': unitId,
+          'sum': item.customTotal ?? item.quantity * item.price,
+        });
+      }
+
+      final isoDate =
+          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(DateTime.now());
+
+      await _apiService.createPurchaseDocument(
+        date: isoDate,
+        storageId: storage.id,
+        supplierId: finish.supplier?.id,
+        comment: 'PURCHASE',
+        paidAmount: finish.paidAmount,
+        debtAmount: finish.debtAmount,
+        documentGoods: goodsPayload,
+        organizationId: 1,
+        salesFunnelId: 1,
+        approve: _hasApprovePermission,
       );
+
+      await _repository.clearCart();
       if (!mounted) return;
 
       showCustomSnackBar(
         context: context,
-        message: result.sentToServer
-            ? 'Продажа успешно создана'
-            : (result.error ?? 'Ошибка при создании продажи'),
-        isSuccess: result.sentToServer,
+        message: 'Покупка товаров создана',
+        isSuccess: true,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showCustomSnackBar(
+        context: context,
+        message: error.toString(),
+        isSuccess: false,
       );
     } finally {
       if (mounted) {
@@ -441,6 +484,7 @@ class _RmkScreenState extends State<RmkScreen> {
         builder: (_) => RmkQuantityScreen(
           good: good,
           repository: _repository,
+          enforceStockLimit: false,
         ),
       ),
     );
@@ -644,7 +688,7 @@ class _RmkScreenState extends State<RmkScreen> {
                 onChanged: _onSearchChanged,
               )
             : const Text(
-                'РМК',
+                'Покупка товаров',
                 style: TextStyle(
                   color: Color(0xff1E2E52),
                   fontFamily: 'Gilroy',
@@ -748,7 +792,7 @@ class _RmkScreenState extends State<RmkScreen> {
                           isLoading: _isSubmitting,
                           currencyTitle: _currencyTitle,
                           onOpenItems: () => _openSelectedItemsSheet(cartItems),
-                          onTap: () => _finishSale(cartItems),
+                          onTap: () => _finishIncoming(cartItems),
                         ),
                         const SizedBox(height: 10),
                         _CategoryStatusBar(
@@ -789,7 +833,7 @@ class _RmkScreenState extends State<RmkScreen> {
                               if (_isCatalogLoading && goods.isEmpty) {
                                 return const SliverFillRemaining(
                                   hasScrollBody: false,
-                                  child: _rmkLoading,
+                                  child: _fastIncomingLoading,
                                 );
                               }
 
@@ -870,9 +914,8 @@ class _RmkScreenState extends State<RmkScreen> {
                                         ),
                                         child: PlayStoreImageLoading(
                                           size: 48,
-                                          duration: Duration(
-                                            milliseconds: 1000,
-                                          ),
+                                          duration:
+                                              Duration(milliseconds: 1000),
                                         ),
                                       ),
                                     ),
@@ -892,6 +935,514 @@ class _RmkScreenState extends State<RmkScreen> {
       ),
     );
   }
+}
+
+class FastIncomingFinishScreen extends StatefulWidget {
+  const FastIncomingFinishScreen({
+    super.key,
+    required this.total,
+    required this.storages,
+    required this.selectedStorage,
+    required this.currencyTitle,
+  });
+
+  final double total;
+  final List<WareHouse> storages;
+  final WareHouse? selectedStorage;
+  final String currencyTitle;
+
+  @override
+  State<FastIncomingFinishScreen> createState() =>
+      _FastIncomingFinishScreenState();
+}
+
+class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
+  late final TextEditingController _paidAmountController;
+  Supplier? _selectedSupplier;
+  WareHouse? _selectedStorage;
+  String? _supplierErrorText;
+  String? _storageErrorText;
+
+  double get _paidAmount {
+    final parsed = double.tryParse(
+      _paidAmountController.text.replaceAll(',', '.'),
+    );
+    return (parsed ?? 0).clamp(0, widget.total).toDouble();
+  }
+
+  double get _debtAmount => (widget.total - _paidAmount).clamp(0, widget.total);
+
+  bool get _requiresSupplier => _debtAmount > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStorage = widget.selectedStorage ??
+        (widget.storages.length == 1 ? widget.storages.first : null);
+    _paidAmountController =
+        TextEditingController(text: _compactNumber(widget.total));
+    _paidAmountController.addListener(_normalizePaidAmountInput);
+  }
+
+  @override
+  void dispose() {
+    _paidAmountController.removeListener(_normalizePaidAmountInput);
+    _paidAmountController.dispose();
+    super.dispose();
+  }
+
+  void _normalizePaidAmountInput() {
+    final text = _paidAmountController.text;
+    final normalized = _normalizeCalculatorInput(text);
+    if (text == normalized) return;
+
+    _paidAmountController.value = TextEditingValue(
+      text: normalized,
+      selection: TextSelection.collapsed(offset: normalized.length),
+    );
+  }
+
+  String _normalizeCalculatorInput(String value) {
+    if (value.isEmpty) return value;
+    if (value == '.') return '0.';
+    if (value.startsWith('.')) return '0$value';
+
+    if (value.contains('.')) {
+      final parts = value.split('.');
+      final integerPart = parts.first.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+      final normalizedIntegerPart = integerPart.isEmpty ? '0' : integerPart;
+      return '$normalizedIntegerPart.${parts.sublist(1).join()}';
+    }
+
+    final normalized = value.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    return normalized.isEmpty ? '0' : normalized;
+  }
+
+  Future<void> _pickStorage() async {
+    final selected = await showModalBottomSheet<WareHouse>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xffD7DEE9),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Склад',
+                    style: TextStyle(
+                      color: Color(0xff1E2E52),
+                      fontFamily: 'Gilroy',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  itemCount: widget.storages.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final storage = widget.storages[index];
+                    final isSelected = storage.id == _selectedStorage?.id;
+                    return Material(
+                      color: isSelected
+                          ? const Color(0xffEEF4FF)
+                          : const Color(0xffF4F7FD),
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => Navigator.pop(context, storage),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  storage.name,
+                                  style: const TextStyle(
+                                    color: Color(0xff1E2E52),
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_rounded,
+                                  color: Color(0xff1E2E52),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) return;
+    setState(() {
+      _selectedStorage = selected;
+      _storageErrorText = null;
+    });
+  }
+
+  void _submit() {
+    if (widget.storages.length > 1 && _selectedStorage == null) {
+      setState(() => _storageErrorText = 'Выберите склад');
+      return;
+    }
+    if (_requiresSupplier && _selectedSupplier == null) {
+      setState(() => _supplierErrorText = 'Поле обязательно для заполнения');
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      _FastIncomingFinishResult(
+        paidAmount: _paidAmount,
+        debtAmount: _debtAmount,
+        supplier: _selectedSupplier,
+        storage: _selectedStorage,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: const Color(0xffF8F9FB),
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'Готово',
+            style: TextStyle(
+              color: Color(0xff1E2E52),
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  children: [
+                    _FinishSummaryRow(
+                      title: 'Всего:',
+                      value:
+                          '${_compactNumber(widget.total)} ${widget.currencyTitle}',
+                      isPrimary: true,
+                    ),
+                    const SizedBox(height: 12),
+                    _FinishSummaryRow(
+                      title: 'Долг:',
+                      value:
+                          '${_compactNumber(_debtAmount)} ${widget.currencyTitle}',
+                    ),
+                    const SizedBox(height: 18),
+                    _FinishAmountField(
+                      controller: _paidAmountController,
+                      currencyTitle: widget.currencyTitle,
+                      onChanged: () {
+                        setState(() {
+                          if (!_requiresSupplier) {
+                            _supplierErrorText = null;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    if (widget.storages.length > 1) ...[
+                      _FinishSelectField(
+                        label: 'Склад',
+                        value: _selectedStorage?.name,
+                        hint: 'Выберите склад',
+                        onTap: _pickStorage,
+                      ),
+                      if (_storageErrorText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _storageErrorText!,
+                          style: const TextStyle(
+                            color: Color(0xffEF4444),
+                            fontFamily: 'Gilroy',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                    ],
+                    _FastSupplierSelector(
+                      selectedSupplier: _selectedSupplier,
+                      showError: _supplierErrorText != null,
+                      errorText: _supplierErrorText,
+                      onChanged: (supplier) {
+                        setState(() {
+                          _selectedSupplier = supplier;
+                          _supplierErrorText = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  10,
+                  16,
+                  MediaQuery.paddingOf(context).bottom + 12,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff1E2E52),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _submit,
+                    child: const Text(
+                      'Создать приход',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FastSupplierSelector extends StatefulWidget {
+  const _FastSupplierSelector({
+    required this.selectedSupplier,
+    required this.onChanged,
+    this.showError = false,
+    this.errorText,
+  });
+
+  final Supplier? selectedSupplier;
+  final ValueChanged<Supplier?> onChanged;
+  final bool showError;
+  final String? errorText;
+
+  @override
+  State<_FastSupplierSelector> createState() => _FastSupplierSelectorState();
+}
+
+class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
+  List<Supplier> _loadedSuppliers = [];
+
+  Future<CustomDropdownPaginatedResponse<Supplier>> _searchSuppliers(
+    String query,
+    int page,
+  ) async {
+    final items = await _apiService.getSupplier(
+      search: query,
+      page: page,
+      perPage: _pageSize,
+    );
+    if (mounted) {
+      setState(() {
+        _loadedSuppliers = page == 1 ? items : [..._loadedSuppliers, ...items];
+      });
+    }
+    return CustomDropdownPaginatedResponse<Supplier>(
+      items: items,
+      hasMore: items.length >= _pageSize,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = widget.selectedSupplier;
+    final borderColor =
+        widget.showError ? const Color(0xffE45454) : const Color(0xffF4F7FD);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Поставщик',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<Supplier>.searchRequestPaginated(
+          key: ValueKey(selected?.id),
+          paginatedRequest: _searchSuppliers,
+          futureRequestDelay: const Duration(milliseconds: 300),
+          closeDropDownOnClearFilterSearch: true,
+          items: selected != null
+              ? <Supplier>[
+                  selected,
+                  ..._loadedSuppliers.where((item) => item.id != selected.id),
+                ]
+              : _loadedSuppliers,
+          searchHintText: 'Поиск',
+          overlayHeight: 400,
+          excludeSelected: false,
+          initialItem: selected,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(color: borderColor, width: 1.5),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder: Border.all(color: borderColor, width: 1.5),
+            expandedBorderRadius: BorderRadius.circular(12),
+            searchFieldDecoration: const SearchFieldDecoration(
+              autoFocus: false,
+            ),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                    color: Color(0xff1E2E52),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+                if ((item.phone ?? '').trim().isNotEmpty)
+                  Text(
+                    item.phone!.trim(),
+                    style: const TextStyle(
+                      color: Color(0xff99A4BA),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
+              ],
+            );
+          },
+          headerBuilder: (context, item, enabled) {
+            return Text(
+              item.name,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          hintBuilder: (context, hint, enabled) {
+            return const Text(
+              'Выберите поставщика',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: Color(0xff1E2E52),
+              ),
+            );
+          },
+          noResultFoundBuilder: (context, text) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Ничего не найдено',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+              ),
+            );
+          },
+          onChanged: widget.onChanged,
+        ),
+        if (widget.showError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              widget.errorText ?? 'Поле обязательно для заполнения',
+              style: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xffE45454),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _FastIncomingFinishResult {
+  const _FastIncomingFinishResult({
+    required this.paidAmount,
+    required this.debtAmount,
+    this.supplier,
+    this.storage,
+  });
+
+  final double paidAmount;
+  final double debtAmount;
+  final Supplier? supplier;
+  final WareHouse? storage;
 }
 
 class _StoragePickerTile extends StatelessWidget {
@@ -1516,6 +2067,189 @@ class _AppBarSearchField extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FinishSummaryRow extends StatelessWidget {
+  const _FinishSummaryRow({
+    required this.title,
+    required this.value,
+    this.isPrimary = false,
+  });
+
+  final String title;
+  final String value;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color:
+                isPrimary ? const Color(0xff1E2E52) : const Color(0xff718096),
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xff1E2E52),
+            fontFamily: 'Gilroy',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FinishAmountField extends StatelessWidget {
+  const _FinishAmountField({
+    required this.controller,
+    required this.currencyTitle,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String currencyTitle;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xffE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Оплачено',
+              style: TextStyle(
+                color: Color(0xff718096),
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 170,
+            child: TextField(
+              controller: controller,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+              ],
+              textAlign: TextAlign.right,
+              onChanged: (_) => onChanged(),
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                suffixText: currencyTitle,
+                suffixStyle: const TextStyle(
+                  color: Color(0xff1E2E52),
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinishSelectField extends StatelessWidget {
+  const _FinishSelectField({
+    required this.label,
+    required this.value,
+    required this.hint,
+    required this.onTap,
+  });
+
+  final String label;
+  final String? value;
+  final String hint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Material(
+          color: const Color(0xffF4F7FD),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(minHeight: 56),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      value ?? hint,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xff99A4BA),
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _compactNumber(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toInt().toString();
+  }
+  return value.toStringAsFixed(2);
 }
 
 String _formatMoney(double value) {

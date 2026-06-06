@@ -10,10 +10,12 @@ class RmkQuantityScreen extends StatefulWidget {
     super.key,
     required this.good,
     required this.repository,
+    this.enforceStockLimit = true,
   });
 
   final RmkGood good;
   final RmkRepository repository;
+  final bool enforceStockLimit;
 
   @override
   State<RmkQuantityScreen> createState() => _RmkQuantityScreenState();
@@ -88,7 +90,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
 
   Future<void> _saveAndPop() async {
     if (_isSaving) return;
-    if (_quantity > _good.quantity) {
+    if (widget.enforceStockLimit && _quantity > _good.quantity) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -129,6 +131,12 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     });
   }
 
+  void _clearCurrentField() {
+    setState(() {
+      _setText(_currentController, '');
+    });
+  }
+
   TextEditingController get _currentController {
     switch (_activeField) {
       case _EditField.quantity:
@@ -145,12 +153,13 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     final selection = controller.selection;
     final start = selection.isValid ? selection.start : text.length;
     final end = selection.isValid ? selection.end : text.length;
-    final nextText = text.replaceRange(start, end, value);
+    final rawNextText = text.replaceRange(start, end, value);
+    final nextText = _normalizeNumberInput(rawNextText);
     if (!_isValidNumberInput(nextText)) return;
 
     controller.value = TextEditingValue(
       text: nextText,
-      selection: TextSelection.collapsed(offset: start + value.length),
+      selection: TextSelection.collapsed(offset: nextText.length),
     );
   }
 
@@ -178,6 +187,22 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     if (value.isEmpty) return true;
     if (value == '.') return true;
     return RegExp(r'^\d*\.?\d*$').hasMatch(value);
+  }
+
+  String _normalizeNumberInput(String value) {
+    if (value.isEmpty) return value;
+    if (value == '.') return '0.';
+    if (value.startsWith('.')) return '0$value';
+
+    if (value.contains('.')) {
+      final parts = value.split('.');
+      final integerPart = parts.first.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+      final normalizedIntegerPart = integerPart.isEmpty ? '0' : integerPart;
+      return '$normalizedIntegerPart.${parts.sublist(1).join()}';
+    }
+
+    final normalized = value.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    return normalized.isEmpty ? '0' : normalized;
   }
 
   void _setText(TextEditingController controller, String value) {
@@ -281,7 +306,12 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
                 onSelect: _selectField,
                 onChanged: _handleFieldChanged,
               ),
-              Expanded(child: _NumberPad(onTap: _tapKey)),
+              Expanded(
+                child: _NumberPad(
+                  onTap: _tapKey,
+                  onBackspaceLongPress: _clearCurrentField,
+                ),
+              ),
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -708,9 +738,13 @@ class _NumberField extends StatelessWidget {
 }
 
 class _NumberPad extends StatelessWidget {
-  const _NumberPad({required this.onTap});
+  const _NumberPad({
+    required this.onTap,
+    required this.onBackspaceLongPress,
+  });
 
   final ValueChanged<String> onTap;
+  final VoidCallback onBackspaceLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -728,6 +762,7 @@ class _NumberPad extends StatelessWidget {
         return _KeyButton(
           label: key,
           onTap: () => onTap(key),
+          onLongPress: key == '⌫' ? onBackspaceLongPress : null,
         );
       },
     );
@@ -738,10 +773,12 @@ class _KeyButton extends StatelessWidget {
   const _KeyButton({
     required this.label,
     required this.onTap,
+    this.onLongPress,
   });
 
   final String label;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -749,6 +786,7 @@ class _KeyButton extends StatelessWidget {
       color: Colors.white,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xffE5EAF2), width: 0.5),

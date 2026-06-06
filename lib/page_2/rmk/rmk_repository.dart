@@ -438,6 +438,10 @@ class RmkRepository {
     throw Exception('У товара "${item.name}" не найдена единица измерения');
   }
 
+  Future<int> requiredUnitIdForCartItem(RmkCartItem item) {
+    return _requiredUnitIdForCartItem(item);
+  }
+
   Future<int?> _unitIdForGood(int goodId) async {
     final good = await (_db.select(_db.rmkGoods)
           ..where((tbl) => tbl.id.equals(goodId)))

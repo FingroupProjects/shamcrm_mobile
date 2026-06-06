@@ -7,6 +7,7 @@ import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/fast_incoming_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart';
@@ -201,6 +202,14 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     if (_hasIncomeDocument) {
       allDocuments.add(
         WarehouseDocument(
+          keyName: 'purchase_goods',
+          title: 'Покупка товаров',
+          icon: Icons.flash_on_outlined,
+          color: docColor,
+        ),
+      );
+      allDocuments.add(
+        WarehouseDocument(
           keyName: 'income_goods',
           title: AppLocalizations.of(context)!.translate('income_goods') ??
               'Приход',
@@ -326,7 +335,12 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   void _navigateToDocument(WarehouseDocument document) {
-    if (document.keyName == 'income_goods') {
+    if (document.keyName == 'purchase_goods') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const FastIncomingScreen()),
+      );
+    } else if (document.keyName == 'income_goods') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => IncomingScreen()),

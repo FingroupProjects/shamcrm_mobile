@@ -19,54 +19,91 @@ extension _SipMainViewsExtension on _SipScreenState {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
-      child: Row(
+      child: Column(
         children: [
-          _buildTopIconButton(
-            icon: CupertinoIcons.back,
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Телефония',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
-                    letterSpacing: -0.8,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
+          Row(
+            children: [
+              _buildTopIconButton(
+                icon: CupertinoIcons.back,
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w500,
-                        ),
+                    const Text(
+                      'Телефония',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                        letterSpacing: -0.8,
                       ),
                     ),
-                    if (showCompactStatus) ...[
-                      const SizedBox(width: 8),
-                      _buildRegisteredIndicator(),
-                    ],
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF9CA3AF),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (showCompactStatus) ...[
+                          const SizedBox(width: 8),
+                          _buildRegisteredIndicator(),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
+              _buildTopIconButton(
+                icon: CupertinoIcons.gear_alt_fill,
+                onPressed: _showSettingsSheet,
+              ),
+            ],
+          ),
+          if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7E8),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFF5D8A8)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    CupertinoIcons.exclamationmark_triangle_fill,
+                    size: 16,
+                    color: Color(0xFFC27A00),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'На iPhone не закрывайте приложение свайпом из недавних. Для входящих держите его просто свернутым.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8A5A00),
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          _buildTopIconButton(
-            icon: CupertinoIcons.gear_alt_fill,
-            onPressed: _showSettingsSheet,
-          ),
+          ],
         ],
       ),
     );

@@ -17,6 +17,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -51,6 +52,8 @@ class SipScreen extends StatefulWidget {
 class _SipScreenState extends State<SipScreen>
     with SingleTickerProviderStateMixin {
   static final SipService _sipService = SipService();
+  static const String _iosForceQuitWarningPromptedKey =
+      'sip_ios_force_quit_warning_prompted_v1';
 
   SipService get _sipRuntime => _sipService;
   final ApiService _apiService = ApiService();

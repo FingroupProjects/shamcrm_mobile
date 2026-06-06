@@ -40,6 +40,16 @@ import WidgetKit
         nativeSipManager?.updateAppVisibility(isForeground: true)
     }
 
+    override func applicationDidEnterBackground(_ application: UIApplication) {
+        nativeSipManager?.applicationDidEnterBackground()
+        super.applicationDidEnterBackground(application)
+    }
+
+    override func applicationWillEnterForeground(_ application: UIApplication) {
+        nativeSipManager?.applicationWillEnterForeground()
+        super.applicationWillEnterForeground(application)
+    }
+
     override func applicationWillResignActive(_ application: UIApplication) {
         nativeSipManager?.updateAppVisibility(isForeground: false)
         super.applicationWillResignActive(application)

@@ -151,6 +151,37 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       if (!mounted) return;
       _showSipSnackBar(notice.$1, isError: notice.$2);
     });
+
+    if (state.registrationStatus == SipRegistrationUiStatus.registered &&
+        previousStatus != SipRegistrationUiStatus.registered) {
+      unawaited(_maybeShowIosForceQuitWarning());
+    }
+  }
+
+  Future<void> _maybeShowIosForceQuitWarning() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final alreadyPrompted =
+        prefs.getBool(_SipScreenState._iosForceQuitWarningPromptedKey) ??
+            false;
+    if (alreadyPrompted) {
+      return;
+    }
+
+    await prefs.setBool(
+      _SipScreenState._iosForceQuitWarningPromptedKey,
+      true,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showSipSnackBar(
+        'На iPhone не закрывайте телефонию свайпом из недавних, иначе входящие могут не прийти.',
+      );
+    });
   }
 
   (String, bool)? _resolveRegistrationNotice(

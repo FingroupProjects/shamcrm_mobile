@@ -143,7 +143,9 @@ import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
 import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -161,53 +163,58 @@ final GlobalKey<NavigatorState> navigatorKey = ApiService.navigatorKey;
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     ApiService.scaffoldMessengerKey;
 
-void main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
 
-    final apiService = ApiService();
-    final authService = AuthService();
+      final apiService = ApiService();
+      final authService = AuthService();
 
-    await _safeInitializeOfflineRuntime();
-    await _safeInitializeFirebase();
+      await _safeInitializeOfflineRuntime();
+      await _safeInitializeFirebase();
 
-    final sessionValidation = await _validateApplicationSession(apiService);
+      final sessionValidation = await _validateApplicationSession(apiService);
 
-    String? token;
-    String? pin;
-    bool isDomainChecked = false;
+      String? token;
+      String? pin;
+      bool isDomainChecked = false;
 
-    if (sessionValidation.isValid) {
-      token = await apiService.getToken();
-      pin = await authService.getPin();
-      isDomainChecked = await apiService.isDomainChecked();
+      if (sessionValidation.isValid) {
+        token = await apiService.getToken();
+        pin = await authService.getPin();
+        isDomainChecked = await apiService.isDomainChecked();
 
-      if (isDomainChecked) {
-        await _safeInitializeApiService(apiService);
-        _safeRegisterOutboxExecutors(apiService);
+        if (isDomainChecked) {
+          await _safeInitializeApiService(apiService);
+          _safeRegisterOutboxExecutors(apiService);
+        }
+      } else {
+        await _clearAllApplicationData(apiService, authService);
       }
-    } else {
-      await _clearAllApplicationData(apiService, authService);
-    }
 
-    final initialMessage = await _safeLoadInitialMessage();
-    _safeConfigureSystemUi();
-    final savedLocale = await _safeLoadLocale();
-    runApp(MyApp(
-      apiService: apiService,
-      authService: authService,
-      isDomainChecked: isDomainChecked && sessionValidation.isValid,
-      token: sessionValidation.isValid ? token : null,
-      pin: sessionValidation.isValid ? pin : null,
-      initialLocale: savedLocale,
-      initialMessage: initialMessage,
-      sessionValid: sessionValidation.isValid,
-    ));
-  } catch (e, stackTrace) {
-    debugPrint('main: startup error: $e');
-    debugPrint('main: startup stackTrace: $stackTrace');
-    runApp(ErrorApp(error: e.toString()));
-  }
+      final initialMessage = await _safeLoadInitialMessage();
+      _safeConfigureSystemUi();
+      final savedLocale = await _safeLoadLocale();
+      runApp(MyApp(
+        apiService: apiService,
+        authService: authService,
+        isDomainChecked: isDomainChecked && sessionValidation.isValid,
+        token: sessionValidation.isValid ? token : null,
+        pin: sessionValidation.isValid ? pin : null,
+        initialLocale: savedLocale,
+        initialMessage: initialMessage,
+        sessionValid: sessionValidation.isValid,
+      ));
+    } catch (e, stackTrace) {
+      await _recordFatalError(e, stackTrace, reason: 'startup');
+      debugPrint('main: startup error: $e');
+      debugPrint('main: startup stackTrace: $stackTrace');
+      runApp(ErrorApp(error: e.toString()));
+    }
+  }, (error, stackTrace) async {
+    await _recordFatalError(error, stackTrace, reason: 'zone');
+  });
 }
 
 Future<void> _safeInitializeOfflineRuntime() async {
@@ -222,6 +229,7 @@ Future<void> _safeInitializeOfflineRuntime() async {
 Future<void> _safeInitializeFirebase() async {
   try {
     await _initializeFirebase().timeout(const Duration(seconds: 8));
+    await _initializeCrashlytics();
     FirebaseApi.ensureBackgroundHandlerRegistered();
   } catch (e, stackTrace) {
     debugPrint('main: Firebase initialize error: $e');
@@ -325,6 +333,39 @@ Future<void> _initializeFirebase() async {
       }
     }
   }
+}
+
+Future<void> _initializeCrashlytics() async {
+  if (Firebase.apps.isEmpty) return;
+
+  FlutterError.onError = (errorDetails) {
+    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
+  await FirebaseCrashlytics.instance
+      .setCrashlyticsCollectionEnabled(!kDebugMode);
+}
+
+Future<void> _recordFatalError(
+  Object error,
+  StackTrace stackTrace, {
+  required String reason,
+}) async {
+  if (Firebase.apps.isEmpty) return;
+
+  try {
+    await FirebaseCrashlytics.instance.setCustomKey('error_source', reason);
+    await FirebaseCrashlytics.instance.recordError(
+      error,
+      stackTrace,
+      fatal: true,
+    );
+  } catch (_) {}
 }
 
 Future<void> _initializeFirebaseMessaging() async {
@@ -816,6 +857,13 @@ class _MyAppState extends State<MyApp> {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           scaffoldBackgroundColor: Colors.white,
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+              TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
         ),
         localizationsDelegates: [
           AppLocalizations.delegate,

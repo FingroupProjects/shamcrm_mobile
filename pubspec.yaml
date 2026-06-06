@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.114+142
+version: 2.1.115+143
 
 
 environment:
@@ -97,6 +97,8 @@ dependencies:
   flutter_map: ^8.3.0
   latlong2: ^0.9.1
   android_intent_plus: ^6.0.0
+  firebase_crashlytics: ^4.3.10
+  firebase_analytics: ^11.6.0
   # home_widget: ^0.8.1
 
 
