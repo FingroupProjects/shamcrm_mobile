@@ -1,12 +1,9 @@
-import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
-import 'package:crm_task_manager/screens/profile/profile_widget/profile_details.dart';
 import 'package:flutter/material.dart';
 
 class ProfileEdit extends StatelessWidget {
-
-  const ProfileEdit({Key? key}) : super(key: key);
+  const ProfileEdit({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +43,7 @@ class ProfileEdit extends StatelessWidget {
             child: Icon(
               Icons.person,
               color: Color.fromARGB(255, 91, 77, 235),
-              size: 24,
+              size: 22,
             ),
           ),
         ),

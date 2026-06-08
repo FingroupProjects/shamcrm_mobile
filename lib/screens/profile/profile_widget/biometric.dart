@@ -43,7 +43,7 @@ class PinChangeWidget extends StatelessWidget {
               child: Icon(
                 Icons.lock_outline,
                 color: Color.fromARGB(255, 91, 77, 235),
-                size: 24,
+                size: 22,
               ),
             ),
           ),

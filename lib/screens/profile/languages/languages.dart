@@ -214,22 +214,22 @@ Widget _buildProfileOption({required String iconPath, required String text}) {
       borderRadius: BorderRadius.circular(16),
     ),
     child: Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 223, 225, 249),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.language,
-              color: Color.fromARGB(255, 91, 77, 235),
-              size: 24,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 223, 225, 249),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.language,
+                color: Color.fromARGB(255, 91, 77, 235),
+                size: 22,
+              ),
             ),
           ),
-        ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
