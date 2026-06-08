@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -27,13 +28,6 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
   List<CityData> selectedCitiesData = [];
   bool allSelected = false;
   bool isLoading = false;
-
-  final TextStyle cityTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -89,6 +83,10 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final cityTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return FormField<List<CityData>>(
       validator: (value) {
         if (selectedCitiesData.isEmpty) {
@@ -111,17 +109,23 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Center(child: CircularProgressIndicator()),
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
+                      ),
                     )
                   : CustomDropdown<CityData>.multiSelectSearch(
                       items: citiesList,
@@ -131,12 +135,12 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: context.appColors.fieldBg,
+                        expandedFillColor: context.appColors.surfacePrimary,
                         closedBorder: Border.all(color: Colors.transparent),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder:
-                            Border.all(color: const Color(0xFFE5E7EB)),
+                            Border.all(color: context.appColors.borderSubtle),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
                       listItemBuilder:
@@ -164,8 +168,10 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
                                   ),
                                 ),
                               ),
-                              const Divider(
-                                  height: 20, color: Color(0xFFE5E7EB)),
+                              Divider(
+                                height: 20,
+                                color: context.appColors.borderSubtle,
+                              ),
                               _buildListItem(item, isSelected, onItemSelect),
                             ],
                           );
@@ -203,10 +209,8 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
@@ -221,18 +225,27 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
       width: 18,
       height: 18,
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xff1E2E52), width: 1),
+        border: Border.all(color: context.appColors.textPrimary, width: 1),
         borderRadius: BorderRadius.circular(4),
-        color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+        color:
+            isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
       ),
       child: isSelected
-          ? const Icon(Icons.check, color: Colors.white, size: 14)
+          ? Icon(
+              Icons.check,
+              color: context.appColors.textInverse,
+              size: 14,
+            )
           : null,
     );
   }
 
   Widget _buildListItem(
       CityData item, bool isSelected, Function() onItemSelect) {
+    final cityTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(

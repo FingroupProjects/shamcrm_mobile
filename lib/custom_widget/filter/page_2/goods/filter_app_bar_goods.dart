@@ -1,17 +1,16 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/labels_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/status.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
-import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GoodsFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onSelectedDataFilter;
@@ -22,21 +21,22 @@ class GoodsFilterScreen extends StatefulWidget {
   final bool? initialIsActive;
 
   const GoodsFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialCategoryIds,
     this.initialDiscountPercent,
     this.initialLabels,
     this.initialIsActive,
-  }) : super(key: key);
+  });
 
   @override
-  _GoodsFilterScreenState createState() => _GoodsFilterScreenState();
+  State<GoodsFilterScreen> createState() => _GoodsFilterScreenState();
 }
 
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
-  final TextEditingController discountPercentController = TextEditingController();
+  final TextEditingController discountPercentController =
+      TextEditingController();
   List<SubCategoryAttributesData> selectedCategories = [];
   List<String> selectedLabels = []; // Храним label_id как строки
   bool isCategoryValid = true;
@@ -66,14 +66,16 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     if (widget.initialLabels != null) {
       selectedLabels = List.from(widget.initialLabels!);
       if (kDebugMode) {
-        debugPrint('GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
+        debugPrint(
+            'GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
       }
     }
 
     if (widget.initialIsActive != null) {
       isActive = widget.initialIsActive;
       if (kDebugMode) {
-        debugPrint('GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
+        debugPrint(
+            'GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
       }
     }
 
@@ -101,19 +103,16 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.titleLg.copyWith(
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 1,
         actions: [
@@ -133,19 +132,21 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
             },
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+              backgroundColor:
+                  context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: BorderSide(
+                color: context.appColors.buttonPrimaryBg,
+                width: 0.5,
+              ),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.labelLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -162,7 +163,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         .map((category) => category.id.toString())
                         .toList()
                     : [],
-                'label_id': selectedLabels.isNotEmpty ? selectedLabels : [], // Изменено на label_id
+                'label_id': selectedLabels.isNotEmpty
+                    ? selectedLabels
+                    : [], // Изменено на label_id
               };
 
               if (isActive != null) {
@@ -202,19 +205,21 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
             },
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+              backgroundColor:
+                  context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: BorderSide(
+                color: context.appColors.buttonPrimaryBg,
+                width: 0.5,
+              ),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.labelLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -240,7 +245,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               });
             } else {
               if (kDebugMode) {
-                debugPrint('GoodsFilterScreen: Список подкатегорий пуст в listener');
+                debugPrint(
+                    'GoodsFilterScreen: Список подкатегорий пуст в listener');
               }
             }
           }
@@ -303,7 +309,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         Card(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
+                          color: context.appColors.surfacePrimary,
+                          shadowColor: context.appColors.shadowColor,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
                             child: SubCategoryMultiSelectWidget(
@@ -326,12 +333,14 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         Card(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
+                          color: context.appColors.surfacePrimary,
+                          shadowColor: context.appColors.shadowColor,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
                             child: LabelsMultiSelectWidget(
                               selectedLabels: selectedLabels,
-                              onSelectLabels: (labelIds) { // Изменено на labelIds
+                              onSelectLabels: (labelIds) {
+                                // Изменено на labelIds
                                 setState(() {
                                   selectedLabels = labelIds;
                                   if (kDebugMode) {
@@ -347,7 +356,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         Card(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
+                          color: context.appColors.surfacePrimary,
+                          shadowColor: context.appColors.shadowColor,
                           child: Padding(
                             padding: const EdgeInsets.only(
                                 left: 12, right: 12, top: 4, bottom: 0),
@@ -389,7 +399,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          color: Colors.white,
+                          color: context.appColors.surfacePrimary,
+                          shadowColor: context.appColors.shadowColor,
                           child: Padding(
                             padding: const EdgeInsets.all(8),
                             child: Column(
@@ -398,15 +409,14 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                 Text(
                                   AppLocalizations.of(context)!
                                       .translate('active_status'),
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  style: context.appTextStyles.bodyLg.copyWith(
                                     fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                StatusSelector(onStatusChanged: _handleStatusChanged),
+                                StatusSelector(
+                                    onStatusChanged: _handleStatusChanged),
                               ],
                             ),
                           ),

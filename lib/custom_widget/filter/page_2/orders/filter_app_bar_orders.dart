@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
@@ -408,16 +409,22 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
+            scaffoldBackgroundColor: this.context.appColors.surfacePrimary,
             colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
+              primary: this.context.appColors.buttonPrimaryBg,
+              onPrimary: this.context.appColors.buttonPrimaryFg,
+              onSurface: this.context.appColors.textPrimary,
+              secondary: this
+                  .context
+                  .appColors
+                  .buttonSecondaryBg
+                  .withValues(alpha: 0.1),
+              surface: this.context.appColors.surfacePrimary,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+              style: TextButton.styleFrom(
+                foregroundColor: this.context.appColors.buttonPrimaryBg,
+              ),
             ),
           ),
           child: child!,
@@ -524,6 +531,44 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
         .toList();
   }
 
+  Widget _buildFilterCard({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(8),
+        child: child,
+      ),
+    );
+  }
+
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
+  CustomDropdownDecoration _buildDropdownDecoration() {
+    return CustomDropdownDecoration(
+      closedFillColor: context.appColors.fieldBg,
+      expandedFillColor: context.appColors.surfacePrimary,
+      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      closedBorderRadius: BorderRadius.circular(12),
+      expandedBorderRadius: BorderRadius.circular(12),
+    );
+  }
+
   Widget _buildDeliveryTypeDropdown() {
     final List<String> deliveryMethods = [_pickupLabel, _deliveryLabel];
 
@@ -532,11 +577,9 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('delivery_method'),
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.bodyLg.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -549,23 +592,13 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 320,
           enabled: true,
-          decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
-            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-            closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder:
-                Border.all(color: const Color(0xffF4F7FD), width: 1),
-            expandedBorderRadius: BorderRadius.circular(12),
-          ),
+          decoration: _buildDropdownDecoration(),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textPrimary,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
               ),
             );
           },
@@ -575,21 +608,17 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                   ? selectedItem
                   : AppLocalizations.of(context)!
                       .translate('select_delivery_method'),
-              style: const TextStyle(
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
             AppLocalizations.of(context)!.translate('select_delivery_method'),
-            style: const TextStyle(
-              fontSize: 14,
+            style: context.appTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
           excludeSelected: false,
@@ -608,60 +637,40 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
     final customFieldTitles = _orderCustomFieldTitles();
 
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -686,11 +695,9 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                       const SizedBox(height: 12),
                       Text(
                         AppLocalizations.of(context)!.translate('loading'),
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: context.appTextStyles.bodyLg.copyWith(
                           fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                     ],
@@ -703,16 +710,14 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                       child: SingleChildScrollView(
                         child: Column(
                           children: [
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
+                              padding: EdgeInsets.zero,
                               child: GestureDetector(
                                 onTap: _selectDateRange,
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: context.appColors.surfacePrimary,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Row(
@@ -724,18 +729,17 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                                             ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                                             : AppLocalizations.of(context)!
                                                 .translate('select_date_range'),
-                                        style: TextStyle(
-                                          fontFamily: 'Gilroy',
+                                        style: context.appTextStyles.bodyMd
+                                            .copyWith(
                                           color: _fromDate != null &&
                                                   _toDate != null
-                                              ? Colors.black
-                                              : const Color(0xff99A4BA),
-                                          fontSize: 14,
+                                              ? context.appColors.textPrimary
+                                              : context.appColors.textSecondary,
                                         ),
                                       ),
-                                      const Icon(
+                                      Icon(
                                         Icons.calendar_today,
-                                        color: Color(0xff99A4BA),
+                                        color: context.appColors.iconSecondary,
                                       ),
                                     ],
                                   ),
@@ -743,10 +747,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: ManagerMultiSelectWidget(
@@ -763,10 +764,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: RegionsMultiSelectWidget(
@@ -783,10 +781,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: LeadMultiSelectWidget(
@@ -803,10 +798,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: PaymentMethodDropdown(
@@ -821,10 +813,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: StatusMethodDropdown(
@@ -839,10 +828,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Card(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                            _buildFilterCard(
                               child: Padding(
                                 padding: const EdgeInsets.all(8),
                                 child: _buildDeliveryTypeDropdown(),
@@ -850,10 +836,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                             ),
                             if (_askReasonForRefusal) ...[
                               const SizedBox(height: 8),
-                              Card(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                              _buildFilterCard(
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: ReasonForRefusalMultiSelectWidget(
@@ -875,10 +858,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                             if (customFieldTitles.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               for (final title in customFieldTitles) ...[
-                                Card(
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  color: Colors.white,
+                                _buildFilterCard(
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: CustomFieldMultiSelect(

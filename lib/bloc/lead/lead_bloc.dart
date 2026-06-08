@@ -88,8 +88,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
             (_currentCustomFieldFilters != null &&
                 _currentCustomFieldFilters!.isNotEmpty);
 
-    final bool flagsOrDates = (_currentStatusId != null) ||
-        (_currentFromDate != null) ||
+    final bool flagsOrDates = (_currentFromDate != null) ||
         (_currentToDate != null) ||
         (_currentHasSuccessDeals == true) ||
         (_currentHasInProgressDeals == true) ||

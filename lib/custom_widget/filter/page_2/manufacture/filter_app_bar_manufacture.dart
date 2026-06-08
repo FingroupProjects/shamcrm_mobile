@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_wh.dart';
 import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -183,13 +184,37 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
     }
   }
 
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
+  CustomDropdownDecoration _buildDropdownDecoration() {
+    return CustomDropdownDecoration(
+      closedFillColor: context.appColors.fieldBg,
+      expandedFillColor: context.appColors.surfacePrimary,
+      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      closedBorderRadius: BorderRadius.circular(12),
+      expandedBorderRadius: BorderRadius.circular(12),
+    );
+  }
+
   Widget _buildSectionCard({
     required String title,
     required Widget child,
   }) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Column(
@@ -197,11 +222,9 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -227,16 +250,14 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                   height: 50,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     hint,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                 )
@@ -247,49 +268,30 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                           'Поиск',
                   overlayHeight: 300,
                   enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: const Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: const Color(0xffF4F7FD),
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: _buildDropdownDecoration(),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textPrimary,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
                       ),
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
                       selectedItem?.name ?? hint,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     );
                   },
                   hintBuilder: (context, hintText, enabled) => Text(
                     hint,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                   initialItem: selectedValue != null &&
@@ -362,7 +364,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                 children: [
                   const Text(
                     'Ошибка загрузки',
-                    style: TextStyle(color: Colors.red, fontSize: 12),
+                    style: TextStyle(fontSize: 12),
                   ),
                   TextButton(
                     onPressed: () {
@@ -383,28 +385,13 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
             searchHintText: localizations.translate('search') ?? 'Поиск',
             overlayHeight: 300,
             enabled: true,
-            decoration: CustomDropdownDecoration(
-              closedFillColor: const Color(0xffF4F7FD),
-              expandedFillColor: Colors.white,
-              closedBorder: Border.all(
-                color: const Color(0xffF4F7FD),
-                width: 1,
-              ),
-              closedBorderRadius: BorderRadius.circular(12),
-              expandedBorder: Border.all(
-                color: const Color(0xffF4F7FD),
-                width: 1,
-              ),
-              expandedBorderRadius: BorderRadius.circular(12),
-            ),
+            decoration: _buildDropdownDecoration(),
             listItemBuilder: (context, item, isSelected, onItemSelect) {
               return Text(
                 '${item.name} ${item.lastname}'.trim(),
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
-                  fontSize: 14,
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
                 ),
               );
             },
@@ -414,21 +401,17 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                     ? '${selectedItem.name} ${selectedItem.lastname}'.trim()
                     : (localizations.translate('select_author') ??
                         'Выберите автора'),
-                style: const TextStyle(
-                  fontSize: 14,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               );
             },
             hintBuilder: (context, hint, enabled) => Text(
               localizations.translate('select_author') ?? 'Выберите автора',
-              style: const TextStyle(
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
             initialItem: _selectedAuthor != null &&
@@ -456,60 +439,40 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           localizations.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               localizations.translate('clear'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               localizations.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -524,11 +487,8 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      color: Colors.white,
+                    _buildSectionCard(
+                      title: localizations.translate('date'),
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
@@ -555,11 +515,8 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      color: Colors.white,
+                    _buildSectionCard(
+                      title: localizations.translate('date'),
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
@@ -727,46 +684,38 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
               AppLocalizations.of(context)!.translate('select_status_method') ??
                   'Выберите статус',
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            closedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
-              width: 1,
-            ),
-            expandedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
-              width: 1,
-            ),
+            closedFillColor: context.appColors.fieldBg,
+            expandedFillColor: context.appColors.surfacePrimary,
+            closedBorder:
+                Border.all(color: context.appColors.fieldBg, width: 1),
+            expandedBorder:
+                Border.all(color: context.appColors.fieldBg, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
+            expandedBorderRadius: BorderRadius.circular(12),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textPrimary,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
               ),
             );
           },
           headerBuilder: (context, selectedItem, enabled) {
             return Text(
               selectedItem ?? widget.title,
-              style: const TextStyle(
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
             widget.title,
-            style: const TextStyle(
-              fontSize: 14,
+            style: context.appTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
           initialItem: selectedstatusMethod,

@@ -1,9 +1,9 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/event_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/multi_manager_list.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-
 
 class EventManagerFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onManagersSelected;
@@ -15,8 +15,8 @@ class EventManagerFilterScreen extends StatefulWidget {
   final DateTime? initialNoticeToDate;
   final VoidCallback? onResetFilters;
 
-  EventManagerFilterScreen({
-    Key? key,
+  const EventManagerFilterScreen({
+    super.key,
     this.onManagersSelected,
     this.initialManagers,
     this.initialStatuses,
@@ -24,11 +24,12 @@ class EventManagerFilterScreen extends StatefulWidget {
     this.initialToDate,
     this.initialNoticeFromDate,
     this.initialNoticeToDate,
-    this.onResetFilters, 
-  }) : super(key: key);
+    this.onResetFilters,
+  });
 
   @override
-  _EventManagerFilterScreenState createState() => _EventManagerFilterScreenState();
+  State<EventManagerFilterScreen> createState() =>
+      _EventManagerFilterScreenState();
 }
 
 class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
@@ -36,8 +37,8 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
   int? _selectedStatuses;
   DateTime? _fromDate;
   DateTime? _toDate;
-  DateTime? _NoticefromDate;
-  DateTime? _NoticetoDate;
+  DateTime? _noticeFromDate;
+  DateTime? _noticeToDate;
 
   @override
   void initState() {
@@ -46,12 +47,12 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
-    _NoticefromDate = widget.initialNoticeFromDate;
-    _NoticetoDate = widget.initialNoticeToDate;
+    _noticeFromDate = widget.initialNoticeFromDate;
+    _noticeToDate = widget.initialNoticeToDate;
   }
 
-  void _selectDateRange() async {
-    final DateTimeRange? pickedRange = await showDateRangePicker(
+  Future<void> _selectDateRange() async {
+    final pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
@@ -66,209 +67,217 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
       });
     }
   }
-void _selectNoticeDateRange() async {
-  final DateTimeRange? pickedRange = await showDateRangePicker(
-    context: context,
-    firstDate: DateTime(2000),
-    lastDate: DateTime(2101),
-    initialDateRange: _NoticefromDate != null && _NoticetoDate != null
-        ? DateTimeRange(start: _NoticefromDate!, end: _NoticetoDate!)
-        : null,
-  );
-  if (pickedRange != null) {
-    setState(() {
-      _NoticefromDate = pickedRange.start;
-      _NoticetoDate = pickedRange.end;
-    });
-  }
-}
 
+  Future<void> _selectNoticeDateRange() async {
+    final pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange: _noticeFromDate != null && _noticeToDate != null
+          ? DateTimeRange(start: _noticeFromDate!, end: _noticeToDate!)
+          : null,
+    );
+    if (pickedRange != null) {
+      setState(() {
+        _noticeFromDate = pickedRange.start;
+        _noticeToDate = pickedRange.end;
+      });
+    }
+  }
+
+  Widget _buildFilterCard({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(8),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildDateRangeCard({
+    required VoidCallback onTap,
+    required String placeholder,
+    required DateTime? fromDate,
+    required DateTime? toDate,
+  }) {
+    final hasRange = fromDate != null && toDate != null;
+    final rangeLabel = hasRange
+        ? (() {
+            final start = fromDate;
+            final end = toDate;
+            return "${start.day.toString().padLeft(2, '0')}.${start.month.toString().padLeft(2, '0')}.${start.year} - ${end.day.toString().padLeft(2, '0')}.${end.month.toString().padLeft(2, '0')}.${end.year}";
+          })()
+        : placeholder;
+
+    return _buildFilterCard(
+      padding: EdgeInsets.zero,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: context.appColors.surfacePrimary,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                rangeLabel,
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: hasRange
+                      ? context.appColors.textPrimary
+                      : context.appColors.textSecondary,
+                ),
+              ),
+              Icon(
+                Icons.calendar_today,
+                color: context.appColors.iconSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
-         AppLocalizations.of(context)!.translate('filter'),
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xfff1E2E52), fontFamily: 'Gilroy'),
+          localizations.translate('filter'),
+          style: context.appTextStyles.titleLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.appColors.textPrimary,
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 1,
         actions: [
           TextButton(
             onPressed: () {
               setState(() {
-                widget.onResetFilters?.call(); 
+                widget.onResetFilters?.call();
                 _selectedManagers.clear();
                 _selectedStatuses = null;
                 _fromDate = null;
                 _toDate = null;
-                _NoticefromDate = null;
-                _NoticetoDate = null;
+                _noticeFromDate = null;
+                _noticeToDate = null;
               });
             },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
-              AppLocalizations.of(context)!.translate('reset'),
-              style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w600, 
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+              localizations.translate('reset'),
+              style: context.appTextStyles.bodyLg.copyWith(
+                fontWeight: FontWeight.w600,
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           TextButton(
-          onPressed: () async {
-            bool isAnyFilterSelected = 
-                _selectedManagers.isNotEmpty ||
-                _selectedStatuses != null ||
-                _fromDate != null ||
-                _toDate != null ||
-                _NoticefromDate != null ||
-                _NoticetoDate != null;
+            onPressed: () {
+              final isAnyFilterSelected = _selectedManagers.isNotEmpty ||
+                  _selectedStatuses != null ||
+                  _fromDate != null ||
+                  _toDate != null ||
+                  _noticeFromDate != null ||
+                  _noticeToDate != null;
 
-            if (isAnyFilterSelected) {
-
-              //print('Start Filter');
-              widget.onManagersSelected?.call({
-                'managers': _selectedManagers,
-                'statuses': _selectedStatuses,
-                'fromDate': _fromDate,
-                'toDate': _toDate,
-                'noticefromDate': _NoticefromDate,
-                'noticetoDate': _NoticetoDate,
-              });
-            } else {
-              //print('NOTHING!!!!!!');
-            }
-            Navigator.pop(context);
-          },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+              if (isAnyFilterSelected) {
+                widget.onManagersSelected?.call({
+                  'managers': _selectedManagers,
+                  'statuses': _selectedStatuses,
+                  'fromDate': _fromDate,
+                  'toDate': _toDate,
+                  'noticefromDate': _noticeFromDate,
+                  'noticetoDate': _noticeToDate,
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: _buildActionButtonStyle(),
             child: Text(
-             AppLocalizations.of(context)!.translate('apply'),
-              style: TextStyle(
-                fontSize: 16, 
-                fontWeight: FontWeight.w600, 
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+              localizations.translate('apply'),
+              style: context.appTextStyles.bodyLg.copyWith(
+                fontWeight: FontWeight.w600,
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
         child: Column(
           children: [
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectDateRange,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _fromDate != null && _toDate != null
-                            ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!.translate('enter_date_range_create'),
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
-                      ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
-                ),
-              ),
+            _buildDateRangeCard(
+              onTap: _selectDateRange,
+              placeholder: localizations.translate('enter_date_range_create'),
+              fromDate: _fromDate,
+              toDate: _toDate,
             ),
             const SizedBox(height: 16),
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectNoticeDateRange,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _NoticefromDate != null && _NoticetoDate != null
-                            ? "${_NoticefromDate!.day.toString().padLeft(2, '0')}.${_NoticefromDate!.month.toString().padLeft(2, '0')}.${_NoticefromDate!.year} - ${_NoticetoDate!.day.toString().padLeft(2, '0')}.${_NoticetoDate!.month.toString().padLeft(2, '0')}.${_NoticetoDate!.year}"
-                            : AppLocalizations.of(context)!.translate('enter_date_range_notice'),
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
-                      ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
-                ),
-              ),
+            _buildDateRangeCard(
+              onTap: _selectNoticeDateRange,
+              placeholder: localizations.translate('enter_date_range_notice'),
+              fromDate: _noticeFromDate,
+              toDate: _noticeToDate,
             ),
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: EventManagerMultiSelectWidget(
-                          selectedManagers: _selectedManagers.map((manager) => manager.id.toString()).toList(),
-                          onSelectManagers: (List<ManagerData> selectedUsersData) {
-                            setState(() {
-                              _selectedManagers = selectedUsersData;
-                            });
-                          },
-                        ),
+                    _buildFilterCard(
+                      child: EventManagerMultiSelectWidget(
+                        selectedManagers: _selectedManagers
+                            .map((manager) => manager.id.toString())
+                            .toList(),
+                        onSelectManagers:
+                            (List<ManagerData> selectedUsersData) {
+                          setState(() {
+                            _selectedManagers = selectedUsersData;
+                          });
+                        },
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: EventStatusRadioGroupWidget(
-                          key: ValueKey(_selectedStatuses),
-                          selectedStatus: _selectedStatuses?.toString(), 
-                          onSelectStatus: (int selectedStatusId) {        
-                            setState(() {
-                              _selectedStatuses = selectedStatusId;       
-                            });
-                          },
-                        ),
-
+                    _buildFilterCard(
+                      child: EventStatusRadioGroupWidget(
+                        key: ValueKey(_selectedStatuses),
+                        selectedStatus: _selectedStatuses?.toString(),
+                        onSelectStatus: (int selectedStatusId) {
+                          setState(() {
+                            _selectedStatuses = selectedStatusId;
+                          });
+                        },
                       ),
                     ),
                   ],

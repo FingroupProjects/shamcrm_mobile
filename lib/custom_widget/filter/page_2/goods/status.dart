@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -27,7 +27,11 @@ class _StatusSelectorState extends State<StatusSelector> {
       setState(() {
         isActive = value ?? false;
       });
-      widget.onStatusChanged(isActive && !isInactive ? true : isInactive && !isActive ? false : null);
+      widget.onStatusChanged(isActive && !isInactive
+          ? true
+          : isInactive && !isActive
+              ? false
+              : null);
     }
   }
 
@@ -43,7 +47,11 @@ class _StatusSelectorState extends State<StatusSelector> {
       setState(() {
         isInactive = value ?? false;
       });
-      widget.onStatusChanged(isActive && !isInactive ? true : isInactive && !isActive ? false : null);
+      widget.onStatusChanged(isActive && !isInactive
+          ? true
+          : isInactive && !isActive
+              ? false
+              : null);
     }
   }
 
@@ -83,16 +91,16 @@ class _StatusSelectorState extends State<StatusSelector> {
           children: [
             Icon(
               value ? Icons.check_box : Icons.check_box_outline_blank,
-              color: value ? ChatSmsStyles.messageBubbleSenderColor : Colors.grey,
+              color: value
+                  ? context.appColors.buttonPrimaryBg
+                  : context.appColors.iconSecondary,
               size: 30,
             ),
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 16,
-                fontFamily: 'Gilroy',
+              style: context.appTextStyles.bodyLg.copyWith(
+                color: context.appColors.textPrimary,
               ),
             ),
           ],

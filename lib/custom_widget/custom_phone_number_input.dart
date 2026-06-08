@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,7 +12,8 @@ class CustomPhoneNumberInput extends StatefulWidget {
   final String label;
   final Country? initialCountry;
 
-  CustomPhoneNumberInput({
+  const CustomPhoneNumberInput({
+    super.key,
     required this.controller,
     required this.label,
     this.onInputChanged,
@@ -20,7 +22,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
   });
 
   @override
-  _CustomPhoneNumberInputState createState() => _CustomPhoneNumberInputState();
+  State<CustomPhoneNumberInput> createState() => _CustomPhoneNumberInputState();
 }
 
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
@@ -223,7 +225,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.appColors.surfacePrimary,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -240,15 +242,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!
                             .translate('search_appbar'),
-                        hintStyle: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                        hintStyle: context.appTextStyles.bodyLg.copyWith(
+                          color: context.appColors.fieldHint,
                         ),
-                        prefixIcon: Icon(Icons.search),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: context.appColors.iconSecondary,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: context.appRadius.input,
                         ),
                       ),
                       onChanged: (value) {
@@ -273,10 +275,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                                       style: TextStyle(fontSize: 24)),
                                   title: Text(
                                     country.dialCode,
-                                    style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500),
+                                    style:
+                                        context.appTextStyles.bodyLg.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                   onTap: () {
                                     setState(() {
@@ -312,19 +314,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         children: [
           Text(
             widget.label,
-            style: const TextStyle(
-              fontSize: 16,
+            style: context.appTextStyles.labelLg.copyWith(
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xffF4F7FD),
-              borderRadius: BorderRadius.circular(12),
+              color: context.appColors.fieldBg,
+              borderRadius: context.appRadius.input,
             ),
             child: const Center(
               child: CircularProgressIndicator(),
@@ -339,11 +338,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.labelLg.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
@@ -352,14 +348,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           decoration: InputDecoration(
             hintText:
                 AppLocalizations.of(context)!.translate('enter_phone_number'),
-            hintStyle:
-                const TextStyle(fontFamily: 'Gilroy', color: Color(0xff99A4BA)),
+            hintStyle: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.fieldHint,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.appRadius.input,
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
+            fillColor: context.appColors.fieldBg,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: InkWell(
@@ -371,44 +368,42 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       selectedCountry?.dialCode ?? '+?',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
+                      style: context.appTextStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: 8),
                     child: Text(
                       selectedCountry?.flag ?? '',
                       style: const TextStyle(fontSize: 24),
                     ),
                   ),
-                  Icon(Icons.arrow_drop_down),
+                  Icon(Icons.arrow_drop_down,
+                      color: context.appColors.iconSecondary),
                 ],
               ),
             ),
-            errorStyle: const TextStyle(
-              fontSize: 14,
-              color: Colors.red,
+            errorStyle: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.error,
               fontWeight: FontWeight.w400,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.appRadius.input,
               borderSide: const BorderSide(color: Colors.transparent),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderRadius: context.appRadius.input,
+              borderSide: BorderSide(
+                color: context.appColors.error,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderRadius: context.appRadius.input,
+              borderSide: BorderSide(
+                color: context.appColors.error,
                 width: 1.5,
               ),
             ),

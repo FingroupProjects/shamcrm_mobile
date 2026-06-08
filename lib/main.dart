@@ -5,6 +5,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
+import 'package:crm_task_manager/core/theme/app_theme.dart';
+import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -145,7 +147,6 @@ import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -666,6 +667,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<AppThemeController>.value(
+          value: AppThemeController.instance,
+        ),
         Provider<ApiService>.value(value: widget.apiService),
         Provider<AuthService>.value(value: widget.authService),
         BlocProvider(create: (context) => DomainBloc(widget.apiService)),
@@ -846,98 +850,91 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(
             create: (context) => FieldConfigurationBloc(widget.apiService)),
       ],
-      child: MaterialApp(
-        // ✅ MaterialApp БЕЗ обертки
-        locale: _locale ?? const Locale('ru'),
-        color: Colors.white,
-        debugShowCheckedModeBanner: false,
-        title: 'shamCRM',
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: Colors.white,
-          pageTransitionsTheme: const PageTransitionsTheme(
-            builders: {
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-              TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-              TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-            },
-          ),
-        ),
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [
-          const Locale('ru', ''),
-          const Locale('en', ''),
-          const Locale('uz', ''),
-        ],
-        localeResolutionCallback: (locale, supportedLocales) {
-          for (var supportedLocale in supportedLocales) {
-            if (supportedLocale.languageCode == locale?.languageCode) {
-              return supportedLocale;
-            }
-          }
-          return supportedLocales.first;
-        },
-        // ✅ ДОБАВЬТЕ/РАСКОММЕНТИРУЙТЕ builder
-        builder: (context, child) {
-          final appChild = Stack(
-            children: [
-              NativeInternetAwareWrapper(
-                // ← НОВОЕ ИМЯ
-                child: child ?? const SizedBox.shrink(),
-              ),
-              const InAppUpdateCornerIndicator(),
-              if (kDebugMode) const HttpInspectorFab(),
+      child: Consumer<AppThemeController>(
+        builder: (context, themeController, _) {
+          return MaterialApp(
+            locale: _locale ?? const Locale('ru'),
+            color: Colors.white,
+            debugShowCheckedModeBanner: false,
+            title: 'shamCRM',
+            navigatorKey: navigatorKey,
+            scaffoldMessengerKey: scaffoldMessengerKey,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: themeController.themeMode,
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
             ],
-          );
-          return appChild;
-        },
-        home: Builder(
-          builder: (context) {
-            if (!widget.sessionValid) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
+            supportedLocales: [
+              const Locale('ru', ''),
+              const Locale('en', ''),
+              const Locale('uz', ''),
+            ],
+            localeResolutionCallback: (locale, supportedLocales) {
+              for (var supportedLocale in supportedLocales) {
+                if (supportedLocale.languageCode == locale?.languageCode) {
+                  return supportedLocale;
                 }
-              });
-              return AuthScreen();
-            }
-
-            if (widget.token == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return AuthScreen();
-            } else if (widget.pin == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (mounted) {
-                  await checkForNewVersion(context);
-                }
-              });
-              return PinSetupScreen();
-            } else {
-              return PinScreen(
-                initialMessage: widget.initialMessage,
+              }
+              return supportedLocales.first;
+            },
+            builder: (context, child) {
+              final appChild = Stack(
+                children: [
+                  NativeInternetAwareWrapper(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                  const InAppUpdateCornerIndicator(),
+                  if (kDebugMode) const HttpInspectorFab(),
+                ],
               );
-            }
-          },
-        ),
-        routes: {
-          '/local_auth': (context) => AuthScreen(),
-          '/login': (context) => LoginScreen(),
-          '/home': (context) => HomeScreen(),
-          '/chats': (context) => ChatsScreen(),
-          '/pin_setup': (context) => PinSetupScreen(),
-          '/pin_screen': (context) => PinScreen(),
-          '/profile': (context) => ProfileScreen(),
+              return appChild;
+            },
+            home: Builder(
+              builder: (context) {
+                if (!widget.sessionValid) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (mounted) {
+                      await checkForNewVersion(context);
+                    }
+                  });
+                  return AuthScreen();
+                }
+
+                if (widget.token == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (mounted) {
+                      await checkForNewVersion(context);
+                    }
+                  });
+                  return AuthScreen();
+                } else if (widget.pin == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (mounted) {
+                      await checkForNewVersion(context);
+                    }
+                  });
+                  return PinSetupScreen();
+                } else {
+                  return PinScreen(
+                    initialMessage: widget.initialMessage,
+                  );
+                }
+              },
+            ),
+            routes: {
+              '/local_auth': (context) => AuthScreen(),
+              '/login': (context) => LoginScreen(),
+              '/home': (context) => HomeScreen(),
+              '/chats': (context) => ChatsScreen(),
+              '/pin_setup': (context) => PinSetupScreen(),
+              '/pin_screen': (context) => PinScreen(),
+              '/profile': (context) => ProfileScreen(),
+            },
+          );
         },
       ),
     );

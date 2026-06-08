@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/utils/app_colors.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:dio/dio.dart';
 import 'package:crm_task_manager/api/service/dio_client.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -14,12 +14,11 @@ class FullImageScreenViewer extends StatefulWidget {
   final String senderName;
 
   const FullImageScreenViewer(
-      {Key? key,
+      {super.key,
       required this.imagePath,
       required this.senderName,
       required this.time,
-      required this.fileName})
-      : super(key: key);
+      required this.fileName});
 
   @override
   State<FullImageScreenViewer> createState() => _FullImageScreenViewerState();
@@ -67,7 +66,7 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
               AppLocalizations.of(context)?.translate('image_saved_success') ??
                   'Изображение загружено. ✅',
             ),
-            backgroundColor: AppColors.primaryBlue,
+            backgroundColor: context.appColors.buttonPrimaryBg,
           ),
         );
       } else {
@@ -77,7 +76,7 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
               AppLocalizations.of(context)?.translate('image_save_failed') ??
                   'Изображение не удалось сохранить. ❌',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.buttonDanger,
           ),
         );
       }
@@ -88,7 +87,7 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
             AppLocalizations.of(context)?.translate('image_load_error') ??
                 'Ошибка загрузки изображения!',
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.buttonDanger,
         ),
       );
     } finally {
@@ -105,11 +104,14 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         iconTheme: IconThemeData(
-          color: AppColors.primaryBlue, //change your color here
+          color: context.appColors.iconPrimary,
         ),
-        title: Text(widget.senderName),
+        title: Text(
+          widget.senderName,
+          style: context.appTextStyles.titleMd,
+        ),
         actions: [
           if (_isDownloading)
             Padding(
@@ -124,36 +126,41 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
                       value: _downloadProgress > 0
                           ? _downloadProgress / 100
                           : null,
-                      color: AppColors.primaryBlue,
+                      color: context.appColors.buttonPrimaryBg,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('$_downloadProgress%'),
+                  Text(
+                    '$_downloadProgress%',
+                    style: context.appTextStyles.bodySm.copyWith(
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
             ),
         ],
       ),
-      backgroundColor: Colors.white, // Фон черный для полноэкранного режима
+      backgroundColor: context.appColors.backgroundPrimary,
       floatingActionButton: FloatingActionButton.small(
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: context.appColors.buttonPrimaryBg,
         onPressed: _isDownloading
             ? null
             : () {
                 saveNetworkImage(widget.imagePath, context);
               },
         child: _isDownloading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: context.appColors.buttonPrimaryFg,
                 ),
               )
-            : const Icon(
+            : Icon(
                 CupertinoIcons.down_arrow,
-                color: Colors.white,
+                color: context.appColors.buttonPrimaryFg,
               ),
       ),
       body: SafeArea(
@@ -168,8 +175,8 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
                 child: LinearProgressIndicator(
                   value: _downloadProgress > 0 ? _downloadProgress / 100 : null,
                   minHeight: 3,
-                  color: AppColors.primaryBlue,
-                  backgroundColor: Colors.grey.shade200,
+                  color: context.appColors.buttonPrimaryBg,
+                  backgroundColor: context.appColors.borderSubtle,
                 ),
               ),
             Center(
@@ -178,20 +185,21 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
                 minScale:
                     1.0, // Минимальный масштаб 1.0 для естественного размера
                 maxScale: 4.0, // Максимальный масштаб
-                child: Container(
+                child: SizedBox(
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height,
-                  child: Image.network(
-                    widget.imagePath,
-                    fit: BoxFit
-                        .contain, // Используем BoxFit.contain для оригинального размера
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey,
-                        child: const Icon(Icons.error, color: Colors.red),
-                      );
-                    },
-                  ),
+                  child: Image.network(widget.imagePath,
+                      fit: BoxFit
+                          .contain, // Используем BoxFit.contain для оригинального размера
+                      errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: context.appColors.backgroundSecondary,
+                      child: Icon(
+                        Icons.error,
+                        color: context.appColors.error,
+                      ),
+                    );
+                  }),
                 ),
               ),
             ),
@@ -200,21 +208,25 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
               child: Container(
                 width: MediaQuery.of(context).size.width,
                 height: 80,
-                color: Colors.black.withOpacity(.5),
+                color: context.appColors.overlayColor.withValues(alpha: 0.85),
                 child: Column(
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       height: 12,
                     ),
                     Text(
                       widget.fileName,
-                      style: TextStyle(color: Colors.white),
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textInverse,
+                      ),
                     ),
                     Text(
                       widget.time,
-                      style: TextStyle(color: Colors.white),
+                      style: context.appTextStyles.bodySm.copyWith(
+                        color: context.appColors.textInverse,
+                      ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 12,
                     )
                   ],

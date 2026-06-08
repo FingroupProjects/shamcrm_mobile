@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -6,11 +7,11 @@ class EventStatusRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
   final Function(int) onSelectStatus;
 
-  EventStatusRadioGroupWidget({
-    Key? key,
+  const EventStatusRadioGroupWidget({
+    super.key,
     required this.onSelectStatus,
     this.selectedStatus,
-  }) : super(key: key);
+  });
 
   @override
   State<EventStatusRadioGroupWidget> createState() =>
@@ -20,13 +21,6 @@ class EventStatusRadioGroupWidget extends StatefulWidget {
 class _EventStatusRadioGroupWidgetState
     extends State<EventStatusRadioGroupWidget> {
   int? selectedStatusData;
-
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -40,11 +34,18 @@ class _EventStatusRadioGroupWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final statusTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
 
-    final localizations = AppLocalizations.of(context); 
+    final localizations = AppLocalizations.of(context);
     final statusList = [
-      { 'id': 1,'title': localizations?.translate('in_progress') ?? 'В работе',  },
-      {'id': 2,'title': localizations?.translate('finished') ?? 'Завершенные',   },
+      {'id': 1, 'title': localizations?.translate('in_progress') ?? 'В работе'},
+      {
+        'id': 2,
+        'title': localizations?.translate('finished') ?? 'Завершенные',
+      },
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,11 +57,11 @@ class _EventStatusRadioGroupWidgetState
         const SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: context.appColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: const Color(0xFFF4F7FD),
+              color: context.appColors.fieldBg,
             ),
           ),
           child: CustomDropdown<dynamic>.search(
@@ -69,15 +70,15 @@ class _EventStatusRadioGroupWidgetState
             searchHintText: AppLocalizations.of(context)!.translate('search'),
             overlayHeight: 400,
             decoration: CustomDropdownDecoration(
-              closedFillColor: const Color(0xffF4F7FD),
-              expandedFillColor: Colors.white,
+              closedFillColor: context.appColors.fieldBg,
+              expandedFillColor: context.appColors.surfacePrimary,
               closedBorder: Border.all(
-                color: const Color(0xffF4F7FD),
+                color: context.appColors.fieldBg,
                 width: 1,
               ),
               closedBorderRadius: BorderRadius.circular(12),
               expandedBorder: Border.all(
-                color: const Color(0xffF4F7FD),
+                color: context.appColors.fieldBg,
                 width: 1,
               ),
               expandedBorderRadius: BorderRadius.circular(12),
@@ -98,15 +99,18 @@ class _EventStatusRadioGroupWidgetState
             },
             hintBuilder: (context, hint, enabled) => Text(
               AppLocalizations.of(context)!.translate('select_status'),
-              style: statusTextStyle.copyWith(fontSize: 14),
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             excludeSelected: false,
-          initialItem: selectedStatusData != null
-              ? statusList.firstWhere(
-                  (status) => status['id'] == selectedStatusData,
-                  orElse: () => statusList.first,
-                )
-              : null, 
+            initialItem: selectedStatusData != null
+                ? statusList.firstWhere(
+                    (status) => status['id'] == selectedStatusData,
+                    orElse: () => statusList.first,
+                  )
+                : null,
             onChanged: (value) {
               if (value != null) {
                 widget.onSelectStatus(value['id']);

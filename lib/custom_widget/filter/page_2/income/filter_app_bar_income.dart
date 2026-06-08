@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +34,7 @@ class IncomeFilterScreen extends StatefulWidget {
   final bool? initialIsDeleted;
 
   const IncomeFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialFromDate,
@@ -44,7 +45,7 @@ class IncomeFilterScreen extends StatefulWidget {
     this.initialLead,
     this.initialCashRegister,
     this.initialIsDeleted,
-  }) : super(key: key);
+  });
 
   @override
   _IncomeFilterScreenState createState() => _IncomeFilterScreenState();
@@ -98,7 +99,6 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     }
 
     // Проверяем и загружаем lead
-    final leadState = context.read<GetAllLeadBloc>().state;
     if (authorState is! GetAllLeadSuccess) {
       context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     }
@@ -297,6 +297,44 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         _isDeleted != null;
   }
 
+  Widget _buildFilterCard({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(8),
+        child: child,
+      ),
+    );
+  }
+
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
+  CustomDropdownDecoration _buildDropdownDecoration() {
+    return CustomDropdownDecoration(
+      closedFillColor: context.appColors.fieldBg,
+      expandedFillColor: context.appColors.surfacePrimary,
+      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      closedBorderRadius: BorderRadius.circular(12),
+      expandedBorderRadius: BorderRadius.circular(12),
+    );
+  }
+
   _applyFilters() async {
     await _saveFilterState();
     if (!_isAnyFilterSelected()) {
@@ -333,639 +371,555 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   }
 
   Widget _buildSupplierWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('supplier') ??
-                  'Поставщик',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
+    return _buildFilterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
+            style: context.appTextStyles.bodyLg.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
             ),
-            const SizedBox(height: 4),
-            BlocConsumer<GetAllSupplierBloc, GetAllSupplierState>(
-              listener: (context, state) {
-                if (state is GetAllSupplierSuccess) {
-                  setState(() {
-                    suppliersList = state.dataSuppliers.result ?? [];
-                  });
-                }
-              },
-              builder: (context, state) {
-                if (state is GetAllSupplierInitial ||
-                    (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
-                  context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
-                  return const DropdownLoadingState();
-                }
+          ),
+          const SizedBox(height: 4),
+          BlocConsumer<GetAllSupplierBloc, GetAllSupplierState>(
+            listener: (context, state) {
+              if (state is GetAllSupplierSuccess) {
+                setState(() {
+                  suppliersList = state.dataSuppliers.result ?? [];
+                });
+              }
+            },
+            builder: (context, state) {
+              if (state is GetAllSupplierInitial ||
+                  (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+                context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllSupplierLoading) {
-                  return const DropdownLoadingState();
-                }
+              if (state is GetAllSupplierLoading) {
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllSupplierError) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                            AppLocalizations.of(context)!
-                                .translate('error_loading_dialog'),
-                            style: TextStyle(color: Colors.red, fontSize: 12)),
-                        TextButton(
-                          onPressed: () {
-                            context
-                                .read<GetAllSupplierBloc>()
-                                .add(GetAllSupplierEv());
-                          },
-                          child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('retry_dialog'),
-                              style: TextStyle(fontSize: 12)),
+              if (state is GetAllSupplierError) {
+                return Container(
+                  height: 50,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!
+                            .translate('error_loading_dialog'),
+                        style: context.appTextStyles.bodySm.copyWith(
+                          color: context.appColors.error,
                         ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Если список пуст даже после успешной загрузки, показываем placeholder
-                if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
-                  return Container(
-                    height: 30,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!
-                              .translate('select_supplier') ??
-                          'Выберите поставщика',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
                       ),
-                    ),
-                  );
-                }
-
-                return CustomDropdown<SupplierData>.search(
-                  items: suppliersList,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search') ??
-                          'Поиск',
-                  overlayHeight: 300,
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    return Text(
-                      selectedItem?.name ??
+                      TextButton(
+                        onPressed: () {
+                          context
+                              .read<GetAllSupplierBloc>()
+                              .add(GetAllSupplierEv());
+                        },
+                        child: Text(
                           AppLocalizations.of(context)!
-                              .translate('select_supplier') ??
-                          'Выберите поставщика',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                              .translate('retry_dialog'),
+                          style: context.appTextStyles.bodySm,
+                        ),
                       ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
+                    ],
+                  ),
+                );
+              }
+
+              // Если список пуст даже после успешной загрузки, показываем placeholder
+              if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
+                return Container(
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.appColors.fieldBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
                     AppLocalizations.of(context)!
                             .translate('select_supplier') ??
                         'Выберите поставщика',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
-                  initialItem: _selectedSupplier != null &&
-                          suppliersList
-                              .any((s) => s.id == _selectedSupplier!.id)
-                      ? suppliersList
-                          .firstWhere((s) => s.id == _selectedSupplier!.id)
-                      : null,
-                  onChanged: (value) {
-                    if (value != null && mounted) {
-                      setState(() {
-                        _selectedSupplier = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
                 );
-              },
-            ),
-          ],
-        ),
+              }
+
+              return CustomDropdown<SupplierData>.search(
+                items: suppliersList,
+                searchHintText:
+                    AppLocalizations.of(context)!.translate('search') ??
+                        'Поиск',
+                overlayHeight: 300,
+                enabled: true,
+                decoration: _buildDropdownDecoration(),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return Text(
+                    item.name,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
+                headerBuilder: (context, selectedItem, enabled) {
+                  return Text(
+                    selectedItem?.name ??
+                        AppLocalizations.of(context)!
+                            .translate('select_supplier') ??
+                        'Выберите поставщика',
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textPrimary,
+                    ),
+                  );
+                },
+                hintBuilder: (context, hint, enabled) => Text(
+                  AppLocalizations.of(context)!.translate('select_supplier') ??
+                      'Выберите поставщика',
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textPrimary,
+                  ),
+                ),
+                initialItem: _selectedSupplier != null &&
+                        suppliersList.any((s) => s.id == _selectedSupplier!.id)
+                    ? suppliersList
+                        .firstWhere((s) => s.id == _selectedSupplier!.id)
+                    : null,
+                onChanged: (value) {
+                  if (value != null && mounted) {
+                    setState(() {
+                      _selectedSupplier = value;
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCashRegisterWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('cash_register') ??
-                  'Касса',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
+    return _buildFilterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('cash_register') ?? 'Касса',
+            style: context.appTextStyles.bodyLg.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
             ),
-            const SizedBox(height: 4),
-            BlocConsumer<GetAllCashRegisterBloc, GetAllCashRegisterState>(
-              listener: (context, state) {
-                if (state is GetAllCashRegisterSuccess) {
-                  setState(() {
-                    cashRegistersList = state.dataCashRegisters.result ?? [];
-                  });
-                }
-              },
-              builder: (context, state) {
-                if (state is GetAllCashRegisterInitial ||
-                    (state is GetAllCashRegisterSuccess &&
-                        cashRegistersList.isEmpty)) {
-                  context
-                      .read<GetAllCashRegisterBloc>()
-                      .add(GetAllCashRegisterEv());
-                  return const DropdownLoadingState();
-                }
+          ),
+          const SizedBox(height: 4),
+          BlocConsumer<GetAllCashRegisterBloc, GetAllCashRegisterState>(
+            listener: (context, state) {
+              if (state is GetAllCashRegisterSuccess) {
+                setState(() {
+                  cashRegistersList = state.dataCashRegisters.result ?? [];
+                });
+              }
+            },
+            builder: (context, state) {
+              if (state is GetAllCashRegisterInitial ||
+                  (state is GetAllCashRegisterSuccess &&
+                      cashRegistersList.isEmpty)) {
+                context
+                    .read<GetAllCashRegisterBloc>()
+                    .add(GetAllCashRegisterEv());
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllCashRegisterLoading) {
-                  return const DropdownLoadingState();
-                }
+              if (state is GetAllCashRegisterLoading) {
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllCashRegisterError) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                            AppLocalizations.of(context)!
-                                .translate('error_loading_dialog'),
-                            style: TextStyle(color: Colors.red, fontSize: 12)),
-                        TextButton(
-                          onPressed: () {
-                            context
-                                .read<GetAllCashRegisterBloc>()
-                                .add(GetAllCashRegisterEv());
-                          },
-                          child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('retry_dialog'),
-                              style: TextStyle(fontSize: 12)),
+              if (state is GetAllCashRegisterError) {
+                return Container(
+                  height: 50,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!
+                            .translate('error_loading_dialog'),
+                        style: context.appTextStyles.bodySm.copyWith(
+                          color: context.appColors.error,
                         ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Если список пуст даже после успешной загрузки, показываем placeholder
-                if (state is GetAllCashRegisterSuccess &&
-                    cashRegistersList.isEmpty) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!
-                              .translate('select_cash_register') ??
-                          'Выберите кассу',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
                       ),
-                    ),
-                  );
-                }
-
-                return CustomDropdown<CashRegisterData>.search(
-                  items: cashRegistersList,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search') ??
-                          'Поиск',
-                  overlayHeight: 300,
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    return Text(
-                      selectedItem?.name ??
+                      TextButton(
+                        onPressed: () {
+                          context
+                              .read<GetAllCashRegisterBloc>()
+                              .add(GetAllCashRegisterEv());
+                        },
+                        child: Text(
                           AppLocalizations.of(context)!
-                              .translate('select_cash_register') ??
-                          'Выберите кассу',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                              .translate('retry_dialog'),
+                          style: context.appTextStyles.bodySm,
+                        ),
                       ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
+                    ],
+                  ),
+                );
+              }
+
+              // Если список пуст даже после успешной загрузки, показываем placeholder
+              if (state is GetAllCashRegisterSuccess &&
+                  cashRegistersList.isEmpty) {
+                return Container(
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.appColors.fieldBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
                     AppLocalizations.of(context)!
                             .translate('select_cash_register') ??
                         'Выберите кассу',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
-                  initialItem: _selectedCashRegister != null &&
-                          cashRegistersList
-                              .any((c) => c.id == _selectedCashRegister!.id)
-                      ? cashRegistersList
-                          .firstWhere((c) => c.id == _selectedCashRegister!.id)
-                      : null,
-                  onChanged: (value) {
-                    if (value != null && mounted) {
-                      setState(() {
-                        _selectedCashRegister = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
                 );
-              },
-            ),
-          ],
-        ),
+              }
+
+              return CustomDropdown<CashRegisterData>.search(
+                items: cashRegistersList,
+                searchHintText:
+                    AppLocalizations.of(context)!.translate('search') ??
+                        'Поиск',
+                overlayHeight: 300,
+                enabled: true,
+                decoration: _buildDropdownDecoration(),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return Text(
+                    item.name,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
+                headerBuilder: (context, selectedItem, enabled) {
+                  return Text(
+                    selectedItem?.name ??
+                        AppLocalizations.of(context)!
+                            .translate('select_cash_register') ??
+                        'Выберите кассу',
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textPrimary,
+                    ),
+                  );
+                },
+                hintBuilder: (context, hint, enabled) => Text(
+                  AppLocalizations.of(context)!
+                          .translate('select_cash_register') ??
+                      'Выберите кассу',
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textPrimary,
+                  ),
+                ),
+                initialItem: _selectedCashRegister != null &&
+                        cashRegistersList
+                            .any((c) => c.id == _selectedCashRegister!.id)
+                    ? cashRegistersList
+                        .firstWhere((c) => c.id == _selectedCashRegister!.id)
+                    : null,
+                onChanged: (value) {
+                  if (value != null && mounted) {
+                    setState(() {
+                      _selectedCashRegister = value;
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildLeadWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
+    return _buildFilterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
+            style: context.appTextStyles.bodyLg.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
             ),
-            const SizedBox(height: 4),
-            BlocConsumer<GetAllLeadBloc, GetAllLeadState>(
-              listener: (context, state) {
-                if (state is GetAllLeadSuccess) {
-                  setState(() {
-                    leadsList = state.dataLead.result ?? [];
-                  });
-                }
-              },
-              builder: (context, state) {
-                if (state is GetAllLeadInitial ||
-                    (state is GetAllLeadSuccess && leadsList.isEmpty)) {
-                  context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                  return const DropdownLoadingState();
-                }
+          ),
+          const SizedBox(height: 4),
+          BlocConsumer<GetAllLeadBloc, GetAllLeadState>(
+            listener: (context, state) {
+              if (state is GetAllLeadSuccess) {
+                setState(() {
+                  leadsList = state.dataLead.result ?? [];
+                });
+              }
+            },
+            builder: (context, state) {
+              if (state is GetAllLeadInitial ||
+                  (state is GetAllLeadSuccess && leadsList.isEmpty)) {
+                context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllLeadLoading) {
-                  return const DropdownLoadingState();
-                }
+              if (state is GetAllLeadLoading) {
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllLeadError) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                            AppLocalizations.of(context)!
-                                .translate('error_loading_dialog'),
-                            style: TextStyle(color: Colors.red, fontSize: 12)),
-                        TextButton(
-                          onPressed: () {
-                            context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-                          },
-                          child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('retry_dialog'),
-                              style: TextStyle(fontSize: 12)),
+              if (state is GetAllLeadError) {
+                return Container(
+                  height: 50,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!
+                            .translate('error_loading_dialog'),
+                        style: context.appTextStyles.bodySm.copyWith(
+                          color: context.appColors.error,
                         ),
-                      ],
-                    ),
-                  );
-                }
-
-                // Если список пуст даже после успешной загрузки, показываем placeholder
-                if (state is GetAllLeadSuccess && leadsList.isEmpty) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!
-                              .translate('select_client') ??
-                          'Выберите клиента',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
                       ),
-                    ),
-                  );
-                }
-
-                return CustomDropdown<LeadData>.search(
-                  items: leadsList,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search') ??
-                          'Поиск',
-                  overlayHeight: 300,
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    return Text(
-                      selectedItem?.name ??
+                      TextButton(
+                        onPressed: () {
+                          context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                        },
+                        child: Text(
                           AppLocalizations.of(context)!
-                              .translate('select_client') ??
-                          'Выберите клиента',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                              .translate('retry_dialog'),
+                          style: context.appTextStyles.bodySm,
+                        ),
                       ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
+                    ],
+                  ),
+                );
+              }
+
+              // Если список пуст даже после успешной загрузки, показываем placeholder
+              if (state is GetAllLeadSuccess && leadsList.isEmpty) {
+                return Container(
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.appColors.fieldBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
                     AppLocalizations.of(context)!.translate('select_client') ??
                         'Выберите клиента',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
-                  initialItem: _selectedLead != null &&
-                          leadsList.any((c) => c.id == _selectedLead!.id)
-                      ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
-                      : null,
-                  onChanged: (value) {
-                    if (value != null && mounted) {
-                      setState(() {
-                        _selectedLead = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
                 );
-              },
-            ),
-          ],
-        ),
+              }
+
+              return CustomDropdown<LeadData>.search(
+                items: leadsList,
+                searchHintText:
+                    AppLocalizations.of(context)!.translate('search') ??
+                        'Поиск',
+                overlayHeight: 300,
+                enabled: true,
+                decoration: _buildDropdownDecoration(),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return Text(
+                    item.name,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
+                headerBuilder: (context, selectedItem, enabled) {
+                  return Text(
+                    selectedItem?.name ??
+                        AppLocalizations.of(context)!
+                            .translate('select_client') ??
+                        'Выберите клиента',
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textPrimary,
+                    ),
+                  );
+                },
+                hintBuilder: (context, hint, enabled) => Text(
+                  AppLocalizations.of(context)!.translate('select_client') ??
+                      'Выберите клиента',
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textPrimary,
+                  ),
+                ),
+                initialItem: _selectedLead != null &&
+                        leadsList.any((c) => c.id == _selectedLead!.id)
+                    ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
+                    : null,
+                onChanged: (value) {
+                  if (value != null && mounted) {
+                    setState(() {
+                      _selectedLead = value;
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAuthorWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.translate('author') ?? 'Автор',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
+    return _buildFilterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('author') ?? 'Автор',
+            style: context.appTextStyles.bodyLg.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
             ),
-            const SizedBox(height: 4),
-            BlocConsumer<GetAllAuthorBloc, GetAllAuthorState>(
-              listener: (context, state) {
-                if (state is GetAllAuthorSuccess) {
-                  setState(() {
-                    authorsList = state.dataAuthor.result ?? [];
-                  });
-                }
-              },
-              builder: (context, state) {
-                if (state is GetAllAuthorInitial ||
-                    (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
-                  context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
-                  return const DropdownLoadingState();
-                }
+          ),
+          const SizedBox(height: 4),
+          BlocConsumer<GetAllAuthorBloc, GetAllAuthorState>(
+            listener: (context, state) {
+              if (state is GetAllAuthorSuccess) {
+                setState(() {
+                  authorsList = state.dataAuthor.result ?? [];
+                });
+              }
+            },
+            builder: (context, state) {
+              if (state is GetAllAuthorInitial ||
+                  (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
+                context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllAuthorLoading) {
-                  return const DropdownLoadingState();
-                }
+              if (state is GetAllAuthorLoading) {
+                return const DropdownLoadingState();
+              }
 
-                if (state is GetAllAuthorError) {
-                  return Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                            AppLocalizations.of(context)!
-                                .translate('error_loading_dialog'),
-                            style: TextStyle(color: Colors.red, fontSize: 12)),
-                        TextButton(
-                          onPressed: () {
-                            context
-                                .read<GetAllAuthorBloc>()
-                                .add(GetAllAuthorEv());
-                          },
-                          child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('retry_dialog'),
-                              style: TextStyle(fontSize: 12)),
+              if (state is GetAllAuthorError) {
+                return Container(
+                  height: 50,
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!
+                            .translate('error_loading_dialog'),
+                        style: context.appTextStyles.bodySm.copyWith(
+                          color: context.appColors.error,
                         ),
-                      ],
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          context
+                              .read<GetAllAuthorBloc>()
+                              .add(GetAllAuthorEv());
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)!
+                              .translate('retry_dialog'),
+                          style: context.appTextStyles.bodySm,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Если список пуст даже после успешной загрузки, показываем placeholder
+              if (state is GetAllAuthorSuccess && authorsList.isEmpty) {
+                return const DropdownLoadingState();
+              }
+
+              return CustomDropdown<AuthorData>.search(
+                items: authorsList,
+                searchHintText:
+                    AppLocalizations.of(context)!.translate('search') ??
+                        'Поиск',
+                overlayHeight: 300,
+                enabled: true,
+                decoration: _buildDropdownDecoration(),
+                listItemBuilder: (context, item, isSelected, onItemSelect) {
+                  return Text(
+                    '${item.name ?? ''} ${item.lastname ?? ''}',
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w500,
                     ),
                   );
-                }
-
-                // Если список пуст даже после успешной загрузки, показываем placeholder
-                if (state is GetAllAuthorSuccess && authorsList.isEmpty) {
-                  return const DropdownLoadingState();
-                }
-
-                return CustomDropdown<AuthorData>.search(
-                  items: authorsList,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search') ??
-                          'Поиск',
-                  overlayHeight: 300,
-                  enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
-                  listItemBuilder: (context, item, isSelected, onItemSelect) {
-                    return Text(
-                      '${item.name ?? ''} ${item.lastname ?? ''}',
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
-                    );
-                  },
-                  headerBuilder: (context, selectedItem, enabled) {
-                    return Text(
-                      selectedItem != null
-                          ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
-                          : AppLocalizations.of(context)!
-                                  .translate('select_author') ??
-                              'Выберите автора',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                    );
-                  },
-                  hintBuilder: (context, hint, enabled) => Text(
-                    AppLocalizations.of(context)!.translate('select_author') ??
-                        'Выберите автора',
-                    style: const TextStyle(
-                      fontSize: 14,
+                },
+                headerBuilder: (context, selectedItem, enabled) {
+                  return Text(
+                    selectedItem != null
+                        ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
+                        : AppLocalizations.of(context)!
+                                .translate('select_author') ??
+                            'Выберите автора',
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
+                  );
+                },
+                hintBuilder: (context, hint, enabled) => Text(
+                  AppLocalizations.of(context)!.translate('select_author') ??
+                      'Выберите автора',
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textPrimary,
                   ),
-                  initialItem: selectedAuthor != null &&
-                          authorsList.any((a) => a.id == selectedAuthor!.id)
-                      ? authorsList
-                          .firstWhere((a) => a.id == selectedAuthor!.id)
-                      : null,
-                  onChanged: (value) {
-                    if (value != null && mounted) {
-                      setState(() {
-                        selectedAuthor = value;
-                      });
-                      FocusScope.of(context).unfocus();
-                    }
-                  },
-                );
-              },
-            ),
-          ],
-        ),
+                ),
+                initialItem: selectedAuthor != null &&
+                        authorsList.any((a) => a.id == selectedAuthor!.id)
+                    ? authorsList.firstWhere((a) => a.id == selectedAuthor!.id)
+                    : null,
+                onChanged: (value) {
+                  if (value != null && mounted) {
+                    setState(() {
+                      selectedAuthor = value;
+                    });
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -973,60 +927,40 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter') ?? 'Фильтр',
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset') ?? 'Сбросить',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply') ?? 'Применить',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -1042,10 +976,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                 child: Column(
                   children: [
                     // From Date
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildFilterCard(
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
@@ -1076,10 +1007,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     const SizedBox(height: 8),
 
                     // To Date
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildFilterCard(
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
@@ -1122,10 +1050,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     const SizedBox(height: 8),
 
                     // Status Dropdown with localization
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildFilterCard(
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: _StatusMethodDropdown(
@@ -1167,10 +1092,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     const SizedBox(height: 8),
 
                     // Boolean Deleted Status Dropdown
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildFilterCard(
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: _StatusMethodDropdown(
@@ -1265,11 +1187,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
       children: [
         Text(
           widget.title,
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.bodyLg.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -1281,25 +1201,21 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
               AppLocalizations.of(context)!.translate('select_status_method') ??
                   'Выберите статус',
           decoration: CustomDropdownDecoration(
-            closedFillColor: Color(0xffF4F7FD),
-            closedBorder: Border.all(
-              color: Color(0xffF4F7FD),
-              width: 1,
-            ),
-            expandedBorder: Border.all(
-              color: Color(0xffF4F7FD),
-              width: 1,
-            ),
+            closedFillColor: context.appColors.fieldBg,
+            expandedFillColor: context.appColors.surfacePrimary,
+            closedBorder:
+                Border.all(color: context.appColors.fieldBg, width: 1),
+            expandedBorder:
+                Border.all(color: context.appColors.fieldBg, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
+            expandedBorderRadius: BorderRadius.circular(12),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textPrimary,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
               ),
             );
           },
@@ -1310,11 +1226,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
                   : AppLocalizations.of(context)!
                           .translate('select_status_method') ??
                       'Выберите статус',
-              style: const TextStyle(
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             );
           },
@@ -1325,11 +1239,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
                   : AppLocalizations.of(context)!
                           .translate('select_status_method') ??
                       'Выберите статус',
-              style: const TextStyle(
-                fontSize: 14,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             );
           },

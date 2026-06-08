@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:crm_task_manager/api/service/dio_client.dart';
+import 'package:crm_task_manager/core/theme/typography/app_font_families.dart';
 // import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -56,7 +57,7 @@ Future<File?> convertAudioFile(String inputPath, String outputPath) async {
   //     return null;
   //   }
   // });
-  // return null;
+  return null;
 }
 
 Future<void> uploadFile(File file, String uploadUrl) async {
@@ -69,7 +70,7 @@ Future<void> uploadFile(File file, String uploadUrl) async {
   });
 
   try {
-    Response response = await dio.post(uploadUrl, data: formData);
+    await dio.post(uploadUrl, data: formData);
     //print('Fayl yuklandi: ${response.statusCode}');
   } catch (e) {
     //print('Fayl yuklashda xatolik!');
@@ -81,10 +82,11 @@ String time(String dateAndTime) {
   // //print(DateTime.now().timeZoneOffset.inMinutes);
   // //print('------- time 2');
   if (DateTime.now().timeZoneOffset.inMinutes > 0) {
-    if (dateAndTime.isEmpty)
+    if (dateAndTime.isEmpty) {
       dateAndTime = DateTime.now()
           .subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes))
           .toString();
+    }
   } else {
     // if(dateAndTime.isEmpty) dateAndTime = DateTime.now().subtract(Duration(minutes: DateTime.now().timeZoneOffset.inMinutes)).toString();
   }
@@ -127,28 +129,28 @@ class AppStyles {
   static const TextStyle chatNameStyle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
-    fontFamily: 'Gilroy',
+    fontFamily: AppFontFamilies.gilroy,
     color: Color(0xFF1E2E52),
   );
 
   static const TextStyle chatMessageStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
+    fontFamily: AppFontFamilies.gilroy,
     color: Color(0xff99A4BA),
   );
 
   static const TextStyle chatTimeStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
+    fontFamily: AppFontFamilies.gilroy,
     color: Color(0xff99A4BA),
   );
 
   static const TextStyle chatTimeStyleWhite = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
+    fontFamily: AppFontFamilies.gilroy,
     color: Colors.white,
   );
 }

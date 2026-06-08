@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
@@ -118,8 +119,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   late Animation<double> _blinkAnimation;
   bool _hasOverdueTasks = false;
   bool _canReadNotice = true;
-  Color _iconColor = Colors.black;
   late Timer _timer;
+  bool _isFilterBlinkOn = false;
   bool _isGoodsFiltering = false;
   bool _canCreateProduct = false; // Новая переменная для права product.create
   bool _canCreateOrder = false; // Новая переменная для права order.create
@@ -171,7 +172,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 
     _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
       setState(() {
-        _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
+        _isFilterBlinkOn = !_isFilterBlinkOn;
       });
     });
 
@@ -516,7 +517,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             shape: BoxShape.circle,
             color: backgroundColor,
             border: Border.all(
-              color: Colors.white,
+              color: Colors.transparent,
               width: 0,
             ),
           ),
@@ -527,8 +528,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 padding: EdgeInsets.all(12),
                 child: Text(
                   text,
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: context.appTextStyles.titleLg.copyWith(
+                    color: context.appColors.textInverse,
                     fontSize: 26,
                     fontWeight: FontWeight.w500,
                     height: 1,
@@ -565,13 +566,25 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 
   @override
   Widget build(BuildContext context) {
+    final activeFilterColor = context.appColors.buttonPrimaryBg;
+    final blinkingFilterColor =
+        _isFilterBlinkOn ? activeFilterColor : context.appColors.iconPrimary;
+    final tooltipDecoration = BoxDecoration(
+      color: context.appColors.surfacePrimary,
+      borderRadius: BorderRadius.circular(8),
+      boxShadow: context.appShadows.card,
+    );
+    final tooltipTextStyle = context.appTextStyles.bodySm.copyWith(
+      color: context.appColors.textPrimary,
+    );
+
     return Container(
       width: double.infinity,
       height: kToolbarHeight,
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       padding: EdgeInsets.zero,
       child: Row(children: [
-        Container(
+        SizedBox(
           width: 40,
           height: 40,
           child: IconButton(
@@ -580,23 +593,20 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             onPressed: widget.onClickProfileAvatar,
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         if (!_isSearching)
           Expanded(
             child: Text(
               widget.title,
-              style: TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+              style: context.appTextStyles.titleLg.copyWith(
+                color: context.appColors.textPrimary,
               ),
             ),
           ),
         if (_isSearching)
           Expanded(
             child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               width: _isSearching ? 200.0 : 0.0,
               child: TextField(
@@ -607,8 +617,13 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                   hintText:
                       AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
+                  hintStyle: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.fieldHint,
+                  ),
                 ),
-                style: TextStyle(fontSize: 16),
+                style: context.appTextStyles.bodyLg.copyWith(
+                  color: context.appColors.textPrimary,
+                ),
                 autofocus: true,
               ),
             ),
@@ -619,24 +634,11 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             child: Tooltip(
               message: AppLocalizations.of(context)!.translate('search'),
               preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 0),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
+              decoration: tooltipDecoration,
+              textStyle: tooltipTextStyle,
               child: IconButton(
                 padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
+                constraints: const BoxConstraints(),
                 icon: _isSearching
                     ? Icon(Icons.close)
                     : Image.asset(
@@ -673,7 +675,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isIncomeFiltering ? _iconColor : null,
+                color: _isIncomeFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -688,7 +690,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isIncomingFiltering ? _iconColor : null,
+                color: _isIncomingFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -703,7 +705,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isManufactureFiltering ? _iconColor : null,
+                color: _isManufactureFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -718,7 +720,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isClientSaleFiltering ? _iconColor : null,
+                color: _isClientSaleFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -733,7 +735,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isClientReturnFiltering ? _iconColor : null,
+                color: _isClientReturnFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -761,7 +763,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color: _isGoodsFiltering ? _iconColor : null,
+                color: _isGoodsFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -776,8 +778,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 'assets/icons/AppBar/filter.png',
                 width: 24,
                 height: 24,
-                color:
-                    _isOrdersFiltering ? _iconColor : null, // Добавляем мигание
+                color: _isOrdersFiltering ? blinkingFilterColor : null,
               ),
             ),
             onPressed: () {
@@ -1290,6 +1291,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
 }
 
 class _BarcodeScannerScreen extends StatefulWidget {
+  const _BarcodeScannerScreen();
+
   @override
   _BarcodeScannerScreenState createState() => _BarcodeScannerScreenState();
 }
@@ -1345,23 +1348,25 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image != null) {
+        final overlayColor = context.appColors.overlayColor;
+        final accentColor = context.appColors.success;
+
         // Показываем индикатор загрузки
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => Center(
             child: Container(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
+                color: overlayColor.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFF00FF88)),
+                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                   ),
                   // SizedBox(height: 16),
                   // Text(
@@ -1408,30 +1413,40 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: context.appColors.surfaceElevated,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         title: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.red, size: 24),
-            SizedBox(width: 8),
+            Icon(
+              Icons.error_outline,
+              color: context.appColors.error,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
             Text(
               'Ошибка',
-              style: TextStyle(color: Colors.white),
+              style: context.appTextStyles.titleMd.copyWith(
+                color: context.appColors.textInverse,
+              ),
             ),
           ],
         ),
         content: Text(
           message,
-          style: TextStyle(color: Colors.white70),
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textInverse.withValues(alpha: 0.8),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'OK',
-              style: TextStyle(color: Color(0xFF00FF88)),
+              style: context.appTextStyles.labelLg.copyWith(
+                color: context.appColors.success,
+              ),
             ),
           ),
         ],
@@ -1442,7 +1457,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: context.appColors.overlayColor,
       body: Stack(
         children: [
           // Камера на весь экран
@@ -1477,7 +1492,9 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
 
   Widget _buildScanOverlay() {
     return CustomPaint(
-      painter: ScanOverlayPainter(),
+      painter: ScanOverlayPainter(
+        overlayColor: context.appColors.overlayColor,
+      ),
       child: Container(
         width: double.infinity,
         height: double.infinity,
@@ -1492,8 +1509,11 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                   animation: _pulseAnimation,
                   builder: (context, child) {
                     return CustomPaint(
-                      painter: ScanFramePainter(_pulseAnimation.value),
-                      size: Size(280, 280),
+                      painter: ScanFramePainter(
+                        _pulseAnimation.value,
+                        context.appColors.success,
+                      ),
+                      size: const Size(280, 280),
                     );
                   },
                 ),
@@ -1512,14 +1532,15 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                           gradient: LinearGradient(
                             colors: [
                               Colors.transparent,
-                              Color(0xFF00FF88),
-                              Color(0xFF00FF88),
+                              context.appColors.success,
+                              context.appColors.success,
                               Colors.transparent,
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Color(0xFF00FF88).withOpacity(0.8),
+                              color: context.appColors.success
+                                  .withValues(alpha: 0.8),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),
@@ -1538,6 +1559,10 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
   }
 
   Widget _buildTopBar() {
+    final overlayColor = context.appColors.overlayColor;
+    final textInverse = context.appColors.textInverse;
+    final accentColor = context.appColors.success;
+
     return Positioned(
       top: 0,
       left: 0,
@@ -1554,7 +1579,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(0.8),
+              overlayColor.withValues(alpha: 0.8),
               Colors.transparent,
             ],
           ),
@@ -1564,14 +1589,14 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
             // Кнопка назад
             Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: textInverse.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: textInverse.withValues(alpha: 0.2),
                 ),
               ),
               child: IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: textInverse),
                 onPressed: () => Navigator.of(context).pop('-1'),
               ),
             ),
@@ -1579,10 +1604,8 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
             Expanded(
               child: Text(
                 'Сканер штрих-кода',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
+                style: context.appTextStyles.titleLg.copyWith(
+                  color: textInverse,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1592,19 +1615,19 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
             Container(
               decoration: BoxDecoration(
                 color: isFlashOn
-                    ? Color(0xFF00FF88).withOpacity(0.2)
-                    : Colors.white.withOpacity(0.15),
+                    ? accentColor.withValues(alpha: 0.2)
+                    : textInverse.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isFlashOn
-                      ? Color(0xFF00FF88)
-                      : Colors.white.withOpacity(0.2),
+                      ? accentColor
+                      : textInverse.withValues(alpha: 0.2),
                 ),
               ),
               child: IconButton(
                 icon: Icon(
                   isFlashOn ? Icons.flash_on : Icons.flash_off,
-                  color: isFlashOn ? Color(0xFF00FF88) : Colors.white,
+                  color: isFlashOn ? accentColor : textInverse,
                 ),
                 onPressed: () {
                   controller.toggleTorch();
@@ -1621,6 +1644,10 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
   }
 
   Widget _buildBottomPanel() {
+    final overlayColor = context.appColors.overlayColor;
+    final textInverse = context.appColors.textInverse;
+    final accentColor = context.appColors.success;
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -1637,7 +1664,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: [
-              Colors.black.withOpacity(0.9),
+              overlayColor.withValues(alpha: 0.9),
               Colors.transparent,
             ],
           ),
@@ -1647,12 +1674,12 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
           children: [
             // Инструкция
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: textInverse.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: textInverse.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -1660,15 +1687,14 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                 children: [
                   Icon(
                     Icons.qr_code_scanner,
-                    color: Color(0xFF00FF88),
+                    color: accentColor,
                     size: 20,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'Наведите камеру на штрих-код',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: textInverse,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1676,7 +1702,7 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
               ),
             ),
 
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Кнопки действий
             Row(
@@ -1695,16 +1721,16 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
                   height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.15),
+                    color: textInverse.withValues(alpha: 0.15),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: textInverse.withValues(alpha: 0.3),
                       width: 2,
                     ),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.close,
-                      color: Colors.white,
+                      color: textInverse,
                       size: 32,
                     ),
                     onPressed: () => Navigator.of(context).pop('-1'),
@@ -1733,22 +1759,21 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.15),
+            color: context.appColors.textInverse.withValues(alpha: 0.15),
             border: Border.all(
-              color: Colors.white.withOpacity(0.2),
+              color: context.appColors.textInverse.withValues(alpha: 0.2),
             ),
           ),
           child: IconButton(
-            icon: Icon(icon, color: Colors.white),
+            icon: Icon(icon, color: context.appColors.textInverse),
             onPressed: onPressed,
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 12,
+          style: context.appTextStyles.bodySm.copyWith(
+            color: context.appColors.textInverse.withValues(alpha: 0.8),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1767,10 +1792,14 @@ class _BarcodeScannerScreenState extends State<_BarcodeScannerScreen>
 
 // Класс для рисования оверлея с вырезом
 class ScanOverlayPainter extends CustomPainter {
+  ScanOverlayPainter({required this.overlayColor});
+
+  final Color overlayColor;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.6)
+      ..color = overlayColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
 
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
@@ -1794,14 +1823,15 @@ class ScanOverlayPainter extends CustomPainter {
 
 // Класс для рисования анимированной рамки
 class ScanFramePainter extends CustomPainter {
-  final double animationValue;
+  const ScanFramePainter(this.animationValue, this.frameColor);
 
-  ScanFramePainter(this.animationValue);
+  final double animationValue;
+  final Color frameColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Color(0xFF00FF88).withOpacity(animationValue)
+      ..color = frameColor.withValues(alpha: animationValue)
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

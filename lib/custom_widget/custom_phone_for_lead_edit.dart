@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,7 +12,8 @@ class CustomPhoneNumberInput extends StatefulWidget {
   final String label;
   final String? selectedDialCode;
 
-  CustomPhoneNumberInput({
+  const CustomPhoneNumberInput({
+    super.key,
     required this.controller,
     required this.label,
     this.onInputChanged,
@@ -20,13 +22,12 @@ class CustomPhoneNumberInput extends StatefulWidget {
   });
 
   @override
-  _CustomPhoneNumberInputState createState() => _CustomPhoneNumberInputState();
+  State<CustomPhoneNumberInput> createState() => _CustomPhoneNumberInputState();
 }
 
 class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   Country? selectedCountry;
   String? _errorText;
-  bool _hasReachedMaxLength = false;
   bool _isLoading = true;
 
   @override
@@ -35,76 +36,82 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     _initializeCountry();
   }
 
- Future<void> _initializeCountry() async {
-  final prefs = await SharedPreferences.getInstance();
-  String? savedDialCode = prefs.getString('default_dial_code');
-  
-  debugPrint('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
-  debugPrint('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
+  Future<void> _initializeCountry() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? savedDialCode = prefs.getString('default_dial_code');
 
-  String? dialCodeToUse;
-  
-  if (widget.selectedDialCode != null && widget.selectedDialCode!.isNotEmpty) {
-    dialCodeToUse = widget.selectedDialCode;
-  } else if (savedDialCode != null && savedDialCode.isNotEmpty) {
-    dialCodeToUse = savedDialCode;
-  } else {
-    dialCodeToUse = '+992';
-  }
+    debugPrint(
+        'CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+    debugPrint(
+        'CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
 
-  debugPrint('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
+    String? dialCodeToUse;
 
-  selectedCountry = countries.firstWhere(
-    (country) => country.dialCode == dialCodeToUse,
-    orElse: () {
-      debugPrint('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
-      return countries.firstWhere(
-        (country) => country.name == "TJ",
-        orElse: () => countries.first,
-      );
-    },
-  );
+    if (widget.selectedDialCode != null &&
+        widget.selectedDialCode!.isNotEmpty) {
+      dialCodeToUse = widget.selectedDialCode;
+    } else if (savedDialCode != null && savedDialCode.isNotEmpty) {
+      dialCodeToUse = savedDialCode;
+    } else {
+      dialCodeToUse = '+992';
+    }
 
-  // ✅ ИСПРАВЛЕНО: Очищаем код страны из текста контроллера
-  if (widget.controller.text.startsWith(selectedCountry!.dialCode)) {
-    widget.controller.text =
-        widget.controller.text.substring(selectedCountry!.dialCode.length);
-  }
+    debugPrint('CustomPhoneNumberInput: Используем dialCode = $dialCodeToUse');
 
-  // ✅ ИСПРАВЛЕНО: отправляем ТОЛЬКО если есть номер
-  if (widget.controller.text.isNotEmpty) {
-    _validatePhoneNumber(widget.controller.text);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.onInputChanged != null) {
-        String formattedNumber = selectedCountry!.dialCode + widget.controller.text;
-        debugPrint('CustomPhoneNumberInput: Инициализация - отправка "$formattedNumber"');
-        widget.onInputChanged!(formattedNumber);
-      }
+    selectedCountry = countries.firstWhere(
+      (country) => country.dialCode == dialCodeToUse,
+      orElse: () {
+        debugPrint(
+            'CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
+        return countries.firstWhere(
+          (country) => country.name == "TJ",
+          orElse: () => countries.first,
+        );
+      },
+    );
+
+    // ✅ ИСПРАВЛЕНО: Очищаем код страны из текста контроллера
+    if (widget.controller.text.startsWith(selectedCountry!.dialCode)) {
+      widget.controller.text =
+          widget.controller.text.substring(selectedCountry!.dialCode.length);
+    }
+
+    // ✅ ИСПРАВЛЕНО: отправляем ТОЛЬКО если есть номер
+    if (widget.controller.text.isNotEmpty) {
+      _validatePhoneNumber(widget.controller.text);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.onInputChanged != null) {
+          String formattedNumber =
+              selectedCountry!.dialCode + widget.controller.text;
+          debugPrint(
+              'CustomPhoneNumberInput: Инициализация - отправка "$formattedNumber"');
+          widget.onInputChanged!(formattedNumber);
+        }
+      });
+    } else {
+      // ✅ НОВОЕ: Если поле пустое, ничего не отправляем
+      debugPrint(
+          'CustomPhoneNumberInput: Инициализация - поле пустое, ничего не отправляем');
+    }
+
+    setState(() {
+      _isLoading = false;
     });
-  } else {
-    // ✅ НОВОЕ: Если поле пустое, ничего не отправляем
-    debugPrint('CustomPhoneNumberInput: Инициализация - поле пустое, ничего не отправляем');
   }
 
-  setState(() {
-    _isLoading = false;
-  });
-}
   void _validatePhoneNumber(String value) {
     final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
     setState(() {
       if (value.isEmpty) {
         _errorText = AppLocalizations.of(context)!.translate('field_required');
-        _hasReachedMaxLength = false;
       } else if (!RegExp(r'^\d+$').hasMatch(value)) {
-        _errorText = AppLocalizations.of(context)!.translate('invalid_phone_format');
-        _hasReachedMaxLength = false;
+        _errorText =
+            AppLocalizations.of(context)!.translate('invalid_phone_format');
       } else if (value.length == maxLength) {
         _errorText = null;
-        _hasReachedMaxLength = true;
       } else {
-        _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
-        _hasReachedMaxLength = false;
+        _errorText =
+            AppLocalizations.of(context)!.translate('error_phone_number');
       }
     });
   }
@@ -121,11 +128,12 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         String? matchedDialCode;
         Country? matchedCountry;
         bool hasPlus = newText.startsWith('+');
-        String checkText = hasPlus ? newText : '+' + newText;
+        String checkText = hasPlus ? newText : '+$newText';
 
         for (var code in countryCodes) {
           if (checkText.startsWith(code) &&
-              (matchedDialCode == null || code.length > matchedDialCode.length)) {
+              (matchedDialCode == null ||
+                  code.length > matchedDialCode.length)) {
             matchedDialCode = code;
             matchedCountry = countries.firstWhere(
               (country) => country.dialCode == code,
@@ -153,7 +161,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 widget.controller.text = phoneNumber;
                 _validatePhoneNumber(phoneNumber);
               });
-              
+
               // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
               if (widget.onInputChanged != null) {
                 String formattedNumber;
@@ -180,7 +188,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _validatePhoneNumber(phoneNumber);
-            
+
             // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
             if (widget.onInputChanged != null) {
               String formattedNumber;
@@ -204,7 +212,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _validatePhoneNumber(phoneNumber);
-          
+
           // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
           if (widget.onInputChanged != null) {
             String formattedNumber;
@@ -232,19 +240,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         children: [
           Text(
             widget.label,
-            style: const TextStyle(
-              fontSize: 16,
+            style: context.appTextStyles.labelLg.copyWith(
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xffF4F7FD),
-              borderRadius: BorderRadius.circular(12),
+              color: context.appColors.fieldBg,
+              borderRadius: context.appRadius.input,
             ),
             child: const Center(
               child: CircularProgressIndicator(),
@@ -259,11 +264,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.labelLg.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
@@ -272,57 +274,54 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           decoration: InputDecoration(
             hintText:
                 AppLocalizations.of(context)!.translate('enter_phone_number'),
-            hintStyle: const TextStyle(
-              fontFamily: 'Gilroy',
-              color: Color(0xff99A4BA),
+            hintStyle: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.fieldHint,
             ),
             errorText: _errorText,
-            errorStyle: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 15,
-              color: Colors.red,
+            errorStyle: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.error,
               fontWeight: FontWeight.w500,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.appRadius.input,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.appRadius.input,
               borderSide: const BorderSide(
                 color: Colors.transparent,
                 width: 0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: context.appRadius.input,
               borderSide: const BorderSide(
                 color: Colors.transparent,
                 width: 0,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFE53935),
+              borderRadius: context.appRadius.input,
+              borderSide: BorderSide(
+                color: context.appColors.error,
                 width: 1.0,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFFE53935),
+              borderRadius: context.appRadius.input,
+              borderSide: BorderSide(
+                color: context.appColors.error,
                 width: 1.0,
               ),
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
+            fillColor: context.appColors.fieldBg,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: DropdownButtonHideUnderline(
               child: DropdownButton<Country>(
                 value: selectedCountry,
-                dropdownColor: Colors.white,
+                dropdownColor: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(6),
                 menuMaxHeight: 500,
                 itemHeight: 48,
@@ -332,13 +331,12 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     child: Row(
                       children: [
                         const SizedBox(width: 8),
-                        Text(country.flag, style: const TextStyle(fontSize: 24)),
+                        Text(country.flag,
+                            style: const TextStyle(fontSize: 24)),
                         const SizedBox(width: 4),
                         Text(
                           country.dialCode,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
+                          style: context.appTextStyles.bodyLg.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -351,9 +349,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     selectedCountry = newValue;
                     widget.controller.text = '';
                     _errorText = null;
-                    _hasReachedMaxLength = false;
                   });
-                  
+
                   // ✅ ИСПРАВЛЕНО: отправляем пустую строку при смене региона
                   if (newValue != null && widget.onInputChanged != null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -370,7 +367,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             _phoneNumberPasteFormatter(),
           ],
           onChanged: (value) {
-            final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
+            final maxLength =
+                phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
             String phoneNumber = value;
 
             if (value.length > maxLength) {
@@ -381,7 +379,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             }
 
             _validatePhoneNumber(phoneNumber);
-            
+
             // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
             if (widget.onInputChanged != null) {
               String formattedNumber;
@@ -390,8 +388,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               } else {
                 formattedNumber = selectedCountry!.dialCode + phoneNumber;
               }
-              
-              debugPrint('CustomPhoneNumberInput: phoneNumber = "$phoneNumber", formattedNumber = "$formattedNumber"');
+
+              debugPrint(
+                  'CustomPhoneNumberInput: phoneNumber = "$phoneNumber", formattedNumber = "$formattedNumber"');
               widget.onInputChanged!(formattedNumber);
             }
           },

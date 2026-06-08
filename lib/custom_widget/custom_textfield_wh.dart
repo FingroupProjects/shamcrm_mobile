@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,7 @@ class DateFieldWithFromTo extends StatelessWidget {
   final bool isFrom;
 
   DateFieldWithFromTo({
+    super.key,
     required this.controller,
     required this.label,
     this.withTime = false,
@@ -42,9 +44,11 @@ class DateFieldWithFromTo extends StatelessWidget {
       try {
         if (withTime) {
           // Парсим дату и время в формате dd/MM/yyyy HH:mm
-          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(controller.text);
+          final parsedDateTime =
+              DateFormat('dd/MM/yyyy HH:mm').parse(controller.text);
           initialDate = parsedDateTime;
-          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+          initialTime = TimeOfDay(
+              hour: parsedDateTime.hour, minute: parsedDateTime.minute);
         } else {
           // Парсим только дату в формате dd/MM/yyyy
           initialDate = DateFormat('dd/MM/yyyy').parse(controller.text);
@@ -63,20 +67,28 @@ class DateFieldWithFromTo extends StatelessWidget {
       cancelText: AppLocalizations.of(context)!.translate('back'),
       confirmText: AppLocalizations.of(context)!.translate('ok'),
       helpText: AppLocalizations.of(context)!.translate('select_date'),
-      errorFormatText: "${AppLocalizations.of(context)!.translate('error_example')}$formattedDate",
-      errorInvalidText: AppLocalizations.of(context)!.translate('invalid_format_date'),
+      errorFormatText:
+          "${AppLocalizations.of(context)!.translate('error_example')}$formattedDate",
+      errorInvalidText:
+          AppLocalizations.of(context)!.translate('invalid_format_date'),
       fieldLabelText: AppLocalizations.of(context)!.translate('enter_date'),
       firstDate: DateTime(1940),
       lastDate: DateTime(2101),
       builder: (BuildContext context, Widget? child) {
+        final colors = context.appColors;
         return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: Colors.blue,
-            hintColor: Colors.blue,
-            colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
-            dialogBackgroundColor: Colors.white,
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: colors.buttonPrimaryBg,
+                  onPrimary: colors.buttonPrimaryFg,
+                  surface: colors.surfacePrimary,
+                  onSurface: colors.textPrimary,
+                ),
+            dialogTheme: Theme.of(context).dialogTheme.copyWith(
+                  backgroundColor: colors.surfacePrimary,
+                ),
           ),
-          child: child ?? Container(),
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
@@ -92,16 +104,23 @@ class DateFieldWithFromTo extends StatelessWidget {
           minuteLabelText: AppLocalizations.of(context)!.translate('minute'),
           hourLabelText: AppLocalizations.of(context)!.translate('hour'),
           builder: (BuildContext context, Widget? child) {
+            final colors = context.appColors;
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+              data:
+                  MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
               child: Theme(
-                data: ThemeData.light().copyWith(
-                  primaryColor: Colors.blue,
-                  hintColor: Colors.blue,
-                  colorScheme: ColorScheme.light(primary: Color(0xff1E2E52)),
-                  dialogBackgroundColor: Colors.white,
+                data: Theme.of(context).copyWith(
+                  colorScheme: Theme.of(context).colorScheme.copyWith(
+                        primary: colors.buttonPrimaryBg,
+                        onPrimary: colors.buttonPrimaryFg,
+                        surface: colors.surfacePrimary,
+                        onSurface: colors.textPrimary,
+                      ),
+                  dialogTheme: Theme.of(context).dialogTheme.copyWith(
+                        backgroundColor: colors.surfacePrimary,
+                      ),
                 ),
-                child: child ?? Container(),
+                child: child ?? const SizedBox.shrink(),
               ),
             );
           },
@@ -137,11 +156,8 @@ class DateFieldWithFromTo extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.labelLg.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
@@ -157,7 +173,9 @@ class DateFieldWithFromTo extends StatelessWidget {
                 hintText: isFrom
                     ? AppLocalizations.of(context)!.translate('from2')
                     : AppLocalizations.of(context)!.translate('to2'),
-                hintStyle: const TextStyle(fontSize: 12),
+                hintStyle: context.appTextStyles.bodySm.copyWith(
+                  color: context.appColors.fieldHint,
+                ),
                 // prefixIcon: Padding(
                 //   padding: const EdgeInsets.all(12),
                 //   child: SizedBox(
@@ -170,39 +188,39 @@ class DateFieldWithFromTo extends StatelessWidget {
                 //   ),
                 // ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: context.appRadius.input,
                   borderSide: hasError
-                      ? const BorderSide(color: Colors.red, width: 1.5)
+                      ? BorderSide(color: context.appColors.error, width: 1.5)
                       : const BorderSide(color: Colors.transparent),
                 ),
-                errorStyle: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.red,
+                errorStyle: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.error,
                   fontWeight: FontWeight.w400,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: context.appRadius.input,
                   borderSide: hasError
-                      ? const BorderSide(color: Colors.red, width: 1.5)
+                      ? BorderSide(color: context.appColors.error, width: 1.5)
                       : const BorderSide(color: Colors.transparent),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.red,
+                  borderRadius: context.appRadius.input,
+                  borderSide: BorderSide(
+                    color: context.appColors.error,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.red,
+                  borderRadius: context.appRadius.input,
+                  borderSide: BorderSide(
+                    color: context.appColors.error,
                     width: 1.5,
                   ),
                 ),
                 filled: true,
-                fillColor: const Color(0xffF4F7FD),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                fillColor: context.appColors.fieldBg,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),

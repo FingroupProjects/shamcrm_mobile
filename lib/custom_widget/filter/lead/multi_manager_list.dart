@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ class ManagerMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedManagers;
   final Function(List<ManagerData>) onSelectManagers;
 
-  ManagerMultiSelectWidget({
+  const ManagerMultiSelectWidget({
     super.key,
     required this.onSelectManagers,
     this.selectedManagers,
@@ -30,17 +31,11 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
     lastname: "",
   );
 
-  final TextStyle managerTextStyle = const TextStyle( // Added: Unified text style like AuthorMultiSelectWidget
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv()); // Simplified: Removed redundant _loadManagers check
+    context.read<GetAllManagerBloc>().add(
+        GetAllManagerEv()); // Simplified: Removed redundant _loadManagers check
   }
 
   // Added: Function to toggle select all managers
@@ -58,10 +53,16 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FormField<List<ManagerData>>( // Changed: Wrapped in FormField for validation
+    final managerTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    return FormField<List<ManagerData>>(
+      // Changed: Wrapped in FormField for validation
       validator: (value) {
         if (selectedManagersData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -71,19 +72,25 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('managers'),
-              style: managerTextStyle.copyWith( // Changed: Use managerTextStyle with lighter weight
+              style: managerTextStyle.copyWith(
+                // Changed: Use managerTextStyle with lighter weight
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8), // Changed: Increased spacing to match AuthorMultiSelectWidget
+            const SizedBox(
+                height:
+                    8), // Changed: Increased spacing to match AuthorMultiSelectWidget
             Container(
-              decoration: BoxDecoration( // Added: Border styling with error handling
-                color: const Color(0xFFF4F7FD),
+              decoration: BoxDecoration(
+                // Added: Border styling with error handling
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
@@ -93,30 +100,35 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                       systemManager,
                       ...state.dataManager.result ?? [],
                     ];
-                    if (widget.selectedManagers != null && managersList.isNotEmpty) {
+                    if (widget.selectedManagers != null &&
+                        managersList.isNotEmpty) {
                       selectedManagersData = managersList
                           .where((manager) => widget.selectedManagers!
                               .contains(manager.id.toString()))
                           .toList();
-                      allSelected = selectedManagersData.length == managersList.length; // Added: Update allSelected state
+                      allSelected = selectedManagersData.length ==
+                          managersList
+                              .length; // Added: Update allSelected state
                     }
                   }
 
                   return CustomDropdown<ManagerData>.multiSelectSearch(
                     items: managersList,
                     initialItems: selectedManagersData,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    decoration: CustomDropdownDecoration( // Changed: Unified decoration to match AuthorMultiSelectWidget
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                    decoration: CustomDropdownDecoration(
+                      // Changed: Unified decoration to match AuthorMultiSelectWidget
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -140,11 +152,12 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: const Color(0xff1E2E52),
+                                            color:
+                                                context.appColors.textPrimary,
                                             width: 1),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? context.appColors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
@@ -158,7 +171,8 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
                                         style: managerTextStyle,
                                       ),
                                     ),
@@ -168,22 +182,29 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                             ),
                             Divider(
                                 height: 20,
-                                color: const Color(0xFFE5E7EB)), // Added: Divider for "Select All"
+                                color: context.appColors
+                                    .borderSubtle), // Added: Divider for "Select All"
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
                       }
-                      return _buildListItem(item, isSelected, onItemSelect); // Changed: Use custom _buildListItem
+                      return _buildListItem(item, isSelected,
+                          onItemSelect); // Changed: Use custom _buildListItem
                     },
                     headerListBuilder: (context, hint, enabled) {
-                      String selectedManagersNames = selectedManagersData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_manager')
-                          : selectedManagersData
-                              .map((e) => e.id == 0 ? e.name : '${e.name} ${e.lastname}')
-                              .join(', ');
+                      String selectedManagersNames =
+                          selectedManagersData.isEmpty
+                              ? AppLocalizations.of(context)!
+                                  .translate('select_manager')
+                              : selectedManagersData
+                                  .map((e) => e.id == 0
+                                      ? e.name
+                                      : '${e.name} ${e.lastname}')
+                                  .join(', ');
                       return Text(
                         selectedManagersNames,
-                        style: managerTextStyle, // Changed: Use managerTextStyle
+                        style:
+                            managerTextStyle, // Changed: Use managerTextStyle
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
@@ -198,7 +219,8 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                       widget.onSelectManagers(values);
                       setState(() {
                         selectedManagersData = values;
-                        allSelected = values.length == managersList.length; // Added: Update allSelected
+                        allSelected = values.length ==
+                            managersList.length; // Added: Update allSelected
                       });
                       field.didChange(values); // Added: Update FormField state
                     },
@@ -211,10 +233,8 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
@@ -225,7 +245,12 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
   }
 
   // Added: Custom list item builder to match AuthorMultiSelectWidget
-  Widget _buildListItem(ManagerData item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(
+      ManagerData item, bool isSelected, Function() onItemSelect) {
+    final managerTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -237,11 +262,13 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
-import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/lead/chat_lead_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/chat_task_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
@@ -12,12 +12,10 @@ import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
-import 'package:crm_task_manager/custom_widget/gps_screen_for_admin.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
-import 'package:crm_task_manager/screens/gps/background_location_service.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
@@ -382,9 +380,9 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canOpenTimesheet = false;
   // DEAL custom fields were moved to filter screen
 
-  Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
   late Timer _timer;
   bool _areFiltersActive = false; // Добавляем эту переменную
+  bool _isFilterBlinkOn = false;
 
   @override
   void initState() {
@@ -399,7 +397,6 @@ class _CustomAppBarState extends State<CustomAppBar>
         widget.hasActiveDealFilters ||
         widget.hasActiveTaskFilters ||
         widget.hasActiveLeadFilters;
-    _iconColor = _areFiltersActive ? Colors.blue : Colors.black;
     if (_cachedUserImage.isNotEmpty) {
       _userImage = _cachedUserImage;
     } else {
@@ -431,12 +428,11 @@ class _CustomAppBarState extends State<CustomAppBar>
     _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
       if (_areFiltersActive) {
         setState(() {
-          _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
+          _isFilterBlinkOn = !_isFilterBlinkOn;
         });
       } else {
         setState(() {
-          _iconColor =
-              Colors.black; // Возвращаем черный цвет когда фильтры неактивны
+          _isFilterBlinkOn = false;
         });
       }
     });
@@ -446,7 +442,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     setState(() {
       _areFiltersActive = active;
       if (!active) {
-        _iconColor = Colors.black; // Сразу устанавливаем черный цвет при сбросе
+        _isFilterBlinkOn = false;
       }
     });
   }
@@ -836,7 +832,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             shape: BoxShape.circle,
             color: backgroundColor,
             border: Border.all(
-              color: Colors.white,
+              color: Colors.transparent,
               width: 0,
             ),
           ),
@@ -847,8 +843,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                 padding: EdgeInsets.all(12),
                 child: Text(
                   text,
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: context.appTextStyles.titleLg.copyWith(
+                    color: context.appColors.textInverse,
                     fontSize: 26,
                     fontWeight: FontWeight.w500,
                     height: 1,
@@ -885,10 +881,25 @@ class _CustomAppBarState extends State<CustomAppBar>
 
   @override
   Widget build(BuildContext context) {
+    final tooltipDecoration = BoxDecoration(
+      color: context.appColors.surfacePrimary,
+      borderRadius: BorderRadius.circular(8),
+      boxShadow: context.appShadows.card,
+    );
+    final tooltipTextStyle = context.appTextStyles.bodySm.copyWith(
+      color: context.appColors.textPrimary,
+    );
+    final inactiveIconColor = context.appColors.iconPrimary;
+    final activeIconColor = context.appColors.buttonPrimaryBg;
+    final filterIconColor = _areFiltersActive && _isFilterBlinkOn
+        ? activeIconColor
+        : inactiveIconColor;
+    final alertColor = context.appColors.error;
+
     return Container(
         width: double.infinity,
         height: kToolbarHeight,
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         padding: EdgeInsets.zero,
         child: Row(children: [
           // Аватар пользователя
@@ -909,11 +920,8 @@ class _CustomAppBarState extends State<CustomAppBar>
               child: widget.titleWidget ??
                   Text(
                     widget.title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                    style: context.appTextStyles.titleLg.copyWith(
+                      color: context.appColors.textPrimary,
                     ),
                   ),
             ),
@@ -931,8 +939,13 @@ class _CustomAppBarState extends State<CustomAppBar>
                     hintText: AppLocalizations.of(context)!
                         .translate('search_appbar'),
                     border: InputBorder.none,
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.fieldHint,
+                    ),
                   ),
-                  style: TextStyle(fontSize: 16),
+                  style: context.appTextStyles.bodyLg.copyWith(
+                    color: context.appColors.textPrimary,
+                  ),
                   autofocus: true,
                 ),
               ),
@@ -946,26 +959,19 @@ class _CustomAppBarState extends State<CustomAppBar>
                 message: AppLocalizations.of(context)!.translate('filter'),
                 preferBelow: false,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: context.appShadows.card,
                 ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
+                textStyle: context.appTextStyles.bodySm.copyWith(
+                  color: context.appColors.textPrimary,
                 ),
                 child: IconButton(
                   icon: Image.asset(
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
-                    color: _iconColor, // Анимация цвета
+                    color: filterIconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -993,19 +999,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                 message: AppLocalizations.of(context)!.translate('search'),
                 preferBelow: false,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: context.appShadows.card,
                 ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
+                textStyle: context.appTextStyles.bodySm.copyWith(
+                  color: context.appColors.textPrimary,
                 ),
                 child: IconButton(
                   key: widget.SearchIconKey,
@@ -1045,21 +1044,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                 message:
                     AppLocalizations.of(context)!.translate('notification'),
                 preferBelow: false,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
+                decoration: tooltipDecoration,
+                textStyle: tooltipTextStyle,
                 child: IconButton(
                   key: widget.NotificationIconKey,
                   padding: EdgeInsets.zero,
@@ -1080,7 +1066,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                               width: 10,
                               height: 10,
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: alertColor,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -1112,29 +1098,16 @@ class _CustomAppBarState extends State<CustomAppBar>
               child: Tooltip(
                 message: AppLocalizations.of(context)!.translate('filter'),
                 preferBelow: false,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
+                decoration: tooltipDecoration,
+                textStyle: tooltipTextStyle,
                 child: IconButton(
                   icon: Image.asset(
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
-                    // ОБНОВЛЯЕМ: Цвет иконки зависит от активности фильтров
-                    color:
-                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                    color: widget.hasActiveChatFilters
+                        ? activeIconColor
+                        : filterIconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1204,28 +1177,16 @@ class _CustomAppBarState extends State<CustomAppBar>
                 message:
                     AppLocalizations.of(context)!.translate('task_filters'),
                 preferBelow: false,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
+                decoration: tooltipDecoration,
+                textStyle: tooltipTextStyle,
                 child: IconButton(
                   icon: Image.asset(
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
-                    color:
-                        widget.hasActiveChatFilters ? Colors.blue : _iconColor,
+                    color: widget.hasActiveChatFilters
+                        ? activeIconColor
+                        : filterIconColor,
                   ),
                   onPressed: () {
                     setState(() {
@@ -1321,21 +1282,8 @@ class _CustomAppBarState extends State<CustomAppBar>
               child: Tooltip(
                 message: AppLocalizations.of(context)!.translate('dashboard'),
                 preferBelow: false,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
+                decoration: tooltipDecoration,
+                textStyle: tooltipTextStyle,
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(),
@@ -1352,29 +1300,17 @@ class _CustomAppBarState extends State<CustomAppBar>
             Tooltip(
               message: AppLocalizations.of(context)!.translate('search'),
               preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
+              decoration: tooltipDecoration,
+              textStyle: tooltipTextStyle,
               child: IconButton(
                 key: widget.FiltrEventIconKey,
                 icon: Image.asset(
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color:
-                      widget.hasActiveEventFilters ? Colors.blue : _iconColor,
+                  color: widget.hasActiveEventFilters
+                      ? activeIconColor
+                      : filterIconColor,
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -1405,7 +1341,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color: _iconColor,
+                  color: filterIconColor,
                 ),
               ),
               onPressed: () {
@@ -1420,7 +1356,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color: _iconColor,
+                  color: filterIconColor,
                 ),
               ),
               onPressed: () {
@@ -1435,7 +1371,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                   'assets/icons/AppBar/filter.png',
                   width: 24,
                   height: 24,
-                  color: _iconColor,
+                  color: filterIconColor,
                 ),
               ),
               onPressed: () {
@@ -1449,21 +1385,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                 message:
                     AppLocalizations.of(context)!.translate('appbar_my_tasks'),
                 preferBelow: false,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
+                decoration: tooltipDecoration,
+                textStyle: tooltipTextStyle,
                 child: IconButton(
                   key: widget.MyTaskIconKey,
                   padding: EdgeInsets.zero,
@@ -1484,7 +1407,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                               width: 10,
                               height: 10,
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: alertColor,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -1510,21 +1433,8 @@ class _CustomAppBarState extends State<CustomAppBar>
               child: Tooltip(
                 message: AppLocalizations.of(context)!.translate('calendar'),
                 preferBelow: false,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                textStyle: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
+                decoration: tooltipDecoration,
+                textStyle: tooltipTextStyle,
                 child: IconButton(
                   key: widget.CalendarIconKey,
                   padding: EdgeInsets.zero,
@@ -1556,7 +1466,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                       children: [
                         Icon(
                           Icons.more_vert,
-                          color: _areFiltersActive ? _iconColor : Colors.black,
+                          color: _areFiltersActive
+                              ? filterIconColor
+                              : inactiveIconColor,
                         ),
                         if (_hasOverdueTasks)
                           Positioned(
@@ -1568,7 +1480,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 width: 10,
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
+                                  color: alertColor,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -1576,7 +1488,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                           ),
                       ],
                     ),
-                    color: Colors.white,
+                    color: context.appColors.surfacePrimary,
                     onSelected: (String value) {
                       switch (value) {
                         case 'filter_task':
@@ -1659,7 +1571,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                               value: 'dashboard_chart_settings',
                               child: Row(
                                 children: [
-                                  Icon(Icons.tune_rounded, color: _iconColor),
+                                  Icon(Icons.tune_rounded,
+                                      color: filterIconColor),
                                   SizedBox(width: 8),
                                   Text(
                                     AppLocalizations.of(context)!
@@ -1678,8 +1591,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     width: 24,
                                     height: 24,
                                     color: widget.hasActiveDashboardFilters
-                                        ? Colors.blue
-                                        : _iconColor,
+                                        ? activeIconColor
+                                        : filterIconColor,
                                   ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
@@ -1693,14 +1606,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
+                                      ? Icon(Icons.close,
+                                          color: filterIconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
                                           color: widget.hasActiveLeadFilters
-                                              ? Colors.blue
-                                              : _iconColor,
+                                              ? activeIconColor
+                                              : filterIconColor,
                                         ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
@@ -1714,12 +1628,13 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
+                                      ? Icon(Icons.close,
+                                          color: filterIconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
-                                          color: _iconColor,
+                                          color: filterIconColor,
                                         ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
@@ -1745,14 +1660,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                               child: Row(
                                 children: [
                                   _isTaskFiltering
-                                      ? Icon(Icons.close, color: _iconColor)
+                                      ? Icon(Icons.close,
+                                          color: filterIconColor)
                                       : Image.asset(
                                           'assets/icons/AppBar/filter.png',
                                           width: 24,
                                           height: 24,
                                           color: widget.hasActiveTaskFilters
-                                              ? Colors.blue
-                                              : _iconColor,
+                                              ? activeIconColor
+                                              : filterIconColor,
                                         ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
@@ -1781,7 +1697,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                               width: 10,
                                               height: 10,
                                               decoration: BoxDecoration(
-                                                color: Colors.red,
+                                                color: alertColor,
                                                 shape: BoxShape.circle,
                                               ),
                                             ),
@@ -1821,8 +1737,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     'assets/icons/AppBar/call_center.png',
                                     width: 24,
                                     height: 24,
-                                    // Иконка колл-центра всегда черная, не реагирует на фильтры
-                                    color: Colors.black,
+                                    color: inactiveIconColor,
                                   ),
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!

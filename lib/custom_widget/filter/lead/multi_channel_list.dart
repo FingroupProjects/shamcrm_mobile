@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/lead_channel_list/lead_channel_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -25,13 +26,6 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
   List<LeadFilterChannelData> selectedChannelsData = [];
   bool allSelected = false;
 
-  final TextStyle channelTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -48,6 +42,10 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final channelTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return FormField<List<LeadFilterChannelData>>(
       validator: (value) {
         if (selectedChannelsData.isEmpty) {
@@ -70,11 +68,13 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetAllLeadChannelBloc, GetAllLeadChannelState>(
@@ -102,12 +102,12 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(color: Colors.transparent),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder:
-                          Border.all(color: const Color(0xFFE5E7EB)),
+                          Border.all(color: context.appColors.borderSubtle),
                       expandedBorderRadius: BorderRadius.circular(12),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -134,7 +134,10 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                                 ),
                               ),
                             ),
-                            const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                            Divider(
+                              height: 20,
+                              color: context.appColors.borderSubtle,
+                            ),
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
@@ -177,10 +180,8 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
@@ -195,12 +196,17 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
       width: 18,
       height: 18,
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xff1E2E52), width: 1),
+        border: Border.all(color: context.appColors.textPrimary, width: 1),
         borderRadius: BorderRadius.circular(4),
-        color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+        color:
+            isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
       ),
       child: isSelected
-          ? const Icon(Icons.check, color: Colors.white, size: 14)
+          ? Icon(
+              Icons.check,
+              color: context.appColors.textInverse,
+              size: 14,
+            )
           : null,
     );
   }
@@ -210,6 +216,10 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
     bool isSelected,
     Function() onItemSelect,
   ) {
+    final channelTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(

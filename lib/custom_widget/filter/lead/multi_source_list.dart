@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/source_list/source_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/source_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -9,14 +10,15 @@ class SourcesMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedSources;
   final Function(List<SourceData>) onSelectSources;
 
-  SourcesMultiSelectWidget({
+  const SourcesMultiSelectWidget({
     super.key,
     required this.onSelectSources,
     this.selectedSources,
   });
 
   @override
-  State<SourcesMultiSelectWidget> createState() => _SourcesMultiSelectWidgetState();
+  State<SourcesMultiSelectWidget> createState() =>
+      _SourcesMultiSelectWidgetState();
 }
 
 class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
@@ -24,17 +26,12 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
   List<SourceData> selectedSourcesData = [];
   bool allSelected = false; // Добавлено: Флаг для "Выделить всех"
 
-  final TextStyle sourceTextStyle = const TextStyle( // Добавлено: Унифицированный стиль текста
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-  
   @override
   void initState() {
     super.initState();
-    context.read<GetAllSourceBloc>().add(GetAllSourceEv()); // Добавлено: Инициализация загрузки источников
+    context
+        .read<GetAllSourceBloc>()
+        .add(GetAllSourceEv()); // Добавлено: Инициализация загрузки источников
   }
 
   // Добавлено: Функция для выделения/снятия выделения всех источников
@@ -52,10 +49,16 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FormField<List<SourceData>>( // Изменено: Обёрнуто в FormField для валидации
+    final sourceTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    return FormField<List<SourceData>>(
+      // Изменено: Обёрнуто в FormField для валидации
       validator: (value) {
         if (selectedSourcesData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -65,49 +68,60 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('source'),
-              style: sourceTextStyle.copyWith( // Изменено: Используем sourceTextStyle с меньшим весом
+              style: sourceTextStyle.copyWith(
+                // Изменено: Используем sourceTextStyle с меньшим весом
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8), // Изменено: Увеличен отступ до 8 для соответствия AuthorMultiSelectWidget
+            const SizedBox(
+                height:
+                    8), // Изменено: Увеличен отступ до 8 для соответствия AuthorMultiSelectWidget
             Container(
-              decoration: BoxDecoration( // Добавлено: Стилизация бордера с учетом ошибок
-                color: const Color(0xFFF4F7FD),
+              decoration: BoxDecoration(
+                // Добавлено: Стилизация бордера с учетом ошибок
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetAllSourceBloc, GetAllSourceState>(
                 builder: (context, state) {
                   if (state is GetAllSourceSuccess) {
-                    sourcesList = state.dataSource ?? [];
-                    if (widget.selectedSources != null && sourcesList.isNotEmpty) {
+                    sourcesList = state.dataSource;
+                    if (widget.selectedSources != null &&
+                        sourcesList.isNotEmpty) {
                       selectedSourcesData = sourcesList
                           .where((source) => widget.selectedSources!
                               .contains(source.id.toString()))
                           .toList();
-                      allSelected = selectedSourcesData.length == sourcesList.length; // Добавлено: Обновление allSelected
+                      allSelected = selectedSourcesData.length ==
+                          sourcesList
+                              .length; // Добавлено: Обновление allSelected
                     }
                   }
 
                   return CustomDropdown<SourceData>.multiSelectSearch(
                     items: sourcesList,
                     initialItems: selectedSourcesData,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    decoration: CustomDropdownDecoration( // Изменено: Унифицированы стили декорации
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                    decoration: CustomDropdownDecoration(
+                      // Изменено: Унифицированы стили декорации
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -131,11 +145,12 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: const Color(0xff1E2E52),
+                                            color:
+                                                context.appColors.textPrimary,
                                             width: 1),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? context.appColors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
@@ -149,7 +164,8 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
                                         style: sourceTextStyle,
                                       ),
                                     ),
@@ -159,20 +175,24 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                             ),
                             Divider(
                                 height: 20,
-                                color: const Color(0xFFE5E7EB)), // Добавлено: Разделитель для "Выделить всех"
+                                color: context.appColors
+                                    .borderSubtle), // Добавлено: Разделитель для "Выделить всех"
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
                       }
-                      return _buildListItem(item, isSelected, onItemSelect); // Изменено: Используем кастомный _buildListItem
+                      return _buildListItem(item, isSelected,
+                          onItemSelect); // Изменено: Используем кастомный _buildListItem
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedSourcesNames = selectedSourcesData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_source')
+                          ? AppLocalizations.of(context)!
+                              .translate('select_source')
                           : selectedSourcesData.map((e) => e.name).join(', ');
                       return Text(
                         selectedSourcesNames,
-                        style: sourceTextStyle, // Изменено: Используем sourceTextStyle, показываем имена источников
+                        style:
+                            sourceTextStyle, // Изменено: Используем sourceTextStyle, показываем имена источников
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
@@ -187,9 +207,12 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                       widget.onSelectSources(values);
                       setState(() {
                         selectedSourcesData = values;
-                        allSelected = values.length == sourcesList.length; // Добавлено: Обновление allSelected
+                        allSelected = values.length ==
+                            sourcesList
+                                .length; // Добавлено: Обновление allSelected
                       });
-                      field.didChange(values); // Добавлено: Обновление состояния FormField
+                      field.didChange(
+                          values); // Добавлено: Обновление состояния FormField
                     },
                   );
                 },
@@ -200,10 +223,8 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
@@ -214,7 +235,12 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
   }
 
   // Добавлено: Кастомный построитель элементов списка для соответствия AuthorMultiSelectWidget
-  Widget _buildListItem(SourceData item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(
+      SourceData item, bool isSelected, Function() onItemSelect) {
+    final sourceTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -226,16 +252,18 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                       size: 14,
                     )
                   : null,
