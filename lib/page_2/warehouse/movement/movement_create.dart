@@ -234,7 +234,7 @@ class CreateMovementDocumentScreenState
   }
 
   void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
+    final quantity = num.tryParse(value.replaceAll(',', '.'));
     if (quantity != null && quantity > 0) {
       setState(() {
         final index =
@@ -387,7 +387,8 @@ class CreateMovementDocumentScreenState
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            (num.tryParse(quantityController.text.replaceAll(',', '.')) ?? 0) <=
+                0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -426,7 +427,7 @@ class CreateMovementDocumentScreenState
           final unitId = item['unit_id'];
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': num.tryParse(item['quantity'].toString()),
             'unit_id': unitId,
           };
         }).toList(),
@@ -949,7 +950,8 @@ class CreateMovementDocumentScreenState
                             hintText: AppLocalizations.of(context)!
                                     .translate('quantity') ??
                                 'Количество',
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
                               QuantityInputFormatter(),
                             ],

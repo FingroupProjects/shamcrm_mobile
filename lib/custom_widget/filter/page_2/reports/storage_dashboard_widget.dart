@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -10,12 +11,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class StorageDashboardWidget extends StatefulWidget {
   final String? selectedStorage;
   final ValueChanged<String?> onChanged;
-  final Key? key;
 
   const StorageDashboardWidget({
+    super.key,
     required this.selectedStorage,
     required this.onChanged,
-    this.key,
   });
 
   @override
@@ -40,11 +40,10 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -52,7 +51,7 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: const Duration(seconds: 3),
@@ -83,11 +82,9 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('storage'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -99,15 +96,15 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
                 overlayHeight: 400,
                 enabled: true,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
+                  closedFillColor: context.appColors.fieldBg,
+                  expandedFillColor: context.appColors.surfacePrimary,
                   closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
@@ -115,11 +112,9 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
                     item.name,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -131,11 +126,9 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
                       children: [
                         Text(
                           AppLocalizations.of(context)!.translate('select_storage'),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: context.appTextStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.textPrimary,
                           ),
                         ),
                       ],
@@ -144,21 +137,17 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
 
                   return Text(
                     selectedItem.name,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   );
                 },
                 hintBuilder: (context, hint, enabled) => Text(
                   AppLocalizations.of(context)!.translate('select_storage'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 excludeSelected: false,
@@ -184,4 +173,3 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
     );
   }
 }
-

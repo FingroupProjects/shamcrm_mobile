@@ -19,7 +19,8 @@ class AddSupplierOpeningScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _AddSupplierOpeningScreenState createState() => _AddSupplierOpeningScreenState();
+  _AddSupplierOpeningScreenState createState() =>
+      _AddSupplierOpeningScreenState();
 }
 
 class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
@@ -92,11 +93,12 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
   }
 
   void _showFieldLockedSnackBar(String fieldKey) {
-    final fieldName = AppLocalizations.of(context)?.translate(fieldKey) ?? fieldKey;
-    
+    final fieldName =
+        AppLocalizations.of(context)?.translate(fieldKey) ?? fieldKey;
+
     // Закрываем текущий SnackBar перед показом нового
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -161,7 +163,8 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
             },
           ),
           title: Text(
-            AppLocalizations.of(context)?.translate('add_supplier_opening') ?? 'Добавить остаток поставщика',
+            AppLocalizations.of(context)?.translate('add_supplier_opening') ??
+                'Добавить остаток поставщика',
             style: const TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
@@ -196,9 +199,15 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                             absorbing: !isOurDutyEnabled,
                             child: CustomTextField(
                               controller: ourDutyController,
-                              label: AppLocalizations.of(context)?.translate('our_duty') ?? 'Наш долг',
-                              hintText: AppLocalizations.of(context)?.translate('enter_amount') ?? 'Введите сумму',
-                              keyboardType: TextInputType.number,
+                              label: AppLocalizations.of(context)
+                                      ?.translate('our_duty') ??
+                                  'Наш долг',
+                              hintText: AppLocalizations.of(context)
+                                      ?.translate('enter_amount') ??
+                                  'Введите сумму',
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
                               enabled: isOurDutyEnabled,
                               inputFormatters: [
                                 PriceInputFormatter(),
@@ -209,10 +218,13 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                                   return null;
                                 }
                                 if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)?.translate('field_required') ?? 'Обязательное поле';
+                                  return AppLocalizations.of(context)
+                                          ?.translate('field_required') ??
+                                      'Обязательное поле';
                                 }
                                 if (double.tryParse(value) == null) {
-                                  return AppLocalizations.of(context)?.translate('enter_correct_number') ??
+                                  return AppLocalizations.of(context)
+                                          ?.translate('enter_correct_number') ??
                                       'Введите корректное число';
                                 }
                                 return null;
@@ -231,9 +243,15 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                             absorbing: !isDebtToUsEnabled,
                             child: CustomTextField(
                               controller: debtToUsController,
-                              label: AppLocalizations.of(context)?.translate('debt_to_us') ?? 'Долг поставщика',
-                              hintText: AppLocalizations.of(context)?.translate('enter_amount') ?? 'Введите сумму',
-                              keyboardType: TextInputType.number,
+                              label: AppLocalizations.of(context)
+                                      ?.translate('debt_to_us') ??
+                                  'Долг поставщика',
+                              hintText: AppLocalizations.of(context)
+                                      ?.translate('enter_amount') ??
+                                  'Введите сумму',
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
                               enabled: isDebtToUsEnabled,
                               inputFormatters: [
                                 PriceInputFormatter(),
@@ -244,10 +262,13 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                                   return null;
                                 }
                                 if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)?.translate('field_required') ?? 'Обязательное поле';
+                                  return AppLocalizations.of(context)
+                                          ?.translate('field_required') ??
+                                      'Обязательное поле';
                                 }
                                 if (double.tryParse(value) == null) {
-                                  return AppLocalizations.of(context)?.translate('enter_correct_number') ??
+                                  return AppLocalizations.of(context)
+                                          ?.translate('enter_correct_number') ??
                                       'Введите корректное число';
                                 }
                                 return null;
@@ -270,7 +291,9 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)?.translate('close') ?? 'Закрыть',
+                            buttonText: AppLocalizations.of(context)
+                                    ?.translate('close') ??
+                                'Закрыть',
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
                             onPressed: isCreating
@@ -283,7 +306,9 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
-                            buttonText: AppLocalizations.of(context)?.translate('save') ?? 'Сохранить',
+                            buttonText: AppLocalizations.of(context)
+                                    ?.translate('save') ??
+                                'Сохранить',
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isCreating,
@@ -292,13 +317,17 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                                 : () {
                                     if (_formKey.currentState!.validate()) {
                                       // Если поле пустое или отключено, отправляем 0
-                                      final ourDuty = ourDutyController.text.isEmpty 
-                                          ? 0.0 
-                                          : double.parse(ourDutyController.text);
-                                      final debtToUs = debtToUsController.text.isEmpty 
-                                          ? 0.0 
-                                          : double.parse(debtToUsController.text);
-                                      
+                                      final ourDuty =
+                                          ourDutyController.text.isEmpty
+                                              ? 0.0
+                                              : double.parse(
+                                                  ourDutyController.text);
+                                      final debtToUs =
+                                          debtToUsController.text.isEmpty
+                                              ? 0.0
+                                              : double.parse(
+                                                  debtToUsController.text);
+
                                       // Create event for adding supplier opening
                                       context.read<SupplierOpeningsBloc>().add(
                                             CreateSupplierOpening(

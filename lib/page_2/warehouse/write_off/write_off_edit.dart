@@ -242,7 +242,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
   }
 
   void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
+    final quantity = num.tryParse(value.replaceAll(',', '.'));
     if (quantity != null && quantity > 0) {
       setState(() {
         final index =
@@ -368,7 +368,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            (num.tryParse(quantityController.text.replaceAll(',', '.')) ?? 0) <=
+                0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -406,7 +407,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             documentGoods: _items.map((item) {
               return {
                 'good_id': item['variantId'],
-                'quantity': int.tryParse(item['quantity'].toString()),
+                'quantity': num.tryParse(item['quantity'].toString()),
                 'unit_id': item['unit_id'],
               };
             }).toList(),
@@ -857,7 +858,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                           hintText: AppLocalizations.of(context)
                                   ?.translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

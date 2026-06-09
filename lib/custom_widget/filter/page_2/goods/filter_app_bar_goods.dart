@@ -370,7 +370,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                       .translate('enter_discount_percent'),
                                   label: AppLocalizations.of(context)!
                                       .translate('discount_percent'),
-                                  keyboardType: TextInputType.number,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
                                       return null;

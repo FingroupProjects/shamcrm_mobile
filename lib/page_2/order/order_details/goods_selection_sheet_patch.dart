@@ -1089,7 +1089,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                           width: 36,
                           child: TextField(
                             controller: _getQuantityController(variant),
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 16,

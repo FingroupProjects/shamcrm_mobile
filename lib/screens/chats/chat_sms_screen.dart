@@ -25,7 +25,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubbl
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
 import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:file_picker/file_picker.dart';
@@ -147,7 +147,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   Future<void> _showInstagramResponseTypePicker(Message? message) async {
     final selected = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -160,12 +160,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.reply, color: Colors.black87),
+                  leading: Icon(Icons.reply, color: context.appColors.iconSecondary),
                   title: Text(localizations.translate('reply_as_comment')),
                   onTap: () => Navigator.pop(context, 'comment'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.send, color: Colors.black87),
+                  leading: Icon(Icons.send, color: context.appColors.iconSecondary),
                   title: Text(localizations.translate('reply_in_direct')),
                   onTap: () => Navigator.pop(context, 'direct'),
                 ),
@@ -414,8 +414,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           content: Text(
             AppLocalizations.of(context)!
                 .translate('failed_to_update_reaction'),
+            style: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.textInverse,
+            ),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
         ),
       );
     }
@@ -938,24 +941,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xffF8FBFF),
-                      Color(0xffE5EEFF),
+                      context.appColors.surfaceElevated,
+                      context.appColors.backgroundSecondary,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: const Color(0xffD6E2F5),
+                    color: context.appColors.borderSubtle,
                     width: 1,
                   ),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: Color(0x1A1E2E52),
+                      color: context.appColors.shadow.withValues(alpha: 0.1),
                       blurRadius: 16,
-                      offset: Offset(0, 8),
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
@@ -963,9 +966,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.iconPrimary,
                       size: 28,
                     ),
                     if (_pendingNewMessagesCount > 0)
@@ -982,10 +985,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xff4759FF),
+                            color: context.appColors.info,
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                              color: Colors.white,
+                              color: context.appColors.surfacePrimary,
                               width: 2,
                             ),
                           ),
@@ -994,11 +997,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                                 ? '99+'
                                 : '$_pendingNewMessagesCount',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: context.appTextStyles.bodySm.copyWith(
+                              color: context.appColors.textInverse,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              fontFamily: 'Gilroy',
                             ),
                           ),
                         ),
@@ -1081,8 +1083,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               AppLocalizations.of(context)!
                   .translate('retry_failed_with_error')
                   .replaceFirst('{error}', e.toString()),
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textInverse,
+              ),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
           ),
         );
       }
@@ -1457,18 +1462,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       SnackBar(
         content: Text(
           '${AppLocalizations.of(context)!.translate('partial_connection_error')}: ${_getReadableError(error)}',
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textInverse,
           ),
         ),
-        backgroundColor: Colors.orange,
+        backgroundColor: context.appColors.warning,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: AppLocalizations.of(context)!.translate('retry'),
-          textColor: Colors.white,
+          textColor: context.appColors.textInverse,
           onPressed: () {
             _initializeServices();
           },
@@ -1709,7 +1711,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 Container(
                   height: 450,
                   width: double.maxFinite,
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   child: TableCalendar(
                     firstDay: DateTime(2020),
                     lastDay: DateTime(2101),
@@ -1720,27 +1722,26 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
                         border: Border.all(
-                          color: Colors.blue,
+                          color: context.appColors.info,
                           width: 2,
                         ),
                         shape: BoxShape.circle,
                       ),
-                      todayTextStyle: const TextStyle(color: Colors.blue),
+                      todayTextStyle: context.appTextStyles.labelMd.copyWith(
+                        color: context.appColors.info,
+                      ),
                       outsideDaysVisible: true,
-                      outsideTextStyle:
-                          TextStyle(color: Colors.black.withOpacity(0.3)),
+                      outsideTextStyle: context.appTextStyles.labelMd.copyWith(
+                        color: context.appColors.textMuted,
+                      ),
                     ),
-                    daysOfWeekStyle: const DaysOfWeekStyle(
-                      weekdayStyle: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
+                    daysOfWeekStyle: DaysOfWeekStyle(
+                      weekdayStyle: context.appTextStyles.labelMd.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
-                      weekendStyle: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
+                      weekendStyle: context.appTextStyles.labelMd.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Colors.red,
+                        color: context.appColors.error,
                       ),
                     ),
                     headerStyle: HeaderStyle(
@@ -1748,8 +1749,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       titleCentered: true,
                       leftChevronVisible: true,
                       rightChevronVisible: true,
-                      titleTextStyle:
-                          const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
+                      titleTextStyle: context.appTextStyles.titleMd,
                       titleTextFormatter: (date, locale) {
                         return DateFormat.yMMMM(locale).format(date);
                       },
@@ -1763,8 +1763,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             child: Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.blue,
+                              decoration: BoxDecoration(
+                                color: context.appColors.info,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -1794,13 +1794,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                                   .translate('no_messages_for_date')
                                   .replaceFirst(
                                       '{date}', formatDate(selectedDay)),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                              style: context.appTextStyles.bodyMd.copyWith(
+                                color: context.appColors.textInverse,
                               ),
                             ),
-                            backgroundColor: Colors.red,
+                            backgroundColor: context.appColors.error,
                             duration: const Duration(seconds: 2),
                           ),
                         );
@@ -1848,13 +1846,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               AppLocalizations.of(context)!
                   .translate('no_messages_for_date')
                   .replaceFirst('{date}', formatDate(selectedDate)),
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textInverse,
               ),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -1895,7 +1891,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       return CircleAvatar(
         backgroundImage: AssetImage('assets/images/AvatarTask.png'),
         radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {},
       );
     }
@@ -1925,17 +1921,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               shape: BoxShape.circle,
               color: backgroundColor,
               border: Border.all(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 width: 1,
               ),
             ),
             child: Center(
               child: Text(
                 text,
-                style: TextStyle(
-                  color: Colors.white,
+                style: context.appTextStyles.bodyLg.copyWith(
+                  color: context.appColors.textInverse,
                   fontSize: 20,
-                  fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1956,7 +1951,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
         radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        backgroundColor: isSupportAvatar ? context.appColors.textPrimary : context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {},
       );
     } catch (e) {
@@ -1965,7 +1960,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             ? 'assets/images/AvatarTask.png'
             : 'assets/images/AvatarChat.png'),
         radius: ChatSmsStyles.avatarRadius,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        backgroundColor: isSupportAvatar ? context.appColors.textPrimary : context.appColors.surfacePrimary,
       );
     }
   }
@@ -2025,7 +2020,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         },
         child: Scaffold(
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: context.appColors.surfacePrimary,
             forceMaterialTransparency: false,
             scrolledUnderElevation: 0,
             elevation: 0,
@@ -2078,8 +2073,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                         hintText: AppLocalizations.of(context)!
                             .translate('search_appbar'),
                         border: InputBorder.none,
-                        hintStyle: const TextStyle(
-                            color: Colors.black, fontFamily: 'Gilroy'),
+                        hintStyle: context.appTextStyles.bodyMd.copyWith(
+                            color: context.appColors.textSecondary),
                       ),
                       onChanged: _onSearchChanged,
                     )
@@ -2193,14 +2188,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                                       content: Text(
                                         AppLocalizations.of(context)!
                                             .translate('error'),
-                                        style: const TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
+                                        style: context.appTextStyles.bodyMd.copyWith(
+                                          color: context.appColors.textInverse,
                                         ),
                                       ),
-                                      backgroundColor: Colors.red,
+                                      backgroundColor: context.appColors.error,
                                       duration: const Duration(seconds: 3),
                                     ),
                                   );
@@ -2224,11 +2216,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                                       ? AppLocalizations.of(context)!
                                           .translate('no_name')
                                       : widget.chatItem.name,
-                              style: const TextStyle(
-                                fontSize: 18,
+                              style: context.appTextStyles.titleMd.copyWith(
                                 color: ChatSmsStyles.appBarTitleColor,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
                               ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -2239,7 +2228,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                     ),
             ),
           ),
-          backgroundColor: const Color(0xffF4F7FD),
+          backgroundColor: context.appColors.backgroundSecondary,
           body: Column(
             children: [
               Expanded(child: messageListUi()),
@@ -2256,10 +2245,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           : AppLocalizations.of(context)!
                               .translate('24_hour_leads'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        color: AppColors.textPrimary700,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -2293,7 +2280,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               AppLocalizations.of(context)!
                   .translate('message_not_found_in_history'),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
           ),
         );
         return;
@@ -2339,15 +2326,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.warning_amber_rounded,
-                    size: 64, color: Colors.orange),
+                    size: 64, color: context.appColors.warning),
                 SizedBox(height: 16),
                 Text(
                   localizations.translate('partial_connection_error'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Gilroy',
-                    color: Colors.orange,
+                  style: context.appTextStyles.titleMd.copyWith(
+                    color: context.appColors.warning,
                   ),
                 ),
                 SizedBox(height: 8),
@@ -2356,10 +2340,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   child: Text(
                     state.error,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      color: Colors.grey[600],
+                    style: context.appTextStyles.bodySm.copyWith(
+                      color: context.appColors.textMuted,
                     ),
                   ),
                 ),
@@ -2374,17 +2356,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             chatType: widget.endPointInTab);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
+                        backgroundColor: context.appColors.warning,
+                        foregroundColor: context.appColors.textInverse,
                         padding:
                             EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                       child: Text(
                         localizations.translate('retry'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
+                        style: context.appTextStyles.labelMd.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -2395,10 +2375,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       },
                       child: Text(
                         localizations.translate('empty_chat'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          color: Colors.grey[600],
-                          fontSize: 14,
+                        style: context.appTextStyles.bodySm.copyWith(
+                          color: context.appColors.textMuted,
                         ),
                       ),
                     ),
@@ -2415,15 +2393,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  Icon(Icons.error_outline, size: 64, color: context.appColors.error),
                   SizedBox(height: 16),
                   Text(
                     localizations.translate('server_connection_error'),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Gilroy',
-                      color: Colors.red,
+                    style: context.appTextStyles.titleMd.copyWith(
+                      color: context.appColors.error,
                     ),
                   ),
                   SizedBox(height: 24),
@@ -2434,8 +2409,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           chatType: widget.endPointInTab);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.appColors.error,
+                      foregroundColor: context.appColors.textInverse,
                     ),
                     child: Text(localizations.translate('retry_attempt')),
                   ),
@@ -2481,7 +2456,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             return Center(
               child: Text(
                 AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: AppColors.textPrimary700),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textSecondary,
+                ),
               ),
             );
           }
@@ -2552,11 +2529,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                               child: Center(
                                 child: Text(
                                   formatDate(messageDate),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: "Gilroy",
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black,
+                                  style: context.appTextStyles.bodySm.copyWith(
+                                    color: context.appColors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -2684,7 +2658,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               if (_isMenuOpen)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: context.appColors.overlay,
                   ),
                 ),
               Positioned(
@@ -2719,7 +2693,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                  Icon(Icons.check_circle, size: 16, color: context.appColors.success),
                   const SizedBox(width: 6),
                   Text(
                     _instagramResponseType == 'direct'
@@ -2727,7 +2701,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             .translate('answer_direct')
                         : AppLocalizations.of(context)!
                             .translate('answer_comment'),
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    style: context.appTextStyles.caption.copyWith(
+                      color: context.appColors.textSecondary,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
@@ -2813,12 +2789,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.appColors.surfacePrimary,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE6EAF2)),
+            border: Border.all(color: context.appColors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: context.appColors.shadow.withValues(alpha: 0.04),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),
@@ -2830,12 +2806,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F6FC),
+                  color: context.appColors.backgroundSecondary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.swipe_left_alt_rounded,
-                  color: Color(0xFF5B6B8A),
+                  color: context.appColors.iconSecondary,
                   size: 20,
                 ),
               ),
@@ -2844,11 +2820,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 child: Text(
                   AppLocalizations.of(context)!
                       .translate('instagram_comment_reply_hint'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
+                  style: context.appTextStyles.labelMd.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF344054),
+                    color: context.appColors.textPrimary,
                     height: 1.35,
                   ),
                 ),
@@ -3755,7 +3729,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
 
   Future<String?> _showPickerDialog() async {
     return await showModalBottomSheet<String>(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -3768,54 +3742,42 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.photo_camera, color: Color(0xFF1E1E1E)),
+                leading: Icon(Icons.photo_camera, color: context.appColors.textPrimary),
                 title: Text(
                   localizations.translate('take_photo'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 onTap: () => Navigator.pop(context, 'camera_photo'),
               ),
               ListTile(
-                leading: Icon(Icons.photo_library, color: Color(0xFF1E1E1E)),
+                leading: Icon(Icons.photo_library, color: context.appColors.textPrimary),
                 title: Text(
                   localizations.translate('choose_from_gallery'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 onTap: () => Navigator.pop(context, 'gallery'),
               ),
               ListTile(
                 leading:
-                    Icon(Icons.insert_drive_file, color: Color(0xFF1E1E1E)),
+                    Icon(Icons.insert_drive_file, color: context.appColors.textPrimary),
                 title: Text(
                   localizations.translate('choose_file'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 onTap: () => Navigator.pop(context, 'file'),
               ),
               ListTile(
-                leading: Icon(Icons.location_on, color: Color(0xFF1E1E1E)),
+                leading: Icon(Icons.location_on, color: context.appColors.textPrimary),
                 title: Text(
                   localizations.translate('geolocation'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 onTap: () => Navigator.pop(context, 'location'),
@@ -4298,15 +4260,15 @@ class MessageItemWidget extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Colors.grey.shade100],
+            colors: [context.appColors.surfacePrimary, context.appColors.backgroundSecondary],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black12),
+          border: Border.all(color: context.appColors.borderSubtle),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: context.appColors.shadow.withValues(alpha: 0.05),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -4326,10 +4288,9 @@ class MessageItemWidget extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   localizations.translate('reply_to_post'),
-                  style: TextStyle(
-                    fontSize: 12,
+                  style: context.appTextStyles.caption.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    color: context.appColors.textMuted,
                   ),
                 ),
               ],
@@ -4340,9 +4301,9 @@ class MessageItemWidget extends StatelessWidget {
               maxLines: isPostExpanded ? null : 5,
               overflow:
                   isPostExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: context.appTextStyles.bodySm.copyWith(
                 fontSize: 13.5,
-                color: Colors.black87,
+                color: context.appColors.textPrimary,
                 height: 1.25,
               ),
             ),
@@ -4490,11 +4451,8 @@ class MessageItemWidget extends StatelessWidget {
       SnackBar(
         content: Text(
           AppLocalizations.of(context)!.translate('copy_message'),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textInverse,
           ),
         ),
         behavior: SnackBarBehavior.floating,
@@ -4502,7 +4460,7 @@ class MessageItemWidget extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: context.appColors.success,
         elevation: 3,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         duration: const Duration(seconds: 3),
@@ -4569,11 +4527,8 @@ class MessageItemWidget extends StatelessWidget {
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('sms_deletes_successfully'),
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
+            style: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -4581,7 +4536,7 @@ class MessageItemWidget extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: context.appColors.success,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),

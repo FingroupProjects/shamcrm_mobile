@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/good_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -11,12 +12,11 @@ import 'package:flutter/foundation.dart';
 class GoodDashboardWarehouseWidget extends StatefulWidget {
   final String? selectedGoodDashboardWarehouse;
   final ValueChanged<String?> onChanged;
-  final Key? key;
 
   const GoodDashboardWarehouseWidget({
+    super.key,
     required this.selectedGoodDashboardWarehouse,
     required this.onChanged,
-    this.key,
   });
 
   @override
@@ -93,11 +93,10 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -105,7 +104,7 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: const Duration(seconds: 3),
@@ -118,11 +117,9 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
         children: [
           Text(
             AppLocalizations.of(context)!.translate('good'),
-            style: const TextStyle(
-              fontSize: 16,
+            style: context.appTextStyles.bodyLg.copyWith(
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -174,15 +171,15 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                 overlayHeight: 400,
                 enabled: !isLoading,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
+                  closedFillColor: context.appColors.fieldBg,
+                  expandedFillColor: context.appColors.surfacePrimary,
                   closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
@@ -190,11 +187,9 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
                     item.name,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -202,37 +197,39 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                 },
                 headerBuilder: (context, selectedItem, enabled) {
                   if (isLoading) {
-                    return const Center(
+                    return Center(
                       child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            context.appColors.buttonPrimaryBg,
+                          ),
                         ),
                       ),
                     );
                   }
 
                   return Text(
-                    selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_good'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    selectedItem.name,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   );
                 },
                 hintBuilder: (context, hint, enabled) {
                   if (isLoading) {
-                    return const Center(
+                    return Center(
                       child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            context.appColors.buttonPrimaryBg,
+                          ),
                         ),
                       ),
                     );
@@ -240,22 +237,22 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
 
                   return Text(
                     AppLocalizations.of(context)!.translate('select_good'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   );
                 },
                 noResultFoundBuilder: (context, text) {
                   if (isLoading) {
-                    return const Center(
+                    return Center(
                       child: Padding(
                         padding: EdgeInsets.all(20.0),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            context.appColors.buttonPrimaryBg,
+                          ),
                         ),
                       ),
                     );
@@ -265,10 +262,8 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                       padding: const EdgeInsets.all(20.0),
                       child: Text(
                         AppLocalizations.of(context)!.translate('no_results'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                        style: context.appTextStyles.bodyMd.copyWith(
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                     ),

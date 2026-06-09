@@ -360,7 +360,7 @@ class _IncomingDocumentCreateScreenState
   }
 
   void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
+    final quantity = num.tryParse(value.replaceAll(',', '.'));
     if (quantity != null && quantity > 0) {
       setState(() {
         final index =
@@ -560,7 +560,7 @@ class _IncomingDocumentCreateScreenState
 
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': num.tryParse(item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
             if (hasUnits) 'unit_id': item['unit_id'],
           };
@@ -1101,7 +1101,8 @@ class _IncomingDocumentCreateScreenState
                           hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

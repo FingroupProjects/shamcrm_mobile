@@ -354,7 +354,7 @@
 //         label: AppLocalizations.of(context)!.translate('amount') ?? 'Сумма',
 //         hintText: AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму',
 //         maxLines: 1,
-//         keyboardType: TextInputType.number,
+//         keyboardType: const TextInputType.numberWithOptions(decimal: true),
 //         validator: (value) {
 //           if (value == null || value.isEmpty) {
 //             return AppLocalizations.of(context)!.translate('enter_amount') ?? 'Введите сумму';

@@ -387,7 +387,8 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                           label:
                               AppLocalizations.of(context)!.translate('inn') ??
                                   'ИНН',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                         ),
                         const SizedBox(height: 16),
                         _buildCurrencyField(),

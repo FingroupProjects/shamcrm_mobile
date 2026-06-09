@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
+import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -69,19 +70,19 @@ class DocumentItemCard extends StatelessWidget {
             children: [
               // Заголовок с названием и кнопкой удаления
               _buildHeader(context),
-              
+
               // Показываем доступный остаток, если есть
               if (item['remainder'] != null) _buildRemainder(context),
-              
+
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xFFE5E7EB)),
               const SizedBox(height: 10),
-              
+
               // Поля: единица измерения, количество, цена
               _buildInputFields(context, availableUnits),
-              
+
               const SizedBox(height: 10),
-              
+
               // Итоговая сумма
               _buildTotalSection(context),
             ],
@@ -158,15 +159,15 @@ class DocumentItemCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        
+
         // Количество
         Expanded(
           flex: 2,
           child: _buildQuantityField(context),
         ),
-        
+
         const SizedBox(width: 8),
-        
+
         // Цена
         Expanded(
           flex: 3,
@@ -205,7 +206,8 @@ class DocumentItemCard extends StatelessWidget {
                 isDense: true,
                 isExpanded: true,
                 dropdownColor: Colors.white,
-                icon: const Icon(Icons.arrow_drop_down, size: 16, color: Color(0xff4759FF)),
+                icon: const Icon(Icons.arrow_drop_down,
+                    size: 16, color: Color(0xff4759FF)),
                 style: const TextStyle(
                   fontSize: 12,
                   fontFamily: 'Gilroy',
@@ -270,10 +272,11 @@ class DocumentItemCard extends StatelessWidget {
         CompactTextField(
           controller: quantityController,
           focusNode: quantityFocusNode,
-          hintText: AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
-          keyboardType: TextInputType.number,
+          hintText: AppLocalizations.of(context)!.translate('quantity') ??
+              'Количество',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
+            QuantityInputFormatter(),
           ],
           textAlign: TextAlign.center,
           style: const TextStyle(

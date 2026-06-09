@@ -51,7 +51,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
       text: parseNumberToString(widget.supplierOpening.ourDuty, nullValue: '0'),
     );
     theirDebtController = TextEditingController(
-      text: parseNumberToString(widget.supplierOpening.debtToUs, nullValue: '0'),
+      text:
+          parseNumberToString(widget.supplierOpening.debtToUs, nullValue: '0'),
     );
 
     // Initialize selected supplier
@@ -73,14 +74,14 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
   void _updateFieldStates() {
     final ourDebtValue = ourDebtController.text.replaceAll(' ', '');
     final theirDebtValue = theirDebtController.text.replaceAll(' ', '');
-    
+
     // Если значение не пустое и не равно 0, то второе поле должно быть отключено
-    final ourDebtNotEmpty = ourDebtValue.isNotEmpty && 
-                            double.tryParse(ourDebtValue) != null && 
-                            double.parse(ourDebtValue) != 0;
-    final theirDebtNotEmpty = theirDebtValue.isNotEmpty && 
-                              double.tryParse(theirDebtValue) != null && 
-                              double.parse(theirDebtValue) != 0;
+    final ourDebtNotEmpty = ourDebtValue.isNotEmpty &&
+        double.tryParse(ourDebtValue) != null &&
+        double.parse(ourDebtValue) != 0;
+    final theirDebtNotEmpty = theirDebtValue.isNotEmpty &&
+        double.tryParse(theirDebtValue) != null &&
+        double.parse(theirDebtValue) != 0;
 
     setState(() {
       isTheirDebtEnabled = !ourDebtNotEmpty;
@@ -90,10 +91,10 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
 
   void _onOurDebtChanged() {
     final ourDebtValue = ourDebtController.text.replaceAll(' ', '');
-    final hasValue = ourDebtValue.isNotEmpty && 
-                     double.tryParse(ourDebtValue) != null && 
-                     double.parse(ourDebtValue) != 0;
-    
+    final hasValue = ourDebtValue.isNotEmpty &&
+        double.tryParse(ourDebtValue) != null &&
+        double.parse(ourDebtValue) != 0;
+
     setState(() {
       isTheirDebtEnabled = !hasValue;
     });
@@ -101,10 +102,10 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
 
   void _onTheirDebtChanged() {
     final theirDebtValue = theirDebtController.text.replaceAll(' ', '');
-    final hasValue = theirDebtValue.isNotEmpty && 
-                     double.tryParse(theirDebtValue) != null && 
-                     double.parse(theirDebtValue) != 0;
-    
+    final hasValue = theirDebtValue.isNotEmpty &&
+        double.tryParse(theirDebtValue) != null &&
+        double.parse(theirDebtValue) != 0;
+
     setState(() {
       isOurDebtEnabled = !hasValue;
     });
@@ -168,197 +169,217 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            forceMaterialTransparency: true,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+          elevation: 0,
+          leading: IconButton(
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
             ),
-            title: Text(
-              AppLocalizations.of(context)!.translate('edit_supplier_opening'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.translate('edit_supplier_opening'),
+            style: const TextStyle(
+              fontSize: 18,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff1E2E52),
             ),
           ),
-          body: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      FocusScope.of(context).unfocus();
-                    },
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SupplierWidget(
-                            selectedSupplier: _selectedSupplierId,
-                            onChanged: (value) => setState(() => _selectedSupplierId = value),
-                          ),
-                          const SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: () {
-                              if (!isOurDebtEnabled) {
-                                _showFieldLockedSnackBar('their_debt');
-                              }
-                            },
-                            child: AbsorbPointer(
-                              absorbing: !isOurDebtEnabled,
-                              child: CustomTextField(
-                                controller: ourDebtController,
-                                label: AppLocalizations.of(context)!.translate('our_debt'),
-                                hintText: AppLocalizations.of(context)!.translate('enter_debt'),
-                                keyboardType: TextInputType.number,
-                                enabled: isOurDebtEnabled,
-                                inputFormatters: [
-                                  PriceInputFormatter(),
-                                ],
-                                validator: (value) {
-                                  // Валидация только если поле активно
-                                  if (!isOurDebtEnabled) {
-                                    return null;
-                                  }
-                                  if (value == null || value.isEmpty) {
-                                    return AppLocalizations.of(context)!.translate('field_required');
-                                  }
-                                  if (double.tryParse(value) == null) {
-                                    return AppLocalizations.of(context)!.translate('enter_correct_number');
-                                  }
+        ),
+        body: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SupplierWidget(
+                          selectedSupplier: _selectedSupplierId,
+                          onChanged: (value) =>
+                              setState(() => _selectedSupplierId = value),
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: () {
+                            if (!isOurDebtEnabled) {
+                              _showFieldLockedSnackBar('their_debt');
+                            }
+                          },
+                          child: AbsorbPointer(
+                            absorbing: !isOurDebtEnabled,
+                            child: CustomTextField(
+                              controller: ourDebtController,
+                              label: AppLocalizations.of(context)!
+                                  .translate('our_debt'),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_debt'),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              enabled: isOurDebtEnabled,
+                              inputFormatters: [
+                                PriceInputFormatter(),
+                              ],
+                              validator: (value) {
+                                // Валидация только если поле активно
+                                if (!isOurDebtEnabled) {
                                   return null;
-                                },
-                              ),
+                                }
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!
+                                      .translate('field_required');
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return AppLocalizations.of(context)!
+                                      .translate('enter_correct_number');
+                                }
+                                return null;
+                              },
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: () {
-                              if (!isTheirDebtEnabled) {
-                                _showFieldLockedSnackBar('our_debt');
-                              }
-                            },
-                            child: AbsorbPointer(
-                              absorbing: !isTheirDebtEnabled,
-                              child: CustomTextField(
-                                controller: theirDebtController,
-                                label: AppLocalizations.of(context)!.translate('their_debt'),
-                                hintText: AppLocalizations.of(context)!.translate('enter_debt'),
-                                keyboardType: TextInputType.number,
-                                enabled: isTheirDebtEnabled,
-                                inputFormatters: [
-                                  PriceInputFormatter(),
-                                ],
-                                validator: (value) {
-                                  // Валидация только если поле активно
-                                  if (!isTheirDebtEnabled) {
-                                    return null;
-                                  }
-                                  if (value == null || value.isEmpty) {
-                                    return AppLocalizations.of(context)!.translate('field_required');
-                                  }
-                                  if (double.tryParse(value) == null) {
-                                    return AppLocalizations.of(context)!.translate('enter_correct_number');
-                                  }
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: () {
+                            if (!isTheirDebtEnabled) {
+                              _showFieldLockedSnackBar('our_debt');
+                            }
+                          },
+                          child: AbsorbPointer(
+                            absorbing: !isTheirDebtEnabled,
+                            child: CustomTextField(
+                              controller: theirDebtController,
+                              label: AppLocalizations.of(context)!
+                                  .translate('their_debt'),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_debt'),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              enabled: isTheirDebtEnabled,
+                              inputFormatters: [
+                                PriceInputFormatter(),
+                              ],
+                              validator: (value) {
+                                // Валидация только если поле активно
+                                if (!isTheirDebtEnabled) {
                                   return null;
-                                },
-                              ),
+                                }
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!
+                                      .translate('field_required');
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return AppLocalizations.of(context)!
+                                      .translate('enter_correct_number');
+                                }
+                                return null;
+                              },
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
-                  builder: (context, state) {
-                    final isUpdating = state is SupplierOpeningUpdating;
+              ),
+              BlocBuilder<SupplierOpeningsBloc, SupplierOpeningsState>(
+                builder: (context, state) {
+                  final isUpdating = state is SupplierOpeningUpdating;
 
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CustomButton(
-                              buttonText:
-                              AppLocalizations.of(context)!.translate('close'),
-                              buttonColor: const Color(0xffF4F7FD),
-                              textColor: Colors.black,
-                              onPressed: isUpdating ? null : () {
-                                Navigator.pop(context);
-                              },
-                            ),
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('close'),
+                            buttonColor: const Color(0xffF4F7FD),
+                            textColor: Colors.black,
+                            onPressed: isUpdating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CustomButton(
-                              buttonText:
-                              AppLocalizations.of(context)!.translate('save'),
-                              buttonColor: const Color(0xff4759FF),
-                              textColor: Colors.white,
-                              isLoading: isUpdating,
-                              onPressed: isUpdating ? null : () {
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: CustomButton(
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('save'),
+                            buttonColor: const Color(0xff4759FF),
+                            textColor: Colors.white,
+                            isLoading: isUpdating,
+                            onPressed: isUpdating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      if (_selectedSupplierId == null) {
+                                        _showSnackBar(
+                                          AppLocalizations.of(context)!
+                                              .translate('select_supplier'),
+                                          isSuccess: false,
+                                        );
+                                        return;
+                                      }
 
-                                if (_formKey.currentState!.validate()) {
-                                  if (_selectedSupplierId == null) {
-                                    _showSnackBar(
-                                      AppLocalizations.of(context)!.translate('select_supplier'),
-                                      isSuccess: false,
-                                    );
-                                    return;
-                                  }
+                                      final ourDuty = double.tryParse(
+                                              ourDebtController.text
+                                                  .replaceAll(' ', '')) ??
+                                          0.0;
+                                      final debtToUs = double.tryParse(
+                                              theirDebtController.text
+                                                  .replaceAll(' ', '')) ??
+                                          0.0;
 
-                                  final ourDuty = double.tryParse(
-                                      ourDebtController.text.replaceAll(' ', '')) ??
-                                      0.0;
-                                  final debtToUs = double.tryParse(
-                                      theirDebtController.text.replaceAll(' ', '')) ??
-                                      0.0;
-
-                                  context.read<SupplierOpeningsBloc>().add(
-                                    EditSupplierOpening(
-                                      id: widget.supplierOpening.id!,
-                                      supplierId: int.parse(_selectedSupplierId!),
-                                      ourDuty: ourDuty,
-                                      debtToUs: debtToUs,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
+                                      context.read<SupplierOpeningsBloc>().add(
+                                            EditSupplierOpening(
+                                              id: widget.supplierOpening.id!,
+                                              supplierId: int.parse(
+                                                  _selectedSupplierId!),
+                                              ourDuty: ourDuty,
+                                              debtToUs: debtToUs,
+                                            ),
+                                          );
+                                    }
+                                  },
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
+        ),
       ),
     );
   }
 
   void _showFieldLockedSnackBar(String fieldKey) {
     final fieldName = AppLocalizations.of(context)!.translate(fieldKey);
-    
+
     // Закрываем текущий SnackBar перед показом нового
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

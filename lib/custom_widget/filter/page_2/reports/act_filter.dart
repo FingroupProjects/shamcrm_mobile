@@ -1,5 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,7 +26,7 @@ class ActFilterScreen extends StatefulWidget {
   final String? initialSupplier;
 
   const ActFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialFromDate,
@@ -35,10 +35,10 @@ class ActFilterScreen extends StatefulWidget {
     // this.initialAmountTo,
     this.initialLead,
     this.initialSupplier,
-  }) : super(key: key);
+  });
 
   @override
-  _ActFilterScreenState createState() => _ActFilterScreenState();
+  State<ActFilterScreen> createState() => _ActFilterScreenState();
 }
 
 class _ActFilterScreenState extends State<ActFilterScreen> {
@@ -163,10 +163,19 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
+            scaffoldBackgroundColor: this.context.appColors.surfacePrimary,
+            colorScheme: ColorScheme.light(
+              primary: this.context.appColors.buttonPrimaryBg,
+              onPrimary: this.context.appColors.buttonPrimaryFg,
+              onSurface: this.context.appColors.textPrimary,
+              secondary:
+                  this.context.appColors.buttonSecondaryBg.withValues(alpha: 0.1),
+              surface: this.context.appColors.surfacePrimary,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: this.context.appColors.buttonPrimaryBg,
+              ),
             ),
           ),
           child: child!,
@@ -209,13 +218,11 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
             AppLocalizations.of(context)!
                     .translate('select_client_or_supplier_required') ??
                 'Необходимо выбрать клиента или поставщика',
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
+            style: context.appTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
             ),
           ),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -260,23 +267,40 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
     Navigator.pop(context);
   }
 
-  Widget _buildTypeSwitch() {
+  Widget _buildFilterCard(Widget child, {EdgeInsetsGeometry? padding}) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: padding ?? const EdgeInsets.all(8),
+        child: child,
+      ),
+    );
+  }
+
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
+  Widget _buildTypeSwitch() {
+    return _buildFilterCard(
+      Padding(
+        padding: const EdgeInsets.all(4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context)!.translate('filter_type') ??
                   'Тип фильтра',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -298,13 +322,13 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         color: _isLeadSelected
-                            ? Colors.blueAccent
-                            : const Color(0xFFF4F7FD),
+                            ? context.appColors.buttonPrimaryBg
+                            : context.appColors.fieldBg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _isLeadSelected
-                              ? Colors.blueAccent
-                              : Colors.transparent,
+                              ? context.appColors.buttonPrimaryBg
+                              : context.appColors.fieldBg.withValues(alpha: 0),
                           width: 1.5,
                         ),
                       ),
@@ -313,13 +337,11 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           AppLocalizations.of(context)!
                                   .translate('filter_by_client') ??
                               'По клиенту',
-                          style: TextStyle(
-                            fontSize: 15,
+                          style: context.appTextStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
                             color: _isLeadSelected
-                                ? Colors.white
-                                : const Color(0xFF1E2E52),
+                                ? context.appColors.textInverse
+                                : context.appColors.textPrimary,
                           ),
                         ),
                       ),
@@ -343,13 +365,13 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         color: !_isLeadSelected
-                            ? Colors.blueAccent
-                            : const Color(0xFFF4F7FD),
+                            ? context.appColors.buttonPrimaryBg
+                            : context.appColors.fieldBg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: !_isLeadSelected
-                              ? Colors.blueAccent
-                              : Colors.transparent,
+                              ? context.appColors.buttonPrimaryBg
+                              : context.appColors.fieldBg.withValues(alpha: 0),
                           width: 1.5,
                         ),
                       ),
@@ -358,13 +380,11 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           AppLocalizations.of(context)!
                                   .translate('filter_by_supplier') ??
                               'По поставщику',
-                          style: TextStyle(
-                            fontSize: 15,
+                          style: context.appTextStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
                             color: !_isLeadSelected
-                                ? Colors.white
-                                : const Color(0xFF1E2E52),
+                                ? context.appColors.textInverse
+                                : context.appColors.textPrimary,
                           ),
                         ),
                       ),
@@ -382,53 +402,39 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter') ?? 'Фильтр',
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset') ?? 'Сбросить',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply') ?? 'Применить',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -441,16 +447,13 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
           child: Column(
             children: [
               // Date Range Card
-              Card(
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                color: Colors.white,
-                child: GestureDetector(
+              _buildFilterCard(
+                GestureDetector(
                   onTap: _selectDateRange,
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -461,20 +464,19 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                               ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                               : AppLocalizations.of(context)!
                                   .translate('select_date_range'),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
+                          style: context.appTextStyles.bodyMd.copyWith(
                             color: _fromDate != null && _toDate != null
-                                ? Colors.black
-                                : const Color(0xff99A4BA),
-                            fontSize: 14,
+                                ? context.appColors.textPrimary
+                                : context.appColors.textSecondary,
                           ),
                         ),
-                        const Icon(Icons.calendar_today,
-                            color: Color(0xff99A4BA)),
+                        Icon(Icons.calendar_today,
+                            color: context.appColors.iconSecondary),
                       ],
                     ),
                   ),
                 ),
+                padding: EdgeInsets.zero,
               ),
               const SizedBox(height: 8),
 
@@ -488,7 +490,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
               //       children: [
               //         CustomTextField(
               //           controller: _amountFromController,
-              //           keyboardType: TextInputType.number,
+              //           keyboardType: const TextInputType.numberWithOptions(decimal: true),
               //           hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
               //           label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
               //         ),
@@ -508,7 +510,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
               //       children: [
               //         CustomTextField(
               //           controller: _amountToController,
-              //           keyboardType: TextInputType.number,
+              //           keyboardType: const TextInputType.numberWithOptions(decimal: true),
               //           hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
               //           label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
               //         ),
@@ -533,10 +535,8 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   }
 
   Widget _buildSupplierWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
+    return _buildFilterCard(
+      Padding(
         padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,11 +544,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
             Text(
               AppLocalizations.of(context)!.translate('supplier') ??
                   'Поставщик',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -581,7 +579,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                         Text(
                             AppLocalizations.of(context)!
                                 .translate('error_loading_dialog'),
-                            style: TextStyle(color: Colors.red, fontSize: 12)),
+                            style: context.appTextStyles.bodySm.copyWith(
+                              color: context.appColors.error,
+                            )),
                         TextButton(
                           onPressed: () {
                             context
@@ -591,7 +591,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           child: Text(
                               AppLocalizations.of(context)!
                                   .translate('retry_dialog'),
-                              style: TextStyle(fontSize: 12)),
+                              style: context.appTextStyles.bodySm),
                         ),
                       ],
                     ),
@@ -603,18 +603,16 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     height: 30,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
+                      color: context.appColors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       AppLocalizations.of(context)!
                               .translate('select_supplier') ??
                           'Выберите поставщика',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   );
@@ -629,37 +627,34 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedFillColor: context.appColors.fieldBg,
+                    expandedFillColor: context.appColors.surfacePrimary,
+                    closedBorder: Border.all(
+                      color: context.appColors.fieldBg,
+                      width: 1,
+                    ),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder: Border.all(
+                      color: context.appColors.fieldBg,
+                      width: 1,
+                    ),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textPrimary,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
                       ),
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ??
-                          AppLocalizations.of(context)!
-                              .translate('select_supplier') ??
-                          'Выберите поставщика',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      selectedItem.name,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     );
                   },
@@ -667,11 +662,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     AppLocalizations.of(context)!
                             .translate('select_supplier') ??
                         'Выберите поставщика',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                   initialItem: _selectedSupplier != null &&
@@ -698,21 +691,17 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
   }
 
   Widget _buildLeadWidget() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
+    return _buildFilterCard(
+      Padding(
         padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context)!.translate('clients') ?? 'Клиенты',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -745,7 +734,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                         Text(
                             AppLocalizations.of(context)!
                                 .translate('error_loading_dialog'),
-                            style: TextStyle(color: Colors.red, fontSize: 12)),
+                            style: context.appTextStyles.bodySm.copyWith(
+                              color: context.appColors.error,
+                            )),
                         TextButton(
                           onPressed: () {
                             context.read<GetAllLeadBloc>().add(GetAllLeadEv());
@@ -753,7 +744,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           child: Text(
                               AppLocalizations.of(context)!
                                   .translate('retry_dialog'),
-                              style: TextStyle(fontSize: 12)),
+                              style: context.appTextStyles.bodySm),
                         ),
                       ],
                     ),
@@ -765,18 +756,16 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     height: 50,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xffF4F7FD),
+                      color: context.appColors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       AppLocalizations.of(context)!
                               .translate('select_client') ??
                           'Выберите клиента',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   );
@@ -791,48 +780,43 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                   overlayHeight: 300,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedFillColor: context.appColors.fieldBg,
+                    expandedFillColor: context.appColors.surfacePrimary,
+                    closedBorder: Border.all(
+                      color: context.appColors.fieldBg,
+                      width: 1,
+                    ),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder: Border.all(
+                      color: context.appColors.fieldBg,
+                      width: 1,
+                    ),
                     expandedBorderRadius: BorderRadius.circular(12),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textPrimary,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
                       ),
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ??
-                          AppLocalizations.of(context)!
-                              .translate('select_client') ??
-                          'Выберите клиента',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      selectedItem.name,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_client') ??
                         'Выберите клиента',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                   initialItem: _selectedLead != null &&

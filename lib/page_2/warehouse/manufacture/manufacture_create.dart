@@ -379,7 +379,7 @@ class CreateManufactureDocumentScreenState
   }
 
   void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
+    final quantity = num.tryParse(value.replaceAll(',', '.'));
     if (quantity != null && quantity > 0) {
       setState(() {
         final index =
@@ -534,7 +534,8 @@ class CreateManufactureDocumentScreenState
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            (num.tryParse(quantityController.text.replaceAll(',', '.')) ?? 0) <=
+                0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -579,7 +580,7 @@ class CreateManufactureDocumentScreenState
               item['materials'] as List<Map<String, dynamic>>? ?? const [];
           return {
             'good_variant_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': num.tryParse(item['quantity'].toString()),
             'price': price,
             'unit_id': unitId,
             'materials': materials
@@ -1162,7 +1163,8 @@ class CreateManufactureDocumentScreenState
                             hintText: AppLocalizations.of(context)!
                                     .translate('quantity') ??
                                 'Количество',
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
                               QuantityInputFormatter(),
                             ],

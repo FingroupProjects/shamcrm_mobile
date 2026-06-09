@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/storage_dashboard_widget.dart';
@@ -21,7 +22,7 @@ class GoodsFilterScreen extends StatefulWidget {
   final String? storageId;
 
   const GoodsFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
 
     this.onResetFilters,
@@ -31,10 +32,10 @@ class GoodsFilterScreen extends StatefulWidget {
     this.daysWithoutMovement,
     this.goodId,
     this.storageId,
-  }) : super(key: key);
+  });
 
   @override
-  _GoodsFilterScreenState createState() => _GoodsFilterScreenState();
+  State<GoodsFilterScreen> createState() => _GoodsFilterScreenState();
 }
 
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
@@ -205,61 +206,63 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ButtonStyle actionButtonStyle() => TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          backgroundColor:
+              context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side:
+              BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+        );
+
+    Widget buildFilterCard(Widget child) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: context.appColors.surfacePrimary,
+        shadowColor: context.appColors.shadowColor,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: child,
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: actionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: actionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -274,45 +277,24 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCategoryWidget(), // Теперь наш BLoC-виджет
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildCategoryWidget()],
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildGoodWidget(), // Новый BLoC-виджет для товара
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildGoodWidget()],
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildStorageWidget(), // Виджет для хранилища
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildStorageWidget()],
                       ),
                     ),
                   ],

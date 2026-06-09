@@ -30,10 +30,20 @@ class LogoutButtonWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Image.asset(
-            iconPath,
+          Container(
             width: 40,
             height: 40,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 223, 225, 249),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Image.asset(
+                iconPath,
+                width: 22,
+                height: 22,
+              ),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(

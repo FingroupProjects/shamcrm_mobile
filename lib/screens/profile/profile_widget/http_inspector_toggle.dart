@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/profile_toggle_card.dart';
 
 /// Переключатель HTTP Inspector (только в DEBUG режиме)
 class HttpInspectorToggleWidget extends StatefulWidget {
-  const HttpInspectorToggleWidget({Key? key}) : super(key: key);
+  const HttpInspectorToggleWidget({super.key});
 
   @override
   State<HttpInspectorToggleWidget> createState() =>
@@ -84,41 +84,15 @@ class _HttpInspectorToggleWidgetState extends State<HttpInspectorToggleWidget> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      height: 80,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(16),
+    return ProfileToggleCard(
+      icon: const Icon(
+        Icons.bug_report_outlined,
+        color: Color.fromARGB(255, 91, 77, 235),
+        size: 22,
       ),
-      child: Row(
-        children: [
-          Switch(
-            value: _isEnabled,
-            onChanged: _toggleInspector,
-            activeColor: const Color.fromARGB(255, 255, 255, 255),
-            inactiveTrackColor:
-                const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-            activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-            inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _isEnabled ? 'HTTP Inspector включен' : 'HTTP Inspector выключен',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xFF1E1E1E),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+      title: _isEnabled ? 'HTTP Inspector включен' : 'HTTP Inspector выключен',
+      value: _isEnabled,
+      onChanged: _toggleInspector,
     );
   }
 }

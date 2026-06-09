@@ -704,6 +704,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       if (result['success']) {
         emit(LeadSuccess(
             event.localizations.translate('lead_created_successfully')));
+        add(RefreshCurrentStatus(event.leadStatusId));
       } else {
         emit(LeadError(result['message']));
       }

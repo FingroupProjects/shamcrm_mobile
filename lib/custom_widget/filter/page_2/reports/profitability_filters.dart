@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -17,16 +18,16 @@ class ProfitabilityFilterScreen extends StatefulWidget {
   final DateTime? period;
 
   const ProfitabilityFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.categoryId,
     this.goodId,
     this.period,
-  }) : super(key: key);
+  });
 
   @override
-  _ProfitabilityFilterScreenState createState() => _ProfitabilityFilterScreenState();
+  State<ProfitabilityFilterScreen> createState() => _ProfitabilityFilterScreenState();
 }
 
 class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
@@ -37,10 +38,8 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
   String? selectedCategoryId;
   String? selectedGoodId;
 
-  // Keys for dropdowns - using ValueKey to force rebuild on reset
-  Key _categoryDropdownKey = UniqueKey();
-  Key _goodDropdownKey = UniqueKey();
-  Key _periodDropdownKey = UniqueKey();
+  Key _categoryKey = UniqueKey();
+  Key _goodKey = UniqueKey();
 
   @override
   void initState() {
@@ -95,10 +94,8 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
       selectedCategoryId = null;
       selectedGoodId = null;
       selectedPeriod = null;
-      // Generate new keys to force rebuild
-      _categoryDropdownKey = UniqueKey();
-      _goodDropdownKey = UniqueKey();
-      _periodDropdownKey = UniqueKey();
+      _categoryKey = UniqueKey();
+      _goodKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -126,9 +123,9 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
 
   Widget _buildCategoryWidget() {
     return BlocProvider<CategoryDashboardWarehouseBloc>(
-      key: _categoryDropdownKey,
       create: (context) => CategoryDashboardWarehouseBloc(_apiService),
       child: CategoryDashboardWarehouseWidget(
+        key: _categoryKey,
         selectedCategoryDashboardWarehouse: selectedCategoryId,
         onChanged: (id) {
           setState(() {
@@ -142,9 +139,9 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
 
   Widget _buildGoodWidget() {
     return BlocProvider<GoodDashboardWarehouseBloc>(
-      key: _goodDropdownKey,
       create: (context) => GoodDashboardWarehouseBloc(_apiService),
       child: GoodDashboardWarehouseWidget(
+        key: _goodKey,
         selectedGoodDashboardWarehouse: selectedGoodId,
         onChanged: (id) {
           setState(() {
@@ -165,7 +162,7 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -173,58 +170,50 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('period') ?? 'Период',
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-                fontSize: 14,
+                color: context.appColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             CustomDropdown<DateTime>.search(
-              key: _periodDropdownKey,
               items: years,
               searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
               overlayHeight: 300,
               closeDropDownOnClearFilterSearch: true,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1.5),
+                closedFillColor: context.appColors.fieldBg,
+                expandedFillColor: context.appColors.surfacePrimary,
+                closedBorder:
+                    Border.all(color: context.appColors.fieldBg, width: 1.5),
                 closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1.5),
+                expandedBorder:
+                    Border.all(color: context.appColors.fieldBg, width: 1.5),
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.year.toString(),
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 16,
+                  style: context.appTextStyles.bodyLg.copyWith(
+                    color: context.appColors.textPrimary,
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
                   ),
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
                 return Text(
-                  selectedItem?.year.toString() ??
-                      AppLocalizations.of(context)!.translate('select_year') ?? 'Выберите год',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  selectedItem.year.toString(),
+                  style: context.appTextStyles.bodyLg.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
                 AppLocalizations.of(context)!.translate('select_year') ?? 'Выберите год',
-                style: const TextStyle(
-                  fontSize: 14,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
               excludeSelected: false,
@@ -246,61 +235,63 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ButtonStyle actionButtonStyle() => TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          backgroundColor:
+              context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side:
+              BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+        );
+
+    Widget buildFilterCard(Widget child) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: context.appColors.surfacePrimary,
+        shadowColor: context.appColors.shadowColor,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: child,
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: actionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: actionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -315,36 +306,21 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildCategoryWidget()],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildGoodWidget()],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     _buildPeriodWidget(),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCategoryWidget(),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildGoodWidget(),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),

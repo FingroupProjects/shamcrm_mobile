@@ -1,6 +1,7 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_bloc.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/storage_dashboard_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -46,6 +47,31 @@ class _ManufactureReportsFilterScreenState
     _selectedGoodId = widget.initialGoodId;
   }
 
+  Widget _buildFilterCard({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(12),
+        child: child,
+      ),
+    );
+  }
+
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
   void _resetFilters() {
     setState(() {
       _fromDate = null;
@@ -65,6 +91,30 @@ class _ManufactureReportsFilterScreenState
       initialDateRange: _fromDate != null && _toDate != null
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            scaffoldBackgroundColor: this.context.appColors.surfacePrimary,
+            colorScheme: ColorScheme.light(
+              primary: this.context.appColors.buttonPrimaryBg,
+              onPrimary: this.context.appColors.buttonPrimaryFg,
+              onSurface: this.context.appColors.textPrimary,
+              secondary: this
+                  .context
+                  .appColors
+                  .buttonSecondaryBg
+                  .withValues(alpha: 0.1),
+              surface: this.context.appColors.surfacePrimary,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: this.context.appColors.buttonPrimaryBg,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (range == null) return;
@@ -110,6 +160,13 @@ class _ManufactureReportsFilterScreenState
     Navigator.of(context).pop();
   }
 
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day.$month.$year';
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -120,40 +177,38 @@ class _ManufactureReportsFilterScreenState
         BlocProvider(create: (_) => GoodDashboardWarehouseBloc(ApiService())),
       ],
       child: Scaffold(
-        backgroundColor: const Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundSecondary,
         appBar: AppBar(
           titleSpacing: 0,
           title: Text(
             localizations.translate('filter'),
-            style: const TextStyle(
-              fontSize: 20,
+            style: context.appTextStyles.titleLg.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-              fontFamily: 'Gilroy',
+              color: context.appColors.textPrimary,
             ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           elevation: 0,
           actions: [
             TextButton(
               onPressed: _resetFilters,
+              style: _buildActionButtonStyle(),
               child: Text(
                 localizations.translate('reset'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueAccent,
+                  color: context.appColors.buttonPrimaryBg,
                 ),
               ),
             ),
             TextButton(
               onPressed: _applyFilters,
+              style: _buildActionButtonStyle(),
               child: Text(
                 localizations.translate('apply'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueAccent,
+                  color: context.appColors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -164,46 +219,42 @@ class _ManufactureReportsFilterScreenState
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
-              GestureDetector(
-                onTap: _selectDateRange,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _fromDate != null && _toDate != null
-                              ? '${_formatDate(_fromDate!)} - ${_formatDate(_toDate!)}'
-                              : (localizations.translate('select_date_range')),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 14,
-                            color: _fromDate != null && _toDate != null
-                                ? const Color(0xff1E2E52)
-                                : const Color(0xff99A4BA),
+              _buildFilterCard(
+                padding: EdgeInsets.zero,
+                child: GestureDetector(
+                  onTap: _selectDateRange,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _fromDate != null && _toDate != null
+                                ? '${_formatDate(_fromDate!)} - ${_formatDate(_toDate!)}'
+                                : localizations.translate('select_date_range'),
+                            style: context.appTextStyles.bodyMd.copyWith(
+                              color: _fromDate != null && _toDate != null
+                                  ? context.appColors.textPrimary
+                                  : context.appColors.textSecondary,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ],
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          color: context.appColors.iconSecondary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              _buildFilterCard(
                 child: StorageDashboardWidget(
                   selectedStorage: _selectedStorageId,
                   onChanged: (value) {
@@ -214,12 +265,7 @@ class _ManufactureReportsFilterScreenState
                 ),
               ),
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              _buildFilterCard(
                 child: GoodDashboardWarehouseWidget(
                   selectedGoodDashboardWarehouse: _selectedGoodId,
                   onChanged: (value) {
@@ -234,12 +280,5 @@ class _ManufactureReportsFilterScreenState
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    return '$day.$month.$year';
   }
 }

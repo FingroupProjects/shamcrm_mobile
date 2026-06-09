@@ -366,7 +366,7 @@ class _SupplierReturnDocumentCreateScreenState
   }
 
   void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
+    final quantity = num.tryParse(value.replaceAll(',', '.'));
     if (quantity != null && quantity > 0) {
       setState(() {
         final index =
@@ -534,7 +534,8 @@ class _SupplierReturnDocumentCreateScreenState
         // Проверка количества
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            (num.tryParse(quantityController.text.replaceAll(',', '.')) ?? 0) <=
+                0) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -581,7 +582,7 @@ class _SupplierReturnDocumentCreateScreenState
           final unitId = item['unit_id'];
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': num.tryParse(item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId, // Может быть null
           };
@@ -1259,7 +1260,8 @@ class _SupplierReturnDocumentCreateScreenState
                           hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

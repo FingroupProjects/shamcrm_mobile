@@ -19,10 +19,12 @@ class AddCashRegisterOpeningScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _AddCashRegisterOpeningScreenState createState() => _AddCashRegisterOpeningScreenState();
+  _AddCashRegisterOpeningScreenState createState() =>
+      _AddCashRegisterOpeningScreenState();
 }
 
-class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScreen> {
+class _AddCashRegisterOpeningScreenState
+    extends State<AddCashRegisterOpeningScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   // Controller for sum field
@@ -51,7 +53,8 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!.translate('cash_register_opening_created'),
+                AppLocalizations.of(context)!
+                    .translate('cash_register_opening_created'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -70,7 +73,7 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
               duration: const Duration(seconds: 2),
             ),
           );
-          
+
           // Небольшая задержка перед закрытием экрана, чтобы SnackBar успел отобразиться
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
@@ -120,7 +123,8 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
             },
           ),
           title: Text(
-            AppLocalizations.of(context)!.translate('add_cash_register_opening'),
+            AppLocalizations.of(context)!
+                .translate('add_cash_register_opening'),
             style: const TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
@@ -148,17 +152,21 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
                         CustomTextField(
                           controller: sumController,
                           label: AppLocalizations.of(context)!.translate('sum'),
-                          hintText: AppLocalizations.of(context)!.translate('enter_sum'),
-                          keyboardType: TextInputType.number,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_sum'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
                             }
                             return null;
                           },
@@ -171,43 +179,50 @@ class _AddCashRegisterOpeningScreenState extends State<AddCashRegisterOpeningScr
               BlocBuilder<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
                 builder: (context, state) {
                   final isCreating = state is CashRegisterOpeningCreating;
-                  
+
                   return Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                            AppLocalizations.of(context)!.translate('close'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('close'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
-                            onPressed: isCreating ? null : () {
-                              Navigator.pop(context);
-                            },
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
                             buttonText:
-                            AppLocalizations.of(context)!.translate('save'),
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isCreating,
-                            onPressed: isCreating ? null : () {
-                              if (_formKey.currentState!.validate()) {
-                                // Создаем событие для добавления остатка кассы
-                                context.read<CashRegisterOpeningsBloc>().add(
-                                  CreateCashRegisterOpening(
-                                    cashRegisterId: widget.cashRegisterId,
-                                    sum: sumController.text,
-                                  ),
-                                );
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      // Создаем событие для добавления остатка кассы
+                                      context
+                                          .read<CashRegisterOpeningsBloc>()
+                                          .add(
+                                            CreateCashRegisterOpening(
+                                              cashRegisterId:
+                                                  widget.cashRegisterId,
+                                              sum: sumController.text,
+                                            ),
+                                          );
 
-                                // BlocListener автоматически обработает успешное создание
-                              }
-                            },
+                                      // BlocListener автоматически обработает успешное создание
+                                    }
+                                  },
                           ),
                         ),
                       ],

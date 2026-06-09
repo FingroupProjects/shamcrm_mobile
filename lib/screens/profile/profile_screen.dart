@@ -408,13 +408,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         return Column(
                           children: [
-                            OrganizationWidget(
-                              selectedOrganization: _selectedOrganization,
-                              onChanged: _onOrganizationChanged,
-                            ),
                             WorkdayCard(
                               key: ValueKey(_selectedOrganization),
                               organizationId: _selectedOrganization,
+                            ),
+                            OrganizationWidget(
+                              selectedOrganization: _selectedOrganization,
+                              onChanged: _onOrganizationChanged,
                             ),
                             ProfileEdit(),
                             LanguageButtonWidget(),

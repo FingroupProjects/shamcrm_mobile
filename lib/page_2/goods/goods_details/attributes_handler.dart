@@ -314,7 +314,7 @@ class _AttributesHandlerState extends State<AttributesHandler> {
                                       contentPadding: EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 16),
                                     ),
-                                    keyboardType: TextInputType.number,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                   ),
                                 ),
                               ),

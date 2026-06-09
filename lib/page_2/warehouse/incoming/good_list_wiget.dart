@@ -391,7 +391,7 @@
 //                                                         'Количество',
 //                                                     _quantityFocusNodes[variant.id]!,
 //                                                   ),
-//                                                   keyboardType: TextInputType.number,
+//                                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
 //                                                   inputFormatters: [
 //                                                     FilteringTextInputFormatter.digitsOnly,
 //                                                   ],

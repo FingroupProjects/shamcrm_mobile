@@ -2474,7 +2474,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                           width: 36,
                           child: TextField(
                             controller: _getQuantityController(index),
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 16,

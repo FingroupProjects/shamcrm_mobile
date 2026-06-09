@@ -181,7 +181,7 @@ class _GoodsFormState extends State<GoodsForm> {
                           AppLocalizations.of(context)!.translate('price'),
                       hintText: AppLocalizations.of(context)!
                           .translate('enter_price'),
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return AppLocalizations.of(context)!

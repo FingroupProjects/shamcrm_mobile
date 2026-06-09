@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -25,14 +26,16 @@ class GoodsSelectionBottomSheet extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _GoodsSelectionBottomSheetState createState() => _GoodsSelectionBottomSheetState();
+  _GoodsSelectionBottomSheetState createState() =>
+      _GoodsSelectionBottomSheetState();
 }
 
 class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   List<Goods> selectedGoods = [];
   Map<int, Map<String, dynamic>> goodsDetails = {};
-  Map<int, Map<String, bool>> fieldErrors = {}; // Для отслеживания ошибок валидации
+  Map<int, Map<String, bool>> fieldErrors =
+      {}; // Для отслеживания ошибок валидации
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -52,8 +55,10 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
 
     if (details == null) return false;
 
-    bool isQuantityValid = details['quantity'] != null && details['quantity'] > 0;
-    bool isPriceValid = isAlreadyAdded || (details['price'] != null && details['price'] >= 0);
+    bool isQuantityValid =
+        details['quantity'] != null && details['quantity'] > 0;
+    bool isPriceValid =
+        isAlreadyAdded || (details['price'] != null && details['price'] >= 0);
 
     // Обновляем состояние ошибок
     setState(() {
@@ -85,7 +90,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('please_fill_all_required_fields') ??
+            AppLocalizations.of(context)!
+                    .translate('please_fill_all_required_fields') ??
                 'Пожалуйста, заполните все обязательные поля (количество и цена)',
             style: const TextStyle(
               fontFamily: 'Gilroy',
@@ -113,7 +119,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
             goodsDetails[goods.id]!['quantity'] != null &&
             goodsDetails[goods.id]!['quantity'] > 0 &&
             (_isGoodsAlreadyAdded(goods.id) ||
-                (goodsDetails[goods.id]!['price'] != null && goodsDetails[goods.id]!['price'] >= 0)))
+                (goodsDetails[goods.id]!['price'] != null &&
+                    goodsDetails[goods.id]!['price'] >= 0)))
         .map((goods) => {
               'id': goods.id,
               'name': goods.name,
@@ -128,7 +135,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('no_valid_products_selected') ?? 'Не выбрано ни одного корректного товара',
+            AppLocalizations.of(context)!
+                    .translate('no_valid_products_selected') ??
+                'Не выбрано ни одного корректного товара',
             style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -157,7 +166,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
             goodVariantId: goods.id,
             storageId: widget.storageId!,
             supplierId: widget.supplierId!,
-            good:goods,
+            good: goods,
           ));
       return;
     }
@@ -201,9 +210,12 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
 
         if (quantity != null && price != null && quantity > 0 && price >= 0) {
           goodsDetails[goodsId]!['total'] = quantity * price;
-        } else if (_isGoodsAlreadyAdded(goodsId) && quantity != null && quantity > 0) {
+        } else if (_isGoodsAlreadyAdded(goodsId) &&
+            quantity != null &&
+            quantity > 0) {
           // Для уже добавленных товаров используем цену из существующего списка
-          final existingItem = widget.existingItems.firstWhere((item) => item['id'] == goodsId);
+          final existingItem =
+              widget.existingItems.firstWhere((item) => item['id'] == goodsId);
           final existingPrice = existingItem['price'] ?? 0.0;
           goodsDetails[goodsId]!['price'] = existingPrice;
           goodsDetails[goodsId]!['total'] = quantity * existingPrice;
@@ -221,7 +233,11 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       return activeGoods;
     }
 
-    return activeGoods.where((goods) => goods.name.toLowerCase().contains(_searchController.text.toLowerCase())).toList();
+    return activeGoods
+        .where((goods) => goods.name
+            .toLowerCase()
+            .contains(_searchController.text.toLowerCase()))
+        .toList();
   }
 
   @override
@@ -243,7 +259,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                 child: Builder(
                   builder: (context) {
                     if (state is BatchLoaded) {
-                      return _buildBatchDetails(state.batches, state.good); // Show batch details inline
+                      return _buildBatchDetails(state.batches,
+                          state.good); // Show batch details inline
                     } else if (state is GoodsLoading) {
                       return const Center(child: CircularProgressIndicator());
                     } else if (state is GoodsDataLoaded) {
@@ -251,7 +268,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                       if (filteredGoods.isEmpty) {
                         return Center(
                           child: Text(
-                            AppLocalizations.of(context)!.translate('no_products_found') ?? 'Товары не найдены',
+                            AppLocalizations.of(context)!
+                                    .translate('no_products_found') ??
+                                'Товары не найдены',
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xff99A4BA),
@@ -310,7 +329,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                           'name': good.name,
                           'quantity': batch.quantity ?? 0,
                           'price': double.tryParse(batch.price ?? '0') ?? 0.0,
-                          'total': (batch.quantity ?? 0) * (double.tryParse(batch.price ?? '0') ?? 0.0),
+                          'total': (batch.quantity ?? 0) *
+                              (double.tryParse(batch.price ?? '0') ?? 0.0),
                           'unit_id': good.unitId,
                         };
 
@@ -318,7 +338,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 12),
                         child: Row(
                           children: [
                             // Иконка партии
@@ -418,7 +439,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
           Text(
             state is BatchLoaded
                 ? 'Пакетные остатки'
-                : AppLocalizations.of(context)!.translate('select_goods') ?? 'Выбрать товары',
+                : AppLocalizations.of(context)!.translate('select_goods') ??
+                    'Выбрать товары',
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -428,8 +450,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Color(0xff1E2E52), size: 24),
-            onPressed: () =>
-                state is BatchLoaded ? context.read<GoodsBloc>().add(CloseBatchRemainders()) : Navigator.pop(context),
+            onPressed: () => state is BatchLoaded
+                ? context.read<GoodsBloc>().add(CloseBatchRemainders())
+                : Navigator.pop(context),
           ),
         ],
       ),
@@ -443,7 +466,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
         controller: _searchController,
         onChanged: (value) => setState(() {}),
         decoration: InputDecoration(
-          hintText: AppLocalizations.of(context)!.translate('search_goods') ?? 'Поиск товаров',
+          hintText: AppLocalizations.of(context)!.translate('search_goods') ??
+              'Поиск товаров',
           hintStyle: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 14,
@@ -481,14 +505,16 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
           children: [
             _buildGoodsListItem(goodsItem, isSelected, isAlreadyAdded),
             if (isSelected) _buildGoodsDetailsForm(goodsItem, isAlreadyAdded),
-            if (index < goods.length - 1) const Divider(height: 20, color: Color(0xFFE5E7EB)),
+            if (index < goods.length - 1)
+              const Divider(height: 20, color: Color(0xFFE5E7EB)),
           ],
         );
       },
     );
   }
 
-  Widget _buildGoodsListItem(Goods goods, bool isSelected, bool isAlreadyAdded) {
+  Widget _buildGoodsListItem(
+      Goods goods, bool isSelected, bool isAlreadyAdded) {
     return Container(
       decoration: BoxDecoration(
         color: isSelected ? const Color(0xFFF4F7FD) : Colors.transparent,
@@ -512,7 +538,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                       width: 1,
                     ),
                     borderRadius: BorderRadius.circular(4),
-                    color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                    color: isSelected
+                        ? const Color(0xff1E2E52)
+                        : Colors.transparent,
                   ),
                   child: isSelected
                       ? const Icon(
@@ -542,7 +570,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                           ),
                           if (isAlreadyAdded)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xff4759FF).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
@@ -598,7 +627,8 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
         child: Column(
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start, // Выравниваем по верху
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Выравниваем по верху
               children: [
                 Expanded(
                   child: Container(
@@ -608,14 +638,22 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                       children: [
                         TextFormField(
                           decoration: _inputDecoration(
-                            AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                            AppLocalizations.of(context)!
+                                    .translate('quantity') ??
+                                'Количество',
                             hasError: hasQuantityError,
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            QuantityInputFormatter(),
+                          ],
                           onChanged: (value) {
-                            final newQuantity = int.tryParse(value) ?? 0;
+                            final newQuantity =
+                                num.tryParse(value.replaceAll(',', '.')) ?? 0;
                             if (newQuantity > 0) {
-                              _updateGoodsDetails(goods.id, 'quantity', newQuantity);
+                              _updateGoodsDetails(
+                                  goods.id, 'quantity', newQuantity);
                             } else {
                               _updateGoodsDetails(goods.id, 'quantity', null);
                             }
@@ -628,7 +666,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                           alignment: Alignment.centerLeft,
                           child: hasQuantityError
                               ? Text(
-                                  AppLocalizations.of(context)!.translate('quantity_required') ?? 'Количество обязательно',
+                                  AppLocalizations.of(context)!
+                                          .translate('quantity_required') ??
+                                      'Количество обязательно',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.red,
@@ -651,14 +691,18 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                         children: [
                           TextFormField(
                             decoration: _inputDecoration(
-                              AppLocalizations.of(context)!.translate('price') ?? 'Цена',
+                              AppLocalizations.of(context)!
+                                      .translate('price') ??
+                                  'Цена',
                               hasError: hasPriceError,
                             ),
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             onChanged: (value) {
                               final newPrice = double.tryParse(value) ?? 0.0;
                               if (newPrice >= 0) {
-                                _updateGoodsDetails(goods.id, 'price', newPrice);
+                                _updateGoodsDetails(
+                                    goods.id, 'price', newPrice);
                               } else {
                                 _updateGoodsDetails(goods.id, 'price', null);
                               }
@@ -667,11 +711,14 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                           const SizedBox(height: 4),
                           // Резервируем место под текст ошибки
                           Container(
-                            height: 16, // Фиксированная высота для текста ошибки
+                            height:
+                                16, // Фиксированная высота для текста ошибки
                             alignment: Alignment.centerLeft,
                             child: hasPriceError
                                 ? Text(
-                                    AppLocalizations.of(context)!.translate('price_required') ?? 'Цена обязательна',
+                                    AppLocalizations.of(context)!
+                                            .translate('price_required') ??
+                                        'Цена обязательна',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.red,

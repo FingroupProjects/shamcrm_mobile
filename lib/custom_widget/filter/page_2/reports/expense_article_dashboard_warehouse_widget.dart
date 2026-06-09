@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/expense_article_dashboard_warehouse/expense_article_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/expense_article_dashboard_warehouse/expense_article_dashboard_warehouse_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/expense_article_dashboard_warehouse/expense_article_dashboard_warehouse_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -10,12 +11,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ExpenseArticleDashboardWarehouseWidget extends StatefulWidget {
   final String? selectedExpenseArticleDashboardWarehouse;
   final ValueChanged<String?> onChanged;
-  final Key? key;
 
   const ExpenseArticleDashboardWarehouseWidget({
+    super.key,
     required this.selectedExpenseArticleDashboardWarehouse,
     required this.onChanged,
-    this.key,
   });
 
   @override
@@ -40,11 +40,10 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -52,7 +51,7 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: const Duration(seconds: 3),
@@ -83,11 +82,9 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('expense_article'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyLg.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -99,15 +96,15 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
                 overlayHeight: 400,
                 enabled: true,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
+                  closedFillColor: context.appColors.fieldBg,
+                  expandedFillColor: context.appColors.surfacePrimary,
                   closedBorder: Border.all(
-                    color: Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: Color(0xffF4F7FD),
+                    color: context.appColors.fieldBg,
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
@@ -115,11 +112,9 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
                     item.name,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textPrimary,
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -131,33 +126,27 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
                       children: [
                         Text(
                           AppLocalizations.of(context)!.translate('select_expense_article'),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: context.appTextStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.textPrimary,
                           ),
                         ),
                       ],
                     );
                   }
                   return Text(
-                    selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_expense_article'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    selectedItem.name,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   );
                 },
                 hintBuilder: (context, hint, enabled) => Text(
                   AppLocalizations.of(context)!.translate('select_expense_article'),
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 excludeSelected: false,

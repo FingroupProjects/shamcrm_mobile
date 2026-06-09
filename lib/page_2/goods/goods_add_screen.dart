@@ -975,7 +975,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       label: AppLocalizations.of(context)!.translate('price'),
                       hintText: AppLocalizations.of(context)!
                           .translate('enter_price'),
-                      keyboardType: TextInputType.number,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
                         PriceInputFormatter(),
                       ],
@@ -1000,7 +1001,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     //         controller: discountPriceController,
                     //         label: AppLocalizations.of(context)!.translate('price'),
                     //         hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                    //         keyboardType: TextInputType.number,
+                    //         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     //         validator: (value) {
                     //           if (value == null || value.isEmpty) {
                     //             return AppLocalizations.of(context)!.translate('field_required');
@@ -1355,7 +1356,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                                         16),
                                                       ),
                                                       keyboardType:
-                                                          TextInputType.number,
+                                                          const TextInputType
+                                                              .numberWithOptions(
+                                                              decimal: true),
                                                     ),
                                                   ),
                                                 ),

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/category_dashboard_warehouse_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/good_dashboard_warehouse_widget.dart';
@@ -20,7 +21,7 @@ class TopSellingGoodsFilterScreen extends StatefulWidget {
   final String? sumTo;
 
   const TopSellingGoodsFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.categoryId,
@@ -29,10 +30,10 @@ class TopSellingGoodsFilterScreen extends StatefulWidget {
     this.dateTo,
     this.sumFrom,
     this.sumTo,
-  }) : super(key: key);
+  });
 
   @override
-  _TopSellingGoodsFilterScreenState createState() => _TopSellingGoodsFilterScreenState();
+  State<TopSellingGoodsFilterScreen> createState() => _TopSellingGoodsFilterScreenState();
 }
 
 class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScreen> {
@@ -127,16 +128,19 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: const ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Color(0x1A000000),
+            scaffoldBackgroundColor: this.context.appColors.surfacePrimary,
+            colorScheme: ColorScheme.light(
+              primary: this.context.appColors.buttonPrimaryBg,
+              onPrimary: this.context.appColors.buttonPrimaryFg,
+              onSurface: this.context.appColors.textPrimary,
+              secondary:
+                  this.context.appColors.buttonSecondaryBg.withValues(alpha: 0.1),
+              surface: this.context.appColors.surfacePrimary,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+              style: TextButton.styleFrom(
+                foregroundColor: this.context.appColors.buttonPrimaryBg,
+              ),
             ),
           ),
           child: child!,
@@ -228,61 +232,63 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
 
   @override
   Widget build(BuildContext context) {
+    ButtonStyle actionButtonStyle() => TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          backgroundColor:
+              context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side:
+              BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+        );
+
+    Widget buildFilterCard(Widget child, {EdgeInsetsGeometry? padding}) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: context.appColors.surfacePrimary,
+        shadowColor: context.appColors.shadowColor,
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(12),
+          child: child,
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: actionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: actionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -297,15 +303,13 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: GestureDetector(
+                    buildFilterCard(
+                      GestureDetector(
                         onTap: _selectDateRange,
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.surfacePrimary,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -315,88 +319,74 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                                 dateFrom != null && dateTo != null
                                     ? "${dateFrom!.day.toString().padLeft(2, '0')}.${dateFrom!.month.toString().padLeft(2, '0')}.${dateFrom!.year} - ${dateTo!.day.toString().padLeft(2, '0')}.${dateTo!.month.toString().padLeft(2, '0')}.${dateTo!.year}"
                                     : AppLocalizations.of(context)!.translate('select_date_range') ?? 'Выберите период',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  color: dateFrom != null && dateTo != null ? Colors.black : const Color(0xff99A4BA),
-                                  fontSize: 14,
+                                style: context.appTextStyles.bodyMd.copyWith(
+                                  color: dateFrom != null && dateTo != null
+                                      ? context.appColors.textPrimary
+                                      : context.appColors.textSecondary,
                                 ),
                               ),
-                              const Icon(Icons.calendar_today, color: Color(0xff99A4BA)),
+                              Icon(
+                                Icons.calendar_today,
+                                color: context.appColors.iconSecondary,
+                              ),
                             ],
                           ),
                         ),
                       ),
+                      padding: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 8),
 
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCategoryWidget(),
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildCategoryWidget()],
                       ),
                     ),
                     const SizedBox(height: 8),
 
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildGoodWidget(),
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [_buildGoodWidget()],
                       ),
                     ),
                     const SizedBox(height: 8),
 
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextField(
-                              controller: _sumFromController,
-                              keyboardType: TextInputType.number,
-                              hintText:
-                              AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
-                            ),
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomTextField(
+                            controller: _sumFromController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            hintText: AppLocalizations.of(context)!
+                                    .translate('enter_minimum_amount') ??
+                                'Введите минимальную сумму',
+                            label: AppLocalizations.of(context)!
+                                    .translate('amount_from') ??
+                                'Сумма от',
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
 
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextField(
-                              controller: _sumToController,
-                              keyboardType: TextInputType.number,
-                              hintText:
-                              AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
-                            ),
-                          ],
-                        ),
+                    buildFilterCard(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomTextField(
+                            controller: _sumToController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            hintText: AppLocalizations.of(context)!
+                                    .translate('enter_maximum_amount') ??
+                                'Введите максимальную сумму',
+                            label: AppLocalizations.of(context)!
+                                    .translate('amount_to') ??
+                                'Сумма до',
+                          ),
+                        ],
                       ),
                     ),
                   ],

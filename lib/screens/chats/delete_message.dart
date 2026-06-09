@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 void showDeleteDialog(BuildContext context, Function onDelete) {
@@ -6,25 +7,21 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_sms'),
-            style: TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
+            style: context.appTextStyles.titleLg.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
         content: Text(
           AppLocalizations.of(context)!.translate('confirm_delete_sms'),
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyLg.copyWith(
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         actions: [
@@ -37,21 +34,20 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
                     Navigator.of(context).pop();
                   },
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    backgroundColor: context.appColors.buttonDangerBg,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.translate('cancel'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
+                    style: context.appTextStyles.bodyLg.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.buttonPrimaryFg,
                     ),
                   ),
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextButton(
                   onPressed: () {
@@ -59,16 +55,15 @@ void showDeleteDialog(BuildContext context, Function onDelete) {
                     Navigator.of(context).pop();
                   },
                   style: TextButton.styleFrom(
-                    backgroundColor: Color(0xff1E2E52),
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    backgroundColor: context.appColors.buttonPrimaryBg,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.translate('delete'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
+                    style: context.appTextStyles.bodyLg.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.buttonPrimaryFg,
                     ),
                   ),
                 ),

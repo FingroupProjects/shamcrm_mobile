@@ -19,7 +19,8 @@ import '../../../../utils/global_fun.dart';
 class EditCashRegisterOpeningScreen extends StatefulWidget {
   final CashRegisterOpening cashRegisterOpening;
 
-  const EditCashRegisterOpeningScreen({Key? key, required this.cashRegisterOpening})
+  const EditCashRegisterOpeningScreen(
+      {Key? key, required this.cashRegisterOpening})
       : super(key: key);
 
   @override
@@ -48,7 +49,8 @@ class _EditCashRegisterOpeningScreenState
     );
 
     // Initialize selected cash register
-    _selectedCashRegisterId = widget.cashRegisterOpening.cashRegisterId?.toString();
+    _selectedCashRegisterId =
+        widget.cashRegisterOpening.cashRegisterId?.toString();
 
     // Load cash registers
     context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
@@ -136,7 +138,8 @@ class _EditCashRegisterOpeningScreenState
             },
           ),
           title: Text(
-            AppLocalizations.of(context)!.translate('edit_cash_register_opening'),
+            AppLocalizations.of(context)!
+                .translate('edit_cash_register_opening'),
             style: const TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
@@ -159,28 +162,35 @@ class _EditCashRegisterOpeningScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CashRegisterGroupWidget(onSelectCashRegister: (cashRegisterData) {
-                          setState(() {
-                            _selectedCashRegisterId = cashRegisterData.id.toString();
-                            _selectedCashRegisterData = cashRegisterData;
-                          });
-                        }, selectedCashRegisterId: _selectedCashRegisterId
-                        ),
+                        CashRegisterGroupWidget(
+                            onSelectCashRegister: (cashRegisterData) {
+                              setState(() {
+                                _selectedCashRegisterId =
+                                    cashRegisterData.id.toString();
+                                _selectedCashRegisterData = cashRegisterData;
+                              });
+                            },
+                            selectedCashRegisterId: _selectedCashRegisterId),
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: balanceController,
-                          label: AppLocalizations.of(context)!.translate('balance'),
-                          hintText: AppLocalizations.of(context)!.translate('enter_balance'),
-                          keyboardType: TextInputType.number,
+                          label: AppLocalizations.of(context)!
+                              .translate('balance'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_balance'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
                             }
                             return null;
                           },
@@ -200,34 +210,42 @@ class _EditCashRegisterOpeningScreenState
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                            AppLocalizations.of(context)!.translate('close'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('close'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
-                            onPressed: isUpdating ? null : () {
-                              Navigator.pop(context);
-                            },
+                            onPressed: isUpdating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
                             buttonText:
-                            AppLocalizations.of(context)!.translate('save'),
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isUpdating,
-                            onPressed: isUpdating ? null : () {
-                              if (_formKey.currentState!.validate()) {
-                                context.read<CashRegisterOpeningsBloc>().add(
-                                  UpdateCashRegisterOpening(
-                                    id: widget.cashRegisterOpening.id!,
-                                    cashRegisterId: int.parse(_selectedCashRegisterId!),
-                                    sum: balanceController.text,
-                                  ),
-                                );
-                              }
-                            },
+                            onPressed: isUpdating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      context
+                                          .read<CashRegisterOpeningsBloc>()
+                                          .add(
+                                            UpdateCashRegisterOpening(
+                                              id: widget
+                                                  .cashRegisterOpening.id!,
+                                              cashRegisterId: int.parse(
+                                                  _selectedCashRegisterId!),
+                                              sum: balanceController.text,
+                                            ),
+                                          );
+                                    }
+                                  },
                           ),
                         ),
                       ],
@@ -242,4 +260,3 @@ class _EditCashRegisterOpeningScreenState
     );
   }
 }
-

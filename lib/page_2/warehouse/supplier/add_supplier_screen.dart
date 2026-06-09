@@ -346,7 +346,8 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           label:
                               AppLocalizations.of(context)!.translate('inn') ??
                                   'ИНН',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                         ),
                         const SizedBox(height: 16),
                         _buildCurrencyField(),

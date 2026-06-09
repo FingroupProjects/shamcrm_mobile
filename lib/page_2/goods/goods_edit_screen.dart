@@ -1245,7 +1245,8 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               .translate('enter_price'),
                           label: AppLocalizations.of(context)!
                               .translate('goods_price_details'),
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
@@ -1636,7 +1637,9 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                             vertical: 16),
                                                   ),
                                                   keyboardType:
-                                                      TextInputType.number,
+                                                      const TextInputType
+                                                          .numberWithOptions(
+                                                          decimal: true),
                                                 ),
                                               ),
                                             ),

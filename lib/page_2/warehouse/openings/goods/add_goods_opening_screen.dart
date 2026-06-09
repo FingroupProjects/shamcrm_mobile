@@ -42,7 +42,7 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
   String? _selectedSupplierId;
   String? _selectedWarehouseId;
   String? _selectedUnitId;
-  
+
   // Selected good data
   GoodVariantItem? _selectedGood;
 
@@ -56,12 +56,12 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
 
     // Load required data
     context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
-    
+
     // Load goods list to get the selected good data with units
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = context.read<GetAllGoodsListBloc>().state;
-        
+
         if (state is GetAllGoodsListSuccess) {
           _loadSelectedGood(state.goodsList);
         } else {
@@ -70,7 +70,7 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
       }
     });
   }
-  
+
   void _loadSelectedGood(List<GoodVariantItem> goodsList) {
     try {
       _selectedGood = goodsList.firstWhere(
@@ -113,13 +113,15 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                     ),
                   ),
                   behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   backgroundColor: Colors.red,
                   elevation: 3,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   duration: const Duration(seconds: 3),
                 ),
               );
@@ -206,18 +208,23 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: quantityController,
-                          label: AppLocalizations.of(context)!.translate('quantity'),
-                          hintText: AppLocalizations.of(context)!.translate('enter_quantity'),
-                          keyboardType: TextInputType.number,
+                          label: AppLocalizations.of(context)!
+                              .translate('quantity'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_quantity'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
                             }
                             return null;
                           },
@@ -225,18 +232,23 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
                         const SizedBox(height: 16),
                         CustomTextField(
                           controller: priceController,
-                          label: AppLocalizations.of(context)!.translate('price'),
-                          hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                          keyboardType: TextInputType.number,
+                          label:
+                              AppLocalizations.of(context)!.translate('price'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_price'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             PriceInputFormatter(),
                           ],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return AppLocalizations.of(context)!.translate('field_required');
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
                             }
                             if (double.tryParse(value) == null) {
-                              return AppLocalizations.of(context)!.translate('enter_correct_number');
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
                             }
                             return null;
                           },
@@ -249,91 +261,108 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
               BlocBuilder<GoodsOpeningsBloc, GoodsOpeningsState>(
                 builder: (context, state) {
                   final isCreating = state is GoodsOpeningCreating;
-                  
+
                   return Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                            AppLocalizations.of(context)!.translate('close'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('close'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
-                            onPressed: isCreating ? null : () {
-                              Navigator.pop(context);
-                            },
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
                             buttonText:
-                            AppLocalizations.of(context)!.translate('save'),
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isCreating,
-                            onPressed: isCreating ? null : () {
-                          if (_formKey.currentState!.validate()) {
-                            // Проверяем, что все обязательные поля заполнены
-                            if (_selectedSupplierId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate('select_supplier'),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      // Проверяем, что все обязательные поля заполнены
+                                      if (_selectedSupplierId == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('select_supplier'),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-                            if (_selectedWarehouseId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate('select_warehouse'),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
+                                      if (_selectedWarehouseId == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate(
+                                                      'select_warehouse'),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-                            if (_selectedUnitId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate('select_unit'),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
+                                      if (_selectedUnitId == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('select_unit'),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-                            // Создаем событие для добавления товара
-                            context.read<GoodsOpeningsBloc>().add(
-                              CreateGoodsOpening(
-                                goodVariantId: widget.goodVariantId,
-                                supplierId: int.parse(_selectedSupplierId!),
-                                price: double.parse(priceController.text),
-                                quantity: double.parse(quantityController.text),
-                                unitId: int.parse(_selectedUnitId!),
-                                storageId: int.parse(_selectedWarehouseId!),
-                              ),
-                            );
+                                      // Создаем событие для добавления товара
+                                      context.read<GoodsOpeningsBloc>().add(
+                                            CreateGoodsOpening(
+                                              goodVariantId:
+                                                  widget.goodVariantId,
+                                              supplierId: int.parse(
+                                                  _selectedSupplierId!),
+                                              price: double.parse(
+                                                  priceController.text),
+                                              quantity: double.parse(
+                                                  quantityController.text),
+                                              unitId:
+                                                  int.parse(_selectedUnitId!),
+                                              storageId: int.parse(
+                                                  _selectedWarehouseId!),
+                                            ),
+                                          );
 
-                              // BlocListener автоматически обработает успешное создание
-                            }
-                          },
+                                      // BlocListener автоматически обработает успешное создание
+                                    }
+                                  },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -379,6 +408,4 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
       ],
     );
   }
-
 }
-

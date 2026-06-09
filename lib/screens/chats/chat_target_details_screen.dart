@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chatGetId_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -29,7 +30,15 @@ class ChatTargetDetailsScreen extends StatelessWidget {
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        backgroundColor: context.appColors.surfaceElevated,
+        content: Text(
+          message,
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textPrimary,
+          ),
+        ),
+      ),
     );
   }
 
@@ -44,12 +53,18 @@ class ChatTargetDetailsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.translate('target')),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          localizations.translate('target'),
+          style: context.appTextStyles.titleLg.copyWith(
+            color: context.appColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: context.appColors.surfacePrimary,
+        foregroundColor: context.appColors.textPrimary,
         elevation: 0.5,
       ),
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: context.appColors.backgroundSecondary,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -57,11 +72,11 @@ class ChatTargetDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: context.appColors.shadowColor.withValues(alpha: 0.05),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -74,8 +89,7 @@ class ChatTargetDetailsScreen extends StatelessWidget {
                     advertising.name.isNotEmpty
                         ? advertising.name
                         : localizations.translate('advertising'),
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: context.appTextStyles.titleLg.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -105,10 +119,9 @@ class ChatTargetDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       description,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         height: 1.45,
-                        color: Colors.black87,
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   ],
@@ -153,15 +166,14 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5FF),
+        color: context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          fontSize: 12,
+        style: context.appTextStyles.bodySm.copyWith(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF2754C7),
+          color: context.appColors.buttonPrimaryBg,
         ),
       ),
     );
@@ -186,19 +198,27 @@ class _ActionTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
         onTap: onTap,
-        leading: Icon(icon, color: const Color(0xFF2754C7)),
+        leading: Icon(icon, color: context.appColors.buttonPrimaryBg),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: context.appTextStyles.bodyLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.appColors.textPrimary,
+          ),
         ),
-        subtitle: Text(subtitle),
+        subtitle: Text(
+          subtitle,
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textSecondary,
+          ),
+        ),
         trailing: onTap != null
-            ? const Icon(Icons.chevron_right, color: Colors.black45)
+            ? Icon(Icons.chevron_right, color: context.appColors.iconSecondary)
             : null,
       ),
     );

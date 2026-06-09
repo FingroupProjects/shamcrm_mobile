@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -12,17 +13,18 @@ class CashBalanceFilterScreen extends StatefulWidget {
   final String? initialAmountTo;
 
   const CashBalanceFilterScreen({
-    Key? key,
+    super.key,
     this.onSelectedDataFilter,
     this.onResetFilters,
     this.initialFromDate,
     this.initialToDate,
     this.initialAmountFrom,
     this.initialAmountTo,
-  }) : super(key: key);
+  });
 
   @override
-  _CashBalanceFilterScreenState createState() => _CashBalanceFilterScreenState();
+  State<CashBalanceFilterScreen> createState() =>
+      _CashBalanceFilterScreenState();
 }
 
 class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
@@ -46,61 +48,93 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
     setState(() {
       final fromDateMillis = prefs.getInt('cash_balance_from_date');
       final toDateMillis = prefs.getInt('cash_balance_to_date');
-      if (fromDateMillis != null) _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
-      if (toDateMillis != null) _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
-      _amountFromController.text = prefs.getString('cash_balance_amount_from') ?? widget.initialAmountFrom ?? '';
-      _amountToController.text = prefs.getString('cash_balance_amount_to') ?? widget.initialAmountTo ?? '';
+      if (fromDateMillis != null) {
+        _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
+      }
+      if (toDateMillis != null) {
+        _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
+      }
+      _amountFromController.text =
+          prefs.getString('cash_balance_amount_from') ??
+              widget.initialAmountFrom ??
+              '';
+      _amountToController.text = prefs.getString('cash_balance_amount_to') ??
+          widget.initialAmountTo ??
+          '';
     });
   }
 
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     if (_fromDate != null) {
-      await prefs.setInt('cash_balance_from_date', _fromDate!.millisecondsSinceEpoch);
+      await prefs.setInt(
+          'cash_balance_from_date', _fromDate!.millisecondsSinceEpoch);
     } else {
       await prefs.remove('cash_balance_from_date');
     }
     if (_toDate != null) {
-      await prefs.setInt('cash_balance_to_date', _toDate!.millisecondsSinceEpoch);
+      await prefs.setInt(
+          'cash_balance_to_date', _toDate!.millisecondsSinceEpoch);
     } else {
       await prefs.remove('cash_balance_to_date');
     }
-    await prefs.setString('cash_balance_amount_from', _amountFromController.text);
+    await prefs.setString(
+        'cash_balance_amount_from', _amountFromController.text);
     await prefs.setString('cash_balance_amount_to', _amountToController.text);
   }
 
-  void _resetFilters() {
-    setState(() {
-      _fromDate = null;
-      _toDate = null;
-      _amountFromController.text = '';
-      _amountToController.text = '';
-    });
-    widget.onResetFilters?.call();
-    _saveFilterState();
+  Widget _buildFilterCard({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(8),
+        child: child,
+      ),
+    );
   }
 
-  void _selectDateRange() async {
-    final DateTimeRange? pickedRange = await showDateRangePicker(
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
+  Future<void> _selectDateRange() async {
+    final pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       initialDateRange: _fromDate != null && _toDate != null
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
-      builder: (BuildContext context, Widget? child) {
+      builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
+            scaffoldBackgroundColor: this.context.appColors.surfacePrimary,
             colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
+              primary: this.context.appColors.buttonPrimaryBg,
+              onPrimary: this.context.appColors.buttonPrimaryFg,
+              onSurface: this.context.appColors.textPrimary,
+              secondary: this
+                  .context
+                  .appColors
+                  .buttonSecondaryBg
+                  .withValues(alpha: 0.1),
+              surface: this.context.appColors.surfacePrimary,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+              style: TextButton.styleFrom(
+                foregroundColor: this.context.appColors.buttonPrimaryBg,
+              ),
             ),
           ),
           child: child!,
@@ -124,26 +158,38 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
 
   double? _parseAmount(String text) {
     if (text.isEmpty) return null;
-    final parsed = double.tryParse(text.replaceAll(',', '')); // Handle commas if needed
-    return parsed;
+    return double.tryParse(text.replaceAll(',', ''));
   }
 
-  void _applyFilters() async {
+  Future<void> _applyFilters() async {
     await _saveFilterState();
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
     } else {
-      // Set from date to 00:00:00 and to date to 23:59:59
       DateTime? fromDateWithTime = _fromDate;
       DateTime? toDateWithTime = _toDate;
-      
+
       if (fromDateWithTime != null) {
-        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+        fromDateWithTime = DateTime(
+          fromDateWithTime.year,
+          fromDateWithTime.month,
+          fromDateWithTime.day,
+          0,
+          0,
+          0,
+        );
       }
       if (toDateWithTime != null) {
-        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+        toDateWithTime = DateTime(
+          toDateWithTime.year,
+          toDateWithTime.month,
+          toDateWithTime.day,
+          23,
+          59,
+          59,
+        );
       }
-      
+
       widget.onSelectedDataFilter?.call({
         'date_from': fromDateWithTime,
         'date_to': toDateWithTime,
@@ -154,63 +200,56 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
     Navigator.pop(context);
   }
 
+  void _resetFilters() {
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
+      _amountFromController.clear();
+      _amountToController.clear();
+    });
+    widget.onResetFilters?.call();
+    _saveFilterState();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
-          AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-            fontSize: 20,
+          localizations.translate('filter'),
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
-              AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
+              localizations.translate('reset'),
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: _applyFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
-              AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
+              localizations.translate('apply'),
+              style: context.appTextStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -225,16 +264,14 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Date Range Card
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildFilterCard(
+                      padding: EdgeInsets.zero,
                       child: GestureDetector(
                         onTap: _selectDateRange,
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.surfacePrimary,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -243,59 +280,44 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
                               Text(
                                 _fromDate != null && _toDate != null
                                     ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                                    : AppLocalizations.of(context)!.translate('select_date_range'),
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  color: _fromDate != null && _toDate != null ? Colors.black : const Color(0xff99A4BA),
-                                  fontSize: 14,
+                                    : localizations
+                                        .translate('select_date_range'),
+                                style: context.appTextStyles.bodyMd.copyWith(
+                                  color: _fromDate != null && _toDate != null
+                                      ? context.appColors.textPrimary
+                                      : context.appColors.textSecondary,
                                 ),
                               ),
-                              const Icon(Icons.calendar_today, color: Color(0xff99A4BA)),
+                              Icon(
+                                Icons.calendar_today,
+                                color: context.appColors.iconSecondary,
+                              ),
                             ],
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 8),
-
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextField(
-                              controller: _amountFromController,
-                              keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_minimum_amount') ?? 'Введите минимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_from') ?? 'Сумма от',
-                            ),
-                          ],
-                        ),
+                    _buildFilterCard(
+                      child: CustomTextField(
+                        controller: _amountFromController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        hintText:
+                            localizations.translate('enter_minimum_amount'),
+                        label: localizations.translate('amount_from'),
                       ),
                     ),
                     const SizedBox(height: 8),
-
-                    Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextField(
-                              controller: _amountToController,
-                              keyboardType: TextInputType.number,
-                              hintText: AppLocalizations.of(context)!.translate('enter_maximum_amount') ?? 'Введите максимальную сумму',
-                              label: AppLocalizations.of(context)!.translate('amount_to') ?? 'Сумма до',
-                            ),
-                          ],
-                        ),
+                    _buildFilterCard(
+                      child: CustomTextField(
+                        controller: _amountToController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        hintText:
+                            localizations.translate('enter_maximum_amount'),
+                        label: localizations.translate('amount_to'),
                       ),
                     ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),

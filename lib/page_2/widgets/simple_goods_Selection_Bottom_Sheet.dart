@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -13,20 +14,23 @@ class SimpleGoodsSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
   final String? buttonText;
 
-  const SimpleGoodsSelectionBottomSheet({
-    Key? key,
-    required this.existingItems,
-    this.buttonText // defult: "Добавить"
-  }) : super(key: key);
+  const SimpleGoodsSelectionBottomSheet(
+      {Key? key,
+      required this.existingItems,
+      this.buttonText // defult: "Добавить"
+      })
+      : super(key: key);
 
   @override
-  _SimpleGoodsSelectionBottomSheetState createState() => _SimpleGoodsSelectionBottomSheetState();
+  _SimpleGoodsSelectionBottomSheetState createState() =>
+      _SimpleGoodsSelectionBottomSheetState();
 }
 
-class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBottomSheet> {
+class _SimpleGoodsSelectionBottomSheetState
+    extends State<SimpleGoodsSelectionBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   List<Goods> selectedGoods = [];
-  Map<int, int> goodsQuantities = {}; // Только количество, без цены
+  Map<int, num> goodsQuantities = {}; // Только количество, без цены
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -42,8 +46,8 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
   void _returnSelectedProducts() {
     // Фильтруем только товары с заполненным количеством
     final selectedProducts = selectedGoods
-        .where((goods) => 
-            goodsQuantities.containsKey(goods.id) && 
+        .where((goods) =>
+            goodsQuantities.containsKey(goods.id) &&
             goodsQuantities[goods.id]! > 0)
         .map((goods) => {
               'id': goods.id,
@@ -56,7 +60,8 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.translate('please_fill_quantity') ?? 'Заполните количество для выбранных товаров',
+            AppLocalizations.of(context)!.translate('please_fill_quantity') ??
+                'Заполните количество для выбранных товаров',
             style: const TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -91,7 +96,7 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
     });
   }
 
-  void _updateGoodsQuantity(int goodsId, int quantity) {
+  void _updateGoodsQuantity(int goodsId, num quantity) {
     if (goodsQuantities.containsKey(goodsId)) {
       setState(() {
         goodsQuantities[goodsId] = quantity;
@@ -101,14 +106,16 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
 
   List<Goods> _getFilteredGoods(List<Goods> allGoods) {
     final activeGoods = allGoods.where((g) => g.isActive == true).toList();
-    
+
     if (_searchController.text.isEmpty) {
       return activeGoods;
     }
-    
-    return activeGoods.where((goods) =>
-        goods.name.toLowerCase().contains(_searchController.text.toLowerCase())
-    ).toList();
+
+    return activeGoods
+        .where((goods) => goods.name
+            .toLowerCase()
+            .contains(_searchController.text.toLowerCase()))
+        .toList();
   }
 
   @override
@@ -131,11 +138,13 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
                   return const Center(child: CircularProgressIndicator());
                 } else if (state is GoodsDataLoaded) {
                   final filteredGoods = _getFilteredGoods(state.goods);
-                  
+
                   if (filteredGoods.isEmpty) {
                     return Center(
                       child: Text(
-                        AppLocalizations.of(context)!.translate('no_products_found') ?? 'Товары не найдены',
+                        AppLocalizations.of(context)!
+                                .translate('no_products_found') ??
+                            'Товары не найдены',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color(0xff99A4BA),
@@ -144,7 +153,7 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
                       ),
                     );
                   }
-                  
+
                   return _buildGoodsList(filteredGoods);
                 } else if (state is GoodsError) {
                   return Center(
@@ -175,7 +184,8 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            AppLocalizations.of(context)!.translate('select_goods') ?? 'Выбрать товары',
+            AppLocalizations.of(context)!.translate('select_goods') ??
+                'Выбрать товары',
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -199,7 +209,8 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
         controller: _searchController,
         onChanged: (value) => setState(() {}),
         decoration: InputDecoration(
-          hintText: AppLocalizations.of(context)!.translate('search_goods') ?? 'Поиск товаров',
+          hintText: AppLocalizations.of(context)!.translate('search_goods') ??
+              'Поиск товаров',
           hintStyle: const TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 14,
@@ -232,7 +243,7 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
         final goodsItem = goods[index];
         final isSelected = selectedGoods.contains(goodsItem);
         final isAlreadyAdded = _isGoodsAlreadyAdded(goodsItem.id);
-        
+
         return Column(
           children: [
             _buildGoodsListItem(goodsItem, isSelected, isAlreadyAdded),
@@ -245,7 +256,8 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
     );
   }
 
-  Widget _buildGoodsListItem(Goods goods, bool isSelected, bool isAlreadyAdded) {
+  Widget _buildGoodsListItem(
+      Goods goods, bool isSelected, bool isAlreadyAdded) {
     return Container(
       decoration: BoxDecoration(
         color: isSelected ? const Color(0xFFF4F7FD) : Colors.transparent,
@@ -269,7 +281,9 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
                       width: 1,
                     ),
                     borderRadius: BorderRadius.circular(4),
-                    color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                    color: isSelected
+                        ? const Color(0xff1E2E52)
+                        : Colors.transparent,
                   ),
                   child: isSelected
                       ? const Icon(
@@ -299,7 +313,8 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
                           ),
                           if (isAlreadyAdded)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xff4759FF).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
@@ -354,11 +369,17 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
             Expanded(
               child: TextFormField(
                 decoration: _inputDecoration(
-                  AppLocalizations.of(context)!.translate('quantity') ?? 'Количество',
+                  AppLocalizations.of(context)!.translate('quantity') ??
+                      'Количество',
                 ),
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  QuantityInputFormatter(),
+                ],
                 onChanged: (value) {
-                  final newQuantity = int.tryParse(value) ?? 0;
+                  final newQuantity =
+                      num.tryParse(value.replaceAll(',', '.')) ?? 0;
                   if (newQuantity > 0) {
                     _updateGoodsQuantity(goods.id, newQuantity);
                   }
@@ -420,7 +441,9 @@ class _SimpleGoodsSelectionBottomSheetState extends State<SimpleGoodsSelectionBo
         ),
         child: Center(
           child: Text(
-            widget.buttonText ?? AppLocalizations.of(context)!.translate('add') ?? 'Добавить',
+            widget.buttonText ??
+                AppLocalizations.of(context)!.translate('add') ??
+                'Добавить',
             style: const TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',

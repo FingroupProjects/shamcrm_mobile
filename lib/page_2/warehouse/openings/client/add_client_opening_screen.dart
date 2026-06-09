@@ -76,7 +76,8 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!.translate('client_opening_created'),
+                AppLocalizations.of(context)!
+                    .translate('client_opening_created'),
                 style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -95,7 +96,7 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
               duration: const Duration(seconds: 2),
             ),
           );
-          
+
           // Небольшая задержка перед закрытием экрана, чтобы SnackBar успел отобразиться
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
@@ -180,9 +181,13 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
                             absorbing: !isOurDutyEnabled,
                             child: CustomTextField(
                               controller: ourDutyController,
-                              label: AppLocalizations.of(context)!.translate('our_duty'),
-                              hintText: AppLocalizations.of(context)!.translate('enter_our_duty'),
-                              keyboardType: TextInputType.number,
+                              label: AppLocalizations.of(context)!
+                                  .translate('our_duty'),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_our_duty'),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
                               enabled: isOurDutyEnabled,
                               inputFormatters: [
                                 PriceInputFormatter(),
@@ -193,10 +198,12 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
                                   return null;
                                 }
                                 if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)!.translate('field_required');
+                                  return AppLocalizations.of(context)!
+                                      .translate('field_required');
                                 }
                                 if (double.tryParse(value) == null) {
-                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                  return AppLocalizations.of(context)!
+                                      .translate('enter_correct_number');
                                 }
                                 return null;
                               },
@@ -214,9 +221,13 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
                             absorbing: !isDebtToUsEnabled,
                             child: CustomTextField(
                               controller: debtToUsController,
-                              label: AppLocalizations.of(context)!.translate('client_debt'),
-                              hintText: AppLocalizations.of(context)!.translate('enter_client_debt'),
-                              keyboardType: TextInputType.number,
+                              label: AppLocalizations.of(context)!
+                                  .translate('client_debt'),
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_client_debt'),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
                               enabled: isDebtToUsEnabled,
                               inputFormatters: [
                                 PriceInputFormatter(),
@@ -227,10 +238,12 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
                                   return null;
                                 }
                                 if (value == null || value.isEmpty) {
-                                  return AppLocalizations.of(context)!.translate('field_required');
+                                  return AppLocalizations.of(context)!
+                                      .translate('field_required');
                                 }
                                 if (double.tryParse(value) == null) {
-                                  return AppLocalizations.of(context)!.translate('enter_correct_number');
+                                  return AppLocalizations.of(context)!
+                                      .translate('enter_correct_number');
                                 }
                                 return null;
                               },
@@ -245,59 +258,67 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
               BlocBuilder<ClientOpeningsBloc, ClientOpeningsState>(
                 builder: (context, state) {
                   final isCreating = state is ClientOpeningCreating;
-                  
+
                   return Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
                         Expanded(
                           child: CustomButton(
-                            buttonText:
-                            AppLocalizations.of(context)!.translate('close'),
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('close'),
                             buttonColor: const Color(0xffF4F7FD),
                             textColor: Colors.black,
-                            onPressed: isCreating ? null : () {
-                              Navigator.pop(context);
-                            },
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomButton(
                             buttonText:
-                            AppLocalizations.of(context)!.translate('save'),
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: const Color(0xff4759FF),
                             textColor: Colors.white,
                             isLoading: isCreating,
-                            onPressed: isCreating ? null : () {
-                          if (_formKey.currentState!.validate()) {
-                            // Создаем событие для добавления остатка клиента
-                            // Если поле пустое или отключено, отправляем 0
-                            final ourDuty = ourDutyController.text.isEmpty 
-                                ? 0.0 
-                                : double.parse(ourDutyController.text);
-                            final debtToUs = debtToUsController.text.isEmpty 
-                                ? 0.0 
-                                : double.parse(debtToUsController.text);
-                            
-                            context.read<ClientOpeningsBloc>().add(
-                              CreateClientOpening(
-                                leadId: widget.leadId,
-                                ourDuty: ourDuty,
-                                debtToUs: debtToUs,
-                              ),
-                            );
+                            onPressed: isCreating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      // Создаем событие для добавления остатка клиента
+                                      // Если поле пустое или отключено, отправляем 0
+                                      final ourDuty =
+                                          ourDutyController.text.isEmpty
+                                              ? 0.0
+                                              : double.parse(
+                                                  ourDutyController.text);
+                                      final debtToUs =
+                                          debtToUsController.text.isEmpty
+                                              ? 0.0
+                                              : double.parse(
+                                                  debtToUsController.text);
 
-                              // BlocListener автоматически обработает успешное создание
-                            }
-                          },
+                                      context.read<ClientOpeningsBloc>().add(
+                                            CreateClientOpening(
+                                              leadId: widget.leadId,
+                                              ourDuty: ourDuty,
+                                              debtToUs: debtToUs,
+                                            ),
+                                          );
+
+                                      // BlocListener автоматически обработает успешное создание
+                                    }
+                                  },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -307,10 +328,10 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
 
   void _showFieldLockedSnackBar(String fieldKey) {
     final fieldName = AppLocalizations.of(context)!.translate(fieldKey);
-    
+
     // Закрываем текущий SnackBar перед показом нового
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -373,6 +394,4 @@ class _AddClientOpeningScreenState extends State<AddClientOpeningScreen> {
       ],
     );
   }
-
 }
-
