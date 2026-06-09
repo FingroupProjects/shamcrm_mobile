@@ -5,7 +5,9 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/delete_from_group_dialog.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -140,21 +142,20 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
 
     if (isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: Text(
             AppLocalizations.of(context)!.translate('group_profile'),
             style: TextStyle(
               fontSize: 20,
-              fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
               maxLines: 1,
                         overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           leading: IconButton(
             icon: Image.asset('assets/icons/arrow-left.png',
                 width: 24, height: 24),
@@ -165,18 +166,18 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           centerTitle: false,
         ),
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+          child: CircularProgressIndicator(color: context.appColors.textPrimary),
         ),
       );
     }
 
     if (isSupportChat) {
       return Scaffold(
-        backgroundColor: Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: null, // Убираем заголовок для support
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           leading: IconButton(
             icon: Image.asset('assets/icons/arrow-left.png',
                 width: 24, height: 24),
@@ -200,9 +201,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                 AppLocalizations.of(context)!.translate('support_chat_name'),
                 style: TextStyle(
                   fontSize: 24,
-                  fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
                   maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -217,19 +217,18 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     String ownerId = memberDetails.isNotEmpty ? memberDetails[0]['id']! : '';
 
     return Scaffold(
-      backgroundColor: Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: Text(
           AppLocalizations.of(context)!.translate('group_profile'),
           style: TextStyle(
             fontSize: 20,
-            fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         leading: IconButton(
           icon:
               Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
@@ -247,10 +246,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             Container(
               // decoration: BoxDecoration(
               //   shape: BoxShape.circle,
-              //   border: Border.all(color: Colors.black, width: 6),
+              //   border: Border.all(color: context.appColors.textPrimary, width: 6),
               // ),
               child: CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: context.appColors.surfacePrimary,
                 backgroundImage: isGroupChat
                     ? AssetImage('assets/images/GroupChat.png')
                     : AssetImage('assets/images/AvatarChat.png'),
@@ -258,20 +257,38 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               ),
             ),
             SizedBox(height: 10),
-            Text(
-              groupName,
-              style: TextStyle(
-                fontSize: 24,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onLongPress: () {
+                Clipboard.setData(ClipboardData(text: groupName));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textInverse,
+                      ),
+                    ),
+                    backgroundColor: context.appColors.success,
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Text(
+                groupName,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Text(
               "$memberCount ${(memberCount >= 2 && memberCount <= 4) ? AppLocalizations.of(context)!.translate('participant') : AppLocalizations.of(context)!.translate('participantss')}",
-              style: TextStyle(
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontSize: 16,
-                fontFamily: 'Gilroy',
-                color: Colors.grey,
+                color: context.appColors.textSecondary,
               ),
             ),
             SizedBox(height: 10),
@@ -287,7 +304,6 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                         AppLocalizations.of(context)!.translate('participants'),
                         style: TextStyle(
                           fontSize: 18,
-                          fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -306,7 +322,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xff1E2E52),
+                            backgroundColor: context.appColors.textPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -316,8 +332,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 .translate('add_participant'),
                             style: TextStyle(
                               fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              color: Colors.white,
+                              color: context.appColors.surfacePrimary,
                             ),
                               maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -384,11 +399,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 18),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.surfacePrimary,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: context.appColors.textPrimary.withOpacity(0.1),
                                 blurRadius: 0,
                                 spreadRadius: 0,
                               ),
@@ -397,7 +412,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: Colors.white,
+                                backgroundColor: context.appColors.surfacePrimary,
                                 child: isDeletedAccount
                                     ? Image.asset(
                                         'assets/images/delete_user.png',
@@ -410,7 +425,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                  color: Colors.black,
+                                                  color: context.appColors.textPrimary,
                                                   width: 4),
                                             ),
                                             child: Image.asset(
@@ -462,16 +477,36 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(
-                                  members[index],
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                    color: Colors.black,
+                                child: GestureDetector(
+                                  onLongPress: () {
+                                    Clipboard.setData(ClipboardData(text: members[index]));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                                          style: context.appTextStyles.bodyMd.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                            color: context.appColors.textInverse,
+                                          ),
+                                        ),
+                                        backgroundColor: context.appColors.success,
+                                        behavior: SnackBarBehavior.floating,
+                                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    members[index],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: context.appColors.textPrimary,
+                                    ),
+                                      maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                                   ),
-                                    maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (isOwner)
@@ -481,8 +516,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                     maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -494,8 +528,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                 )
                               else if (!isDeletedAccount)

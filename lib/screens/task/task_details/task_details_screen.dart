@@ -25,6 +25,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
@@ -1162,6 +1163,44 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             );
           }
         },
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+
+            SnackBar(
+
+              content: Text(
+
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                style: const TextStyle(
+
+                  fontFamily: 'Gilroy',
+
+                  fontSize: 15,
+
+                  fontWeight: FontWeight.w500,
+
+                  color: Colors.white,
+
+                ),
+
+              ),
+
+              backgroundColor: Colors.green,
+
+              behavior: SnackBarBehavior.floating,
+
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+              duration: const Duration(seconds: 2),
+
+            ),
+
+          );
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1195,6 +1234,44 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (label == AppLocalizations.of(context)!.translate('assignees')) {
       return GestureDetector(
         onTap: () => _showUsersDialog(value),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+
+            SnackBar(
+
+              content: Text(
+
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                style: const TextStyle(
+
+                  fontFamily: 'Gilroy',
+
+                  fontSize: 15,
+
+                  fontWeight: FontWeight.w500,
+
+                  color: Colors.white,
+
+                ),
+
+              ),
+
+              backgroundColor: Colors.green,
+
+              behavior: SnackBarBehavior.floating,
+
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+              duration: const Duration(seconds: 2),
+
+            ),
+
+          );
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1355,6 +1432,44 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             );
           }
         },
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+
+            SnackBar(
+
+              content: Text(
+
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                style: const TextStyle(
+
+                  fontFamily: 'Gilroy',
+
+                  fontSize: 15,
+
+                  fontWeight: FontWeight.w500,
+
+                  color: Colors.white,
+
+                ),
+
+              ),
+
+              backgroundColor: Colors.green,
+
+              behavior: SnackBarBehavior.floating,
+
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+              duration: const Duration(seconds: 2),
+
+            ),
+
+          );
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1492,15 +1607,55 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Widget _buildValue(String value) {
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+    return GestureDetector(
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(context).showSnackBar(
+
+          SnackBar(
+
+            content: Text(
+
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+              style: const TextStyle(
+
+                fontFamily: 'Gilroy',
+
+                fontSize: 15,
+
+                fontWeight: FontWeight.w500,
+
+                color: Colors.white,
+
+              ),
+
+            ),
+
+            backgroundColor: Colors.green,
+
+            behavior: SnackBarBehavior.floating,
+
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+            duration: const Duration(seconds: 2),
+
+          ),
+
+        );
+      },
+      child: Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff1E2E52),
+        ),
+        overflow: TextOverflow.visible,
       ),
-      overflow: TextOverflow.visible,
     );
   }
 

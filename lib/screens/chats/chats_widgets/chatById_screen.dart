@@ -9,6 +9,7 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_status_bottom_sheet.dart';
@@ -16,6 +17,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,18 +116,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       create: (context) =>
           ChatProfileBloc(ApiService())..add(FetchChatProfile(widget.chatId)),
       child: Scaffold(
-        backgroundColor: const Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundPrimary,
         appBar: AppBar(
           title: Text(
             AppLocalizations.of(context)!.translate('lead_profile'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+            style: context.appTextStyles.titleLg.copyWith(
+              color: context.appColors.textPrimary,
             ),
           ),
-          backgroundColor: Color(0xffF4F7FD),
+          backgroundColor: context.appColors.backgroundPrimary,
           leading: IconButton(
             icon: Image.asset(
               'assets/icons/arrow-left.png',
@@ -142,7 +141,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           builder: (context, state) {
             if (state is ChatProfileLoading) {
               return Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg),
               );
             } else if (state is ChatProfileLoaded) {
               final profile = state.profile;
@@ -156,7 +155,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.appColors.surfacePrimary,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       padding: const EdgeInsets.symmetric(
@@ -171,7 +170,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             Icons.person,
                             null,
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -182,7 +181,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             Icons.phone,
                             null,
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -193,7 +192,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             null,
                             'assets/icons/leads/instagram.png',
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -203,7 +202,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             null,
                             'assets/icons/leads/telegram.png',
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -213,7 +212,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             null,
                             'assets/icons/leads/whatsapp.png',
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -223,7 +222,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             null,
                             'assets/icons/leads/facebook.png',
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -234,7 +233,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             Icons.description,
                             null,
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           buildInfoRow(
                             context,
                             profile,
@@ -244,12 +243,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             Icons.calendar_today,
                             null,
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Icon(Icons.supervisor_account,
-                                  size: 32, color: const Color(0xff1E2E52)),
+                                  size: 32, color: context.appColors.iconPrimary),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -258,21 +257,35 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     Text(
                                       AppLocalizations.of(context)!
                                           .translate('manager'),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff6E7C97),
+                                      style: context.appTextStyles.bodyMd.copyWith(
+                                        color: context.appColors.textSecondary,
                                       ),
                                     ),
                                     if (profile.manager?.name != null)
-                                      Text(
-                                        profile.manager!.name,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Gilroy',
-                                          color: Color(0xff1E2E52),
+                                      GestureDetector(
+                                        onLongPress: () {
+                                          Clipboard.setData(ClipboardData(text: profile.manager!.name));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                                                style: context.appTextStyles.bodyMd.copyWith(
+                                                  color: context.appColors.textInverse,
+                                                ),
+                                              ),
+                                              backgroundColor: context.appColors.success,
+                                              behavior: SnackBarBehavior.floating,
+                                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          profile.manager!.name,
+                                          style: context.appTextStyles.titleMd.copyWith(
+                                            color: context.appColors.textPrimary,
+                                          ),
                                         ),
                                       )
                                     else
@@ -291,21 +304,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                       (BuildContext context) {
                                                     return AlertDialog(
                                                       backgroundColor:
-                                                          Colors.white,
+                                                          context.appColors.surfacePrimary,
                                                       title: Center(
                                                         child: Text(
                                                           AppLocalizations.of(
                                                                   context)!
                                                               .translate(
                                                                   'confirm_manager_title'),
-                                                          style: TextStyle(
-                                                            fontSize: 20,
-                                                            fontFamily:
-                                                                'Gilroy',
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color: Color(
-                                                                0xFF1E2E52),
+                                                          style: context.appTextStyles.titleLg.copyWith(
+                                                            color: context.appColors.textPrimary,
                                                           ),
                                                         ),
                                                       ),
@@ -314,13 +321,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                                 context)!
                                                             .translate(
                                                                 'confirm_manager_message'),
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontFamily: 'Gilroy',
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color:
-                                                              Color(0xFF1E2E52),
+                                                        style: context.appTextStyles.bodyMd.copyWith(
+                                                          color: context.appColors.textPrimary,
                                                         ),
                                                       ),
                                                       actions: [
@@ -343,10 +345,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                                           false);
                                                                 },
                                                                 buttonColor:
-                                                                    Colors.red,
+                                                                    context.appColors.error,
                                                                 textColor:
-                                                                    Colors
-                                                                        .white,
+                                                                    context.appColors.textInverse,
                                                               ),
                                                             ),
                                                             SizedBox(width: 8),
@@ -363,11 +364,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                                       .pop(
                                                                           true);
                                                                 },
-                                                                buttonColor: Color(
-                                                                    0xFF1E2E52),
+                                                                buttonColor: context.appColors.textPrimary,
                                                                 textColor:
-                                                                    Colors
-                                                                        .white,
+                                                                    context.appColors.textInverse,
                                                               ),
                                                             ),
                                                           ],
@@ -471,7 +470,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                 padding: EdgeInsets.symmetric(
                                                     horizontal: 6, vertical: 6),
                                                 decoration: BoxDecoration(
-                                                  color: Color(0xff1E2E52),
+                                                  color: context.appColors.textPrimary,
                                                   borderRadius:
                                                       BorderRadius.circular(10),
                                                 ),
@@ -481,7 +480,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                   children: [
                                                     Icon(
                                                       Icons.person_add_alt_1,
-                                                      color: Colors.white,
+                                                      color: context.appColors.textInverse,
                                                       size: 20,
                                                     ),
                                                     SizedBox(width: 12),
@@ -492,12 +491,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                               'become_manager'),
                                                       textAlign:
                                                           TextAlign.center,
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontFamily: 'Gilroy',
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.white,
+                                                      style: context.appTextStyles.bodyMd.copyWith(
+                                                        color: context.appColors.textInverse,
                                                       ),
                                                     ),
                                                   ],
@@ -512,7 +507,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               ),
                             ],
                           ),
-                          buildDivider(),
+                          buildDivider(context),
                           // ИЗМЕНЁННАЯ СТРОКА СО СТАТУСОМ
                           buildStatusRow(
                             context,
@@ -528,11 +523,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               return Center(
                 child: Text(
                   _getLeadErrorMessage(state.error),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               );
@@ -551,7 +543,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(Icons.assignment, size: 32, color: const Color(0xff1E2E52)),
+        Icon(Icons.assignment, size: 32, color: context.appColors.iconPrimary),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -559,20 +551,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('status_lead_profile'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textSecondary,
                 ),
               ),
-              Text(
-                profile.leadStatus?.title ?? 'Не указано',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+              GestureDetector(
+                onLongPress: () {
+                  Clipboard.setData(ClipboardData(text: profile.leadStatus?.title ?? 'Не указано'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                        style: context.appTextStyles.bodyMd.copyWith(
+                          color: context.appColors.textInverse,
+                        ),
+                      ),
+                      backgroundColor: context.appColors.success,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Text(
+                  profile.leadStatus?.title ?? 'Не указано',
+                  style: context.appTextStyles.titleMd.copyWith(
+                    color: context.appColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -583,7 +589,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           IconButton(
             icon: Icon(
               Icons.edit,
-              color: Color(0xff1E2E52),
+              color: context.appColors.iconPrimary,
               size: 24,
             ),
             onPressed: () {
@@ -624,23 +630,35 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   ) {
     Widget content;
 
-    final clickableStyle = TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      fontFamily: 'Gilroy',
-      color: Color(0xff1E2E52),
+    final clickableStyle = context.appTextStyles.titleMd.copyWith(
+      color: context.appColors.buttonPrimaryBg,
       decoration: TextDecoration.underline,
     );
 
-    final normalStyle = TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      fontFamily: 'Gilroy',
-      color: Color(0xff1E2E52),
+    final normalStyle = context.appTextStyles.titleMd.copyWith(
+      color: context.appColors.textPrimary,
     );
 
     if (title == AppLocalizations.of(context)!.translate('name')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () {
           if (profile.id != null && profile.name.isNotEmpty) {
             navigatorKey.currentState?.push(
@@ -667,35 +685,145 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     } else if (title == AppLocalizations.of(context)!.translate('phone') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _makePhoneCall(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('whatsApp') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openWhatsApp(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('telegram') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openTelegram(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('instagram') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openInstagram(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('facebook') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openFacebook(value),
         child: Text(value, style: clickableStyle),
       );
     } else {
-      content = Text(value, style: normalStyle);
+      content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                ),
+              ),
+              backgroundColor: context.appColors.success,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
+        child: Text(value, style: normalStyle),
+      );
     }
 
     return Row(
@@ -703,7 +831,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       children: [
         customIconPath != null
             ? Image.asset(customIconPath, width: 32, height: 32)
-            : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
+            : Icon(icon, size: 32, color: context.appColors.iconPrimary),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -711,11 +839,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textSecondary,
                 ),
               ),
               content,
@@ -726,9 +851,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget buildDivider() {
-    return const Divider(
-      color: Color(0xffE1E6F0),
+  Widget buildDivider(BuildContext context) {
+    return Divider(
+      color: context.appColors.borderSubtle,
       thickness: 1,
       height: 24,
     );

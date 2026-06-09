@@ -3,9 +3,11 @@ import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +24,7 @@ class ParticipantProfileScreen extends StatelessWidget {
   final bool? buttonChat;
 
   const ParticipantProfileScreen({
+    super.key,
     required this.userId,
     required this.image,
     required this.name,
@@ -94,7 +97,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     return null;
   }
 
-  Widget buildProfileImage() {
+  Widget buildProfileImage(BuildContext context) {
     if (image.isEmpty || image == 'assets/images/AvatarChat.png') {
       return Image.asset(
         'assets/images/AvatarChat.png',
@@ -134,16 +137,15 @@ class ParticipantProfileScreen extends StatelessWidget {
               color: backgroundColor,
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white,
+                color: context.appColors.textInverse,
                 width: 1,
               ),
             ),
             child: Center(
               child: Text(
                 text,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 60,
+                style: context.appTextStyles.titleLg.copyWith(
+                  color: context.appColors.textInverse,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -187,18 +189,16 @@ class ParticipantProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.translate('user_profile'),
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.titleMd.copyWith(
+            color: context.appColors.info,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
           ),
         ),
-        backgroundColor: Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundPrimary,
         leading: IconButton(
           icon:
               Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
@@ -213,16 +213,12 @@ class ParticipantProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Center(
-                child: Container(
-                  child: ClipOval(
-                    child: buildProfileImage(),
-                  ),
-                ),
+                child: ClipOval(child: buildProfileImage(context)),
               ),
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding:
@@ -230,27 +226,32 @@ class ParticipantProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('user_name'),
                         name,
                         
                         Icons.person),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('Email'),
                         email,
                         Icons.email),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('number_phone'),
-                        "$phone",
+                        phone,
                         Icons.phone),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('login'),
                         login,
                         Icons.account_circle),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('last_login'),
                         formatDate(lastSeen, context),
                         Icons.access_time),
@@ -291,25 +292,27 @@ class ParticipantProfileScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            '${state.message}',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
+                            state.message,
+                            style: context.appTextStyles.bodyMd.copyWith(
+                              color: context.appColors.textInverse,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.appColors.error,
                           elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          duration: const Duration(seconds: 3),
                         ),
                       );
                     });
@@ -319,8 +322,9 @@ class ParticipantProfileScreen extends StatelessWidget {
                   builder: (context, state) {
                     if (state is CreateClientLoading) {
                       return Center(
-                        child:
-                            CircularProgressIndicator(color: Color(0xff1E2E52)),
+                        child: CircularProgressIndicator(
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
                       );
                     }
                     return buttonChat == true
@@ -331,7 +335,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                                   .add(CreateClientEv(userId: userId));
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff1E2E52),
+                              backgroundColor: context.appColors.buttonPrimaryBg,
                               padding: const EdgeInsets.symmetric(
                                   vertical: 14, horizontal: 30),
                               shape: RoundedRectangleBorder(
@@ -341,15 +345,13 @@ class ParticipantProfileScreen extends StatelessWidget {
                             child: Text(
                               AppLocalizations.of(context)!
                                   .translate('go_to_chat'),
-                              style: TextStyle(
-                                fontSize: 16,
+                              style: context.appTextStyles.bodyMd.copyWith(
                                 fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
                           )
-                        : SizedBox.shrink();
+                        : const SizedBox.shrink();
                   },
                 ),
               )
@@ -360,11 +362,11 @@ class ParticipantProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget buildInfoRow(String title, String value, IconData icon) {
+  Widget buildInfoRow(BuildContext context, String title, String value, IconData icon) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 32, color: Color(0xff1E2E52)),
+        Icon(icon, size: 32, color: context.appColors.iconPrimary),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -372,14 +374,12 @@ class ParticipantProfileScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: context.appTextStyles.bodySm.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
+                  color: context.appColors.textSecondary,
                 ),
-                  maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               // Проверяем тип поля и делаем его кликабельным если это телефон или email
               title == "Номер телефона" || title == "Email"
@@ -391,29 +391,65 @@ class ParticipantProfileScreen extends StatelessWidget {
                           _sendEmail(value);
                         }
                       },
+                      onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: value));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                              style: context.appTextStyles.bodyMd.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: context.appColors.textInverse,
+                              ),
+                            ),
+                            backgroundColor: context.appColors.success,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                       child: Text(
                         value,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: context.appTextStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.info,
                           decoration: TextDecoration.underline,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     )
-                  : Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                  : GestureDetector(
+                      onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: value));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                              style: context.appTextStyles.bodyMd.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: context.appColors.textInverse,
+                              ),
+                            ),
+                            backgroundColor: context.appColors.success,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        value,
+                        style: context.appTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.info,
+                        ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                       ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                     ),
             ],
           ),
@@ -422,9 +458,9 @@ class ParticipantProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget buildDivider() {
-    return const Divider(
-      color: Color(0xffE1E6F0),
+  Widget buildDivider(BuildContext context) {
+    return Divider(
+      color: context.appColors.borderSubtle,
       thickness: 1,
       height: 24,
     );

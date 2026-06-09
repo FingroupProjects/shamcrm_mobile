@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class ProfileToggleCard extends StatelessWidget {
@@ -21,8 +22,10 @@ class ProfileToggleCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Row(
         children: [
@@ -30,7 +33,7 @@ class ProfileToggleCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 223, 225, 249),
+              color: context.appColors.surfaceAccent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(child: icon),
@@ -39,11 +42,9 @@ class ProfileToggleCard extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xFF1E1E1E),
+                color: context.appColors.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -53,11 +54,11 @@ class ProfileToggleCard extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            inactiveThumbColor: Colors.white,
-            activeTrackColor: const Color.fromARGB(255, 91, 77, 235),
-            inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179)
-                .withValues(alpha: 0.5),
+            activeThumbColor: context.appColors.textInverse,
+            inactiveThumbColor: context.appColors.textInverse,
+            activeTrackColor: context.appColors.buttonPrimaryBg,
+            inactiveTrackColor:
+                context.appColors.iconSecondary.withValues(alpha: 0.45),
           ),
         ],
       ),

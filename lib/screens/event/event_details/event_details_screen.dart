@@ -22,6 +22,7 @@ import 'package:crm_task_manager/screens/event/event_details/notice_dropdown_his
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1439,6 +1440,44 @@ Widget _buildDetailItem(
       if (label == AppLocalizations.of(context)!.translate('assignees')) {
         return GestureDetector(
           onTap: () => _showUsersDialog(value),
+          onLongPress: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(context).showSnackBar(
+
+              SnackBar(
+
+                content: Text(
+
+                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                  style: const TextStyle(
+
+                    fontFamily: 'Gilroy',
+
+                    fontSize: 15,
+
+                    fontWeight: FontWeight.w500,
+
+                    color: Colors.white,
+
+                  ),
+
+                ),
+
+                backgroundColor: Colors.green,
+
+                behavior: SnackBarBehavior.floating,
+
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+                duration: const Duration(seconds: 2),
+
+              ),
+
+            );
+          },
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1477,6 +1516,44 @@ Widget _buildDetailItem(
                   statusId: 1,
                 ),
               ),
+            );
+          },
+          onLongPress: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(context).showSnackBar(
+
+              SnackBar(
+
+                content: Text(
+
+                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                  style: const TextStyle(
+
+                    fontFamily: 'Gilroy',
+
+                    fontSize: 15,
+
+                    fontWeight: FontWeight.w500,
+
+                    color: Colors.white,
+
+                  ),
+
+                ),
+
+                backgroundColor: Colors.green,
+
+                behavior: SnackBarBehavior.floating,
+
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+                duration: const Duration(seconds: 2),
+
+              ),
+
             );
           },
           child: Row(
@@ -1591,6 +1668,44 @@ Widget _buildDetailItem(
       if (label == AppLocalizations.of(context)!.translate('body')) {
         return GestureDetector(
           onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+          onLongPress: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(context).showSnackBar(
+
+              SnackBar(
+
+                content: Text(
+
+                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                  style: const TextStyle(
+
+                    fontFamily: 'Gilroy',
+
+                    fontSize: 15,
+
+                    fontWeight: FontWeight.w500,
+
+                    color: Colors.white,
+
+                  ),
+
+                ),
+
+                backgroundColor: Colors.green,
+
+                behavior: SnackBarBehavior.floating,
+
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+                duration: const Duration(seconds: 2),
+
+              ),
+
+            );
+          },
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1618,6 +1733,44 @@ Widget _buildDetailItem(
       if (label == AppLocalizations.of(context)!.translate('conclusions')) {
         return GestureDetector(
           onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+          onLongPress: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ScaffoldMessenger.of(context).showSnackBar(
+
+              SnackBar(
+
+                content: Text(
+
+                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                  style: const TextStyle(
+
+                    fontFamily: 'Gilroy',
+
+                    fontSize: 15,
+
+                    fontWeight: FontWeight.w500,
+
+                    color: Colors.white,
+
+                  ),
+
+                ),
+
+                backgroundColor: Colors.green,
+
+                behavior: SnackBarBehavior.floating,
+
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+                duration: const Duration(seconds: 2),
+
+              ),
+
+            );
+          },
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1669,13 +1822,53 @@ Widget _buildDetailItem(
   }
 
   Widget _buildValue(String value) {
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+    return GestureDetector(
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(context).showSnackBar(
+
+          SnackBar(
+
+            content: Text(
+
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+              style: const TextStyle(
+
+                fontFamily: 'Gilroy',
+
+                fontSize: 15,
+
+                fontWeight: FontWeight.w500,
+
+                color: Colors.white,
+
+              ),
+
+            ),
+
+            backgroundColor: Colors.green,
+
+            behavior: SnackBarBehavior.floating,
+
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+            duration: const Duration(seconds: 2),
+
+          ),
+
+        );
+      },
+      child: Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xff1E2E52),
+        ),
       ),
     );
   }
