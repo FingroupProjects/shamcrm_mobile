@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -230,27 +231,32 @@ class ParticipantProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('user_name'),
                         name,
                         
                         Icons.person),
                     buildDivider(),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('Email'),
                         email,
                         Icons.email),
                     buildDivider(),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('number_phone'),
                         "$phone",
                         Icons.phone),
                     buildDivider(),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('login'),
                         login,
                         Icons.account_circle),
                     buildDivider(),
                     buildInfoRow(
+                        context,
                         AppLocalizations.of(context)!.translate('last_login'),
                         formatDate(lastSeen, context),
                         Icons.access_time),
@@ -360,7 +366,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget buildInfoRow(String title, String value, IconData icon) {
+  Widget buildInfoRow(BuildContext context, String title, String value, IconData icon) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -391,6 +397,27 @@ class ParticipantProfileScreen extends StatelessWidget {
                           _sendEmail(value);
                         }
                       },
+                      onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: value));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                       child: Text(
                         value,
                         style: const TextStyle(
@@ -404,16 +431,39 @@ class ParticipantProfileScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     )
-                  : Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                  : GestureDetector(
+                      onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: value));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Gilroy',
+                          color: Color(0xff1E2E52),
+                        ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                       ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                     ),
             ],
           ),

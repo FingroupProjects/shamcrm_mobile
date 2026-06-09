@@ -6,6 +6,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/delete_from_group_d
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -258,12 +259,35 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               ),
             ),
             SizedBox(height: 10),
-            Text(
-              groupName,
-              style: TextStyle(
-                fontSize: 24,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onLongPress: () {
+                Clipboard.setData(ClipboardData(text: groupName));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Text(
+                groupName,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Text(
@@ -462,16 +486,39 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(
-                                  members[index],
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
-                                    color: Colors.black,
+                                child: GestureDetector(
+                                  onLongPress: () {
+                                    Clipboard.setData(ClipboardData(text: members[index]));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                                          style: const TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        behavior: SnackBarBehavior.floating,
+                                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    members[index],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: Colors.black,
+                                    ),
+                                      maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                                   ),
-                                    maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (isOwner)

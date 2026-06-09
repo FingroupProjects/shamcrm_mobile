@@ -16,6 +16,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -266,13 +267,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       ),
                                     ),
                                     if (profile.manager?.name != null)
-                                      Text(
-                                        profile.manager!.name,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          fontFamily: 'Gilroy',
-                                          color: Color(0xff1E2E52),
+                                      GestureDetector(
+                                        onLongPress: () {
+                                          Clipboard.setData(ClipboardData(text: profile.manager!.name));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Gilroy',
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              backgroundColor: Colors.green,
+                                              behavior: SnackBarBehavior.floating,
+                                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          profile.manager!.name,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Gilroy',
+                                            color: Color(0xff1E2E52),
+                                          ),
                                         ),
                                       )
                                     else
@@ -566,13 +590,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   color: Color(0xff6E7C97),
                 ),
               ),
-              Text(
-                profile.leadStatus?.title ?? 'Не указано',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+              GestureDetector(
+                onLongPress: () {
+                  Clipboard.setData(ClipboardData(text: profile.leadStatus?.title ?? 'Не указано'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Text(
+                  profile.leadStatus?.title ?? 'Не указано',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
                 ),
               ),
             ],
@@ -641,6 +688,27 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     if (title == AppLocalizations.of(context)!.translate('name')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () {
           if (profile.id != null && profile.name.isNotEmpty) {
             navigatorKey.currentState?.push(
@@ -667,35 +735,163 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     } else if (title == AppLocalizations.of(context)!.translate('phone') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _makePhoneCall(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('whatsApp') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openWhatsApp(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('telegram') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openTelegram(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('instagram') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openInstagram(value),
         child: Text(value, style: clickableStyle),
       );
     } else if (title == AppLocalizations.of(context)!.translate('facebook') &&
         value != AppLocalizations.of(context)!.translate('')) {
       content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
         onTap: () => _openFacebook(value),
         child: Text(value, style: clickableStyle),
       );
     } else {
-      content = Text(value, style: normalStyle);
+      content = GestureDetector(
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
+        child: Text(value, style: normalStyle),
+      );
     }
 
     return Row(

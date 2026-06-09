@@ -9,6 +9,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -150,6 +151,27 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
 
     if (title == AppLocalizations.of(context)!.translate('task_name_profile')) {
       content = GestureDetector(
+        onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: value));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+        },
         onTap: () {
           if (task.id != null && task.name.isNotEmpty) {
             navigatorKey.currentState?.push(
@@ -175,7 +197,30 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
         child: Text(value, style: clickableStyle),
       );
     } else {
-      content = Text(value, style: normalStyle);
+      content = GestureDetector(
+        onLongPress: () {
+                        Clipboard.setData(ClipboardData(text: value));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                              style: const TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+        },
+        child: Text(value, style: normalStyle),
+      );
     }
 
     return Row(
@@ -230,13 +275,36 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              Text(
-                task.taskStatus.taskStatus?.name ?? "no_comment",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+              GestureDetector(
+                onLongPress: () {
+                  Clipboard.setData(ClipboardData(text: task.taskStatus.taskStatus?.name ?? "no_comment"));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Text(
+                  task.taskStatus.taskStatus?.name ?? "no_comment",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: Color(0xff1E2E52),
+                  ),
                 ),
               ),
             ],

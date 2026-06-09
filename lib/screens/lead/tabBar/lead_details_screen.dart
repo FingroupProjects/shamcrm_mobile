@@ -47,6 +47,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:intl/intl.dart';
@@ -1007,6 +1008,44 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     return GestureDetector(
       onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(context).showSnackBar(
+
+          SnackBar(
+
+            content: Text(
+
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+              style: const TextStyle(
+
+                fontFamily: 'Gilroy',
+
+                fontSize: 15,
+
+                fontWeight: FontWeight.w500,
+
+                color: Colors.white,
+
+              ),
+
+            ),
+
+            backgroundColor: Colors.green,
+
+            behavior: SnackBarBehavior.floating,
+
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+            duration: const Duration(seconds: 2),
+
+          ),
+
+        );
+      },
       child: Text(
         value,
         style: style.copyWith(
@@ -1838,6 +1877,44 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         children: [
           GestureDetector(
             onTap: () => _handlePhoneTap(value),
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+
+                SnackBar(
+
+                  content: Text(
+
+                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                    style: const TextStyle(
+
+                      fontFamily: 'Gilroy',
+
+                      fontSize: 15,
+
+                      fontWeight: FontWeight.w500,
+
+                      color: Colors.white,
+
+                    ),
+
+                  ),
+
+                  backgroundColor: Colors.green,
+
+                  behavior: SnackBarBehavior.floating,
+
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+                  duration: const Duration(seconds: 2),
+
+                ),
+
+              );
+            },
             child: Text(
               value,
               style: TextStyle(
@@ -1856,6 +1933,44 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     if (fieldName == 'wa_phone') {
       return GestureDetector(
         onTap: () => _openWhatsApp(value),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: value));
+          ScaffoldMessenger.of(context).showSnackBar(
+
+            SnackBar(
+
+              content: Text(
+
+                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+                style: const TextStyle(
+
+                  fontFamily: 'Gilroy',
+
+                  fontSize: 15,
+
+                  fontWeight: FontWeight.w500,
+
+                  color: Colors.white,
+
+                ),
+
+              ),
+
+              backgroundColor: Colors.green,
+
+              behavior: SnackBarBehavior.floating,
+
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+              duration: const Duration(seconds: 2),
+
+            ),
+
+          );
+        },
         child: Text(
           value,
           style: TextStyle(
@@ -1908,16 +2023,56 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       );
     }
 
-    return Text(
-      value,
-      style: TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
+    return GestureDetector(
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(context).showSnackBar(
+
+          SnackBar(
+
+            content: Text(
+
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
+
+              style: const TextStyle(
+
+                fontFamily: 'Gilroy',
+
+                fontSize: 15,
+
+                fontWeight: FontWeight.w500,
+
+                color: Colors.white,
+
+              ),
+
+            ),
+
+            backgroundColor: Colors.green,
+
+            behavior: SnackBarBehavior.floating,
+
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+            duration: const Duration(seconds: 2),
+
+          ),
+
+        );
+      },
+      child: Text(
+        value,
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF1E2E52),
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
     );
   }
 
