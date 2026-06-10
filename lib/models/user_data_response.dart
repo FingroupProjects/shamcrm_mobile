@@ -72,8 +72,16 @@ class UserData {
       };
 
   @override
+  bool operator ==(Object other) {
+    return identical(this, other) || other is UserData && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
   String toString() {
     // return 'UserData{id: $id, name: $name, login: $login, email!mail, phone: $phone, image: $image}';
-    return '$name';
+    return name;
   }
 }
