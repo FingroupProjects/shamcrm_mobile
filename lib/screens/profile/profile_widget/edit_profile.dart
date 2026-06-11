@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_event.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
@@ -27,37 +28,38 @@ class InteractiveAvatar extends StatefulWidget {
   final ScrollController scrollController; // Контроллер скролла для анимации
 
   const InteractiveAvatar({
-    Key? key,
+    super.key,
     this.localImage,
     required this.userImage,
     required this.onTap,
     required this.scrollController,
-  }) : super(key: key);
+  });
 
   @override
-  _InteractiveAvatarState createState() => _InteractiveAvatarState();
+  State<InteractiveAvatar> createState() => _InteractiveAvatarState();
 }
 
 class _InteractiveAvatarState extends State<InteractiveAvatar>
     with TickerProviderStateMixin {
-  late AnimationController _scaleController; // Контроллер анимации масштабирования
+  late AnimationController
+      _scaleController; // Контроллер анимации масштабирования
   late Animation<double> _scaleAnimation; // Анимация масштаба
   late AnimationController _tapController; // Контроллер анимации нажатия
   late Animation<double> _tapAnimation; // Анимация при нажатии
-  
+
   double _scrollOffset = 0.0; // Текущий offset скролла
   bool _isExpanded = false; // Флаг развернутого состояния
 
   @override
   void initState() {
     super.initState();
-    
+
     // Инициализация контроллера масштабирования
     _scaleController = AnimationController(
       duration: Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     // Создание анимации масштабирования с плавной кривой
     _scaleAnimation = Tween<double>(
       begin: 1.0,
@@ -66,13 +68,13 @@ class _InteractiveAvatarState extends State<InteractiveAvatar>
       parent: _scaleController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     // Инициализация контроллера анимации нажатия
     _tapController = AnimationController(
       duration: Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     // Создание анимации нажатия
     _tapAnimation = Tween<double>(
       begin: 1.0,
@@ -81,22 +83,24 @@ class _InteractiveAvatarState extends State<InteractiveAvatar>
       parent: _tapController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Добавляем слушатель к контроллеру скролла
     widget.scrollController.addListener(_onScroll);
   }
 
   // Обработчик скролла для анимации масштабирования
   void _onScroll() {
-    final double offset = widget.scrollController.offset; // Получаем текущий offset
+    final double offset =
+        widget.scrollController.offset; // Получаем текущий offset
     setState(() {
       _scrollOffset = offset; // Обновляем offset состояния
     });
-    
+
     // Вычисляем прогресс анимации на основе скролла
-    double progress = math.min(offset / 200.0, 1.0); // Максимум на 200 пикселях скролла
+    double progress =
+        math.min(offset / 200.0, 1.0); // Максимум на 200 пикселях скролла
     _scaleController.value = progress; // Устанавливаем значение анимации
-    
+
     // Определяем когда аватар считается развернутым
     bool shouldBeExpanded = progress > 0.7;
     if (_isExpanded != shouldBeExpanded) {
@@ -107,51 +111,55 @@ class _InteractiveAvatarState extends State<InteractiveAvatar>
   }
 
   // Обработчик нажатия с анимацией
-void _handleTap() {
-  _tapController.forward().then((_) => _tapController.reverse());
-  //print('Avatar tapped, isExpanded: $_isExpanded'); // Логирование
-  _openFullScreenGallery(); // Всегда открываем галерею
-}
+  void _handleTap() {
+    _tapController.forward().then((_) => _tapController.reverse());
+    //print('Avatar tapped, isExpanded: $_isExpanded'); // Логирование
+    _openFullScreenGallery(); // Всегда открываем галерею
+  }
 
   // Открытие полноэкранной галереи
   void _openFullScreenGallery() {
-  //print('Opening gallery with localImage: ${widget.localImage}, userImage: ${widget.userImage}');
-  Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      barrierColor: Colors.black,
-      barrierDismissible: true,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return FullScreenImageViewer(
-          localImage: widget.localImage,
-          userImage: widget.userImage,
-          animation: animation,
-        );
-      },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(opacity: animation, child: child);
-      },
-    ),
-  );
-}
+    //print('Opening gallery with localImage: ${widget.localImage}, userImage: ${widget.userImage}');
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: context.appColors.overlay,
+        barrierDismissible: true,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FullScreenImageViewer(
+            localImage: widget.localImage,
+            userImage: widget.userImage,
+            animation: animation,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_scaleAnimation, _tapAnimation]), // Слушаем обе анимации
+      animation: Listenable.merge(
+          [_scaleAnimation, _tapAnimation]), // Слушаем обе анимации
       builder: (context, child) {
         // Вычисляем финальный масштаб комбинируя обе анимации
         double finalScale = _scaleAnimation.value * _tapAnimation.value;
-        
+
         return GestureDetector(
           onTap: _handleTap, // Обработчик нажатия
           child: Container(
-            margin: EdgeInsets.symmetric(vertical: 20), // Отступы сверху и снизу
+            margin:
+                EdgeInsets.symmetric(vertical: 20), // Отступы сверху и снизу
             child: Transform.scale(
               scale: 1.0 + finalScale * 0.3, // Применяем масштабирование
               child: Container(
-                width: 140 + (_scaleAnimation.value * 60), // Динамическая ширина
-                height: 140 + (_scaleAnimation.value * 60), // Динамическая высота
+                width:
+                    140 + (_scaleAnimation.value * 60), // Динамическая ширина
+                height:
+                    140 + (_scaleAnimation.value * 60), // Динамическая высота
                 child: Stack(
                   children: [
                     // Основной контейнер аватара
@@ -166,7 +174,9 @@ void _handleTap() {
                         boxShadow: [
                           // Тень которая увеличивается при масштабировании
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1 + _scaleAnimation.value * 0.2),
+                            color: context.appColors.shadow.withValues(
+                              alpha: 0.1 + _scaleAnimation.value * 0.2,
+                            ),
                             blurRadius: 10 + _scaleAnimation.value * 20,
                             offset: Offset(0, 5 + _scaleAnimation.value * 10),
                           ),
@@ -179,7 +189,7 @@ void _handleTap() {
                         child: _buildAvatarContent(), // Содержимое аватара
                       ),
                     ),
-                    
+
                     // Индикатор что можно нажать (появляется при разворачивании)
                     if (_isExpanded)
                       Positioned(
@@ -189,12 +199,12 @@ void _handleTap() {
                           width: 30,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6), // Полупрозрачный фон
+                            color: context.appColors.overlay,
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: Icon(
                             Icons.fullscreen, // Иконка полноэкранного режима
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                             size: 20,
                           ),
                         ),
@@ -211,18 +221,20 @@ void _handleTap() {
 
   // Построение содержимого аватара
   Widget _buildAvatarContent() {
-  if (widget.localImage != null) {
-    return Image.file(widget.localImage!, fit: BoxFit.cover);
+    if (widget.localImage != null) {
+      return Image.file(widget.localImage!, fit: BoxFit.cover);
+    }
+    if (widget.userImage.isNotEmpty &&
+        widget.userImage !=
+            AppLocalizations.of(context)!.translate('not_found')) {
+      return Image.network(
+        widget.userImage,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+      );
+    }
+    return _buildDefaultAvatar();
   }
-  if (widget.userImage.isNotEmpty && widget.userImage != AppLocalizations.of(context)!.translate('not_found')) {
-    return Image.network(
-      widget.userImage,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
-    );
-  }
-  return _buildDefaultAvatar();
-}
 
   // Построение SVG аватара
   Widget _buildSvgAvatar(String svg) {
@@ -241,7 +253,8 @@ void _handleTap() {
     } else {
       // Извлекаем текст и цвет фона из SVG
       final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
-      final backgroundColor = _extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+      final backgroundColor =
+          _extractBackgroundColorFromSvg(svg) ?? context.appColors.surfaceElevated;
 
       return Container(
         width: double.infinity,
@@ -255,7 +268,7 @@ void _handleTap() {
               child: Text(
                 text,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                   fontSize: 120,
                   fontWeight: FontWeight.w500,
                   height: 1,
@@ -275,11 +288,11 @@ void _handleTap() {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.grey[300],
+      color: context.appColors.borderPrimary,
       child: Icon(
         Icons.person,
         size: 100,
-        color: Colors.white,
+        color: context.appColors.textInverse,
       ),
     );
   }
@@ -314,20 +327,22 @@ class FullScreenImageViewer extends StatefulWidget {
   final Animation<double> animation; // Анимация появления
 
   const FullScreenImageViewer({
-    Key? key,
+    super.key,
     this.localImage,
     required this.userImage,
     required this.animation,
-  }) : super(key: key);
+  });
 
   @override
-  _FullScreenImageViewerState createState() => _FullScreenImageViewerState();
+  State<FullScreenImageViewer> createState() => _FullScreenImageViewerState();
 }
 
 class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     with SingleTickerProviderStateMixin {
-  late TransformationController _transformationController; // Контроллер трансформации для зума
-  late AnimationController _fadeController; // Контроллер анимации исчезновения UI
+  late TransformationController
+      _transformationController; // Контроллер трансформации для зума
+  late AnimationController
+      _fadeController; // Контроллер анимации исчезновения UI
   late Animation<double> _fadeAnimation; // Анимация исчезновения UI
 
   bool _isUIVisible = true; // Флаг видимости UI элементов
@@ -335,16 +350,16 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   @override
   void initState() {
     super.initState();
-    
+
     // Инициализация контроллера трансформации
     _transformationController = TransformationController();
-    
+
     // Инициализация контроллера анимации исчезновения UI
     _fadeController = AnimationController(
       duration: Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     // Создание анимации исчезновения
     _fadeAnimation = Tween<double>(
       begin: 0.0,
@@ -353,7 +368,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
       parent: _fadeController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Запускаем анимацию появления UI
     _fadeController.forward();
   }
@@ -363,7 +378,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     setState(() {
       _isUIVisible = !_isUIVisible;
     });
-    
+
     if (_isUIVisible) {
       _fadeController.forward(); // Показываем UI
     } else {
@@ -374,7 +389,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Черный фон галереи
+      backgroundColor: context.appColors.backgroundPrimary,
       body: Stack(
         children: [
           // Основное изображение с возможностью зума
@@ -392,13 +407,14 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
               child: GestureDetector(
                 onTap: _toggleUI, // Переключаем UI по нажатию
                 child: Hero(
-  tag: 'avatar_hero_${widget.userImage.hashCode}', // ✅ Уникальный тег
-  child: _buildFullScreenImage(),
-),
+                  tag:
+                      'avatar_hero_${widget.userImage.hashCode}', // ✅ Уникальный тег
+                  child: _buildFullScreenImage(),
+                ),
               ),
             ),
           ),
-          
+
           // Верхняя панель с кнопкой закрытия
           AnimatedBuilder(
             animation: _fadeAnimation,
@@ -406,14 +422,15 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
               return Opacity(
                 opacity: _fadeAnimation.value,
                 child: Container(
-                  height: MediaQuery.of(context).padding.top + 60, // Высота с учетом safe area
+                  height: MediaQuery.of(context).padding.top +
+                      60, // Высота с учетом safe area
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.7), // Градиент для лучшей видимости
-                        Colors.transparent,
+                        context.appColors.overlay,
+                        context.appColors.overlay.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -424,7 +441,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                         IconButton(
                           icon: Icon(
                             Icons.close,
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                             size: 30,
                           ),
                           onPressed: () {
@@ -440,7 +457,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
               );
             },
           ),
-          
+
           // Нижняя панель с информацией (опционально)
           AnimatedBuilder(
             animation: _fadeAnimation,
@@ -463,17 +480,15 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.7),
-                          Colors.transparent,
+                          context.appColors.overlay,
+                          context.appColors.overlay.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
                     child: Text(
                       'Фото профиля', // Подпись к изображению
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textInverse,
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
@@ -497,16 +512,14 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
         fit: BoxFit.contain, // Вписываем в экран сохраняя пропорции
       );
     }
-    
+
     // Если есть URL изображения
-    if (widget.userImage.isNotEmpty && 
-        widget.userImage != 'Не найдено') {
-      
+    if (widget.userImage.isNotEmpty && widget.userImage != 'Не найдено') {
       // Обработка SVG
       if (widget.userImage.contains('<svg')) {
         return _buildSvgFullScreen(widget.userImage);
       }
-      
+
       // Обычное изображение
       return Image.network(
         widget.userImage,
@@ -515,10 +528,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
           if (loadingProgress == null) return child;
           return Center(
             child: CircularProgressIndicator(
-              color: Colors.white,
+              color: context.appColors.textInverse,
               value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / 
-                    loadingProgress.expectedTotalBytes!
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
@@ -528,7 +541,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
         },
       );
     }
-    
+
     return _buildDefaultFullScreenAvatar();
   }
 
@@ -545,7 +558,8 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
       );
     } else {
       final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
-      final backgroundColor = _extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+      final backgroundColor =
+          _extractBackgroundColorFromSvg(svg) ?? context.appColors.surfaceElevated;
 
       return Container(
         width: MediaQuery.of(context).size.width,
@@ -555,7 +569,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
           child: Text(
             text,
             style: TextStyle(
-              color: Colors.white,
+              color: context.appColors.textInverse,
               fontSize: 200,
               fontWeight: FontWeight.w500,
             ),
@@ -571,11 +585,11 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     return Container(
       width: MediaQuery.of(context).size.width,
       height: MediaQuery.of(context).size.height,
-      color: Colors.grey[800],
+      color: context.appColors.surfaceElevated,
       child: Icon(
         Icons.person,
         size: 200,
-        color: Colors.white,
+        color: context.appColors.textInverse,
       ),
     );
   }
@@ -602,10 +616,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 }
 
 class ProfileEditPage extends StatefulWidget {
-  const ProfileEditPage({Key? key}) : super(key: key);
+  const ProfileEditPage({super.key});
 
   @override
-  _ProfileEditPageState createState() => _ProfileEditPageState();
+  State<ProfileEditPage> createState() => _ProfileEditPageState();
 }
 
 class _ProfileEditPageState extends State<ProfileEditPage> {
@@ -617,7 +631,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   final TextEditingController userController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController imageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController(); // Контроллер скролла для интерактивного аватара
+  final ScrollController _scrollController =
+      ScrollController(); // Контроллер скролла для интерактивного аватара
   File? _profileImage;
   String? _selectedOrganization;
   String _userImage = '';
@@ -685,8 +700,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               content: Text(
                 AppLocalizations.of(context)!.translate('file_too_large'),
               ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+              backgroundColor: context.appColors.error,
+              duration: const Duration(seconds: 3),
             ),
           );
           return; // Прекращаем выполнение, если файл слишком большой
@@ -703,8 +718,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               AppLocalizations.of(context)!
                   .translate('image_selected_successfully'),
             ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            backgroundColor: context.appColors.success,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -714,7 +729,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           content: Text(
             AppLocalizations.of(context)!.translate('image_selection_error'),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
         ),
       );
     }
@@ -749,60 +764,61 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
-Future<void> _loadUserPhone() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _loadUserPhone() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  String UUID = prefs.getString('userID') ?? 'Не найдено';
-  String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
-  // Используем новое поле для всех ролей
-  String UAllRoles = prefs.getString('userAllRoles') ?? 'Не найдено';
-
-  setState(() {
-    userController.text = UUID;
-    loginController.text = ULogin;
-    roleController.text = UAllRoles; // Отображаем все роли
-  });
-
-  try {
-    UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
-    
-    // Обработка телефона
-    String phoneNumber = userProfile.phone ?? '';
-    String detectedDialCode = '+992';
-    String phoneWithoutCode = phoneNumber;
-
-    // Проверяем код страны в полученном номере
-    for (var country in countries) {
-      if (phoneNumber.startsWith(country.dialCode)) {
-        detectedDialCode = country.dialCode;
-        phoneWithoutCode = phoneNumber.substring(country.dialCode.length);
-        break;
-      }
-    }
-
-    // Обновляем роли из API, если они есть
-    if (userProfile.role != null && userProfile.role!.isNotEmpty) {
-      String allRoles = userProfile.role!.map((role) => role.name).join(', ');
-      setState(() {
-        roleController.text = allRoles;
-      });
-      // Обновляем SharedPreferences
-      await prefs.setString('userAllRoles', allRoles);
-    }
+    String UUID = prefs.getString('userID') ?? 'Не найдено';
+    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
+    // Используем новое поле для всех ролей
+    String UAllRoles = prefs.getString('userAllRoles') ?? 'Не найдено';
 
     setState(() {
-      NameController.text = userProfile.name;
-      SurnameController.text = userProfile.lastname;
-      PatronymicController.text = userProfile.Pname;
-      emailController.text = userProfile.email;
-      selectedDialCode = detectedDialCode;
-      phoneController.text = phoneWithoutCode;
-      _userImage = userProfile.image ?? '';
+      userController.text = UUID;
+      loginController.text = ULogin;
+      roleController.text = UAllRoles; // Отображаем все роли
     });
-  } catch (e) {
-    //print('Ошибка при загрузке данных из API: $e');
+
+    try {
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
+
+      // Обработка телефона
+      String phoneNumber = userProfile.phone ?? '';
+      String detectedDialCode = '+992';
+      String phoneWithoutCode = phoneNumber;
+
+      // Проверяем код страны в полученном номере
+      for (var country in countries) {
+        if (phoneNumber.startsWith(country.dialCode)) {
+          detectedDialCode = country.dialCode;
+          phoneWithoutCode = phoneNumber.substring(country.dialCode.length);
+          break;
+        }
+      }
+
+      // Обновляем роли из API, если они есть
+      if (userProfile.role != null && userProfile.role!.isNotEmpty) {
+        String allRoles = userProfile.role!.map((role) => role.name).join(', ');
+        setState(() {
+          roleController.text = allRoles;
+        });
+        // Обновляем SharedPreferences
+        await prefs.setString('userAllRoles', allRoles);
+      }
+
+      setState(() {
+        NameController.text = userProfile.name;
+        SurnameController.text = userProfile.lastname;
+        PatronymicController.text = userProfile.Pname;
+        emailController.text = userProfile.email;
+        selectedDialCode = detectedDialCode;
+        phoneController.text = phoneWithoutCode;
+        _userImage = userProfile.image ?? '';
+      });
+    } catch (e) {
+      //print('Ошибка при загрузке данных из API: $e');
+    }
   }
-}
 
   Future<void> _loadSelectedOrganization() async {
     final savedOrganization = await ApiService().getSelectedOrganization();
@@ -836,76 +852,81 @@ Future<void> _loadUserPhone() async {
     }
   }
 
-Future<void> _showImagePickerDialog() async {
-  await showModalBottomSheet<void>(
-    context: context,
-    builder: (BuildContext context) => Container(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.photo_library),
-            title: Text(AppLocalizations.of(context)!.translate('gallery')),
-            onTap: () async {
-              final XFile? pickedFile = await _picker.pickImage(
-                source: ImageSource.gallery,
-                imageQuality: 80,
-                maxWidth: 1080,
-                maxHeight: 1080,
-              );
-              if (pickedFile != null) {
-                final file = File(pickedFile.path);
-                final int fileSize = await file.length();
-                if (fileSize > 2 * 1024 * 1024) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context)!.translate('file_size_limit'))),
-                  );
+  Future<void> _showImagePickerDialog() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(AppLocalizations.of(context)!.translate('gallery')),
+              onTap: () async {
+                final XFile? pickedFile = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 80,
+                  maxWidth: 1080,
+                  maxHeight: 1080,
+                );
+                if (pickedFile != null) {
+                  final file = File(pickedFile.path);
+                  final int fileSize = await file.length();
+                  if (fileSize > 2 * 1024 * 1024) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(AppLocalizations.of(context)!
+                              .translate('file_size_limit'))),
+                    );
+                    Navigator.pop(context);
+                    return;
+                  }
+                  setState(() {
+                    _localImage = file;
+                    _userImage = ''; // Сбрасываем URL
+                    //print('Local image selected: ${_localImage?.path}'); // Логирование
+                  });
                   Navigator.pop(context);
-                  return;
                 }
-                setState(() {
-                  _localImage = file;
-                  _userImage = ''; // Сбрасываем URL
-                  //print('Local image selected: ${_localImage?.path}'); // Логирование
-                });
-                Navigator.pop(context);
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: Text(AppLocalizations.of(context)!.translate('camera')),
-            onTap: () async {
-              final XFile? pickedFile = await _picker.pickImage(
-                source: ImageSource.camera,
-                imageQuality: 80,
-                maxWidth: 1080,
-                maxHeight: 1080,
-              );
-              if (pickedFile != null) {
-                final file = File(pickedFile.path);
-                final int fileSize = await file.length();
-                if (fileSize > 2 * 1024 * 1024) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context)!.translate('file_size_limit'))),
-                  );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text(AppLocalizations.of(context)!.translate('camera')),
+              onTap: () async {
+                final XFile? pickedFile = await _picker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 80,
+                  maxWidth: 1080,
+                  maxHeight: 1080,
+                );
+                if (pickedFile != null) {
+                  final file = File(pickedFile.path);
+                  final int fileSize = await file.length();
+                  if (fileSize > 2 * 1024 * 1024) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(AppLocalizations.of(context)!
+                              .translate('file_size_limit'))),
+                    );
+                    Navigator.pop(context);
+                    return;
+                  }
+                  setState(() {
+                    _localImage = file;
+                    _userImage = ''; // Сбрасываем URL
+                    //print('Local image selected: ${_localImage?.path}'); // Логирование
+                  });
                   Navigator.pop(context);
-                  return;
                 }
-                setState(() {
-                  _localImage = file;
-                  _userImage = ''; // Сбрасываем URL
-                  //print('Local image selected: ${_localImage?.path}'); // Логирование
-                });
-                Navigator.pop(context);
-              }
-            },
-          ),
-        ],
+              },
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Функция для извлечения URL из SVG
@@ -943,7 +964,7 @@ Future<void> _showImagePickerDialog() async {
         // Извлекаем текст из SVG и цвет фона
         final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
         final backgroundColor =
-            extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+            extractBackgroundColorFromSvg(svg) ?? context.appColors.surfaceElevated;
 
         return Container(
           width: 140,
@@ -952,7 +973,7 @@ Future<void> _showImagePickerDialog() async {
             shape: BoxShape.circle,
             color: backgroundColor, // Теперь используем извлеченный цвет
             border: Border.all(
-              color: Colors.white,
+              color: context.appColors.textInverse,
               width: 1,
             ),
           ),
@@ -964,7 +985,7 @@ Future<void> _showImagePickerDialog() async {
                 child: Text(
                   text,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     fontSize: 120,
                     fontWeight: FontWeight.w500,
                     height: 1,
@@ -986,11 +1007,9 @@ Future<void> _showImagePickerDialog() async {
           offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
           child: Text(
             AppLocalizations.of(context)!.translate('profile_editor'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
+            style: context.appTextStyles.titleMd.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -1029,12 +1048,12 @@ Future<void> _showImagePickerDialog() async {
         //     },
         //   ),
         // ],
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: context.appColors.backgroundPrimary,
       ),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
-                color: const Color(0xff1E2E52),
+                color: context.appColors.buttonPrimaryBg,
               ),
             )
           : Column(children: [
@@ -1079,12 +1098,13 @@ Future<void> _showImagePickerDialog() async {
                                               )
                                         : CircleAvatar(
                                             radius: 70,
-                                            backgroundColor: Colors.grey[300],
+                                            backgroundColor:
+                                                context.appColors.borderPrimary,
                                             child: Icon(
                                               Icons.person,
                                               size: 100,
-                                              color: const Color.fromARGB(
-                                                  255, 255, 255, 255),
+                                              color:
+                                                  context.appColors.textInverse,
                                             ),
                                           ),
                                 const SizedBox(height: 10),
@@ -1093,7 +1113,8 @@ Future<void> _showImagePickerDialog() async {
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
-                                    backgroundColor: const Color(0xff1E2E52),
+                                    backgroundColor:
+                                        context.appColors.buttonPrimaryBg,
                                   ),
                                   child: Text(
                                     _userImage ==
@@ -1104,9 +1125,9 @@ Future<void> _showImagePickerDialog() async {
                                             .translate('change_photo')
                                         : AppLocalizations.of(context)!
                                             .translate('change_photo'),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                 ),
@@ -1134,10 +1155,8 @@ Future<void> _showImagePickerDialog() async {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _nameError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -1162,10 +1181,8 @@ Future<void> _showImagePickerDialog() async {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _surnameError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -1234,10 +1251,8 @@ Future<void> _showImagePickerDialog() async {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _emailError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -1250,11 +1265,10 @@ Future<void> _showImagePickerDialog() async {
                                   content: Text(
                                     AppLocalizations.of(context)!.translate(
                                         'profile_updated_successfully'),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Gilroy',
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 14,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -1263,7 +1277,7 @@ Future<void> _showImagePickerDialog() async {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: context.appColors.success,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -1292,11 +1306,10 @@ Future<void> _showImagePickerDialog() async {
                                 SnackBar(
                                   content: Text(
                                     message,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Gilroy',
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 14,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -1305,7 +1318,7 @@ Future<void> _showImagePickerDialog() async {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: context.appColors.error,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -1323,13 +1336,13 @@ Future<void> _showImagePickerDialog() async {
               ),
               Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.appColors.surfacePrimary,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: context.appColors.shadow.withValues(alpha: 0.1),
                         spreadRadius: 0,
                         blurRadius: 10,
-                        offset: Offset(0, -2),
+                        offset: const Offset(0, -2),
                       ),
                     ],
                   ),
@@ -1338,7 +1351,7 @@ Future<void> _showImagePickerDialog() async {
                     builder: (context, state) {
                       return ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
+                          backgroundColor: context.appColors.buttonPrimaryBg,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           minimumSize: Size(double.infinity, 48),
@@ -1413,11 +1426,9 @@ Future<void> _showImagePickerDialog() async {
                         },
                         child: Text(
                           AppLocalizations.of(context)!.translate('save'),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Gilroy',
+                          style: context.appTextStyles.bodyLg.copyWith(
+                            color: context.appColors.textInverse,
                             fontWeight: FontWeight.w600,
-                            fontSize: 16,
                           ),
                         ),
                       );
@@ -1432,11 +1443,9 @@ Future<void> _showImagePickerDialog() async {
       SnackBar(
         content: Text(
           message,
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textInverse,
             fontWeight: FontWeight.w500,
-            fontSize: 14,
           ),
         ),
         behavior: SnackBarBehavior.floating,
@@ -1444,7 +1453,7 @@ Future<void> _showImagePickerDialog() async {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: context.appColors.error,
         elevation: 3,
         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         duration: Duration(seconds: 3),

@@ -15,6 +15,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_svg/svg.dart';
@@ -243,22 +244,15 @@ class _InputFieldState extends State<InputField>
         left: offset.dx + 8,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width - 8),
         top: offset.dy - 220,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Material(
-            color: Colors.transparent,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Material(
+            color: context.appColors.overlay.withValues(alpha: 0.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                    spreadRadius: 0,
-                  ),
-                ],
+                boxShadow: context.appShadows.card,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -350,22 +344,15 @@ class _InputFieldState extends State<InputField>
         left: offset.dx + 8,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width - 8),
         top: offset.dy - 70,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Material(
-            color: Colors.transparent,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Material(
+            color: context.appColors.overlay.withValues(alpha: 0.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                    spreadRadius: 0,
-                  ),
-                ],
+                boxShadow: context.appShadows.card,
               ),
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: SingleChildScrollView(
@@ -395,14 +382,16 @@ class _InputFieldState extends State<InputField>
     bool isEnabled = true,
   }) {
     return Material(
-      color: Colors.transparent,
+      color: context.appColors.overlay.withValues(alpha: 0.0),
       child: InkWell(
         onTap: isEnabled ? onTap : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: isEnabled ? Colors.transparent : Colors.grey.shade100,
+            color: isEnabled
+                ? context.appColors.overlay.withValues(alpha: 0.0)
+                : context.appColors.backgroundSecondary,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -412,24 +401,26 @@ class _InputFieldState extends State<InputField>
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: isEnabled
-                      ? Color(0xff1E2E52).withOpacity(0.1)
-                      : Colors.grey.shade200,
+                      ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.1)
+                      : context.appColors.backgroundSecondary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: isEnabled ? Color(0xff1E2E52) : Colors.grey.shade400,
+                  color: isEnabled
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.iconSecondary,
                 ),
               ),
               SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'Gilroy',
+                style: context.appTextStyles.caption.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: isEnabled ? Color(0xff1E2E52) : Colors.grey.shade400,
+                  color: isEnabled
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.iconSecondary,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -500,7 +491,7 @@ class _InputFieldState extends State<InputField>
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black54,
+      barrierColor: context.appColors.overlay,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -509,7 +500,7 @@ class _InputFieldState extends State<InputField>
         child: Container(
           padding: EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.appColors.surfacePrimary,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -519,34 +510,25 @@ class _InputFieldState extends State<InputField>
               Text(
                 localizations?.translate('paste_link_title') ??
                     'Вставьте ссылку',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                  fontFamily: 'Gilroy',
+                style: context.appTextStyles.titleMd.copyWith(
+                  color: context.appColors.textPrimary,
                 ),
               ),
               SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                  color: Colors.grey.shade50,
+                  border: Border.all(color: context.appColors.fieldBorder),
+                  color: context.appColors.fieldBg,
                 ),
                 child: TextField(
                   controller: urlController,
                   autofocus: true,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: context.appTextStyles.bodyMd,
                   decoration: InputDecoration(
                     hintText: 'https://example.com',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.fieldHint,
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
@@ -568,11 +550,8 @@ class _InputFieldState extends State<InputField>
                     ),
                     child: Text(
                       localizations?.translate('cancel') ?? 'Отмена',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textSecondary,
                       ),
                     ),
                   ),
@@ -583,7 +562,7 @@ class _InputFieldState extends State<InputField>
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xff1E2E52),
+                      backgroundColor: context.appColors.buttonPrimaryBg,
                       padding:
                           EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       shape: RoundedRectangleBorder(
@@ -593,10 +572,8 @@ class _InputFieldState extends State<InputField>
                     ),
                     child: Text(
                       localizations?.translate('add') ?? 'Добавить',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.buttonPrimaryFg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -724,17 +701,17 @@ class _InputFieldState extends State<InputField>
         }
       },
       child: Container(
-        color: Colors.white,
+        color: context.appColors.backgroundPrimary,
         padding: const EdgeInsets.only(left: 0, right: 0, top: 6, bottom: 20),
         child: Column(
           children: [
             if (replyingToMessage != null)
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   border: Border(
                     bottom: BorderSide(
-                      color: Color(0xfff4F40EC),
+                      color: context.appColors.borderSubtle,
                       width: 1,
                     ),
                   ),
@@ -751,7 +728,7 @@ class _InputFieldState extends State<InputField>
                           'assets/icons/chats/menu_icons/reply.svg',
                           width: 16,
                           height: 16,
-                          color: Colors.grey.shade700,
+                          color: context.appColors.iconSecondary,
                         ),
                         const SizedBox(width: 6),
                         RichText(
@@ -761,8 +738,7 @@ class _InputFieldState extends State<InputField>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                              fontFamily: 'Gilroy',
+                              color: context.appColors.textSecondary,
                             ),
                             children: [
                               TextSpan(
@@ -771,7 +747,6 @@ class _InputFieldState extends State<InputField>
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: ChatSmsStyles.messageBubbleSenderColor,
-                                  fontFamily: 'Gilroy',
                                 ),
                               ),
                             ],
@@ -789,8 +764,7 @@ class _InputFieldState extends State<InputField>
                                 : stripHtmlTags(replyingToMessage.text),
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.black,
-                              fontFamily: 'Gilroy',
+                              color: context.appColors.textPrimary,
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 2,
@@ -798,8 +772,8 @@ class _InputFieldState extends State<InputField>
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close,
-                              color: Colors.red, size: 28),
+                          icon: Icon(Icons.close,
+                              color: context.appColors.error, size: 28),
                           padding: EdgeInsets.only(bottom: 20),
                           constraints: const BoxConstraints(),
                           onPressed: () {
@@ -814,10 +788,10 @@ class _InputFieldState extends State<InputField>
             if (editingMessage != null)
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   border: Border(
                     bottom: BorderSide(
-                      color: Color(0xfff4F40EC),
+                      color: context.appColors.borderSubtle,
                       width: 1,
                     ),
                   ),
@@ -834,7 +808,7 @@ class _InputFieldState extends State<InputField>
                           'assets/icons/chats/menu_icons/edit.svg',
                           width: 16,
                           height: 16,
-                          color: Colors.grey.shade700,
+                          color: context.appColors.iconSecondary,
                         ),
                         const SizedBox(width: 6),
                         RichText(
@@ -844,16 +818,15 @@ class _InputFieldState extends State<InputField>
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                              fontFamily: 'Gilroy',
+                              color: context.appColors.textSecondary,
                             ),
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      icon:
-                          const Icon(Icons.close, color: Colors.red, size: 28),
+                      icon: Icon(Icons.close,
+                          color: context.appColors.error, size: 28),
                       constraints: const BoxConstraints(),
                       onPressed: () {
                         messagingCubit.clearEditingMessage();
@@ -873,7 +846,7 @@ class _InputFieldState extends State<InputField>
                       height: 42,
                       alignment: Alignment.center,
                       child: CircularProgressIndicator(
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                         strokeWidth: 2.5,
                       ),
                     )
@@ -917,18 +890,17 @@ class _InputFieldState extends State<InputField>
                                       .translate('enter_your_sms'),
                                   style:
                                       ChatSmsStyles.messageTextStyle.copyWith(
-                                    color: const Color(0xFF1A202C),
+                                    color: context.appColors.textPrimary,
                                     fontSize: 15,
                                     height: 1.3,
                                   ),
                                   hintStyle: TextStyle(
                                     fontSize: 15,
-                                    color: ChatSmsStyles.hintTextColor,
+                                    color: context.appColors.fieldHint,
                                     fontWeight: FontWeight.w400,
-                                    fontFamily: 'Gilroy',
                                     height: 1.3,
                                   ),
-                                  fillColor: Colors.transparent,
+                                  fillColor: context.appColors.overlay.withValues(alpha: 0.0),
                                   borderRadius: ChatSmsStyles.inputBorderRadius,
                                   contentPadding: EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -1015,14 +987,14 @@ class _InputFieldState extends State<InputField>
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
+                color: context.appColors.buttonPrimaryBg,
                 strokeWidth: 2,
               ),
             ),
           )
         : Material(
             key: ValueKey('send'),
-            color: Colors.transparent,
+            color: context.appColors.overlay.withValues(alpha: 0.0),
             child: InkWell(
               onTap: () {
                 if (widget.messageController.text.isNotEmpty) {
@@ -1050,7 +1022,7 @@ class _InputFieldState extends State<InputField>
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xfff4F40EC),
+                  color: context.appColors.fieldBg,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Center(
@@ -1077,7 +1049,7 @@ class _InputFieldState extends State<InputField>
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
+                color: context.appColors.buttonPrimaryBg,
                 strokeWidth: 2,
               ),
             ),
@@ -1093,20 +1065,17 @@ class _InputFieldState extends State<InputField>
             cancelText: AppLocalizations.of(context)!.translate('cancel'),
             cancelTextStyle: TextStyle(
               fontSize: 14,
-              fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
             ),
             slideToCancelText:
                 AppLocalizations.of(context)!.translate('cancel_chat_sms'),
             slideToCancelTextStyle: TextStyle(
               fontSize: 14,
-              fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
             ),
-            recordIconBackGroundColor: Color(0xfff4F40EC),
+            recordIconBackGroundColor: context.appColors.fieldBg,
             counterTextStyle: TextStyle(
               fontSize: 12,
-              fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
             ),
             encode: AudioEncoderType.AAC,
@@ -1118,7 +1087,7 @@ class _InputFieldState extends State<InputField>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0.0),
       enableDrag: true,
       isDismissible: true,
       builder: (BuildContext bottomSheetContext) => TemplatesPanel(

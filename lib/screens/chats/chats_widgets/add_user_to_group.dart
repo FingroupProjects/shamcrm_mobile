@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/user_list_group.dart';
@@ -40,11 +41,8 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -54,7 +52,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -66,11 +64,8 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
                 ),
                     maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -80,7 +75,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -92,15 +87,13 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('add_user'),
-            style: TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
+            style: context.appTextStyles.titleMd.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -127,10 +120,8 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       selectedUsersError!,
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
+                      style: context.appTextStyles.bodySm.copyWith(
+                        color: context.appColors.error,
                       ),
                     ),
                   ),
@@ -148,8 +139,8 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonDangerBg,
+                  textColor: context.appColors.buttonDangerFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -173,14 +164,15 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                       });
 
                       Navigator.of(context).pop();
-                    } else {
-                      setState(() {
-                        selectedUsersError = AppLocalizations.of(context)!.translate('please_select_user');
-                      });
-                    }
+                  } else {
+                    setState(() {
+                      selectedUsersError = AppLocalizations.of(context)!
+                          .translate('please_select_user');
+                    });
+                  }
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],

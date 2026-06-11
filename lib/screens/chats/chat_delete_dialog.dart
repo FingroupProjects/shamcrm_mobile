@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +67,7 @@ Future<void> _fetchChatData() async {
         ? Stack(
             children: [
               Container(
-                color: Colors.transparent,
+                color: context.appColors.overlay.withValues(alpha: 0.0),
               ),
               Center(
                 // child: CircularProgressIndicator(),
@@ -81,11 +82,8 @@ Future<void> _fetchChatData() async {
                   SnackBar(
                     content: Text(
                       '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textInverse,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -93,7 +91,7 @@ Future<void> _fetchChatData() async {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.appColors.error,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     duration: Duration(seconds: 3),
@@ -108,11 +106,8 @@ Future<void> _fetchChatData() async {
                   SnackBar(
                     content: Text(
                       '${state.message}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textInverse,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -120,7 +115,7 @@ Future<void> _fetchChatData() async {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.green,
+                    backgroundColor: context.appColors.success,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     duration: Duration(seconds: 3),
@@ -129,25 +124,20 @@ Future<void> _fetchChatData() async {
               }
             },
             child: AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surfacePrimary,
               title: Center(
                 child: Text(
                   dialogTitle ?? AppLocalizations.of(context)!.translate('delete_chat'),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontFamily: 'Gilroy',
+                  style: context.appTextStyles.titleMd.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
               content: Text(
                 dialogContent ?? AppLocalizations.of(context)!.translate('comfirm_delete_chat'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textPrimary,
                 ),
               ),
               actions: [
@@ -160,8 +150,8 @@ Future<void> _fetchChatData() async {
                         onPressed: () {
                           Navigator.of(context).pop();
                         },
-                        buttonColor: Colors.red,
-                        textColor: Colors.white,
+                        buttonColor: context.appColors.buttonDangerBg,
+                        textColor: context.appColors.buttonDangerFg,
                       ),
                     ),
                     SizedBox(width: 8),
@@ -190,11 +180,8 @@ Future<void> _fetchChatData() async {
                                 SnackBar(
                                   content: Text(
                                     MessageSneckbar!,
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                    style: context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -202,9 +189,10 @@ Future<void> _fetchChatData() async {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: MessageSneckbar!.contains(AppLocalizations.of(context)!.translate('deleted'))
-                                      ? Colors.green
-                                      : Colors.red,
+                                  backgroundColor: MessageSneckbar!
+                                          .contains(AppLocalizations.of(context)!.translate('deleted'))
+                                      ? context.appColors.success
+                                      : context.appColors.error,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                   duration: Duration(seconds: 3),
@@ -213,8 +201,8 @@ Future<void> _fetchChatData() async {
                             }
                           });
                         },
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
+                        buttonColor: context.appColors.buttonPrimaryBg,
+                        textColor: context.appColors.buttonPrimaryFg,
                       ),
                     ),
                   ],

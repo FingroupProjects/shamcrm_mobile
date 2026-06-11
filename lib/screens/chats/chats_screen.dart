@@ -24,6 +24,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_unfocuser/flutter_unfocuser.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -502,7 +503,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                       position: position,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       elevation: 8,
                       items: state.funnels
                           .map((funnel) => PopupMenuItem<SalesFunnel>(
@@ -511,9 +512,8 @@ class _ChatsScreenState extends State<ChatsScreen>
                                   funnel.name,
                                   style: TextStyle(
                                     fontSize: 16,
-                                    fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -559,16 +559,15 @@ class _ChatsScreenState extends State<ChatsScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.expand_more,
-                            color: Color(0xff1E2E52), size: 24),
+                            color: context.appColors.buttonPrimaryBg, size: 24),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             title,
                             style: TextStyle(
                               fontSize: 20,
-                              fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -585,9 +584,8 @@ class _ChatsScreenState extends State<ChatsScreen>
                   title,
                   style: TextStyle(
                     fontSize: 20,
-                    fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -781,18 +779,17 @@ class _ChatsScreenState extends State<ChatsScreen>
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
+        color: context.appColors.textInverse,
         fontSize: 20,
         fontWeight: FontWeight.w600,
         shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, -1.5), color: context.appColors.shadow),
+          Shadow(offset: Offset(1.5, -1.5), color: context.appColors.shadow),
+          Shadow(offset: Offset(1.5, 1.5), color: context.appColors.shadow),
+          Shadow(offset: Offset(-1.5, 1.5), color: context.appColors.shadow),
         ],
       ),
-      colorShadow: Color(0xff1E2E52),
+      colorShadow: context.appColors.buttonPrimaryBg,
       onSkip: () {
         prefs.setBool('isTutorialShowninChat', true);
         apiService.markPageCompleted("chat", "index").catchError((e) {
@@ -1148,11 +1145,9 @@ class _ChatsScreenState extends State<ChatsScreen>
               titleWidget: isClickAvatarIcon
                   ? Text(
                       localizations!.translate('appbar_settings'),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Gilroy',
+                      style: context.appTextStyles.titleMd.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     )
                   : _buildTitleWidget(context),
@@ -1213,9 +1208,9 @@ class _ChatsScreenState extends State<ChatsScreen>
               },
               clearButtonClickFiltr: (bool) {},
             ),
-            backgroundColor: Colors.white,
+            backgroundColor: context.appColors.surfacePrimary,
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.backgroundPrimary,
           body: isClickAvatarIcon
               ? ProfileScreen()
               : _isPermissionsChecked
@@ -1228,22 +1223,21 @@ class _ChatsScreenState extends State<ChatsScreen>
                             padding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
+                              color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue, width: 1),
+                              border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
                             ),
                             child: Row(
                               children: [
                                 Icon(Icons.filter_list,
-                                    color: Colors.blue, size: 18),
+                                    color: context.appColors.buttonPrimaryBg, size: 18),
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     _getActiveFiltersText(),
                                     style: TextStyle(
-                                      color: Colors.blue,
+                                      color: context.appColors.buttonPrimaryBg,
                                       fontSize: 14,
-                                      fontFamily: 'Gilroy',
                                     ),
                                   ),
                                 ),
@@ -1253,9 +1247,8 @@ class _ChatsScreenState extends State<ChatsScreen>
                                     AppLocalizations.of(context)!
                                         .translate('reset'),
                                     style: TextStyle(
-                                      color: Colors.blue,
+                                      color: context.appColors.buttonPrimaryBg,
                                       fontSize: 14,
-                                      fontFamily: 'Gilroy',
                                     ),
                                   ),
                                 ),
@@ -1303,7 +1296,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                       builder: (context) => AddClientDialog(),
                     );
                   },
-                  backgroundColor: Color(0xff1E2E52),
+                  backgroundColor: context.appColors.buttonPrimaryBg,
                   child: Image.asset('assets/icons/tabBar/add.png',
                       width: 24, height: 24),
                 )
@@ -1417,18 +1410,17 @@ class _ChatsScreenState extends State<ChatsScreen>
     return Container(
       constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: const BoxDecoration(
-        color: Color(0xffF44336),
+      decoration: BoxDecoration(
+        color: context.appColors.error,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Text(
         count > 99 ? '99+' : '$count',
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: context.appColors.textInverse,
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          fontFamily: 'Gilroy',
         ),
       ),
     );
@@ -1660,7 +1652,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             Icon(
               isOffline ? Icons.wifi_off_rounded : Icons.forum_outlined,
               size: 56,
-              color: AppColors.primaryBlue.withValues(alpha: 0.7),
+              color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 16),
             Text(
@@ -1668,11 +1660,10 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                   ? localizations.translate('no_internet_connection')
                   : localizations.translate('error'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primaryBlue,
+                color: context.appColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -1681,11 +1672,10 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                   ? 'Чаты появятся сразу после восстановления сети.'
                   : message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.black54,
+                color: context.appColors.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
@@ -1696,9 +1686,9 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(localizations.translate('retry')),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryBlue,
+                  foregroundColor: context.appColors.buttonPrimaryBg,
                   side: BorderSide(
-                    color: AppColors.primaryBlue.withValues(alpha: 0.35),
+                    color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.35),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
@@ -1910,13 +1900,12 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 content: Text(
                   state.message,
                   style: TextStyle(
-                    fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: context.appColors.error,
               ),
             );
           }
@@ -1938,12 +1927,12 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                     AppLocalizations.of(context)!
                         .translate('nothing_found_chat'),
                     style:
-                        TextStyle(fontSize: 18, color: AppColors.primaryBlue),
+                        TextStyle(fontSize: 18, color: context.appColors.textPrimary),
                   ),
                   SizedBox(height: 8),
                   Text(
                     AppLocalizations.of(context)!.translate('list_empty_chat'),
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(fontSize: 16, color: context.appColors.textSecondary),
                   ),
                 ],
               ),
@@ -1982,7 +1971,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                   icon: const Icon(Icons.refresh_rounded),
                   label: Text(AppLocalizations.of(context)!.translate('retry')),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primaryBlue,
+                    foregroundColor: context.appColors.buttonPrimaryBg,
                   ),
                 ),
               ),
@@ -1994,8 +1983,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               key: ValueKey(item.uniqueId ?? item.id.toString()),
               onTap: () => onTap(item),
               onLongPress: () => onLongPress(item),
-              splashColor: Colors.grey,
-              focusColor: Colors.black87,
+              splashColor: context.appColors.iconSecondary,
+              focusColor: context.appColors.overlay,
               child: ChatListItem(
                 chatItem: item.toChatItem(),
                 endPointInTab: widget.endPointInTab,
