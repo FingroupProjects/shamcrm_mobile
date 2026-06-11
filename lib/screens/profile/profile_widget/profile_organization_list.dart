@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
@@ -7,16 +8,15 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 class OrganizationWidget extends StatefulWidget {
   final String? selectedOrganization;
   final ValueChanged<String?> onChanged;
-  final Key? key;
 
-  OrganizationWidget({
-    this.key,
+  const OrganizationWidget({
+    super.key,
     required this.selectedOrganization,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
-  _OrganizationWidgetState createState() => _OrganizationWidgetState();
+  State<OrganizationWidget> createState() => _OrganizationWidgetState();
 }
 
 class _OrganizationWidgetState extends State<OrganizationWidget> {
@@ -33,11 +33,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               value: null,
               child: Text(
                 localizations.translate('loading'),
-                style: TextStyle(
-                  fontSize: 14,
+                style: context.appTextStyles.bodySm.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -49,11 +47,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 value: null,
                 child: Text(
                   localizations.translate('no_organizations'),
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: context.appTextStyles.bodySm.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
@@ -65,11 +61,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 value: organization.id.toString(),
                 child: Text(
                   organization.name,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: context.appTextStyles.bodySm.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               );
@@ -79,23 +73,21 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${state.message}',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
+                state.message,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -112,36 +104,33 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.only(bottom: 0),
+              padding: EdgeInsets.zero,
               child: Text(
                 localizations.translate('organizations'),
-                style: TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
-
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.appColors.borderSubtle),
+                boxShadow: context.appShadows.card,
               ),
               child: DropdownButtonFormField<String>(
-                value: selectedOrganization,
+                initialValue: selectedOrganization,
                 isDense: true,
                 isExpanded: true,
-                hint: const Text(
+                hint: Text(
                   "",
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: context.appTextStyles.bodySm.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 items: dropdownItems,
@@ -154,21 +143,27 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                     top: 12,
                     bottom: 12,
                   ),
-                  labelStyle: const TextStyle(color: Colors.grey),
+                  filled: true,
+                  fillColor: context.appColors.fieldBg,
+                  labelStyle: TextStyle(color: context.appColors.fieldHint),
                   border: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide:
+                        BorderSide(color: context.appColors.fieldBorder),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide:
+                        BorderSide(color: context.appColors.fieldBorder),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(
+                      color: context.appColors.buttonPrimaryBg,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                dropdownColor: Colors.white,
+                dropdownColor: context.appColors.surfacePrimary,
                 icon: Transform.translate(
                   offset: const Offset(8, 0),
                   child: SizedBox(

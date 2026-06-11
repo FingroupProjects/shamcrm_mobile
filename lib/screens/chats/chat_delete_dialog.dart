@@ -10,7 +10,7 @@ class DeleteChatDialog extends StatefulWidget {
   final int chatId;
   final String endPointInTab;
 
-  const DeleteChatDialog({super.key, required this.chatId, required this.endPointInTab});
+  DeleteChatDialog({required this.chatId, required this.endPointInTab});
 
   @override
   _DeleteChatDialogState createState() => _DeleteChatDialogState();
@@ -67,7 +67,7 @@ Future<void> _fetchChatData() async {
         ? Stack(
             children: [
               Container(
-                color: Colors.transparent,
+                color: context.appColors.overlay.withValues(alpha: 0.0),
               ),
               Center(
                 // child: CircularProgressIndicator(),
@@ -81,21 +81,20 @@ Future<void> _fetchChatData() async {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      state.message,
-                      style: context.appTextStyles.bodyLg.copyWith(
-                        fontWeight: FontWeight.w500,
+                      '${state.message}',
+                      style: context.appTextStyles.bodyMd.copyWith(
                         color: context.appColors.textInverse,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: context.appColors.error,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
                 );
               } else if (state is ChatsDeleted) {
@@ -106,21 +105,20 @@ Future<void> _fetchChatData() async {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      state.message,
-                      style: context.appTextStyles.bodyLg.copyWith(
-                        fontWeight: FontWeight.w500,
+                      '${state.message}',
+                      style: context.appTextStyles.bodyMd.copyWith(
                         color: context.appColors.textInverse,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: context.appColors.success,
                     elevation: 3,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
                   ),
                 );
               }
@@ -130,7 +128,7 @@ Future<void> _fetchChatData() async {
               title: Center(
                 child: Text(
                   dialogTitle ?? AppLocalizations.of(context)!.translate('delete_chat'),
-                  style: context.appTextStyles.titleLg.copyWith(
+                  style: context.appTextStyles.titleMd.copyWith(
                     fontWeight: FontWeight.w600,
                     color: context.appColors.textPrimary,
                   ),
@@ -138,8 +136,7 @@ Future<void> _fetchChatData() async {
               ),
               content: Text(
                 dialogContent ?? AppLocalizations.of(context)!.translate('comfirm_delete_chat'),
-                style: context.appTextStyles.bodyLg.copyWith(
-                  fontWeight: FontWeight.w500,
+                style: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.textPrimary,
                 ),
               ),
@@ -154,10 +151,10 @@ Future<void> _fetchChatData() async {
                           Navigator.of(context).pop();
                         },
                         buttonColor: context.appColors.buttonDangerBg,
-                        textColor: context.appColors.buttonPrimaryFg,
+                        textColor: context.appColors.buttonDangerFg,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: CustomButton(
                         buttonText: AppLocalizations.of(context)!.translate('delete'),
@@ -183,22 +180,22 @@ Future<void> _fetchChatData() async {
                                 SnackBar(
                                   content: Text(
                                     MessageSneckbar!,
-                                    style: context.appTextStyles.bodyLg.copyWith(
-                                      fontWeight: FontWeight.w500,
+                                    style: context.appTextStyles.bodyMd.copyWith(
                                       color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: MessageSneckbar!.contains(AppLocalizations.of(context)!.translate('deleted'))
+                                  backgroundColor: MessageSneckbar!
+                                          .contains(AppLocalizations.of(context)!.translate('deleted'))
                                       ? context.appColors.success
                                       : context.appColors.error,
                                   elevation: 3,
-                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                  duration: const Duration(seconds: 3),
+                                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
                                 ),
                               );
                             }

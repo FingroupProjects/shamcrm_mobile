@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -11,12 +12,12 @@ class UpdateWidget1C extends StatefulWidget {
   final Organization organization;
 
   const UpdateWidget1C({
-    Key? key,
+    super.key,
     required this.organization,
-  }) : super(key: key);
+  });
 
   @override
-  _UpdateWidget1CState createState() => _UpdateWidget1CState();
+  State<UpdateWidget1C> createState() => _UpdateWidget1CState();
 }
 
 class _UpdateWidget1CState extends State<UpdateWidget1C>
@@ -34,9 +35,12 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
     );
 
     // Инициализация ValueNotifier с текущим значением времени
-    lastUpdatedNotifier = ValueNotifier<String?>(widget.organization.last1cUpdate != null
-        ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(widget.organization.last1cUpdate!))
-        : null);
+    lastUpdatedNotifier = ValueNotifier<String?>(
+      widget.organization.last1cUpdate != null
+          ? DateFormat('dd.MM.yyyy HH:mm')
+              .format(DateTime.parse(widget.organization.last1cUpdate!))
+          : null,
+    );
   }
 
   @override
@@ -48,7 +52,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!; // Получение локализации
+    final localizations = AppLocalizations.of(context)!;
     final organization = widget.organization;
 
     return BlocListener<Data1CBloc, Data1CState>(
@@ -66,7 +70,8 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               orElse: () => widget.organization,
             );
             final updatedTime = updatedOrganization.last1cUpdate != null
-                ? DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(updatedOrganization.last1cUpdate!))
+                ? DateFormat('dd.MM.yyyy HH:mm')
+                    .format(DateTime.parse(updatedOrganization.last1cUpdate!))
                 : null;
 
             // Обновление значения в ValueNotifier
@@ -77,13 +82,12 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
             SnackBar(
               content: Text(
                 localizations.translate('data_updated_successfully'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: context.appColors.textInverse,
                 ),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
             ),
           );
         } else if (state is Data1CError) {
@@ -93,29 +97,28 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           _controller.stop();
 
           // Обновление времени при ошибке
-          final errorTime = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now());
+          final errorTime =
+              DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now());
           lastUpdatedNotifier.value = errorTime;
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                localizations.translate('data_updated_successfully'), 
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
+                localizations.translate('data_updated_successfully'),
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -131,56 +134,61 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           children: [
             if (organization.is1cIntegration)
               _buildProfileOption(
+                context: context,
                 iconPath: 'assets/icons/1c/5.png',
                 text: localizations.translate('update_1c_data'),
               ),
-          ValueListenableBuilder<String?>(
-          valueListenable: lastUpdatedNotifier,
-          builder: (context, lastUpdated, child) {
-            if (organization.is1cIntegration && lastUpdated != null) {
-              return Center(
-                child: Text(
-                  '${localizations.translate('last_update_1c')}: $lastUpdated',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-              );
-            } else {
-              return Container();
-            }
-          },
-        ),
+            ValueListenableBuilder<String?>(
+              valueListenable: lastUpdatedNotifier,
+              builder: (context, lastUpdated, child) {
+                if (organization.is1cIntegration && lastUpdated != null) {
+                  return Center(
+                    child: Text(
+                      '${localizations.translate('last_update_1c')}: $lastUpdated',
+                      style: context.appTextStyles.bodySm.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: context.appColors.textSecondary,
+                      ),
+                    ),
+                  );
+                } else {
+                  return const SizedBox.shrink();
+                }
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileOption({required String iconPath, required String text}) {
+  Widget _buildProfileOption({
+    required BuildContext context,
+    required String iconPath,
+    required String text,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Row(
         children: [
-          // Новый контейнер с фоном и скругленными углами
           Container(
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 223, 225, 247), // Цвет фона
-              borderRadius: BorderRadius.circular(12), // Скругленные углы
+              color: context.appColors.surfaceAccent,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: isLoading
                 ? RotationTransition(
-                    turns: Tween<double>(begin: 0, end: -1).animate(_controller),
+                    turns:
+                        Tween<double>(begin: 0, end: -1).animate(_controller),
                     child: Padding(
-                      padding: const EdgeInsets.all(4.0), // Отступы для размера иконки
+                      padding: const EdgeInsets.all(4.0),
                       child: Image.asset(
                         iconPath,
                         width: 50,
@@ -189,7 +197,7 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.all(1.0), // Отступы для размера иконки
+                    padding: const EdgeInsets.all(1.0),
                     child: Image.asset(
                       iconPath,
                       width: 40,
@@ -201,11 +209,9 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xFF1E1E1E),
+                color: context.appColors.textPrimary,
               ),
             ),
           ),

@@ -388,6 +388,9 @@ class Message {
   final ReadStatus? readStatus;
   final String? referralBody;
   final List<MessageReaction> reactions; // Сохранено из ветки reaction
+  final String? mediaGroupId;
+  final bool isUploading;
+  final List<MessageMediaItem> mediaItems;
 
   Message({
     required this.id,
@@ -412,6 +415,9 @@ class Message {
     this.readStatus,
     this.referralBody,
     this.reactions = const [], // Сохранено из ветки reaction
+    this.mediaGroupId,
+    this.isUploading = false,
+    this.mediaItems = const [],
   });
 
   Message copyWith({
@@ -437,6 +443,9 @@ class Message {
 
     ReadStatus? readStatus,
     List<MessageReaction>? reactions, // Сохранено из ветки reaction
+    String? mediaGroupId,
+    bool? isUploading,
+    List<MessageMediaItem>? mediaItems,
   }) {
     return Message(
       id: id ?? this.id,
@@ -460,6 +469,9 @@ class Message {
       readStatus: readStatus ?? this.readStatus,
       isNote: isNote ?? this.isNote,
       reactions: reactions ?? this.reactions,
+      mediaGroupId: mediaGroupId ?? this.mediaGroupId,
+      isUploading: isUploading ?? this.isUploading,
+      mediaItems: mediaItems ?? this.mediaItems,
     );
   }
 
@@ -484,11 +496,44 @@ class Message {
     String text, {
     double? latitude,
     double? longitude,
+    String? filePath,
   }) {
     final normalizedType = (rawType ?? 'text').toLowerCase();
     if (normalizedType == 'location') return 'location';
     if (latitude != null && longitude != null) return 'location';
     if (extractLocationCoordinatesFromText(text) != null) return 'location';
+    if (normalizedType == 'file' || normalizedType == 'document') {
+      final path = (filePath ?? text).toLowerCase();
+      const imageExtensions = <String>[
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.bmp',
+        '.heic',
+        '.heif',
+      ];
+      const videoExtensions = <String>[
+        '.mp4',
+        '.mov',
+        '.m4v',
+        '.avi',
+        '.mkv',
+        '.webm',
+        '.3gp',
+        '.mpeg',
+        '.mpg',
+        '.mts',
+        '.m2ts',
+        '.ts',
+        '.wmv',
+        '.flv',
+        '.hevc',
+      ];
+      if (imageExtensions.any(path.endsWith)) return 'image';
+      if (videoExtensions.any(path.endsWith)) return 'video';
+    }
     return normalizedType;
   }
 
@@ -507,11 +552,13 @@ class Message {
     final inferredLocation = extractLocationCoordinatesFromText(text);
     latitude ??= inferredLocation?['latitude'];
     longitude ??= inferredLocation?['longitude'];
+    final filePath = json['file_path']?.toString();
     final resolvedType = resolveIncomingType(
       json['type']?.toString(),
       text,
       latitude: latitude,
       longitude: longitude,
+      filePath: filePath,
     );
 
     ReadStatus? readStatus;
@@ -630,7 +677,7 @@ class Message {
           : json['sender']['name'] ?? 'Без имени',
       referralBody: json['chat']?['referral_body'],
       createMessateTime: json['created_at'] ?? '',
-      filePath: json['file_path'],
+      filePath: filePath,
       latitude: latitude,
       longitude: longitude,
       isPinned: json['is_pinned'] ?? false,
@@ -642,6 +689,9 @@ class Message {
       readStatus: readStatus,
       isNote: json['is_note'] ?? false,
       reactions: reactionsList,
+      mediaGroupId: json['media_group_id']?.toString(),
+      isUploading: false,
+      mediaItems: const [],
       duration: Duration(
         seconds: json['voice_duration'] != null
             ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
@@ -653,6 +703,38 @@ class Message {
   @override
   String toString() {
     return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, latitude: $latitude, longitude: $longitude, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
+  }
+}
+
+class MessageMediaItem {
+  final String path;
+  final String name;
+  final bool isImage;
+  final bool isVideo;
+  final double uploadProgress;
+
+  const MessageMediaItem({
+    required this.path,
+    required this.name,
+    required this.isImage,
+    required this.isVideo,
+    this.uploadProgress = 0,
+  });
+
+  MessageMediaItem copyWith({
+    String? path,
+    String? name,
+    bool? isImage,
+    bool? isVideo,
+    double? uploadProgress,
+  }) {
+    return MessageMediaItem(
+      path: path ?? this.path,
+      name: name ?? this.name,
+      isImage: isImage ?? this.isImage,
+      isVideo: isVideo ?? this.isVideo,
+      uploadProgress: uploadProgress ?? this.uploadProgress,
+    );
   }
 }
 

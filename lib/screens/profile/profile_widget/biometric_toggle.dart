@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_toggle_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
@@ -89,8 +90,12 @@ class _BiometricToggleWidgetState extends State<BiometricToggleWidget> {
           content: Text(
             localizations?.translate('biometric_enable_cancelled') ??
                 'Biometric sign-in was not enabled',
+            style: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.textInverse,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
         ),
       );
     }
@@ -113,7 +118,7 @@ class _BiometricToggleWidgetState extends State<BiometricToggleWidget> {
       icon: biometricIconWidget(
         availability: availability,
         size: 20,
-        color: const Color.fromARGB(255, 91, 77, 235),
+        color: context.appColors.buttonPrimaryBg,
       ),
       title: _isBiometricEnabled
           ? localizations.translate('biometric_unlock_on')

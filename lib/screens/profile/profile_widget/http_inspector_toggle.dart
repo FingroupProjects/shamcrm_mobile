@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,8 +57,13 @@ class _HttpInspectorToggleWidgetState extends State<HttpInspectorToggleWidget> {
         SnackBar(
           content: Text(
             value ? 'HTTP Inspector включен' : 'HTTP Inspector выключен',
+            style: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.textInverse,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          backgroundColor: value ? Colors.green : Colors.grey,
+          backgroundColor:
+              value ? context.appColors.success : context.appColors.textMuted,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -65,10 +71,16 @@ class _HttpInspectorToggleWidgetState extends State<HttpInspectorToggleWidget> {
       // Перезагружаем приложение для применения изменений
       if (value) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Перезапустите приложение для отображения кнопки'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(
+              'Перезапустите приложение для отображения кнопки',
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textInverse,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: context.appColors.info,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -85,9 +97,9 @@ class _HttpInspectorToggleWidgetState extends State<HttpInspectorToggleWidget> {
     }
 
     return ProfileToggleCard(
-      icon: const Icon(
+      icon: Icon(
         Icons.bug_report_outlined,
-        color: Color.fromARGB(255, 91, 77, 235),
+        color: context.appColors.buttonPrimaryBg,
         size: 22,
       ),
       title: _isEnabled ? 'HTTP Inspector включен' : 'HTTP Inspector выключен',

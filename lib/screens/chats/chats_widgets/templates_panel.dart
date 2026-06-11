@@ -50,15 +50,13 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
   Widget build(BuildContext context) {
     debugPrint('TemplatesPanel: Building panel');
     final localizations = AppLocalizations.of(context)!;
-    final colors = context.appColors;
-    final textStyles = context.appTextStyles;
 
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return SlideTransition(
       position: _animation,
       child: Container(
-        color: colors.overlay.withValues(alpha: 0),
+        color: context.appColors.overlay.withValues(alpha: 0.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -71,16 +69,16 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                 bottom: 12 + bottomInset,
               ),
               child: Material(
-                color: Colors.transparent,
+                color: context.appColors.overlay.withValues(alpha: 0.0),
                 elevation: 10,
-                shadowColor: colors.shadow.withValues(alpha: 0.2),
+                shadowColor: context.appColors.shadow.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     constraints: const BoxConstraints(maxHeight: 520),
                     decoration: BoxDecoration(
-                      color: colors.surfacePrimary,
+                      color: context.appColors.surfacePrimary,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +93,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
-                                color: colors.info,
+                                color: context.appColors.buttonPrimaryBg,
                               ),
                               child: Row(
                                 children: [
@@ -103,12 +101,12 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                     width: 32,
                                     height: 32,
                                     decoration: BoxDecoration(
-                                      color: colors.textInverse.withValues(alpha: 0.15),
+                                      color: context.appColors.textInverse.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
                                       Icons.grid_view_rounded,
-                                      color: colors.textInverse,
+                                      color: context.appColors.textInverse,
                                       size: 18,
                                     ),
                                   ),
@@ -116,9 +114,11 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                   Expanded(
                                     child: Text(
                                       localizations.translate('templates'),
-                                      style: textStyles.titleMd.copyWith(
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w600,
-                                        color: colors.textInverse,
+                                        color: context.appColors.textInverse,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -128,14 +128,16 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: colors.textInverse.withValues(alpha: 0.2),
+                                      color: context.appColors.textInverse.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
                                       '$totalCount',
-                                      style: textStyles.bodySm.copyWith(
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w600,
-                                        color: colors.textInverse,
+                                        color: context.appColors.textInverse,
                                       ),
                                     ),
                                   ),
@@ -161,7 +163,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                         _isSearching
                                             ? Icons.close_rounded
                                             : Icons.search_rounded,
-                                        color: colors.textInverse,
+                                        color: context.appColors.textInverse,
                                         size: 20,
                                       ),
                                     ),
@@ -174,7 +176,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                         AnimatedCrossFade(
                           firstChild: const SizedBox.shrink(),
                           secondChild: Container(
-                            color: colors.backgroundSecondary,
+                            color: context.appColors.backgroundSecondary,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
                             child: TextField(
@@ -187,15 +189,17 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                               },
                               decoration: InputDecoration(
                                 hintText: localizations.translate('search'),
-                                hintStyle: textStyles.bodyMd.copyWith(
-                                  color: colors.fieldHint,
+                                hintStyle: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  color: context.appColors.textSecondary,
                                 ),
                                 prefixIcon: Icon(
                                   Icons.search,
-                                  color: colors.fieldHint,
+                                  color: context.appColors.textSecondary,
                                 ),
                                 filled: true,
-                                fillColor: colors.surfacePrimary,
+                                fillColor: context.appColors.surfacePrimary,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -203,8 +207,10 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
                               ),
-                              style: textStyles.bodyMd.copyWith(
-                                color: colors.textPrimary,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                  color: context.appColors.textPrimary,
                               ),
                             ),
                           ),
@@ -217,11 +223,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                           child: BlocBuilder<TemplateBloc, TemplateState>(
                             builder: (context, state) {
                               if (state is TemplateLoading) {
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    color: colors.buttonPrimaryBg,
-                                  ),
-                                );
+                                return const Center(
+                                    child: CircularProgressIndicator());
                               } else if (state is TemplateLoaded) {
                                 final isFiltering =
                                     _searchController.text.trim().isNotEmpty;
@@ -237,8 +240,11 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                               .translate('no_templates_found')
                                           : localizations
                                               .translate('no_templates'),
-                                      style: textStyles.bodyMd.copyWith(
-                                        color: colors.textMuted,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontFamily: 'Gilroy',
+                                        fontWeight: FontWeight.w500,
+                                        color: context.appColors.textSecondary,
                                       ),
                                     ),
                                   );
@@ -263,7 +269,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 12, vertical: 10),
                                         decoration: BoxDecoration(
-                                          color: colors.backgroundSecondary,
+                                          color: context.appColors.backgroundSecondary,
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
@@ -277,7 +283,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                               margin: const EdgeInsets.only(
                                                   top: 6),
                                               decoration: BoxDecoration(
-                                                color: colors.info,
+                                                color: context.appColors.buttonPrimaryBg,
                                                 shape: BoxShape.circle,
                                               ),
                                             ),
@@ -289,10 +295,12 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                                 children: [
                                                   Text(
                                                     template.title,
-                                                    style: textStyles.bodyMd.copyWith(
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontFamily: 'Gilroy',
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: colors.textPrimary,
+                                                      color: context.appColors.textPrimary,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 4),
@@ -301,8 +309,12 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
-                                                    style: textStyles.bodySm.copyWith(
-                                                      color: colors.textMuted,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontFamily: 'Gilroy',
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      color: context.appColors.textSecondary,
                                                     ),
                                                   ),
                                                 ],
@@ -318,8 +330,11 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                 return Center(
                                   child: Text(
                                     state.message,
-                                    style: textStyles.bodyMd.copyWith(
-                                      color: colors.error,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                      color: context.appColors.error,
                                     ),
                                   ),
                                 );

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -82,7 +83,12 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
     });
   }
 
-  Widget _buildCheckbox(String label, bool value, Function(bool?) onChanged) {
+  Widget _buildCheckbox(
+    BuildContext context,
+    String label,
+    bool value,
+    Function(bool?) onChanged,
+  ) {
     return Row(
       children: [
         Transform.scale(
@@ -90,13 +96,13 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
           ),
         ),
-        Text(label, style: _textStyle()),
+        Text(label, style: _textStyle(context)),
       ],
     );
   }
@@ -123,7 +129,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -131,7 +137,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -154,7 +160,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -162,7 +168,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -182,7 +188,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.textInverse,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -198,12 +204,12 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Colors.black.withOpacity(0.8),
+                color: context.appColors.textPrimary,
                         ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close,
-                            size: 24, color: Colors.grey[600]),
+                          size: 24, color: context.appColors.textSecondary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -213,9 +219,11 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                   const SizedBox(height: 20),
                   Expanded(
                     child: state is LeadLoading
-                        ? const Center(
+                        ? Center(
                             child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)))
+                              color: context.appColors.buttonPrimaryBg,
+                            ),
+                          )
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,6 +239,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                                   children: [
                                     Expanded(
                                       child: _buildCheckbox(
+                                        context,
                                         'Успешно',
                                         _isSuccess,
                                         (v) {
@@ -247,6 +256,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                                     const SizedBox(width: 24),
                                     Expanded(
                                       child: _buildCheckbox(
+                                        context,
                                         'Не успешно',
                                         _isFailure,
                                         (v) {
@@ -264,6 +274,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 _buildCheckbox(
+                                  context,
                                   'Неразобранные',
                                   _isUnassembled,
                                   (v) {
@@ -283,7 +294,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                       margin: const EdgeInsets.only(top: 16),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: const Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                       child: TextButton(
                         onPressed: _saveChanges,
@@ -293,13 +304,13 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                             vertical: 10,
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Сохранить',
                           style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: context.appColors.backgroundPrimary,
                           ),
                         ),
                       ),
@@ -339,11 +350,11 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
     );
   }
 
-  TextStyle _textStyle() => const TextStyle(
+  TextStyle _textStyle(BuildContext context) => TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: context.appColors.textPrimary,
         overflow: TextOverflow.ellipsis,
       );
 }

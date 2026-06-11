@@ -1,11 +1,11 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/add_user_to_group.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/delete_from_group_dialog.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -149,6 +149,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             AppLocalizations.of(context)!.translate('group_profile'),
             style: TextStyle(
               fontSize: 20,
+              fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               color: context.appColors.textPrimary,
             ),
@@ -166,14 +167,14 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           centerTitle: false,
         ),
         body: Center(
-          child: CircularProgressIndicator(color: context.appColors.textPrimary),
+          child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg),
         ),
       );
     }
 
     if (isSupportChat) {
       return Scaffold(
-        backgroundColor: context.appColors.backgroundPrimary,
+        backgroundColor: context.appColors.backgroundSecondary,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: null, // Убираем заголовок для support
@@ -201,6 +202,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                 AppLocalizations.of(context)!.translate('support_chat_name'),
                 style: TextStyle(
                   fontSize: 24,
+                  fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
                   color: context.appColors.textPrimary,
                 ),
@@ -217,13 +219,14 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     String ownerId = memberDetails.isNotEmpty ? memberDetails[0]['id']! : '';
 
     return Scaffold(
-      backgroundColor: context.appColors.backgroundPrimary,
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: Text(
           AppLocalizations.of(context)!.translate('group_profile'),
           style: TextStyle(
             fontSize: 20,
+            fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
             color: context.appColors.textPrimary,
           ),
@@ -246,7 +249,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             Container(
               // decoration: BoxDecoration(
               //   shape: BoxShape.circle,
-              //   border: Border.all(color: context.appColors.textPrimary, width: 6),
+              //   border: Border.all(color: Colors.black, width: 6),
               // ),
               child: CircleAvatar(
                 backgroundColor: context.appColors.surfacePrimary,
@@ -264,7 +267,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                      style: context.appTextStyles.bodyMd.copyWith(
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
                         color: context.appColors.textInverse,
                       ),
                     ),
@@ -280,14 +286,16 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                 groupName,
                 style: TextStyle(
                   fontSize: 24,
+                  fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             Text(
               "$memberCount ${(memberCount >= 2 && memberCount <= 4) ? AppLocalizations.of(context)!.translate('participant') : AppLocalizations.of(context)!.translate('participantss')}",
-              style: context.appTextStyles.bodyMd.copyWith(
+              style: TextStyle(
                 fontSize: 16,
+                fontFamily: 'Gilroy',
                 color: context.appColors.textSecondary,
               ),
             ),
@@ -304,6 +312,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                         AppLocalizations.of(context)!.translate('participants'),
                         style: TextStyle(
                           fontSize: 18,
+                          fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -322,7 +331,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: context.appColors.textPrimary,
+                            backgroundColor: context.appColors.buttonPrimaryBg,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -332,7 +341,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                 .translate('add_participant'),
                             style: TextStyle(
                               fontSize: 14,
-                              color: context.appColors.surfacePrimary,
+                              fontFamily: 'Gilroy',
+                              color: context.appColors.textInverse,
                             ),
                               maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -399,11 +409,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 18),
                           decoration: BoxDecoration(
-                            color: context.appColors.surfacePrimary,
+                            color: context.appColors.textInverse,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: context.appColors.textPrimary.withOpacity(0.1),
+                                color: context.appColors.shadow.withValues(alpha: 0.1),
                                 blurRadius: 0,
                                 spreadRadius: 0,
                               ),
@@ -484,7 +494,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                       SnackBar(
                                         content: Text(
                                           AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                                          style: context.appTextStyles.bodyMd.copyWith(
+                                          style: TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 15,
                                             fontWeight: FontWeight.w500,
                                             color: context.appColors.textInverse,
                                           ),
@@ -502,6 +514,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
                                       color: context.appColors.textPrimary,
                                     ),
                                       maxLines: 1,
@@ -516,6 +529,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
                                     color: context.appColors.textPrimary,
                                   ),
                                     maxLines: 1,
@@ -528,6 +542,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
+                                    fontFamily: 'Gilroy',
                                     color: context.appColors.textPrimary,
                                   ),
                                 )

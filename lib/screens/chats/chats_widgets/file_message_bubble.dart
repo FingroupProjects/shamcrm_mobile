@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
@@ -90,7 +91,7 @@ class FileMessageBubble extends StatelessWidget {
         boxShadow: isHighlighted
             ? [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.3),
+                  color: context.appColors.shadow.withValues(alpha: 0.18),
                   blurRadius: 5,
                   spreadRadius: 2,
                   offset: Offset(0, -4),
@@ -114,7 +115,7 @@ class FileMessageBubble extends StatelessWidget {
                 senderName,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: isSender ? Colors.grey.shade600 : Colors.black87,
+                  color: isSender ? context.appColors.textSecondary : context.appColors.textPrimary,
                 ),
               ),
             GestureDetector(
@@ -130,7 +131,7 @@ class FileMessageBubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: context.appColors.shadow.withValues(alpha: 0.1),
                       offset: Offset(0, 4),
                       blurRadius: 6,
                     ),
@@ -167,7 +168,7 @@ class FileMessageBubble extends StatelessWidget {
                       child: Text(
                         fileName,
                         style: TextStyle(
-                            color: isSender ? Colors.white : Colors.black),
+                            color: isSender ? context.appColors.textInverse : context.appColors.textPrimary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -211,7 +212,7 @@ class FileMessageBubble extends StatelessWidget {
                     size: 18,
                     color: isRead
                         ? const Color.fromARGB(255, 45, 28, 235)
-                        : Colors.grey.shade400,
+                        : context.appColors.textSecondary.withValues(alpha: 0.5),
                   ),
               ],
             ),

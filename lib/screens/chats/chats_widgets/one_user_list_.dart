@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -108,7 +109,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
           builder: (context, state) {
             if (state is GetAllClientLoading) {
               return Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg),
               );
             }
 
@@ -129,15 +130,15 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xfff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     decoration: BoxDecoration(
-                      color: Color(0xFFF4F7FD),
+                      color: context.appColors.backgroundSecondary,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(width: 1, color: Color(0xFFF4F7FD)),
+                      border: Border.all(width: 1, color: context.appColors.backgroundSecondary),
                     ),
                     child: CustomDropdown<UserData>.search(
                       closeDropDownOnClearFilterSearch: true,
@@ -145,15 +146,15 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       searchHintText: AppLocalizations.of(context)!.translate('search'), 
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: context.appColors.backgroundSecondary,
+                        expandedFillColor: context.appColors.surfacePrimary,
                         closedBorder: Border.all(
-                          color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                          color: widget.hasError ? context.appColors.error : context.appColors.backgroundSecondary,
                           width: widget.hasError ? 1.5 : 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                          color: widget.hasError ? context.appColors.error : context.appColors.backgroundSecondary,
                           width: widget.hasError ? 1.5 : 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
@@ -192,8 +193,8 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         widget.errorText!,
-                        style: const TextStyle(
-                          color: Colors.red,
+                        style: TextStyle(
+                          color: context.appColors.error,
                           fontSize: 12,
                         ),
                       ),

@@ -9402,6 +9402,54 @@ class ApiService {
     }
   }
 
+  Future<void> sendChatFiles(
+    int chatId,
+    List<String> filePaths, {
+    String? responseType,
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    if (filePaths.isEmpty) return;
+    if (filePaths.length == 1) {
+      await sendChatFile(
+        chatId,
+        filePaths.first,
+        responseType: responseType,
+      );
+      return;
+    }
+
+    final token = await getToken();
+    final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
+    final requestUrl = '$baseUrl$path';
+    final dio = LoggedDioClient.create();
+
+    final formData = FormData.fromMap({
+      'files[]': [
+        for (final filePath in filePaths)
+          await MultipartFile.fromFile(filePath),
+      ],
+      if (responseType != null) 'response_type': responseType,
+    });
+
+    final response = await dio.post(
+      requestUrl,
+      data: formData,
+      onSendProgress: onSendProgress,
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+          "Accept": "application/json",
+          'Device': 'mobile'
+        },
+        contentType: 'multipart/form-data',
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error sending files: ${response.data}');
+    }
+  }
+
 // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

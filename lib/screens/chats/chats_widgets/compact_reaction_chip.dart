@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 
@@ -34,9 +35,9 @@ class CompactReactionChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           // Единый стиль "как у серверной реакции" (без выделения контура)
-          color: const Color(0x334A66F3),
+          color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
           border: Border.all(
-            color: const Color(0x665073F5),
+            color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.35),
             width: 0.8,
           ),
           borderRadius: BorderRadius.circular(borderRadius),
@@ -57,7 +58,7 @@ class CompactReactionChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: context.appColors.textInverse,
                 height: 1.0,
               ),
             ),

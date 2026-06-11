@@ -1,9 +1,9 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +24,6 @@ class ParticipantProfileScreen extends StatelessWidget {
   final bool? buttonChat;
 
   const ParticipantProfileScreen({
-    super.key,
     required this.userId,
     required this.image,
     required this.name,
@@ -137,15 +136,16 @@ class ParticipantProfileScreen extends StatelessWidget {
               color: backgroundColor,
               shape: BoxShape.circle,
               border: Border.all(
-                color: context.appColors.textInverse,
+                color: context.appColors.borderSubtle,
                 width: 1,
               ),
             ),
             child: Center(
               child: Text(
                 text,
-                style: context.appTextStyles.titleLg.copyWith(
+                style: TextStyle(
                   color: context.appColors.textInverse,
+                  fontSize: 60,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -189,16 +189,18 @@ class ParticipantProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.appColors.backgroundPrimary,
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.translate('user_profile'),
-          style: context.appTextStyles.titleMd.copyWith(
-            color: context.appColors.info,
+          style: TextStyle(
+            fontSize: 20,
+            fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: context.appColors.backgroundPrimary,
+        backgroundColor: context.appColors.backgroundSecondary,
         leading: IconButton(
           icon:
               Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
@@ -212,9 +214,7 @@ class ParticipantProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(
-                child: ClipOval(child: buildProfileImage(context)),
-              ),
+              Center(child: ClipOval(child: buildProfileImage(context))),
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
@@ -241,7 +241,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                     buildInfoRow(
                         context,
                         AppLocalizations.of(context)!.translate('number_phone'),
-                        phone,
+                        "$phone",
                         Icons.phone),
                     buildDivider(context),
                     buildInfoRow(
@@ -292,27 +292,25 @@ class ParticipantProfileScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            state.message,
-                            style: context.appTextStyles.bodyMd.copyWith(
-                              color: context.appColors.textInverse,
+                            '${state.message}',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
                               fontWeight: FontWeight.w500,
+                              color: context.appColors.textInverse,
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           backgroundColor: context.appColors.error,
                           elevation: 3,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 16,
-                          ),
-                          duration: const Duration(seconds: 3),
+                          padding: EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          duration: Duration(seconds: 3),
                         ),
                       );
                     });
@@ -345,13 +343,15 @@ class ParticipantProfileScreen extends StatelessWidget {
                             child: Text(
                               AppLocalizations.of(context)!
                                   .translate('go_to_chat'),
-                              style: context.appTextStyles.bodyMd.copyWith(
+                              style: TextStyle(
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: context.appColors.textInverse,
+                                fontFamily: 'Gilroy',
+                                color: context.appColors.buttonPrimaryFg,
                               ),
                             ),
                           )
-                        : const SizedBox.shrink();
+                        : SizedBox.shrink();
                   },
                 ),
               )
@@ -366,7 +366,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 32, color: context.appColors.iconPrimary),
+        Icon(icon, size: 32, color: context.appColors.buttonPrimaryBg),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -374,12 +374,14 @@ class ParticipantProfileScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: context.appTextStyles.bodySm.copyWith(
+                style: TextStyle(
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
                   color: context.appColors.textSecondary,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
               ),
               // Проверяем тип поля и делаем его кликабельным если это телефон или email
               title == "Номер телефона" || title == "Email"
@@ -397,7 +399,9 @@ class ParticipantProfileScreen extends StatelessWidget {
                           SnackBar(
                             content: Text(
                               AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                              style: context.appTextStyles.bodyMd.copyWith(
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 15,
                                 fontWeight: FontWeight.w500,
                                 color: context.appColors.textInverse,
                               ),
@@ -412,9 +416,11 @@ class ParticipantProfileScreen extends StatelessWidget {
                       },
                       child: Text(
                         value,
-                        style: context.appTextStyles.bodyMd.copyWith(
+                        style: TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: context.appColors.info,
+                          fontFamily: 'Gilroy',
+                          color: context.appColors.textPrimary,
                           decoration: TextDecoration.underline,
                         ),
                         maxLines: 1,
@@ -428,7 +434,9 @@ class ParticipantProfileScreen extends StatelessWidget {
                           SnackBar(
                             content: Text(
                               AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                              style: context.appTextStyles.bodyMd.copyWith(
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 15,
                                 fontWeight: FontWeight.w500,
                                 color: context.appColors.textInverse,
                               ),
@@ -443,12 +451,14 @@ class ParticipantProfileScreen extends StatelessWidget {
                       },
                       child: Text(
                         value,
-                        style: context.appTextStyles.bodyMd.copyWith(
+                        style: TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: context.appColors.info,
+                          fontFamily: 'Gilroy',
+                          color: context.appColors.textPrimary,
                         ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
             ],

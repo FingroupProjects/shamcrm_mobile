@@ -2,8 +2,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
-import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -41,9 +41,9 @@ class _AddClientDialogState extends State<AddClientDialog> {
       title: Center(
         child: Text(
           AppLocalizations.of(context)!.translate('create_chat'),
-          style: context.appTextStyles.titleLg.copyWith(
+          style: context.appTextStyles.titleMd.copyWith(
             fontWeight: FontWeight.w600,
-            color: context.appColors.textPrimary,
+            color: context.appColors.buttonPrimaryBg,
           ),
         ),
       ),
@@ -61,9 +61,9 @@ class _AddClientDialogState extends State<AddClientDialog> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('create_chat_group'),
-                    style: context.appTextStyles.bodyLg.copyWith(
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: context.appColors.textPrimary,
+                      color: context.appColors.buttonPrimaryBg,
                     ),
                   ),
                   Switch(
@@ -75,9 +75,9 @@ class _AddClientDialogState extends State<AddClientDialog> {
                         selectedUsersError = null;
                       });
                     },
-                    activeThumbColor: context.appColors.buttonPrimaryFg,
+                    activeThumbColor: context.appColors.textInverse,
                     activeTrackColor: context.appColors.buttonPrimaryBg,
-                    inactiveThumbColor: context.appColors.textPrimary,
+                    inactiveThumbColor: context.appColors.iconSecondary,
                     inactiveTrackColor: context.appColors.surfacePrimary,
                   )
                 ],
@@ -155,7 +155,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                   Navigator.pop(context);
                 },
                 buttonColor: context.appColors.buttonDangerBg,
-                textColor: context.appColors.buttonPrimaryFg,
+                textColor: context.appColors.buttonDangerFg,
               ),
             ),
             const SizedBox(width: 8),
@@ -169,22 +169,22 @@ class _AddClientDialogState extends State<AddClientDialog> {
                                 SnackBar(
                                   content: Text(
                                     AppLocalizations.of(context)!.translate('group_chat_created_successfully'),
-                                    style: context.appTextStyles.bodyLg.copyWith(
+                                    style: context.appTextStyles.bodyMd.copyWith(
                                       fontWeight: FontWeight.w500,
                                       color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(
+                                  margin: EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   backgroundColor: context.appColors.success,
                                   elevation: 3,
-                                  padding: const EdgeInsets.symmetric(
+                                  padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
-                                  duration: const Duration(seconds: 3),
+                                  duration: Duration(seconds: 3),
                                 ),
                               );
                             });

@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -242,11 +241,10 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
       } else if (match.pattern == linkRegex) {
         contentText = match.group(2);
         final displayText = text.substring(currentTextIndex, currentTextIndex + (contentText?.length ?? 0));
-        final linkColor = context.appColors.textPrimary;
         contentStyle = widget.style?.copyWith(
-          color: linkColor,
+          color: context.appColors.buttonPrimaryBg,
           decoration: TextDecoration.underline,
-          decorationColor: linkColor,
+          decorationColor: context.appColors.buttonPrimaryBg,
         );
         spans.add(TextSpan(text: displayText, style: contentStyle));
         currentTextIndex += contentText?.length ?? 0;
@@ -290,7 +288,8 @@ Widget build(BuildContext context) {
     builder: (context, child) {
       return Container(
         height: _heightAnimation.value,
-        decoration: widget.fillColor != null && widget.fillColor != Colors.transparent
+        decoration: widget.fillColor != null &&
+                widget.fillColor != context.appColors.overlay.withValues(alpha: 0.0)
             ? BoxDecoration(
                 color: widget.fillColor,
                 borderRadius: widget.borderRadius,

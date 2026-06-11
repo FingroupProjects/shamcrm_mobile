@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/data/emoji_data.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class PremiumContextMenu {
@@ -155,7 +156,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
     return GestureDetector(
       onTap: _close,
       child: Material(
-        color: Colors.transparent,
+        color: context.appColors.overlay.withValues(alpha: 0.0),
         child: Stack(
           children: [
             // Размытый фон
@@ -167,7 +168,11 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                   filter:
                       ImageFilter.blur(sigmaX: 10 * value, sigmaY: 10 * value),
                   child:
-                      Container(color: Colors.black.withOpacity(0.3 * value)),
+                      Container(
+                        color: context.appColors.overlay.withValues(
+                              alpha: 0.3 * value,
+                            ),
+                      ),
                 );
               },
             ),
@@ -220,10 +225,14 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 10, spreadRadius: 2)
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.12),
+            blurRadius: 10,
+            spreadRadius: 2,
+          )
         ],
       ),
       child: SingleChildScrollView(
@@ -256,10 +265,14 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 10, spreadRadius: 2)
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.12),
+            blurRadius: 10,
+            spreadRadius: 2,
+          )
         ],
       ),
       child: Column(
@@ -272,7 +285,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
               if (!isLast)
                 Divider(
                     height: 1,
-                    color: Colors.black12,
+                color: context.appColors.borderSubtle,
                     indent: 15,
                     endIndent: 15),
             ],
@@ -298,13 +311,17 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 item.icon,
                 width: 22,
                 height: 22,
-                color: item.isDestructive ? Colors.red : Colors.black87,
+                color: item.isDestructive
+                    ? context.appColors.error
+                    : context.appColors.textPrimary,
               )
             else
               Icon(
                 Icons.copy, // Fallback
                 size: 22,
-                color: item.isDestructive ? Colors.red : Colors.black87,
+                color: item.isDestructive
+                    ? context.appColors.error
+                    : context.appColors.textPrimary,
               ),
             const SizedBox(width: 15),
             Expanded(
@@ -314,7 +331,9 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: item.isDestructive ? Colors.red : Colors.black87,
+                  color: item.isDestructive
+                      ? context.appColors.error
+                      : context.appColors.textPrimary,
                 ),
               ),
             ),

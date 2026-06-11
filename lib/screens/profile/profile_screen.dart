@@ -45,7 +45,6 @@ import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.da
 import 'package:crm_task_manager/screens/profile/profile_widget/workday_card.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
-import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -433,9 +432,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Text(
                                 '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
                                 textAlign: TextAlign.center,
-                                style: context.appTextStyles.bodySm.copyWith(
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: context.appColors.info,
+                                  color: Color.fromARGB(255, 6, 44, 231),
                                   decoration: TextDecoration.none,
                                 ),
                               ),
@@ -465,7 +466,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Icon(
                               Icons.error_outline,
                               size: 80,
-                              color: context.appColors.error,
+                              color: Colors.red.shade400,
                             ),
                             const SizedBox(height: 20),
                             Padding(
@@ -474,10 +475,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Text(
                                 state.message,
                                 textAlign: TextAlign.center,
-                                style: context.appTextStyles.bodyLg.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: context.appColors.textPrimary,
-                                ),
+                                style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black87),
                               ),
                             ),
                             const SizedBox(height: 30),

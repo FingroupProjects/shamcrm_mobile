@@ -39,6 +39,7 @@ dependencies:
   just_audio: ^0.9.18
   audioplayers: ^6.1.0
   file_picker: ^10.3.3
+  flutter_image_compress: ^2.4.0
   voice_message_package:
     git:
       url: https://github.com/noolfj/voice_message_playerCustom.git
@@ -77,7 +78,9 @@ dependencies:
   package_info_plus: ^8.1.1
   provider: ^6.1.5
   path: ^1.9.1
+  photo_manager: ^3.7.1
   sqlite3_flutter_libs: ^0.5.39
+  video_thumbnail: ^0.5.6
 
   flutter_html: ^3.0.0
   html: ^0.15.6

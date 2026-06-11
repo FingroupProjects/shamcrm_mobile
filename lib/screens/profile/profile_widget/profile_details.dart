@@ -4,8 +4,8 @@ import 'package:crm_task_manager/bloc/organization/organization_event.dart';
 import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
@@ -19,10 +19,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../custom_widget/country_data_list.dart';
 
 class ProfileDetailsPage extends StatefulWidget {
-  const ProfileDetailsPage({Key? key}) : super(key: key);
+  const ProfileDetailsPage({super.key});
 
   @override
-  _ProfileDetailsPageState createState() => _ProfileDetailsPageState();
+  State<ProfileDetailsPage> createState() => _ProfileDetailsPageState();
 }
 
 class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
@@ -100,9 +100,13 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate('file_too_large'),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+              backgroundColor: context.appColors.error,
+              duration: const Duration(seconds: 3),
             ),
           );
           return; // Прекращаем выполнение, если файл слишком большой
@@ -118,9 +122,13 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             content: Text(
               AppLocalizations.of(context)!
                   .translate('image_selected_successfully'),
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textInverse,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            backgroundColor: context.appColors.success,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -129,8 +137,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('image_selection_error'),
+            style: context.appTextStyles.bodyMd.copyWith(
+              color: context.appColors.textInverse,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
         ),
       );
     }
@@ -259,22 +271,21 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                   barrierDismissible: false,
                   builder: (BuildContext context) {
                     return Dialog(
-                      backgroundColor: Colors.white,
+                      backgroundColor: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const CircularProgressIndicator(
-                              color: Color(0xff1E2E52),
+                            CircularProgressIndicator(
+                              color: context.appColors.buttonPrimaryBg,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               AppLocalizations.of(context)!
                                   .translate('checking_image'),
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
+                              style: context.appTextStyles.bodyMd.copyWith(
+                                color: context.appColors.textPrimary,
                               ),
                             ),
                           ],
@@ -306,14 +317,19 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                           content: Text(
                             AppLocalizations.of(context)!
                                 .translate('file_size_limit'),
+                            style: context.appTextStyles.bodyMd.copyWith(
+                              color: context.appColors.textInverse,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.appColors.error,
                           behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          duration: Duration(seconds: 3),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          duration: const Duration(seconds: 3),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                       );
@@ -331,14 +347,19 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                         content: Text(
                           AppLocalizations.of(context)!
                               .translate('image_selected_successfully'),
+                          style: context.appTextStyles.bodyMd.copyWith(
+                            color: context.appColors.textInverse,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        backgroundColor: Colors.green,
+                        backgroundColor: context.appColors.success,
                         behavior: SnackBarBehavior.floating,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        duration: Duration(seconds: 2),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        duration: const Duration(seconds: 2),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                     );
@@ -351,8 +372,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                         content: Text(
                           AppLocalizations.of(context)!
                               .translate('image_selection_error'),
+                          style: context.appTextStyles.bodyMd.copyWith(
+                            color: context.appColors.textInverse,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: context.appColors.error,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
@@ -380,22 +405,21 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                   barrierDismissible: false,
                   builder: (BuildContext context) {
                     return Dialog(
-                      backgroundColor: Colors.white,
+                      backgroundColor: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const CircularProgressIndicator(
-                              color: Color(0xff1E2E52),
+                            CircularProgressIndicator(
+                              color: context.appColors.buttonPrimaryBg,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               AppLocalizations.of(context)!
                                   .translate('checking_image'),
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
+                              style: context.appTextStyles.bodyMd.copyWith(
+                                color: context.appColors.textPrimary,
                               ),
                             ),
                           ],
@@ -427,14 +451,19 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                           content: Text(
                             AppLocalizations.of(context)!
                                 .translate('file_size_limit'),
+                            style: context.appTextStyles.bodyMd.copyWith(
+                              color: context.appColors.textInverse,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.appColors.error,
                           behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          duration: Duration(seconds: 3),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          duration: const Duration(seconds: 3),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                       );
@@ -452,14 +481,19 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                         content: Text(
                           AppLocalizations.of(context)!
                               .translate('image_selected_successfully'),
+                          style: context.appTextStyles.bodyMd.copyWith(
+                            color: context.appColors.textInverse,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        backgroundColor: Colors.green,
+                        backgroundColor: context.appColors.success,
                         behavior: SnackBarBehavior.floating,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        duration: Duration(seconds: 2),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        duration: const Duration(seconds: 2),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                     );
@@ -472,8 +506,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                         content: Text(
                           AppLocalizations.of(context)!
                               .translate('image_selection_error'),
+                          style: context.appTextStyles.bodyMd.copyWith(
+                            color: context.appColors.textInverse,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: context.appColors.error,
                         behavior: SnackBarBehavior.floating,
                         margin: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
@@ -532,7 +570,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         // Извлекаем текст из SVG и цвет фона
         final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
         final backgroundColor =
-            extractBackgroundColorFromSvg(svg) ?? Color(0xFF2C2C2C);
+            extractBackgroundColorFromSvg(svg) ?? context.appColors.surfaceElevated;
 
         return Container(
           width: 140,
@@ -541,7 +579,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             shape: BoxShape.circle,
             color: backgroundColor, // Теперь используем извлеченный цвет
             border: Border.all(
-              color: Colors.white,
+              color: context.appColors.textInverse,
               width: 1,
             ),
           ),
@@ -553,7 +591,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 child: Text(
                   text,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     fontSize: 120,
                     fontWeight: FontWeight.w500,
                     height: 1,
@@ -570,16 +608,15 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
 
     return Scaffold(
       key: _formKey,
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
         title: Transform.translate(
           offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
           child: Text(
             AppLocalizations.of(context)!.translate('profile_editor'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
+            style: context.appTextStyles.titleMd.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -602,6 +639,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
           ),
         ),
         leadingWidth: 40, // Уменьшаем ширину области для стрелки
+        backgroundColor: context.appColors.backgroundPrimary,
         actions: [
           IconButton(
             icon: Image.asset(
@@ -618,12 +656,11 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
             },
           ),
         ],
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
-                color: const Color(0xff1E2E52),
+                color: context.appColors.buttonPrimaryBg,
               ),
             )
           : Column(children: [
@@ -668,12 +705,13 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                                               )
                                         : CircleAvatar(
                                             radius: 70,
-                                            backgroundColor: Colors.grey[300],
+                                            backgroundColor:
+                                                context.appColors.borderPrimary,
                                             child: Icon(
                                               Icons.person,
                                               size: 100,
-                                              color: const Color.fromARGB(
-                                                  255, 255, 255, 255),
+                                              color:
+                                                  context.appColors.textInverse,
                                             ),
                                           ),
                                 // const SizedBox(height: 10),
@@ -727,10 +765,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _nameError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -759,10 +795,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _surnameError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -791,10 +825,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _surnameError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -848,10 +880,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                               padding: const EdgeInsets.only(top: 4, left: 12),
                               child: Text(
                                 _emailError!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                  fontFamily: 'Gilroy',
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
                                 ),
                               ),
                             ),
@@ -864,24 +894,23 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                                   content: Text(
                                     AppLocalizations.of(context)!.translate(
                                         'profile_updated_successfully'),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Gilroy',
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 14,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
-                                  margin: EdgeInsets.symmetric(
+                                  margin: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: context.appColors.success,
                                   elevation: 3,
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
-                                  duration: Duration(seconds: 3),
+                                  duration: const Duration(seconds: 3),
                                 ),
                               );
                               Navigator.pop(context);
@@ -906,24 +935,23 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                                 SnackBar(
                                   content: Text(
                                     message,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Gilroy',
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 14,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
-                                  margin: EdgeInsets.symmetric(
+                                  margin: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: context.appColors.error,
                                   elevation: 3,
-                                  padding: EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
-                                  duration: Duration(seconds: 3),
+                                  duration: const Duration(seconds: 3),
                                 ),
                               );
                             }
@@ -937,13 +965,13 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: context.appColors.shadow.withValues(alpha: 0.1),
                       spreadRadius: 0,
                       blurRadius: 10,
-                      offset: Offset(0, -2),
+                      offset: const Offset(0, -2),
                     ),
                   ],
                 ),
@@ -1047,22 +1075,20 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       SnackBar(
         content: Text(
           message,
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textInverse,
             fontWeight: FontWeight.w500,
-            fontSize: 14,
           ),
         ),
         behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: context.appColors.error,
         elevation: 3,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: Duration(seconds: 3),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
