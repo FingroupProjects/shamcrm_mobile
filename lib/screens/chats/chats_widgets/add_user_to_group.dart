@@ -6,7 +6,6 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/user_list_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/scheduler.dart';
@@ -29,14 +28,14 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
 
   String? groupNameError;
   String? selectedUsersError;
-  String? MessageSneckbar;
+  String? messageSnackbar;
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<GroupChatBloc, GroupChatState>(
       listener: (context, state) {
         if (state is GroupChatError) {
-          MessageSneckbar = state.message;
+          messageSnackbar = state.message;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -59,15 +58,15 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
             ),
           );
         } else if (state is GroupChatSuccess) {
-          MessageSneckbar = state.message;
+          messageSnackbar = state.message;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
                 style: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.textInverse,
-                ),
-                    maxLines: 1,
+                    ),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               behavior: SnackBarBehavior.floating,
@@ -113,7 +112,8 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                         selectedUserData = data;
                       });
                     });
-                  }, chatId: widget.chatId.toString(),
+                  },
+                  chatId: widget.chatId.toString(),
                 ),
                 if (selectedUsersError != null)
                   Padding(
@@ -149,7 +149,7 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                   buttonText: AppLocalizations.of(context)!.translate('add'),
                   onPressed: () {
                     if (selectedUserData != null) {
-                        final localizations = AppLocalizations.of(context)!;
+                      final localizations = AppLocalizations.of(context)!;
 
                       context.read<GroupChatBloc>().add(
                             AddUserToGroup(
@@ -164,12 +164,12 @@ class _AddUserToGroupDialogState extends State<AddUserToGroupDialog> {
                       });
 
                       Navigator.of(context).pop();
-                  } else {
-                    setState(() {
-                      selectedUsersError = AppLocalizations.of(context)!
-                          .translate('please_select_user');
-                    });
-                  }
+                    } else {
+                      setState(() {
+                        selectedUsersError = AppLocalizations.of(context)!
+                            .translate('please_select_user');
+                      });
+                    }
                   },
                   buttonColor: context.appColors.buttonPrimaryBg,
                   textColor: context.appColors.buttonPrimaryFg,

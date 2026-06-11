@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -18,7 +19,7 @@ class ExportContactDialog extends StatelessWidget {
     double contentFontSize = screenWidth * 0.034;
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       title: Center(
         child: Text(
           AppLocalizations.of(context)!.translate('export_contact'),
@@ -26,7 +27,7 @@ class ExportContactDialog extends StatelessWidget {
             fontSize: titleFontSize,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: context.appColors.buttonPrimaryBg,
           ),
         ),
       ),
@@ -36,7 +37,7 @@ class ExportContactDialog extends StatelessWidget {
           fontSize: contentFontSize,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
+          color: context.appColors.buttonPrimaryBg,
         ),
       ),
       actions: [
@@ -49,8 +50,8 @@ class ExportContactDialog extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop(false); // Возвращаем false при отмене
                 },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+                buttonColor: context.appColors.buttonDangerBg,
+                textColor: context.appColors.buttonDangerFg,
               ),
             ),
             SizedBox(width: 8),
@@ -75,7 +76,7 @@ class ExportContactDialog extends StatelessWidget {
                               fontFamily: 'Gilroy',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: context.appColors.textInverse,
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
@@ -84,7 +85,7 @@ class ExportContactDialog extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.green,
+                          backgroundColor: context.appColors.success,
                           elevation: 3,
                           padding: EdgeInsets.symmetric(
                               vertical: 12, horizontal: 16),
@@ -102,7 +103,7 @@ class ExportContactDialog extends StatelessWidget {
                               fontFamily: 'Gilroy',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: context.appColors.textInverse,
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
@@ -110,7 +111,7 @@ class ExportContactDialog extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.appColors.error,
                           elevation: 3,
                           padding: EdgeInsets.symmetric(
                               vertical: 12, horizontal: 16),
@@ -129,7 +130,7 @@ class ExportContactDialog extends StatelessWidget {
                             fontFamily: 'Gilroy',
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
@@ -137,7 +138,7 @@ class ExportContactDialog extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: context.appColors.error,
                         elevation: 3,
                         padding: EdgeInsets.symmetric(
                             vertical: 12, horizontal: 16),
@@ -147,8 +148,8 @@ class ExportContactDialog extends StatelessWidget {
                     Navigator.of(context).pop(false); // Возвращаем false при ошибке
                   }
                 },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
+                buttonColor: context.appColors.buttonPrimaryBg,
+                textColor: context.appColors.buttonPrimaryFg,
               ),
             ),
           ],

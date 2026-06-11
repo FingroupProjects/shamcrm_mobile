@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -241,9 +242,9 @@ class _AnimatedTextFieldState extends State<AnimatedTextField>
         contentText = match.group(2);
         final displayText = text.substring(currentTextIndex, currentTextIndex + (contentText?.length ?? 0));
         contentStyle = widget.style?.copyWith(
-          color: Color(0xff1E2E52),
+          color: context.appColors.buttonPrimaryBg,
           decoration: TextDecoration.underline,
-          decorationColor: Color(0xff1E2E52),
+          decorationColor: context.appColors.buttonPrimaryBg,
         );
         spans.add(TextSpan(text: displayText, style: contentStyle));
         currentTextIndex += contentText?.length ?? 0;
@@ -287,7 +288,8 @@ Widget build(BuildContext context) {
     builder: (context, child) {
       return Container(
         height: _heightAnimation.value,
-        decoration: widget.fillColor != null && widget.fillColor != Colors.transparent
+        decoration: widget.fillColor != null &&
+                widget.fillColor != context.appColors.overlay.withValues(alpha: 0.0)
             ? BoxDecoration(
                 color: widget.fillColor,
                 borderRadius: widget.borderRadius,

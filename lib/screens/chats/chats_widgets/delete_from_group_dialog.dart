@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
@@ -33,7 +34,7 @@ class DeleteChatDialog extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -41,7 +42,7 @@ class DeleteChatDialog extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -60,7 +61,7 @@ class DeleteChatDialog extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -68,7 +69,7 @@ class DeleteChatDialog extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -77,7 +78,7 @@ class DeleteChatDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_user'), 
@@ -85,7 +86,7 @@ class DeleteChatDialog extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -95,7 +96,7 @@ class DeleteChatDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         actions: [
@@ -108,8 +109,8 @@ class DeleteChatDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonDangerBg,
+                  textColor: context.appColors.buttonDangerFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -139,7 +140,7 @@ class DeleteChatDialog extends StatelessWidget {
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
@@ -148,9 +149,11 @@ class DeleteChatDialog extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: MessageSneckbar!.contains(AppLocalizations.of(context)!.translate('deleted'), )
-                                ? Colors.green
-                                : Colors.red,
+                            backgroundColor: MessageSneckbar!
+                                    .contains(AppLocalizations.of(context)!
+                                        .translate('deleted'))
+                                ? context.appColors.success
+                                : context.appColors.error,
                             elevation: 3,
                             padding: EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
@@ -160,8 +163,8 @@ class DeleteChatDialog extends StatelessWidget {
                       }
                     });
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               )
             ],

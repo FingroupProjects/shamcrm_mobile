@@ -1,5 +1,5 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -35,23 +35,18 @@ class ChatListItem extends StatelessWidget {
   final String endPointInTab;
 
   const ChatListItem({
-    Key? key,
+    super.key,
     required this.chatItem,
     required this.endPointInTab,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    bool isSupportAvatar = chatItem.avatar == 'assets/icons/Profile/image.png';
-    bool isLeadsSection = endPointInTab == 'lead';
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          Container(
-            child: _buildAvatar(chatItem.avatar),
-          ),
+          _buildAvatar(context, chatItem.avatar),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -68,7 +63,10 @@ class ChatListItem extends StatelessWidget {
                                 : chatItem.name)
                             : AppLocalizations.of(context)!
                                 .translate('no_name'),
-                        style: AppStyles.chatNameStyle,
+                        style: context.appTextStyles.bodyLg.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.textPrimary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -76,7 +74,9 @@ class ChatListItem extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       formatChatTime(chatItem.time),
-                      style: AppStyles.chatTimeStyle,
+                      style: context.appTextStyles.bodySm.copyWith(
+                        color: context.appColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -87,8 +87,11 @@ class ChatListItem extends StatelessWidget {
                       child: RichText(
                         text: TextSpan(
                           children: parseHtmlToTextSpans(
+                            context,
                             chatItem.message,
-                            AppStyles.chatMessageStyle,
+                            context.appTextStyles.bodyMd.copyWith(
+                              color: context.appColors.textSecondary,
+                            ),
                           ),
                         ),
                         maxLines: 1,
@@ -103,19 +106,17 @@ class ChatListItem extends StatelessWidget {
                           ? Container(
                               alignment: Alignment.center,
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.blue,
+                              decoration: BoxDecoration(
+                                color: context.appColors.buttonPrimaryBg,
                                 shape: BoxShape.circle,
                               ),
                               child: Text(
                                 chatItem.unreadCount <= 9
                                     ? '${chatItem.unreadCount}'
                                     : '+9',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.textInverse,
                                   fontWeight: FontWeight.w600,
-                                  fontFamily: 'Gilroy',
                                 ),
                               ),
                             )
@@ -131,7 +132,7 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(String avatar) {
+  Widget _buildAvatar(BuildContext context, String avatar) {
     bool isLeadsSection = endPointInTab == 'lead';
     bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
     bool isTaskSection = endPointInTab == 'task';
@@ -140,7 +141,7 @@ class ChatListItem extends StatelessWidget {
       return CircleAvatar(
         backgroundImage: const AssetImage('assets/images/AvatarTask.png'),
         radius: 24,
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {
           // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
         },
@@ -152,7 +153,7 @@ class ChatListItem extends StatelessWidget {
       return CircleAvatar(
         backgroundImage: const AssetImage('assets/images/AvatarChat.png'),
         radius: 24,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        backgroundColor: isSupportAvatar ? context.appColors.textPrimary : context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {
           // print('Error loading asset image: assets/images/AvatarChat.png, $exception');
         },
@@ -167,9 +168,9 @@ class ChatListItem extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.grey[100],
+          color: context.appColors.backgroundSecondary,
           border: Border.all(
-            color: Colors.grey[300]!,
+            color: context.appColors.borderPrimary,
             width: 1,
           ),
         ),
@@ -178,7 +179,7 @@ class ChatListItem extends StatelessWidget {
               ? Icon(
                   Icons.language,
                   size: 32,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 )
               : Image.asset(
                   chatItem.icon,
@@ -188,7 +189,7 @@ class ChatListItem extends StatelessWidget {
                     return Icon(
                       Icons.person,
                       size: 32,
-                      color: Colors.grey[600],
+                      color: context.appColors.iconSecondary,
                     );
                   },
                 ),
@@ -222,15 +223,15 @@ class ChatListItem extends StatelessWidget {
               shape: BoxShape.circle,
               color: backgroundColor,
               border: Border.all(
-                color: Colors.white,
+                color: context.appColors.textInverse,
                 width: 1,
               ),
             ),
             child: Center(
               child: Text(
                 text,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.appColors.textInverse,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
                 ),
@@ -255,7 +256,7 @@ class ChatListItem extends StatelessWidget {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
         radius: 24,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        backgroundColor: isSupportAvatar ? context.appColors.textPrimary : context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {
           // print('Error loading asset image: $avatar, $exception');
         },
@@ -267,7 +268,7 @@ class ChatListItem extends StatelessWidget {
             ? 'assets/images/AvatarTask.png'
             : 'assets/images/AvatarChat.png'),
         radius: 24,
-        backgroundColor: isSupportAvatar ? Colors.black : Colors.white,
+        backgroundColor: isSupportAvatar ? context.appColors.textPrimary : context.appColors.surfacePrimary,
       );
     }
   }
@@ -326,7 +327,11 @@ class ChatListItem extends StatelessWidget {
     return null;
   }
 
-  List<TextSpan> parseHtmlToTextSpans(String html, TextStyle baseStyle) {
+  List<TextSpan> parseHtmlToTextSpans(
+    BuildContext context,
+    String html,
+    TextStyle baseStyle,
+  ) {
     // Проверяем, содержит ли текст HTML-теги
     final bool isHtml = html.contains('<') && html.contains('>');
 
@@ -380,12 +385,12 @@ class ChatListItem extends StatelessWidget {
           final linkText = node.text.trim();
           if (linkText.isNotEmpty) {
             spans.add(
-              TextSpan(
-                text: linkText,
-                style: newStyle.copyWith(
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline,
-                ),
+                TextSpan(
+                  text: linkText,
+                  style: newStyle.copyWith(
+                    color: context.appColors.buttonPrimaryBg,
+                    decoration: TextDecoration.underline,
+                  ),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
                     final uri = Uri.parse(url);

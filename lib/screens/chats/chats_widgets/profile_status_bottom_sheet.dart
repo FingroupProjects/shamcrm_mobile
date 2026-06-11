@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ void showProfileStatusBottomSheet(
 
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.appColors.surfacePrimary,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -39,7 +40,7 @@ void showProfileStatusBottomSheet(
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Color(0xffDFE3EC),
+                    color: context.appColors.borderSubtle,
                     borderRadius: BorderRadius.circular(1200),
                   ),
                 ),
@@ -47,11 +48,11 @@ void showProfileStatusBottomSheet(
                 // Заголовок
                 Text(
                   AppLocalizations.of(context)!.translate('change_status'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -65,17 +66,17 @@ void showProfileStatusBottomSheet(
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
+                                  color: context.appColors.buttonPrimaryBg,
                                 ),
                               );
                             } else if (snapshot.hasError) {
                               return Center(
                                 child: Text(
                                   AppLocalizations.of(context)!.translate('error_text'),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
-                                    color: Colors.red,
+                                    color: context.appColors.error,
                                   ),
                                 ),
                               );
@@ -83,10 +84,10 @@ void showProfileStatusBottomSheet(
                               return Center(
                                 child: Text(
                                   AppLocalizations.of(context)!.translate('no_statuses'),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
-                                    color: Color(0xff6E7C97),
+                                    color: context.appColors.textSecondary,
                                   ),
                                 ),
                               );
@@ -120,8 +121,8 @@ void showProfileStatusBottomSheet(
                   buttonText: isLoading
                       ? ''
                       : AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: Color(0xff4F40EC),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.textInverse,
                   onPressed: isLoading
                       ? null
                       : () async {
@@ -150,7 +151,7 @@ void showProfileStatusBottomSheet(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.white,
+                                        color: context.appColors.textInverse,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
@@ -158,7 +159,7 @@ void showProfileStatusBottomSheet(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: context.appColors.success,
                                     elevation: 3,
                                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                     duration: Duration(seconds: 3),
@@ -195,7 +196,7 @@ void showProfileStatusBottomSheet(
                                       fontFamily: 'Gilroy',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -203,7 +204,7 @@ void showProfileStatusBottomSheet(
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: context.appColors.error,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                   duration: Duration(seconds: 3),
@@ -220,7 +221,7 @@ void showProfileStatusBottomSheet(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                             strokeWidth: 2,
                           ),
                         )

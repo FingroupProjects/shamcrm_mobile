@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
@@ -507,14 +508,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 fontFamily: 'Gilroy',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: context.appColors.textInverse,
               ),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
             duration: Duration(seconds: 4),
             action: SnackBarAction(
               label: 'Повторить',
-              textColor: Colors.white,
+              textColor: context.appColors.textInverse,
               onPressed: () => _onRefresh(currentStatusId),
             ),
           ),
@@ -899,7 +900,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       position: position,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                       elevation: 8,
                       items: state.funnels
                           .map((f) => PopupMenuItem<SalesFunnel>(
@@ -944,9 +945,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       } catch (e) {
                         setState(() => _isSwitchingFunnel = false);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text('Ошибка при смене воронки'),
-                            backgroundColor: Colors.red,
+                            backgroundColor: context.appColors.error,
                           ),
                         );
                       }
@@ -959,17 +960,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.expand_more,
-                            color: Color(0xff1E2E52), size: 24),
+                        Icon(Icons.expand_more,
+                            color: context.appColors.buttonPrimaryBg, size: 24),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.buttonPrimaryBg,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -984,11 +985,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.buttonPrimaryBg,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1008,7 +1009,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         BlocProvider.value(value: context.read<SalesFunnelBloc>()),
       ],
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: CustomAppBar(
@@ -1022,7 +1023,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       fontSize: 20,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.buttonPrimaryBg,
                     ),
                   )
                 : _buildTitleWidget(context),
@@ -1224,7 +1225,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   if (_isSwitch) {
                     showModalBottomSheet(
-                      backgroundColor: Colors.white,
+                      backgroundColor: context.appColors.surfacePrimary,
                       context: context,
                       shape: RoundedRectangleBorder(
                         borderRadius:
@@ -1240,14 +1241,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                 AppLocalizations.of(context)!
                                     .translate('add_for_current_status'),
                                 style: TextStyle(
-                                  color: Color(0xff1E2E52),
+                                  color: context.appColors.buttonPrimaryBg,
                                   fontSize: 20,
                                   fontFamily: "Gilroy",
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               SizedBox(height: 8),
-                              Divider(color: Color(0xff1E2E52)),
+                              Divider(color: context.appColors.buttonPrimaryBg),
                               ListTile(
                                 title: Row(
                                   mainAxisAlignment:
@@ -1257,7 +1258,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       AppLocalizations.of(context)!
                                           .translate('new_lead_in_switch'),
                                       style: TextStyle(
-                                        color: Color(0xff1E2E52),
+                                        color: context.appColors.buttonPrimaryBg,
                                         fontSize: 16,
                                         fontFamily: "Gilroy",
                                         fontWeight: FontWeight.w500,
@@ -1265,7 +1266,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                     ),
                                     Icon(
                                       Icons.add,
-                                      color: Color(0xff1E2E52),
+                                      color: context.appColors.buttonPrimaryBg,
                                       size: 25,
                                     ),
                                   ],
@@ -1308,7 +1309,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       AppLocalizations.of(context)!
                                           .translate('import_contact'),
                                       style: TextStyle(
-                                        color: Color(0xff1E2E52),
+                                        color: context.appColors.buttonPrimaryBg,
                                         fontSize: 16,
                                         fontFamily: "Gilroy",
                                         fontWeight: FontWeight.w500,
@@ -1316,7 +1317,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                     ),
                                     Icon(
                                       Icons.contacts,
-                                      color: Color(0xff1E2E52),
+                                      color: context.appColors.buttonPrimaryBg,
                                       size: 25,
                                     ),
                                   ],
@@ -1381,7 +1382,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         ));
                   }
                 },
-                backgroundColor: Color(0xff1E2E52),
+                backgroundColor: context.appColors.buttonPrimaryBg,
                 child: Image.asset(
                   'assets/icons/tabBar/add.png',
                   width: 24,
@@ -1410,11 +1411,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -1423,11 +1424,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         child: Text(
           AppLocalizations.of(context)!
               .translate('no_leads_for_selected_manager'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -1435,11 +1436,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -1447,8 +1448,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     return RefreshIndicator(
       onRefresh: () => _onRefresh(currentStatusId),
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: context.appColors.buttonPrimaryBg,
+      backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
         itemCount: leads.length +
@@ -1462,7 +1463,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           if (state is LeadDataLoaded &&
               state.isLoadingMore &&
               index >= leads.length) {
-            return const Padding(
+            return Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: PlayStoreImageLoading(
@@ -1515,7 +1516,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
           if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
             //print('LeadScreen: _buildManagerView - Showing loader');
-            return const Center(
+            return Center(
               child: PlayStoreImageLoading(
                 size: 80.0,
                 duration: Duration(milliseconds: 1000),
@@ -1532,8 +1533,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             if (filteredLeads.isEmpty) {
               return RefreshIndicator(
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: context.appColors.buttonPrimaryBg,
+                backgroundColor: context.appColors.surfacePrimary,
                 child: Center(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -1543,11 +1544,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                               .translate('selected_manager_has_any_lead')
                           : AppLocalizations.of(context)!
                               .translate('nothing_found'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: context.appColors.textSecondary,
                       ),
                     ),
                   ),
@@ -1557,14 +1558,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
             return RefreshIndicator(
               onRefresh: () => _onRefresh(currentStatusId),
-              color: const Color(0xff1E2E52),
-              backgroundColor: Colors.white,
+              color: context.appColors.buttonPrimaryBg,
+              backgroundColor: context.appColors.surfacePrimary,
               child: ListView.builder(
                 controller: _listScrollController,
                 itemCount: filteredLeads.length + (state.isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredLeads.length) {
-                    return const Padding(
+                    return Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       child: Center(
                         child: PlayStoreImageLoading(
@@ -1602,11 +1603,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             return Center(
               child: Text(
                 state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Colors.red,
+                  color: context.appColors.error,
                 ),
               ),
             );
@@ -1614,7 +1615,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
           if (state is LeadLoaded) {
             if (!_permissionsInitialized) {
-              return const Center(
+              return Center(
                 child: PlayStoreImageLoading(
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),
@@ -1623,14 +1624,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             }
 
             if (!_canReadLeadStatus) {
-              return const Center(
+              return Center(
                 child: Text(
                   'Нет доступа к статусам лидов',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
+                    color: context.appColors.textSecondary,
                   ),
                 ),
               );
@@ -1641,21 +1642,21 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Не удалось подготовить список статусов',
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () {
                         context.read<LeadBloc>().add(FetchLeadStatuses());
                       },
-                      child: const Text('Повторить'),
+                      child: Text('Повторить'),
                     ),
                   ],
                 ),
@@ -1733,20 +1734,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(8),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: context.appColors.textInverse,
       items: [
         if (_canUpdateLeadStatus)
           PopupMenuItem(
             value: 'edit',
             child: ListTile(
-              leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+              leading: Icon(Icons.edit, color: context.appColors.textSecondary),
               title: Text(
                 'Изменить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -1755,14 +1756,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+              leading: Icon(Icons.delete, color: context.appColors.textSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -1848,19 +1849,21 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isActive
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xff99A4BA),
+                        ? context.appColors.buttonPrimaryBg
+                        : context.appColors.textSecondary,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   leadCount.toString(),
                   style: TextStyle(
-                    color: isActive ? Colors.black : const Color(0xff99A4BA),
+                    color: isActive
+                        ? context.appColors.textPrimary
+                        : context.appColors.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -2248,14 +2251,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             }
 
             if (!_canReadLeadStatus) {
-              return const Center(
+              return Center(
                 child: Text(
                   'Нет доступа к статусам лидов',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
+                    color: context.appColors.textSecondary,
                   ),
                 ),
               );
@@ -2265,11 +2268,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               return Center(
                 child: Text(
                   state.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.red,
+                    color: context.appColors.error,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -2281,16 +2284,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Список статусов пуст',
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () {
                         context.read<LeadBloc>().add(FetchLeadStatuses());
@@ -2317,8 +2320,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               //print('LeadScreen: Building TabBarView child for status: ${status['title']}');
               return RefreshIndicator(
                 onRefresh: () => _onRefresh(status['id']),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: context.appColors.buttonPrimaryBg,
+                backgroundColor: context.appColors.surfacePrimary,
                 child: LeadColumn(
                   isLeadScreenTutorialCompleted: _isLeadScreenTutorialCompleted,
                   statusId: status['id'],

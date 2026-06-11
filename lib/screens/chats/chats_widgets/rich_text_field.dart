@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -19,7 +20,7 @@ class RichTextField extends StatefulWidget {
   final String htmlContent; // HTML контент для парсинга
 
   const RichTextField({
-    Key? key,
+    super.key,
     required this.controller,
     required this.focusNode,
     required this.onChanged,
@@ -32,7 +33,7 @@ class RichTextField extends StatefulWidget {
     this.contentPadding,
     this.maxVisibleLines = 6,
     this.lineHeight = 20.0,
-  }) : super(key: key);
+  });
 
   @override
   State<RichTextField> createState() => _RichTextFieldState();
@@ -188,7 +189,7 @@ class _RichTextFieldState extends State<RichTextField>
       if (match.start > lastIndex) {
         spans.add(TextSpan(
           text: html.substring(lastIndex, match.start),
-          style: widget.style?.copyWith(color: Colors.black),
+          style: widget.style?.copyWith(color: context.appColors.textPrimary),
         ));
       }
 
@@ -198,7 +199,7 @@ class _RichTextFieldState extends State<RichTextField>
           text: match.group(1),
           style: widget.style?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: context.appColors.textPrimary,
           ),
         ));
       } else if (match.pattern == italicRegex) {
@@ -206,7 +207,7 @@ class _RichTextFieldState extends State<RichTextField>
           text: match.group(1),
           style: widget.style?.copyWith(
             fontStyle: FontStyle.italic,
-            color: Colors.black,
+            color: context.appColors.textPrimary,
           ),
         ));
       } else if (match.pattern == strikeRegex) {
@@ -214,17 +215,17 @@ class _RichTextFieldState extends State<RichTextField>
           text: match.group(1),
           style: widget.style?.copyWith(
             decoration: TextDecoration.lineThrough,
-            decorationColor: Colors.black,
-            color: Colors.black,
+            decorationColor: context.appColors.textPrimary,
+            color: context.appColors.textPrimary,
           ),
         ));
       } else if (match.pattern == linkRegex) {
         spans.add(TextSpan(
           text: match.group(2),
           style: widget.style?.copyWith(
-            color: Color(0xff1E2E52),
+            color: context.appColors.buttonPrimaryBg,
             decoration: TextDecoration.underline,
-            decorationColor: Color(0xff1E2E52),
+            decorationColor: context.appColors.buttonPrimaryBg,
           ),
         ));
       }
@@ -236,7 +237,7 @@ class _RichTextFieldState extends State<RichTextField>
     if (lastIndex < html.length) {
       spans.add(TextSpan(
         text: html.substring(lastIndex),
-        style: widget.style?.copyWith(color: Colors.black),
+        style: widget.style?.copyWith(color: context.appColors.textPrimary),
       ));
     }
 
@@ -264,14 +265,14 @@ class _RichTextFieldState extends State<RichTextField>
                   scrollController: _scrollController,
                   onChanged: widget.onChanged,
                   maxLines: null,
-                  style: widget.style?.copyWith(color: Colors.transparent),
+          style: widget.style?.copyWith(color: context.appColors.overlay.withValues(alpha: 0.0)),
                   decoration: InputDecoration(
                     hintText: '', // Хинт показываем на RichText
                     border: InputBorder.none,
                     contentPadding: widget.contentPadding,
                     isDense: true,
                   ),
-                  cursorColor: Color(0xff1E2E52), // Курсор видимый
+                  cursorColor: context.appColors.buttonPrimaryBg, // Курсор видимый
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   enableInteractiveSelection: true,

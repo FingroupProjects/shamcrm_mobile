@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -49,8 +50,9 @@ class LocationMessageBubble extends StatelessWidget {
                 senderName,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color:
-                      isSender ? Colors.grey.shade600 : const Color(0xff1E2E52),
+                  color: isSender
+                      ? context.appColors.textSecondary
+                      : context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -62,17 +64,17 @@ class LocationMessageBubble extends StatelessWidget {
               width: MediaQuery.of(context).size.width * 0.72,
               margin: const EdgeInsets.symmetric(vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isHighlighted
-                      ? const Color(0xff1E2E52)
-                      : const Color(0xffD9E4F4),
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.borderSubtle,
                   width: isHighlighted ? 1.5 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.10),
+                    color: context.appColors.shadow.withValues(alpha: 0.10),
                     offset: const Offset(0, 4),
                     blurRadius: 8,
                   ),
@@ -107,9 +109,9 @@ class LocationMessageBubble extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.location_pin,
-                        color: Color(0xffEA4335),
+                        color: context.appColors.error,
                         size: 42,
                       ),
                     ],
@@ -118,20 +120,20 @@ class LocationMessageBubble extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(12, 9, 10, 8),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_rounded,
                           size: 18,
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.buttonPrimaryBg,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             localizations.translate('geolocation'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textPrimary,
                             ),
                           ),
                         ),
@@ -139,19 +141,19 @@ class LocationMessageBubble extends StatelessWidget {
                           time,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade600,
+                            color: context.appColors.textSecondary,
                             fontFamily: 'Gilroy',
                           ),
                         ),
                         if (isSender) ...[
                           const SizedBox(width: 3),
-                          Icon(
-                            Icons.done_all,
-                            size: 16,
-                            color: isRead
-                                ? const Color(0xff1E2E52)
-                                : Colors.grey.shade500,
-                          ),
+                            Icon(
+                              Icons.done_all,
+                              size: 16,
+                              color: isRead
+                                ? context.appColors.buttonPrimaryBg
+                                : context.appColors.textSecondary.withValues(alpha: 0.6),
+                            ),
                         ],
                       ],
                     ),

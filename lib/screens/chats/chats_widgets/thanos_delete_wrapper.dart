@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -189,7 +190,7 @@ class _DustParticlePainter extends CustomPainter {
       // Рисуем оригинал с угасанием
       final overallAlpha = (1.0 - progress * 2).clamp(0.0, 1.0);
       if (overallAlpha > 0) {
-        paint.color = Colors.white.withValues(alpha: overallAlpha);
+        paint.color = AppColors.textPrimaryWhite.withValues(alpha: overallAlpha);
         canvas.saveLayer(Offset.zero & size, paint);
         paintImage(
           canvas: canvas,
@@ -221,14 +222,14 @@ class _DustParticlePainter extends CustomPainter {
         final dst = Rect.fromCenter(center: pos, width: p.size, height: p.size);
 
         paint
-          ..color = Colors.white.withValues(alpha: alpha)
+          ..color = AppColors.textPrimaryWhite.withValues(alpha: alpha)
           ..filterQuality = FilterQuality.low;
 
         canvas.saveLayer(dst.inflate(2), paint);
         canvas.drawImageRect(image!, src, dst, Paint());
         canvas.restore();
       } else {
-        paint.color = const Color(0xFFFFD700).withValues(alpha: alpha);
+        paint.color = AppColors.textAdditionalOrange.withValues(alpha: alpha);
         canvas.drawCircle(pos, p.size / 2, paint);
       }
     }
@@ -283,7 +284,7 @@ class _WaveCollapsePainter extends CustomPainter {
 
     if (image != null) {
       final paint = Paint()
-        ..color = Colors.white.withValues(alpha: alpha)
+        ..color = AppColors.textPrimaryWhite.withValues(alpha: alpha)
         ..filterQuality = FilterQuality.low;
       canvas.saveLayer(Offset.zero & size, paint);
       paintImage(
@@ -308,7 +309,7 @@ class _WaveCollapsePainter extends CustomPainter {
       final ringAlpha = (sin(t * pi)).clamp(0.0, 1.0);
 
       final paint = Paint()
-        ..color = const Color(0xFF1E88E5).withValues(alpha: ringAlpha * 0.55)
+        ..color = AppColors.primaryBlue.withValues(alpha: ringAlpha * 0.55)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5 + rng.nextDouble() * 2;
 
@@ -358,7 +359,7 @@ class _WindBlowPainter extends CustomPainter {
         );
 
         final paint = Paint()
-          ..color = Colors.white.withValues(alpha: alpha)
+          ..color = AppColors.textPrimaryWhite.withValues(alpha: alpha)
           ..filterQuality = FilterQuality.low;
 
         canvas.saveLayer(dstRect.inflate(1), paint);
@@ -368,7 +369,7 @@ class _WindBlowPainter extends CustomPainter {
 
       if (t > 0.1 && t < 0.85) {
         final windPaint = Paint()
-          ..color = const Color(0xFF90CAF9).withValues(alpha: alpha * 0.4)
+          ..color = AppColors.primaryBlue.withValues(alpha: alpha * 0.4)
           ..strokeWidth = 0.8
           ..style = PaintingStyle.stroke;
         final y = i * stripH + stripH / 2;
@@ -443,7 +444,7 @@ class _PixelFadePainter extends CustomPainter {
     final sparkCount = (totalBlocks * progress * 0.15).round();
     final deadBlocks = indices.skip(liveCount).take(sparkCount);
     final sparkPaint = Paint()
-      ..color = Colors.white.withValues(alpha: (1.0 - progress) * 0.7);
+      ..color = AppColors.textPrimaryWhite.withValues(alpha: (1.0 - progress) * 0.7);
 
     for (final b in deadBlocks) {
       final r = b ~/ cols;

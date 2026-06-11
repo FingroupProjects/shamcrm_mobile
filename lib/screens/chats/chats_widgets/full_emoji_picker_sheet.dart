@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/data/emoji_data.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -65,8 +66,8 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
     final localizations = AppLocalizations.of(context)!;
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       child: Column(
@@ -94,7 +95,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.grey.shade300,
+        color: context.appColors.borderSubtle,
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -121,7 +122,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: context.appColors.backgroundSecondary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
@@ -141,17 +142,17 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: context.appColors.backgroundSecondary,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: localizations.translate('search_emoji'),
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          prefixIcon: Icon(Icons.search, color: context.appColors.iconSecondary),
           suffixIcon: _isSearching
               ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
+                  icon: Icon(Icons.clear, color: context.appColors.iconSecondary),
                   onPressed: () {
                     _searchController.clear();
                   },
@@ -172,7 +173,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       return Center(
         child: Text(
           localizations.translate('emoji_not_found'),
-          style: const TextStyle(color: Colors.grey),
+          style: TextStyle(color: context.appColors.textSecondary),
         ),
       );
     }
@@ -208,14 +209,14 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
             isScrollable: true,
             indicator: BoxDecoration(
               border: Border(
-                bottom: BorderSide(
-                  color: Colors.blue,
+                  bottom: BorderSide(
+                  color: context.appColors.buttonPrimaryBg,
                   width: 2,
                 ),
               ),
             ),
-            labelColor: Colors.blue,
-            unselectedLabelColor: Colors.grey,
+            labelColor: context.appColors.buttonPrimaryBg,
+            unselectedLabelColor: context.appColors.textSecondary,
             tabs: [
               Tab(
                 child: Text(
@@ -256,7 +257,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       onTap: () => _handleEmojiTap(emoji),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.transparent,
+          color: context.appColors.overlay.withValues(alpha: 0.0),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -279,7 +280,7 @@ Future<void> showFullEmojiPicker({
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: context.appColors.overlay.withValues(alpha: 0.0),
     builder: (context) {
       return FullEmojiPickerSheet(
         onEmojiSelected: onEmojiSelected,

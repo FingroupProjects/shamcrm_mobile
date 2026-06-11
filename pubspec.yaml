@@ -58,6 +58,9 @@ dependencies:
   vibration: ^2.0.1
   device_info_plus: ^11.1.1
   image_picker: ^1.2.0
+  flutter_image_compress: ^2.4.0
+  photo_manager: ^3.7.1
+  video_thumbnail: ^0.5.6
   app_tracking_transparency: ^2.0.6+1
   url_launcher: ^6.3.1
   flutter_localization: ^0.3.1

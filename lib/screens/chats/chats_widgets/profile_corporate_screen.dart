@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/add_user_to_group.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/delete_from_group_dialog.dart';
@@ -141,7 +142,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
 
     if (isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: Text(
@@ -150,12 +151,12 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
               maxLines: 1,
                         overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           leading: IconButton(
             icon: Image.asset('assets/icons/arrow-left.png',
                 width: 24, height: 24),
@@ -166,18 +167,18 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           centerTitle: false,
         ),
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+          child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg),
         ),
       );
     }
 
     if (isSupportChat) {
       return Scaffold(
-        backgroundColor: Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundSecondary,
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: null, // Убираем заголовок для support
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           leading: IconButton(
             icon: Image.asset('assets/icons/arrow-left.png',
                 width: 24, height: 24),
@@ -203,7 +204,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   fontSize: 24,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
                   maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -218,7 +219,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     String ownerId = memberDetails.isNotEmpty ? memberDetails[0]['id']! : '';
 
     return Scaffold(
-      backgroundColor: Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: Text(
@@ -227,10 +228,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         leading: IconButton(
           icon:
               Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
@@ -251,7 +252,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               //   border: Border.all(color: Colors.black, width: 6),
               // ),
               child: CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: context.appColors.surfacePrimary,
                 backgroundImage: isGroupChat
                     ? AssetImage('assets/images/GroupChat.png')
                     : AssetImage('assets/images/AvatarChat.png'),
@@ -266,14 +267,14 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: context.appColors.textInverse,
                       ),
                     ),
-                    backgroundColor: Colors.green,
+                    backgroundColor: context.appColors.success,
                     behavior: SnackBarBehavior.floating,
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -295,7 +296,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
-                color: Colors.grey,
+                color: context.appColors.textSecondary,
               ),
             ),
             SizedBox(height: 10),
@@ -330,7 +331,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xff1E2E52),
+                            backgroundColor: context.appColors.buttonPrimaryBg,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -341,7 +342,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
-                              color: Colors.white,
+                              color: context.appColors.textInverse,
                             ),
                               maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -408,11 +409,11 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 18),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: context.appColors.shadow.withValues(alpha: 0.1),
                                 blurRadius: 0,
                                 spreadRadius: 0,
                               ),
@@ -421,7 +422,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: Colors.white,
+                                backgroundColor: context.appColors.surfacePrimary,
                                 child: isDeletedAccount
                                     ? Image.asset(
                                         'assets/images/delete_user.png',
@@ -434,7 +435,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                  color: Colors.black,
+                                                  color: context.appColors.textPrimary,
                                                   width: 4),
                                             ),
                                             child: Image.asset(
@@ -493,14 +494,14 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                       SnackBar(
                                         content: Text(
                                           AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontFamily: 'Gilroy',
                                             fontSize: 15,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white,
+                                            color: context.appColors.textInverse,
                                           ),
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: context.appColors.success,
                                         behavior: SnackBarBehavior.floating,
                                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -514,7 +515,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
-                                      color: Colors.black,
+                                      color: context.appColors.textPrimary,
                                     ),
                                       maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -529,7 +530,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                     maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -542,7 +543,7 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                 )
                               else if (!isDeletedAccount)

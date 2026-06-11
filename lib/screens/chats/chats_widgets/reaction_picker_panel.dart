@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:crm_task_manager/data/emoji_data.dart';
@@ -101,8 +102,9 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
                     sigmaY: 2 * _opacityAnimation.value,
                   ),
                   child: Container(
-                    color:
-                        Colors.black.withOpacity(0.1 * _opacityAnimation.value),
+                    color: context.appColors.overlay.withValues(
+                      alpha: 0.08 * _opacityAnimation.value,
+                    ),
                   ),
                 );
               },
@@ -130,15 +132,15 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
               );
             },
             child: Material(
-              color: Colors.transparent,
+              color: context.appColors.overlay.withValues(alpha: 0.0),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(25),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
+                      color: context.appColors.shadow.withValues(alpha: 0.15),
                       blurRadius: 20,
                       spreadRadius: 2,
                       offset: const Offset(0, 4),
@@ -185,7 +187,7 @@ class _ReactionPickerPanelState extends State<ReactionPickerPanel>
           margin: const EdgeInsets.symmetric(horizontal: 2),
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.transparent,
+            color: context.appColors.overlay.withValues(alpha: 0.0),
             borderRadius: BorderRadius.circular(15),
           ),
           child: HoverEffect(
@@ -263,7 +265,7 @@ Future<void> showReactionPicker({
 }) {
   return showDialog(
     context: context,
-    barrierColor: Colors.transparent,
+    barrierColor: context.appColors.overlay.withValues(alpha: 0.0),
     barrierDismissible: true,
     builder: (context) {
       return ReactionPickerPanel(

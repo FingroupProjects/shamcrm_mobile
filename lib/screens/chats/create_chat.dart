@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -13,7 +14,6 @@ import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/multi_user_list.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/one_user_list_.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/scheduler.dart';
@@ -37,15 +37,13 @@ class _AddClientDialogState extends State<AddClientDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       title: Center(
         child: Text(
           AppLocalizations.of(context)!.translate('create_chat'),
-          style: TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.titleMd.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.primaryBlue,
+            color: context.appColors.buttonPrimaryBg,
           ),
         ),
       ),
@@ -63,11 +61,9 @@ class _AddClientDialogState extends State<AddClientDialog> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('create_chat_group'),
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Gilroy',
-                      color: AppColors.primaryBlue,
+                      color: context.appColors.buttonPrimaryBg,
                     ),
                   ),
                   Switch(
@@ -79,10 +75,10 @@ class _AddClientDialogState extends State<AddClientDialog> {
                         selectedUsersError = null;
                       });
                     },
-                    activeColor: Colors.white,
-                    activeTrackColor: AppColors.primaryBlue,
-                    inactiveThumbColor: Colors.black,
-                    inactiveTrackColor: Colors.white,
+                    activeThumbColor: context.appColors.textInverse,
+                    activeTrackColor: context.appColors.buttonPrimaryBg,
+                    inactiveThumbColor: context.appColors.iconSecondary,
+                    inactiveTrackColor: context.appColors.surfacePrimary,
                   )
                 ],
               ),
@@ -158,8 +154,8 @@ class _AddClientDialogState extends State<AddClientDialog> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+                buttonColor: context.appColors.buttonDangerBg,
+                textColor: context.appColors.buttonDangerFg,
               ),
             ),
             const SizedBox(width: 8),
@@ -173,11 +169,9 @@ class _AddClientDialogState extends State<AddClientDialog> {
                                 SnackBar(
                                   content: Text(
                                     AppLocalizations.of(context)!.translate('group_chat_created_successfully'),
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
+                                    style: context.appTextStyles.bodyMd.copyWith(
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -186,7 +180,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: context.appColors.success,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -201,7 +195,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                           if (state is GroupChatLoading) {
                             return Center(
                                 child: CircularProgressIndicator(
-                                    color: Color(0xff1E2E52)));
+                                    color: context.appColors.buttonPrimaryBg));
                           }
                           return _buildCreateButton(context);
                         },
@@ -241,7 +235,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
                           if (state is CreateClientLoading) {
                             return Center(
                                 child: CircularProgressIndicator(
-                                    color: Color(0xff1E2E52)));
+                                    color: context.appColors.buttonPrimaryBg));
                           }
                           return _buildCreateButton(context);
                         },
@@ -276,7 +270,7 @@ class _AddClientDialogState extends State<AddClientDialog> {
             context.read<GroupChatBloc>().add(
                   CreateGroupChat(
                     name: groupNameController.text,
-                    userId: selectedUsers.map((user) => user.id!).toList(),
+                    userId: selectedUsers.map((user) => user.id).toList(),
                     localizations: localizations,
                   ),
                 );
@@ -294,8 +288,8 @@ class _AddClientDialogState extends State<AddClientDialog> {
         }
       });
     },
-    buttonColor: AppColors.primaryBlue,
-    textColor: Colors.white,
+    buttonColor: context.appColors.buttonPrimaryBg,
+    textColor: context.appColors.buttonPrimaryFg,
   );
 }
 }

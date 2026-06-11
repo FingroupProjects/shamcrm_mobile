@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -44,12 +45,12 @@ class MessageReactionWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: reaction.isMyReaction
-              ? Colors.blue.withOpacity(0.15)
-              : Colors.grey.withOpacity(0.1),
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.15)
+              : context.appColors.backgroundSecondary,
           border: Border.all(
             color: reaction.isMyReaction
-                ? Colors.blue.withOpacity(0.4)
-                : Colors.grey.withOpacity(0.25),
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.4)
+                : context.appColors.borderSubtle,
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(16),
@@ -71,8 +72,8 @@ class MessageReactionWidget extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: reaction.isMyReaction
-                      ? Colors.blue.shade700
-                      : Colors.grey.shade700,
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.textSecondary,
                   fontFamily: 'Gilroy',
                 ),
               ),
@@ -90,7 +91,7 @@ class MessageReactionWidget extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -127,7 +128,7 @@ class MessageReactionWidget extends StatelessWidget {
               const SizedBox(height: 8),
               // Список пользователей
               ...reaction.users
-                  .map((user) => _buildUserListItem(user))
+                  .map((user) => _buildUserListItem(user, context))
                   .toList(),
               const SizedBox(height: 16),
             ],
@@ -137,7 +138,7 @@ class MessageReactionWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildUserListItem(ReactionUser user) {
+  Widget _buildUserListItem(ReactionUser user, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -148,12 +149,12 @@ class MessageReactionWidget extends StatelessWidget {
             backgroundImage: user.image != null && user.image!.isNotEmpty
                 ? NetworkImage(user.image!)
                 : null,
-            backgroundColor: Colors.blue.shade100,
+            backgroundColor: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
             child: user.image == null || user.image!.isEmpty
                 ? Text(
                     user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                     style: TextStyle(
-                      color: Colors.blue.shade700,
+                      color: context.appColors.buttonPrimaryBg,
                       fontWeight: FontWeight.w600,
                     ),
                   )

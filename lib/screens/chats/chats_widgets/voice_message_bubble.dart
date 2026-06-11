@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_message_package/voice_message_package.dart';
@@ -100,8 +101,8 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: widget.message.isMyMessage
-                    ? Colors.grey.shade600
-                    : Colors.black87,
+                    ? context.appColors.textSecondary
+                    : context.appColors.textPrimary,
               ),
             ),
           VoiceMessageView(
@@ -110,15 +111,15 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                 ? ChatSmsStyles.messageBubbleSenderColor
                 : ChatSmsStyles.messageBubbleReceiverColor,
             activeSliderColor: widget.message.isMyMessage
-                ? Colors.white
+                ? context.appColors.surfacePrimary
                 : ChatSmsStyles.messageBubbleSenderColor,
             circlesColor: widget.message.isMyMessage
-                ? Colors.white.withOpacity(.2)
+                ? context.appColors.surfacePrimary.withValues(alpha: 0.2)
                 : ChatSmsStyles.messageBubbleSenderColor,
             controller: _audioController,
             counterTextStyle: TextStyle(
               color: widget.message.isMyMessage
-                  ? Colors.white
+                  ? context.appColors.surfacePrimary
                   : ChatSmsStyles.messageBubbleSenderColor,
             ),
           ),
@@ -158,8 +159,8 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                   widget.message.isRead ? Icons.done_all : Icons.done_all,
                   size: 18,
                   color: widget.message.isRead
-                      ? const Color.fromARGB(255, 45, 28, 235)
-                      : Colors.grey.shade400,
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.textSecondary.withValues(alpha: 0.45),
                 ),
             ],
           ),

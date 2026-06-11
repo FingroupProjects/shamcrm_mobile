@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class PickedLocation {
@@ -288,19 +289,19 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xff0F1B2A),
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xff1E2E52),
-        foregroundColor: Colors.white,
+        backgroundColor: context.appColors.buttonPrimaryBg,
+        foregroundColor: context.appColors.textInverse,
         title: _isSearchOpen
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.appColors.textInverse),
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: localizations.translate('search_place'),
-                  hintStyle: const TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(color: context.appColors.textInverse.withValues(alpha: 0.7)),
                 ),
                 onChanged: _searchPlaces,
               )
@@ -368,9 +369,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               width: 48,
                               height: 48,
                               point: _selectedPoint,
-                              child: const Icon(
+                              child: Icon(
                                 Icons.location_pin,
-                                color: Color(0xffEA4335),
+                                color: context.appColors.error,
                                 size: 46,
                               ),
                             ),
@@ -413,7 +414,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               right: 12,
               top: 8,
               child: Material(
-                color: const Color(0xff1E2E52),
+                color: context.appColors.buttonPrimaryBg,
                 borderRadius: BorderRadius.circular(14),
                 elevation: 8,
                 child: _isSearching
@@ -427,28 +428,28 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         itemBuilder: (context, index) {
                           final place = _places[index];
                           return ListTile(
-                            leading: const CircleAvatar(
-                              backgroundColor: Color(0xff4C9BFF),
+                            leading: CircleAvatar(
+                              backgroundColor: context.appColors.buttonPrimaryBg,
                               child: Icon(
                                 Icons.place_outlined,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
                             title: Text(
                               place.title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.appColors.textInverse,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             onTap: () => _selectPoint(place.point!),
                           );
                         },
-                        separatorBuilder: (_, __) => const Divider(
+                        separatorBuilder: (_, __) => Divider(
                           height: 1,
-                          color: Colors.white12,
+                          color: context.appColors.textInverse.withValues(alpha: 0.12),
                         ),
                         itemCount: _places.length,
                       ),
@@ -484,7 +485,7 @@ class _BottomLocationPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      color: const Color(0xff0F1B2A),
+      color: context.appColors.backgroundPrimary,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
       child: SafeArea(
         top: false,
@@ -493,19 +494,19 @@ class _BottomLocationPanel extends StatelessWidget {
           children: [
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(
+              leading: CircleAvatar(
                 radius: 28,
-                backgroundColor: Color(0xff57A8FF),
+                backgroundColor: context.appColors.buttonPrimaryBg,
                 child: Icon(
                   Icons.location_on_rounded,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                   size: 30,
                 ),
               ),
               title: Text(
                 localizations.translate('send_selected_geoposition'),
-                style: const TextStyle(
-                  color: Color(0xff9BC8FF),
+                style: TextStyle(
+                  color: context.appColors.textSecondary,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
@@ -514,7 +515,9 @@ class _BottomLocationPanel extends StatelessWidget {
               subtitle: Text(
                 error ?? accuracyText,
                 style: TextStyle(
-                  color: error == null ? Colors.white54 : Colors.redAccent,
+                  color: error == null
+                      ? context.appColors.textInverse.withValues(alpha: 0.54)
+                      : context.appColors.error,
                   fontFamily: 'Gilroy',
                 ),
               ),
@@ -569,7 +572,7 @@ class _MapTypeMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<_LocationMapType>(
-      color: const Color(0xff1E2E52),
+      color: context.appColors.buttonPrimaryBg,
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       initialValue: selectedType,
@@ -580,12 +583,12 @@ class _MapTypeMenuButton extends StatelessWidget {
               value: type,
               child: Row(
                 children: [
-                  Icon(type.icon, color: Colors.white, size: 24),
+                  Icon(type.icon, color: context.appColors.textInverse, size: 24),
                   const SizedBox(width: 16),
                   Text(
                     AppLocalizations.of(context)!.translate(type.label),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.appColors.textInverse,
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                     ),
@@ -595,8 +598,8 @@ class _MapTypeMenuButton extends StatelessWidget {
             ),
           )
           .toList(),
-      child: const Material(
-        color: Color(0xff1E2E52),
+      child: Material(
+        color: context.appColors.buttonPrimaryBg,
         shape: CircleBorder(),
         elevation: 5,
         child: _RoundMapButtonBody(icon: Icons.layers_rounded),
@@ -617,7 +620,7 @@ class _RoundMapButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xff1E2E52),
+      color: context.appColors.buttonPrimaryBg,
       shape: const CircleBorder(),
       elevation: 5,
       child: InkWell(
@@ -638,7 +641,7 @@ class _RoundMapButtonBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Icon(icon, color: Colors.white, size: 24),
+      child: Icon(icon, color: context.appColors.textInverse, size: 24),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
@@ -8,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart' as dom;
-import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // Регулярное выражение для поиска URL в тексте
@@ -83,7 +83,7 @@ class MessageBubble extends StatelessWidget {
         boxShadow: isHighlighted
             ? [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: context.appColors.shadow.withValues(alpha: 0.18),
                   blurRadius: 5,
                   spreadRadius: 2,
                   offset: Offset(0, -4),
@@ -110,7 +110,7 @@ class MessageBubble extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color:
-                        isSender ? Colors.grey.shade600 : AppColors.primaryBlue,
+                        isSender ? context.appColors.textSecondary : context.appColors.textPrimary,
                   ),
                 ),
               Container(
@@ -125,7 +125,7 @@ class MessageBubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                    color: context.appColors.shadow.withValues(alpha: 0.1),
                       offset: Offset(0, 4),
                       blurRadius: 6,
                     ),
@@ -151,7 +151,9 @@ class MessageBubble extends StatelessWidget {
                           AppLocalizations.of(context)!.translate('edited_sms'),
                           style: TextStyle(
                             fontSize: 10,
-                            color: isSender ? Colors.white70 : Colors.black54,
+                            color: isSender
+                                ? context.appColors.textInverse.withValues(alpha: 0.7)
+                                : context.appColors.textSecondary,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -189,8 +191,8 @@ class MessageBubble extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: isSender
-                                      ? Colors.white70
-                                      : Colors.black54,
+                                  ? context.appColors.textInverse.withValues(alpha: 0.7)
+                                      : context.appColors.textSecondary,
                                   fontWeight: FontWeight.w400,
                                   fontFamily: 'Gilroy',
                                 ),
@@ -200,7 +202,9 @@ class MessageBubble extends StatelessWidget {
                                 Icon(
                                   isRead ? Icons.done_all : Icons.done_all,
                                   size: 16,
-                                  color: isRead ? Colors.white : Colors.white70,
+                                  color: isRead
+                                      ? context.appColors.textInverse
+                                      : context.appColors.textInverse.withValues(alpha: 0.7),
                                 ),
                             ],
                           ),
@@ -221,11 +225,11 @@ class MessageBubble extends StatelessWidget {
     final isTapEnabled = isTargetReferralReplyPreview
         ? onTargetReferralTap != null
         : replyMessageId != null && onReplyTap != null;
-    final Color accentColor = isSender ? Colors.white : AppColors.primaryBlue;
+    final Color accentColor = isSender ? context.appColors.textInverse : context.appColors.textPrimary;
     final Color panelBackground =
-        isSender ? const Color(0x26FFFFFF) : const Color(0xFFF1F5FF);
-    final Color titleColor = isSender ? Colors.white : AppColors.primaryBlue;
-    final Color bodyColor = isSender ? Colors.white70 : Colors.black87;
+        isSender ? context.appColors.textInverse.withValues(alpha: 0.15) : context.appColors.backgroundSecondary;
+    final Color titleColor = isSender ? context.appColors.textInverse : context.appColors.textPrimary;
+    final Color bodyColor = isSender ? context.appColors.textInverse.withValues(alpha: 0.7) : context.appColors.textSecondary;
     final int maxPreviewLines = isTargetReferralReplyPreview ? 40 : 2;
     final authorLabel = (replyAuthorName ?? '').trim().isNotEmpty
         ? replyAuthorName!.trim()
@@ -249,7 +253,9 @@ class MessageBubble extends StatelessWidget {
           color: panelBackground,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSender ? const Color(0x33FFFFFF) : const Color(0x22000000),
+            color: isSender
+                ? context.appColors.textInverse.withValues(alpha: 0.2)
+                : context.appColors.shadow.withValues(alpha: 0.14),
             width: 0.8,
           ),
         ),
@@ -343,7 +349,7 @@ class MessageBubble extends StatelessWidget {
         TextSpan(
           text: displayUrl,
           style: baseStyle.copyWith(
-            color: isSender ? Colors.white : Colors.blue,
+            color: isSender ? context.appColors.textInverse : context.appColors.buttonPrimaryBg,
             decoration: TextDecoration.underline,
           ),
           recognizer: TapGestureRecognizer()
@@ -376,7 +382,7 @@ class MessageBubble extends StatelessWidget {
 
     showMenu(
       context: context,
-      color: Colors.white,
+      color: context.appColors.textInverse,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
       ),
@@ -390,8 +396,8 @@ class MessageBubble extends StatelessWidget {
         _buildMenuItem(
           icon: 'assets/icons/chats/menu_icons/open.svg',
           text: AppLocalizations.of(context)!.translate('open_url_source'),
-          iconColor: Colors.black,
-          textColor: Colors.black,
+          iconColor: context.appColors.textPrimary,
+          textColor: context.appColors.textPrimary,
           onTap: () async {
             Navigator.pop(context);
             launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -400,8 +406,8 @@ class MessageBubble extends StatelessWidget {
         _buildMenuItem(
           icon: 'assets/icons/chats/menu_icons/copy.svg',
           text: AppLocalizations.of(context)!.translate('copy'),
-          iconColor: Colors.black,
-          textColor: Colors.black,
+          iconColor: context.appColors.textPrimary,
+          textColor: context.appColors.textPrimary,
           onTap: () {
             Navigator.pop(context);
             Clipboard.setData(ClipboardData(text: url));
@@ -414,7 +420,7 @@ class MessageBubble extends StatelessWidget {
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -422,7 +428,7 @@ class MessageBubble extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: context.appColors.success,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: Duration(seconds: 3),
@@ -445,7 +451,7 @@ class MessageBubble extends StatelessWidget {
 
     // Определяем базовый стиль текста в зависимости от isNote
     final baseStyle = isNote
-        ? ChatSmsStyles.messageTextStyle.copyWith(color: Colors.black)
+        ? ChatSmsStyles.messageTextStyle.copyWith(color: context.appColors.textPrimary)
         : isSender
             ? ChatSmsStyles.senderMessageTextStyle
             : ChatSmsStyles.receiverMessageTextStyle;
@@ -521,7 +527,7 @@ class MessageBubble extends StatelessWidget {
               TextSpan(
                 text: linkText,
                 style: newStyle.copyWith(
-                  color: isSender ? Colors.white : Colors.blue,
+                  color: isSender ? context.appColors.textInverse : context.appColors.buttonPrimaryBg,
                   decoration: TextDecoration.underline,
                 ),
                 recognizer: TapGestureRecognizer()

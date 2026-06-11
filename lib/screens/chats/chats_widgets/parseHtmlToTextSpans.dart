@@ -1,8 +1,13 @@
 import 'package:flutter/gestures.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-List<TextSpan> parseHtmlToTextSpans(String html, TextStyle baseStyle) {
+List<TextSpan> parseHtmlToTextSpans(
+  BuildContext context,
+  String html,
+  TextStyle baseStyle,
+) {
   // Регулярное выражение для поиска тегов
   final RegExp htmlRegExp = RegExp(
     r'<(b|i|s|a href="([^"]*)")(.*?)>(.*?)</\1>',
@@ -48,7 +53,7 @@ List<TextSpan> parseHtmlToTextSpans(String html, TextStyle baseStyle) {
       spans.add(TextSpan(
         text: content,
         style: baseStyle.copyWith(
-          color: Colors.blue,
+          color: context.appColors.buttonPrimaryBg,
           decoration: TextDecoration.underline,
         ),
         recognizer: TapGestureRecognizer()

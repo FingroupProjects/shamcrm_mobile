@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
@@ -71,7 +72,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -80,7 +81,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                 child: Text(
                   dialogTitle,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -98,7 +99,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                       title: Text(
                         '${index + 1}. ${userNamesList[index]}',
                         style: TextStyle(
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                           fontSize: 16,
                         ),
                       ),
@@ -113,8 +114,8 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -138,7 +139,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
       fontSize: 16,
       fontWeight: FontWeight.w600,
       fontFamily: 'Gilroy',
-      color: Color(0xff1E2E52),
+      color: context.appColors.textPrimary,
       decoration: TextDecoration.underline,
     );
 
@@ -146,7 +147,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
       fontSize: 16,
       fontWeight: FontWeight.w600,
       fontFamily: 'Gilroy',
-      color: Color(0xff1E2E52),
+      color: context.appColors.textPrimary,
     );
 
     if (title == AppLocalizations.of(context)!.translate('task_name_profile')) {
@@ -157,14 +158,14 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                           SnackBar(
                             content: Text(
                               AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: context.appColors.success,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -204,14 +205,14 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                           SnackBar(
                             content: Text(
                               AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: context.appColors.success,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -228,7 +229,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
       children: [
         customIconPath != null
             ? Image.asset(customIconPath, width: 32, height: 32)
-            : Icon(icon, size: 32, color: const Color(0xff1E2E52)),
+            : Icon(icon, size: 32, color: context.appColors.buttonPrimaryBg),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -236,11 +237,11 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
+                  color: context.appColors.textSecondary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -258,7 +259,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(Icons.assignment, size: 32, color: const Color(0xff1E2E52)),
+        Icon(Icons.assignment, size: 32, color: context.appColors.buttonPrimaryBg),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -266,11 +267,11 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('status_lead_profile'),
-                style: const TextStyle(
+                      style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
+                  color: context.appColors.textSecondary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -282,14 +283,14 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                     SnackBar(
                       content: Text(
                         AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                        style: const TextStyle(
+                style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: context.appColors.textInverse,
                         ),
                       ),
-                      backgroundColor: Colors.green,
+                      backgroundColor: context.appColors.success,
                       behavior: SnackBarBehavior.floating,
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -299,11 +300,11 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                 },
                 child: Text(
                   task.taskStatus.taskStatus?.name ?? "no_comment",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
@@ -315,7 +316,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
           IconButton(
             icon: Icon(
               Icons.edit,
-              color: Color(0xff1E2E52),
+              color: context.appColors.buttonPrimaryBg,
               size: 24,
             ),
             onPressed: () {
@@ -341,8 +342,8 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
   }
 
   Widget buildDivider() {
-    return const Divider(
-      color: Color(0xffE1E6F0),
+    return Divider(
+      color: context.appColors.borderSubtle,
       thickness: 1,
       height: 24,
     );
@@ -354,7 +355,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
       create: (context) =>
           TaskProfileBloc(ApiService())..add(FetchTaskProfile(widget.chatId)),
       child: Scaffold(
-        backgroundColor: const Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundSecondary,
         appBar: AppBar(
           title: Text(
             AppLocalizations.of(context)!.translate('about_task'),
@@ -362,10 +363,10 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           forceMaterialTransparency: true,
           leading: IconButton(
             icon: Image.asset(
@@ -383,7 +384,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
           builder: (context, state) {
             if (state is TaskProfileLoading) {
               return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                  child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg));
             } else if (state is TaskProfileLoaded) {
               final task = state.profile;
 
@@ -422,7 +423,7 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.appColors.textInverse,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       padding: const EdgeInsets.symmetric(
@@ -515,11 +516,11 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
               return Center(
                 child: Text(
                   _getTaskErrorMessage(state.error),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               );

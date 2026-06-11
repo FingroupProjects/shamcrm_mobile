@@ -9402,6 +9402,61 @@ class ApiService {
     }
   }
 
+  Future<void> sendChatFiles(
+    int chatId,
+    List<String> filePaths, {
+    String? responseType,
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    if (filePaths.isEmpty) return;
+
+    if (filePaths.length == 1) {
+      await sendChatFile(
+        chatId,
+        filePaths.first,
+        responseType: responseType,
+      );
+      return;
+    }
+
+    final token = await getToken();
+    final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
+    final requestUrl = '$baseUrl$path';
+
+    final dio = LoggedDioClient.create();
+
+    try {
+      final formMap = <String, dynamic>{
+        if (responseType != null) 'response_type': responseType,
+      };
+
+      formMap['files[]'] = [
+        for (final pathFile in filePaths)
+          await MultipartFile.fromFile(pathFile),
+      ];
+
+      final response = await dio.post(
+        requestUrl,
+        data: FormData.fromMap(formMap),
+        onSendProgress: onSendProgress,
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json",
+            'Device': 'mobile'
+          },
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Error sending media batch: ${response.data}');
+      }
+    } catch (e) {
+      throw Exception('Failed to send media batch due to an exception!');
+    }
+  }
+
 // Метод для отправки файла
   Future<void> sendFile(int chatId, String filePath) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

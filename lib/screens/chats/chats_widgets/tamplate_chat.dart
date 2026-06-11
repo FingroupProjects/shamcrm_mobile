@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_state.dart' show TemplateState, TemplateLoading, TemplateLoaded, TemplateError;
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -19,7 +20,7 @@ class TemplateSuggestions extends StatelessWidget {
     return BlocBuilder<TemplateBloc, TemplateState>(
       builder: (context, state) {
         if (state is TemplateLoading) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg));
         } else if (state is TemplateLoaded) {
           final templates = state.filteredTemplates.isNotEmpty
               ? state.filteredTemplates
@@ -29,7 +30,7 @@ class TemplateSuggestions extends StatelessWidget {
             constraints: BoxConstraints(maxHeight: 200),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.appColors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: templates.isEmpty
@@ -41,7 +42,7 @@ class TemplateSuggestions extends StatelessWidget {
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   )
@@ -59,7 +60,7 @@ class TemplateSuggestions extends StatelessWidget {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                color: context.appColors.textPrimary,
                               ),
                             ),
                             subtitle: Text(
@@ -70,7 +71,7 @@ class TemplateSuggestions extends StatelessWidget {
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
+                                color: context.appColors.textSecondary,
                               ),
                             ),
                             onTap: () {
@@ -78,7 +79,7 @@ class TemplateSuggestions extends StatelessWidget {
                             },
                           ),
                           if (index < templates.length - 1)
-                            Divider(thickness: 0.5, height: 0.5, color: Colors.grey),
+                            Divider(thickness: 0.5, height: 0.5, color: context.appColors.borderSubtle),
                         ],
                       );
                     },
@@ -93,7 +94,7 @@ class TemplateSuggestions extends StatelessWidget {
                 fontSize: 14,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Colors.red,
+                color: context.appColors.error,
               ),
             ),
           );

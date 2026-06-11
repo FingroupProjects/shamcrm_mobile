@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
@@ -23,7 +24,7 @@ class ImageMessageBubble extends StatefulWidget {
   final Function(String)? onReactionTap;
 
   const ImageMessageBubble({
-    Key? key,
+    super.key,
     required this.time,
     required this.isSender,
     required this.senderName,
@@ -38,7 +39,7 @@ class ImageMessageBubble extends StatefulWidget {
     this.isMenuOpen = false,
     this.reactions = const [],
     this.onReactionTap,
-  }) : super(key: key);
+  });
 
   @override
   State<ImageMessageBubble> createState() => _ImageMessageBubbleState();
@@ -58,10 +59,12 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
   Future<void> _initializeBaseUrl() async {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      if (!mounted) return;
       setState(() {
         baseUrl = staticBaseUrl;
       });
     } catch (error) {
+      if (!mounted) return;
       setState(() {
         baseUrl =
             'https://info1fingrouptj-back.shamcrm.com'; // Обновляем fallback URL
@@ -91,7 +94,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: context.appColors.shadow.withValues(alpha: 0.18),
                   blurRadius: 5,
                   spreadRadius: 2,
                   offset: Offset(0, -4),
@@ -119,8 +122,9 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                 widget.senderName,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color:
-                      widget.isSender ? Colors.grey.shade600 : Colors.black87,
+                  color: widget.isSender
+                      ? context.appColors.textSecondary
+                      : context.appColors.textPrimary,
                 ),
               ),
             GestureDetector(
@@ -149,11 +153,13 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     decoration: BoxDecoration(
-                      border: Border.all(width: 1, color: Colors.black26),
+                      border: Border.all(
+                          width: 1, color: context.appColors.borderSubtle),
                       borderRadius: const BorderRadius.all(Radius.circular(12)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color:
+                              context.appColors.shadow.withValues(alpha: 0.1),
                           offset: Offset(0, 4),
                           blurRadius: 6,
                         ),
@@ -182,7 +188,9 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                                   width: 200,
                                   height: 200,
                                   onRetry: () {
-                                    if (_lastFailedUrl == null) return;
+                                    if (!mounted || _lastFailedUrl == null) {
+                                      return;
+                                    }
                                     setState(() {});
                                   },
                                 );
@@ -191,7 +199,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                           : Container(
                               width: 200,
                               height: 200,
-                              color: Colors.grey,
+                              color: context.appColors.backgroundSecondary,
                               child: Center(
                                 child: Text(AppLocalizations.of(context)!
                                     .translate('loading')),
@@ -241,7 +249,8 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                           size: 18,
                           color: widget.isRead
                               ? const Color.fromARGB(255, 45, 28, 235)
-                              : Colors.grey.shade400,
+                              : context.appColors.textSecondary
+                                  .withValues(alpha: 0.5),
                         ),
                     ],
                   ),
@@ -305,9 +314,9 @@ class _ImageLoadingPlaceholderState extends State<_ImageLoadingPlaceholder>
                 begin: Alignment(_animation.value, 0),
                 end: Alignment(_animation.value + 1, 0),
                 colors: [
-                  Colors.grey.shade300,
-                  Colors.grey.shade200,
-                  Colors.grey.shade300,
+                  context.appColors.backgroundSecondary,
+                  context.appColors.backgroundSecondary.withValues(alpha: 0.85),
+                  context.appColors.backgroundSecondary,
                 ],
               ),
             ),
@@ -317,7 +326,7 @@ class _ImageLoadingPlaceholderState extends State<_ImageLoadingPlaceholder>
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.grey.shade600,
+                  color: context.appColors.textSecondary,
                 ),
               ),
             ),
@@ -347,16 +356,17 @@ class _ImageErrorPlaceholder extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
-        color: Colors.grey.shade300,
+        color: context.appColors.backgroundSecondary,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.refresh, color: Colors.grey.shade700),
+              Icon(Icons.refresh, color: context.appColors.textSecondary),
               const SizedBox(height: 6),
               Text(
                 AppLocalizations.of(context)!.translate('loading'),
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                style: TextStyle(
+                    color: context.appColors.textSecondary, fontSize: 12),
               ),
             ],
           ),

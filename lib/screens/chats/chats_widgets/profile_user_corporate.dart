@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
@@ -95,7 +96,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     return null;
   }
 
-  Widget buildProfileImage() {
+  Widget buildProfileImage(BuildContext context) {
     if (image.isEmpty || image == 'assets/images/AvatarChat.png') {
       return Image.asset(
         'assets/images/AvatarChat.png',
@@ -135,7 +136,7 @@ class ParticipantProfileScreen extends StatelessWidget {
               color: backgroundColor,
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white,
+                color: context.appColors.borderSubtle,
                 width: 1,
               ),
             ),
@@ -143,7 +144,7 @@ class ParticipantProfileScreen extends StatelessWidget {
               child: Text(
                 text,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                   fontSize: 60,
                   fontWeight: FontWeight.w500,
                 ),
@@ -188,18 +189,18 @@ class ParticipantProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.translate('user_profile'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundSecondary,
         leading: IconButton(
           icon:
               Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
@@ -213,17 +214,11 @@ class ParticipantProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Center(
-                child: Container(
-                  child: ClipOval(
-                    child: buildProfileImage(),
-                  ),
-                ),
-              ),
+              Center(child: ClipOval(child: buildProfileImage(context))),
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding:
@@ -236,25 +231,25 @@ class ParticipantProfileScreen extends StatelessWidget {
                         name,
                         
                         Icons.person),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
                         context,
                         AppLocalizations.of(context)!.translate('Email'),
                         email,
                         Icons.email),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
                         context,
                         AppLocalizations.of(context)!.translate('number_phone'),
                         "$phone",
                         Icons.phone),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
                         context,
                         AppLocalizations.of(context)!.translate('login'),
                         login,
                         Icons.account_circle),
-                    buildDivider(),
+                    buildDivider(context),
                     buildInfoRow(
                         context,
                         AppLocalizations.of(context)!.translate('last_login'),
@@ -302,7 +297,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                               fontFamily: 'Gilroy',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: context.appColors.textInverse,
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
@@ -311,7 +306,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.appColors.error,
                           elevation: 3,
                           padding: EdgeInsets.symmetric(
                               vertical: 12, horizontal: 16),
@@ -325,8 +320,9 @@ class ParticipantProfileScreen extends StatelessWidget {
                   builder: (context, state) {
                     if (state is CreateClientLoading) {
                       return Center(
-                        child:
-                            CircularProgressIndicator(color: Color(0xff1E2E52)),
+                        child: CircularProgressIndicator(
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
                       );
                     }
                     return buttonChat == true
@@ -337,7 +333,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                                   .add(CreateClientEv(userId: userId));
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff1E2E52),
+                              backgroundColor: context.appColors.buttonPrimaryBg,
                               padding: const EdgeInsets.symmetric(
                                   vertical: 14, horizontal: 30),
                               shape: RoundedRectangleBorder(
@@ -351,7 +347,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 fontFamily: 'Gilroy',
-                                color: Colors.white,
+                                color: context.appColors.buttonPrimaryFg,
                               ),
                             ),
                           )
@@ -370,7 +366,7 @@ class ParticipantProfileScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 32, color: Color(0xff1E2E52)),
+        Icon(icon, size: 32, color: context.appColors.buttonPrimaryBg),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -378,14 +374,14 @@ class ParticipantProfileScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff6E7C97),
+                  color: context.appColors.textSecondary,
                 ),
                   maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.ellipsis,
               ),
               // Проверяем тип поля и делаем его кликабельным если это телефон или email
               title == "Номер телефона" || title == "Email"
@@ -403,14 +399,14 @@ class ParticipantProfileScreen extends StatelessWidget {
                           SnackBar(
                             content: Text(
                               AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: context.appColors.success,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -420,11 +416,11 @@ class ParticipantProfileScreen extends StatelessWidget {
                       },
                       child: Text(
                         value,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                           decoration: TextDecoration.underline,
                         ),
                         maxLines: 1,
@@ -438,14 +434,14 @@ class ParticipantProfileScreen extends StatelessWidget {
                           SnackBar(
                             content: Text(
                               AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: context.appColors.success,
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -455,14 +451,14 @@ class ParticipantProfileScreen extends StatelessWidget {
                       },
                       child: Text(
                         value,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                         ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
             ],
@@ -472,9 +468,9 @@ class ParticipantProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget buildDivider() {
-    return const Divider(
-      color: Color(0xffE1E6F0),
+  Widget buildDivider(BuildContext context) {
+    return Divider(
+      color: context.appColors.borderSubtle,
       thickness: 1,
       height: 24,
     );
