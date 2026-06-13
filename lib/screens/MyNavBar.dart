@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,40 +18,21 @@ class NavBarShimmerSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
     Widget navBarContent = Container(
-      height: _kNavBarHeight,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xffFCFEFF),
-            Color(0xffF1F8FF),
-          ],
-        ),
-        border: Border(
-          top: BorderSide(
-            color: Color(0x99D9ECFF),
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff7FCBFF).withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset : 0),
+      color: Colors.transparent,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: ShimmerWave(
           duration: const Duration(milliseconds: 1650),
-          colors: const [
-            Color(0xffE7F3FF),
-            Color(0xffF7FCFF),
-            Color(0xffCFEFFF),
-            Color(0xffFFFFFF),
-            Color(0xffE7F3FF),
+          colors: [
+            context.appColors.surfacePrimary.withValues(alpha: 0.68),
+            context.appColors.backgroundSecondary.withValues(alpha: 0.9),
+            context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            context.appColors.surfacePrimary.withValues(alpha: 0.96),
+            context.appColors.surfacePrimary.withValues(alpha: 0.68),
           ],
           stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
           child: Row(
@@ -69,26 +51,37 @@ class NavBarShimmerSkeleton extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: index == 0
-                            ? const [
-                                Color(0xffE9F7FF),
-                                Color(0xffD8EEFF),
+                            ? [
+                                context.appColors.buttonPrimaryBg.withValues(
+                                  alpha: 0.9,
+                                ),
+                                context.appColors.buttonPrimaryBg.withValues(
+                                  alpha: 0.68,
+                                ),
                               ]
-                            : const [
-                                Color(0xffF7FBFF),
-                                Color(0xffE6F3FF),
+                            : [
+                                context.appColors.surfacePrimary.withValues(
+                                  alpha: 0.88,
+                                ),
+                                context.appColors.backgroundSecondary
+                                    .withValues(alpha: 0.84),
                               ],
                       ),
                       border: Border.all(
                         color: index == 0
-                            ? const Color(0xffC7E7FF)
-                            : const Color(0xffD7ECFF),
+                            ? context.appColors.buttonPrimaryBg.withValues(
+                                alpha: 0.7,
+                              )
+                            : context.appColors.borderSubtle.withValues(
+                                alpha: 0.78,
+                              ),
                         width: 1,
                       ),
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
                           color:
-                              const Color(0xff89D2FF).withValues(alpha: 0.10),
+                              context.appColors.shadow.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -416,148 +409,146 @@ class _MyNavBarState extends State<MyNavBar> {
       );
     }
 
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
     Widget navBarContent = Container(
-      height: _kNavBarHeight,
-      decoration: BoxDecoration(
-        color: Color(0xffF4F7FD),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: ReorderableListView.builder(
-        scrollController: _scrollController,
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        itemCount: _orderedItems!.length,
-        onReorder: (oldIndex, newIndex) {
-          setState(() {
-            if (newIndex > oldIndex) {
-              newIndex -= 1;
-            }
-            final item = _orderedItems!.removeAt(oldIndex);
-            _orderedItems!.insert(newIndex, item);
+      padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset : 0),
+      color: Colors.transparent,
+      child: SizedBox(
+        height: _kNavBarHeight,
+        child: ReorderableListView.builder(
+          scrollController: _scrollController,
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          itemCount: _orderedItems!.length,
+          onReorder: (oldIndex, newIndex) {
+            setState(() {
+              if (newIndex > oldIndex) {
+                newIndex -= 1;
+              }
+              final item = _orderedItems!.removeAt(oldIndex);
+              _orderedItems!.insert(newIndex, item);
 
-            //print('🔄 Элемент перемещён с позиции $oldIndex на $newIndex');
-            _saveOrder(_orderedItems!);
-            _isReordering = false;
-          });
-        },
-        onReorderStart: (index) {
-          HapticFeedback.mediumImpact();
-          setState(() {
-            _isReordering = true;
-          });
-          //print('🖐️ Начато перемещение элемента на позиции $index');
-        },
-        onReorderEnd: (index) {
-          setState(() {
-            _isReordering = false;
-          });
-          //print('✋ Перемещение завершено');
-        },
-        proxyDecorator: (child, index, animation) {
-          return AnimatedBuilder(
-            animation: animation,
-            builder: (context, child) {
-              final double scale = 1.0 + (animation.value * 0.1);
-              final item = _orderedItems![index];
+              _saveOrder(_orderedItems!);
+              _isReordering = false;
+            });
+          },
+          onReorderStart: (index) {
+            HapticFeedback.mediumImpact();
+            setState(() {
+              _isReordering = true;
+            });
+          },
+          onReorderEnd: (index) {
+            setState(() {
+              _isReordering = false;
+            });
+          },
+          proxyDecorator: (child, index, animation) {
+            return AnimatedBuilder(
+              animation: animation,
+              builder: (context, child) {
+                final double scale = 1.0 + (animation.value * 0.1);
+                final item = _orderedItems![index];
 
-              return Transform.scale(
-                scale: scale,
-                child: Opacity(
-                  opacity: 0.9,
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 4),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color:
-                          item.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
-                      border: Border.all(
-                        color: Color(0xff1E2E52).withOpacity(0.5),
-                        width: item.isActive ? 0 : 0.5,
-                      ),
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0xff1E2E52).withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.drag_indicator,
-                          size: 18,
+                return Transform.scale(
+                  scale: scale,
+                  child: Opacity(
+                    opacity: 0.9,
+                    child: Container(
+                      margin: EdgeInsets.symmetric(horizontal: 4),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: item.isActive
+                            ? context.appColors.buttonPrimaryBg.withValues(
+                                alpha: 0.96,
+                              )
+                            : context.appColors.surfacePrimary.withValues(
+                                alpha: 0.68,
+                              ),
+                        border: Border.all(
                           color: item.isActive
-                              ? Color(0xffF4F7FD)
-                              : Color(0xff1E2E52).withOpacity(0.5),
+                              ? context.appColors.buttonPrimaryBg
+                              : context.appColors.borderSubtle.withValues(
+                                  alpha: 0.8,
+                                ),
+                          width: item.isActive ? 1 : 0.8,
                         ),
-                        SizedBox(width: 6),
-                        Image.asset(
-                          item.isActive ? item.activeIcon : item.inactiveIcon,
-                          width: 22,
-                          height: 22,
-                          color: item.isActive
-                              ? Color(0xffF4F7FD)
-                              : Color(0xff1E2E52),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          item.title,
-                          style: TextStyle(
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
                             color: item.isActive
-                                ? Color(0xffF4F7FD)
-                                : Color(0xff1E2E52),
-                            fontFamily: 'Golos',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
+                                ? context.appColors.buttonPrimaryBg.withValues(
+                                    alpha: 0.28,
+                                  )
+                                : context.appColors.shadow.withValues(
+                                    alpha: 0.08,
+                                  ),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.drag_indicator,
+                            size: 18,
+                            color: item.isActive
+                                ? context.appColors.buttonPrimaryFg
+                                : context.appColors.iconSecondary,
+                          ),
+                          SizedBox(width: 6),
+                          Image.asset(
+                            item.isActive ? item.activeIcon : item.inactiveIcon,
+                            width: 22,
+                            height: 22,
+                            color: item.isActive
+                                ? context.appColors.buttonPrimaryFg
+                                : context.appColors.iconSecondary,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            item.title,
+                            style: TextStyle(
+                              color: item.isActive
+                                  ? context.appColors.buttonPrimaryFg
+                                  : context.appColors.textPrimary.withValues(
+                                      alpha: 0.78,
+                                    ),
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          );
-        },
-        itemBuilder: (context, index) {
-          final item = _orderedItems![index];
-          return _NavBarItem(
-            key: ValueKey('${item.groupIndex}_${item.itemIndex}'),
-            data: item,
-            isReordering: _isReordering,
-            onTap: () {
-              if (!_isReordering) {
-                widget.onItemSelected(item.groupIndex, item.itemIndex);
-              }
-            },
-          );
-        },
+                );
+              },
+            );
+          },
+          itemBuilder: (context, index) {
+            final item = _orderedItems![index];
+            return _NavBarItem(
+              key: ValueKey('${item.groupIndex}_${item.itemIndex}'),
+              data: item,
+              isReordering: _isReordering,
+              onTap: () {
+                if (!_isReordering) {
+                  widget.onItemSelected(item.groupIndex, item.itemIndex);
+                }
+              },
+            );
+          },
+        ),
       ),
     );
 
-    // ИСПРАВЛЕННАЯ ЛОГИКА ДЛЯ iOS
-    if (Platform.isIOS) {
-      return SafeArea(
-        top: false, // Не трогаем верх
-        bottom: true, // Добавляем отступ снизу для home indicator
-        child: navBarContent,
-      );
-    }
-
-    // Для Android оставляем как было
-    return SafeArea(
-      top: false,
-      child: navBarContent,
-    );
+    return navBarContent;
   }
 
   @override
@@ -612,18 +603,24 @@ class _NavBarItem extends StatelessWidget {
             margin: EdgeInsets.symmetric(horizontal: 4),
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: data.isActive ? Color(0xff1E2E52) : Color(0xffF4F7FD),
+              color: data.isActive
+                  ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.96)
+                  : context.appColors.surfacePrimary.withValues(alpha: 0.68),
               border: Border.all(
-                color: Color(0xff1E2E52).withOpacity(0.5),
-                width: data.isActive ? 0 : 0.5,
+                color: data.isActive
+                    ? context.appColors.buttonPrimaryBg
+                    : context.appColors.borderSubtle.withValues(alpha: 0.82),
+                width: data.isActive ? 1 : 0.8,
               ),
               borderRadius: BorderRadius.circular(25),
               boxShadow: data.isActive
                   ? [
                       BoxShadow(
-                        color: Color(0xff1E2E52).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
+                        color: context.appColors.buttonPrimaryBg.withValues(
+                          alpha: 0.28,
+                        ),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ]
                   : [],
@@ -638,25 +635,28 @@ class _NavBarItem extends StatelessWidget {
                       Icons.drag_indicator,
                       size: 18,
                       color: data.isActive
-                          ? Color(0xffF4F7FD)
-                          : Color(0xff1E2E52).withOpacity(0.5),
+                          ? context.appColors.buttonPrimaryFg
+                          : context.appColors.iconSecondary,
                     ),
                   ),
                 Image.asset(
                   data.isActive ? data.activeIcon : data.inactiveIcon,
                   width: _iconSize,
                   height: _iconSize,
-                  color: data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
+                  color: data.isActive
+                      ? context.appColors.buttonPrimaryFg
+                      : context.appColors.iconSecondary,
                 ),
                 SizedBox(width: 8),
                 Text(
                   data.title,
                   style: TextStyle(
-                    color:
-                        data.isActive ? Color(0xffF4F7FD) : Color(0xff1E2E52),
-                    fontFamily: 'Golos',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+                    color: data.isActive
+                        ? context.appColors.buttonPrimaryFg
+                        : context.appColors.textPrimary.withValues(alpha: 0.78),
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
                   ),
                 ),
               ],

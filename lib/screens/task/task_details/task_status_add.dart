@@ -10,6 +10,7 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
     as task_status_add;
 import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
     as task_status_add;
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -46,15 +47,16 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       title: Text(
         AppLocalizations.of(context)!.translate('add_status'),
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       content: SingleChildScrollView(
@@ -111,14 +113,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               }
                             });
                           },
-                          activeColor: const Color.fromARGB(255, 255, 255, 255),
+                          activeColor: colors.surfacePrimary,
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179)
-                                  .withOpacity(0.5),
+                              colors.textSecondary.withValues(alpha: 0.5),
                           activeTrackColor:
                               ChatSmsStyles.messageBubbleSenderColor,
-                          inactiveThumbColor:
-                              const Color.fromARGB(255, 255, 255, 255),
+                          inactiveThumbColor: colors.surfacePrimary,
                         ),
                       ],
                     ),
@@ -144,14 +144,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               isFinalStage = value;
                             });
                           },
-                          activeColor: const Color.fromARGB(255, 255, 255, 255),
+                          activeColor: colors.surfacePrimary,
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179)
-                                  .withOpacity(0.5),
+                              colors.textSecondary.withValues(alpha: 0.5),
                           activeTrackColor:
                               ChatSmsStyles.messageBubbleSenderColor,
-                          inactiveThumbColor:
-                              const Color.fromARGB(255, 255, 255, 255),
+                          inactiveThumbColor: colors.surfacePrimary,
                         ),
                       ],
                     ),
@@ -176,14 +174,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               isUnassembled = value;
                             });
                           },
-                          activeColor: const Color.fromARGB(255, 255, 255, 255),
+                          activeColor: colors.surfacePrimary,
                           inactiveTrackColor:
-                              const Color.fromARGB(255, 179, 179, 179)
-                                  .withOpacity(0.5),
+                              colors.textSecondary.withValues(alpha: 0.5),
                           activeTrackColor:
                               ChatSmsStyles.messageBubbleSenderColor,
-                          inactiveThumbColor:
-                              const Color.fromARGB(255, 255, 255, 255),
+                          inactiveThumbColor: colors.surfacePrimary,
                         ),
                       ],
                     ),
@@ -218,7 +214,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: Colors.red,
+                    backgroundColor: colors.error,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -240,7 +236,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   onPressed: _createStatus,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: Color(0xFF1E2E52),
+                    backgroundColor: colors.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

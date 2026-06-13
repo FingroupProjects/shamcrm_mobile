@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -34,16 +35,17 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     Color getStatusBackgroundColor() {
       return widget.event.isFinished
-          ? Color(0x1F18C964) // #18C9641F для "Успешно"
-          : Color(0x1F3B82F6); // #3B82F61F для "В процессе"
+          ? colors.success.withValues(alpha: 0.12)
+          : colors.buttonPrimaryBg.withValues(alpha: 0.12);
     }
 
     Color getStatusTextColor() {
       return widget.event.isFinished
-          ? Color(0xFF22C55E) // #22c55e для "Успешно"
-          : Color(0xFF3B82F6); // #3b82f6 для "В процессе"
+          ? colors.success
+          : colors.buttonPrimaryBg;
     }
 
     String? extractImageUrlFromSvg(String svg) {
@@ -132,7 +134,7 @@ class _EventCardState extends State<EventCard> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Color(0xffF4F7FD),
+          color: colors.surfacePrimary,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,18 +147,18 @@ class _EventCardState extends State<EventCard> {
                     TextSpan(
                       text: widget.event.title ??
                           AppLocalizations.of(context)!.translate('no_name'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       children: const <TextSpan>[
-                        TextSpan(
-                          text:
-                              '\n\u200B', // Невидимый пробел (Zero Width Space)
-                          style: TaskCardStyles.titleStyle,
-                        ),
+                        // TextSpan(
+                        //   text:
+                        //       '\n\u200B', // Невидимый пробел (Zero Width Space)
+                        //   style: TaskCardStyles.titleStyle(context),
+                        // ),
                       ],
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -176,7 +178,7 @@ class _EventCardState extends State<EventCard> {
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                       overflow: TextOverflow.ellipsis,
                     ),
                     maxLines: 1,
@@ -188,7 +190,7 @@ class _EventCardState extends State<EventCard> {
                     fontSize: 14,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
+                    color: colors.textSecondary,
                     overflow: TextOverflow.ellipsis,
                   ),
                   maxLines: 1,
@@ -256,11 +258,11 @@ class _EventCardState extends State<EventCard> {
                     padding: const EdgeInsets.only(left: 2),
                     child: Text(
                       '+${widget.event.users.length - 2}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -277,11 +279,11 @@ class _EventCardState extends State<EventCard> {
                 const SizedBox(width: 4),
                 Text(
                   ' ${formatDate(widget.event.createdAt.toString())}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -298,11 +300,11 @@ class _EventCardState extends State<EventCard> {
                 // const SizedBox(width: 4),
                 Text(
                   '${AppLocalizations.of(context)?.translate('reminder_date') ?? 'Напоминание'}: ${formatDate(widget.event.date?.toString())}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -321,7 +323,7 @@ class _EventCardState extends State<EventCard> {
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       Expanded(
@@ -331,7 +333,7 @@ class _EventCardState extends State<EventCard> {
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),

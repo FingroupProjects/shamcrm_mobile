@@ -13,7 +13,7 @@ class TemplatesPanel extends StatefulWidget {
   const TemplatesPanel({super.key, required this.onTemplateSelected});
 
   @override
-  _TemplatesPanelState createState() => _TemplatesPanelState();
+  State<TemplatesPanel> createState() => _TemplatesPanelState();
 }
 
 class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProviderStateMixin {
@@ -50,6 +50,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
   Widget build(BuildContext context) {
     debugPrint('TemplatesPanel: Building panel');
     final localizations = AppLocalizations.of(context)!;
+    final textStyles = context.appTextStyles;
 
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
@@ -114,9 +115,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                   Expanded(
                                     child: Text(
                                       localizations.translate('templates'),
-                                      style: TextStyle(
+                                      style: textStyles.labelLg.copyWith(
                                         fontSize: 16,
-                                        fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w600,
                                         color: context.appColors.textInverse,
                                       ),
@@ -133,9 +133,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                     ),
                                     child: Text(
                                       '$totalCount',
-                                      style: TextStyle(
+                                      style: textStyles.bodySm.copyWith(
                                         fontSize: 12,
-                                        fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w600,
                                         color: context.appColors.textInverse,
                                       ),
@@ -189,8 +188,7 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                               },
                               decoration: InputDecoration(
                                 hintText: localizations.translate('search'),
-                                hintStyle: TextStyle(
-                                  fontFamily: 'Gilroy',
+                                hintStyle: textStyles.bodyMd.copyWith(
                                   fontSize: 14,
                                   color: context.appColors.textSecondary,
                                 ),
@@ -208,8 +206,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                     horizontal: 12, vertical: 10),
                               ),
                               style: TextStyle(
-                                fontFamily: 'Gilroy',
                                 fontSize: 14,
+                                fontFamily: textStyles.bodyMd.fontFamily,
                                   color: context.appColors.textPrimary,
                               ),
                             ),
@@ -240,9 +238,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                               .translate('no_templates_found')
                                           : localizations
                                               .translate('no_templates'),
-                                      style: TextStyle(
+                                      style: textStyles.bodyMd.copyWith(
                                         fontSize: 14,
-                                        fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         color: context.appColors.textSecondary,
                                       ),
@@ -295,9 +292,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                                 children: [
                                                   Text(
                                                     template.title,
-                                                    style: TextStyle(
+                                                    style: textStyles.labelMd.copyWith(
                                                       fontSize: 14,
-                                                      fontFamily: 'Gilroy',
                                                       fontWeight:
                                                           FontWeight.w600,
                                                       color: context.appColors.textPrimary,
@@ -309,9 +305,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
-                                                    style: TextStyle(
+                                                    style: textStyles.bodySm.copyWith(
                                                       fontSize: 12,
-                                                      fontFamily: 'Gilroy',
                                                       fontWeight:
                                                           FontWeight.w400,
                                                       color: context.appColors.textSecondary,
@@ -330,9 +325,8 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                                 return Center(
                                   child: Text(
                                     state.message,
-                                    style: TextStyle(
+                                    style: textStyles.bodyMd.copyWith(
                                       fontSize: 14,
-                                      fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w500,
                                       color: context.appColors.error,
                                     ),

@@ -56,7 +56,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
+              decoration: TaskCardStyles.taskCardDecoration(context),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -98,7 +98,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration(context),
           child: Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
@@ -110,7 +110,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                     children: [
                       Text(
                         good.goodName,
-                        style: TaskCardStyles.titleStyle,
+                        style: TaskCardStyles.titleStyle(context),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
@@ -236,7 +236,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
+          style: TaskCardStyles.titleStyle(context).copyWith(
             fontWeight: FontWeight.w500,
           ),
         ),

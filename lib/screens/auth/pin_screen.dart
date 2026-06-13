@@ -1,8 +1,9 @@
 import 'dart:async';
 // import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/biometric_service.dart';
-import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -22,12 +23,12 @@ class PinScreen extends StatefulWidget {
   final RemoteMessage? initialMessage;
 
   const PinScreen({
-    Key? key,
+    super.key,
     this.initialMessage,
-  }) : super(key: key);
+  });
 
   @override
-  _PinScreenState createState() => _PinScreenState();
+  State<PinScreen> createState() => _PinScreenState();
 }
 
 class _PinScreenState extends State<PinScreen>
@@ -39,15 +40,10 @@ class _PinScreenState extends State<PinScreen>
   final BiometricService _biometricService = BiometricService();
   BiometricAvailability? _biometricAvailability;
   bool _isBiometricEnabled = false;
-  String _userName = '';
   String _userNameProfile = '';
-  String _userImage = '';
   bool _isLoading = true;
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
-  final ApiService _apiService = ApiService();
-
-  FirebaseApi? _firebaseApi;
 
   @override
   void initState() {
@@ -127,15 +123,12 @@ class _PinScreenState extends State<PinScreen>
 
       String? savedUserName = prefs.getString('userName');
       String? savedUserNameProfile = prefs.getString('userNameProfile');
-      String? savedUserImage = prefs.getString('userImage');
-
       if (mounted) {
         final fallbackUser =
             AppLocalizations.of(context)?.translate('user') ?? 'Пользователь';
         setState(() {
-          _userName = savedUserName ?? fallbackUser;
-          _userNameProfile = savedUserNameProfile ?? fallbackUser;
-          _userImage = savedUserImage ?? '';
+          _userNameProfile =
+              savedUserNameProfile ?? savedUserName ?? fallbackUser;
         });
       }
     } catch (e) {
@@ -195,14 +188,12 @@ class _PinScreenState extends State<PinScreen>
   Future<void> _initializeFirebaseApi() async {
     try {
       if (Firebase.apps.isEmpty) {
-        _firebaseApi = null;
         return;
       }
 
       try {
         Firebase.app();
       } catch (e) {
-        _firebaseApi = null;
         return;
       }
 
@@ -211,13 +202,10 @@ class _PinScreenState extends State<PinScreen>
       try {
         Firebase.app();
       } catch (e) {
-        _firebaseApi = null;
         return;
       }
-
-      _firebaseApi = FirebaseApi();
     } catch (e) {
-      _firebaseApi = null;
+      debugPrint('PinScreen: FirebaseApi init skipped: $e');
     }
   }
 
@@ -342,10 +330,12 @@ class _PinScreenState extends State<PinScreen>
       });
 
       try {
-        if (await Vibration.hasVibrator() ?? false) {
+        if (await Vibration.hasVibrator()) {
           Vibration.vibrate(duration: 50);
         }
-      } catch (e) {}
+      } catch (e) {
+        debugPrint('PinScreen: vibration error on press: $e');
+      }
 
       if (_pin.length == 4) {
         final prefs = await SharedPreferences.getInstance();
@@ -372,10 +362,12 @@ class _PinScreenState extends State<PinScreen>
 
   void _triggerErrorEffect() async {
     try {
-      if (await Vibration.hasVibrator() ?? false) {
+      if (await Vibration.hasVibrator()) {
         Vibration.vibrate(duration: 200);
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('PinScreen: vibration error on mismatch: $e');
+    }
 
     setState(() {
       _isWrongPin = true;
@@ -448,111 +440,6 @@ class _PinScreenState extends State<PinScreen>
     );
   }
 
-  Future<bool> _showNoInternetDialog(BuildContext context) async {
-    final localizations = AppLocalizations.of(context);
-
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (BuildContext context) {
-        return WillPopScope(
-          onWillPop: () async => false,
-          child: Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.0),
-            ),
-            elevation: 0,
-            backgroundColor: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.wifi_off_rounded,
-                    size: 48.0,
-                    color: Colors.redAccent,
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    localizations?.translate('no_internet') ?? 'Нет интернета',
-                    style: const TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Gilroy',
-                      color: Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    localizations?.translate('please_check_internet') ??
-                        'Пожалуйста, проверьте подключение к интернету',
-                    style: const TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.black54,
-                      fontFamily: 'Gilroy',
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(false);
-                        },
-                        child: Text(
-                          localizations?.translate('cancel') ?? 'Отмена',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32.0,
-                            vertical: 12.0,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
-                          elevation: 2.0,
-                        ),
-                        child: Text(
-                          localizations?.translate('retry') ?? 'Повторить',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Gilroy',
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    return result ?? false;
-  }
-
   // ==========================================================================
   // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
   // ==========================================================================
@@ -586,168 +473,214 @@ class _PinScreenState extends State<PinScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
-          ),
+        backgroundColor: colors.backgroundPrimary,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+            Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: const Duration(milliseconds: 1000),
+              ),
+            ),
+          ],
         ),
       );
     }
 
     if (localizations == null) {
       return Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
-          ),
+        backgroundColor: colors.backgroundPrimary,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+            Center(
+              child: PlayStoreImageLoading(
+                size: 80.0,
+                duration: const Duration(milliseconds: 1000),
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.12,
-              ),
-              Image.asset(
-                'assets/icons/playstore.png',
-                height: 150,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                getGreetingMessage(),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _isWrongPin
-                    ? localizations.translate('wrong_pin')
-                    : localizations.translate('enter_pin'),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: _isWrongPin ? Colors.red : Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 24),
-              AnimatedBuilder(
-                animation: _shakeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_isWrongPin ? _shakeAnimation.value : 0, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        4,
-                        (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8.0),
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: _isWrongPin
-                                ? Colors.red
-                                : (index < _pin.length
-                                    ? const Color.fromARGB(255, 33, 41, 188)
-                                    : Colors.grey.shade300),
-                            shape: BoxShape.circle,
+      backgroundColor: colors.backgroundPrimary,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary.withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: colors.borderSubtle.withValues(alpha: 0.42),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icons/playstore.png',
+                        height: 124,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        getGreetingMessage(),
+                        style: textStyles.titleLg.copyWith(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _isWrongPin
+                            ? localizations.translate('wrong_pin')
+                            : localizations.translate('enter_pin'),
+                        style: textStyles.bodyMd.copyWith(
+                          fontSize: 16,
+                          color: _isWrongPin
+                              ? colors.error
+                              : colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      AnimatedBuilder(
+                        animation: _shakeAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset:
+                                Offset(_isWrongPin ? _shakeAnimation.value : 0, 0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                4,
+                                (index) => Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                  ),
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: _isWrongPin
+                                        ? colors.error
+                                        : (index < _pin.length
+                                            ? colors.buttonPrimaryBg
+                                            : colors.borderSubtle
+                                                .withValues(alpha: 0.48)),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      GridView.count(
+                        crossAxisCount: 3,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        childAspectRatio: 1.45,
+                        children: [
+                          for (var i = 1; i <= 9; i++)
+                            TextButton(
+                              onPressed: () => _onNumberPressed(i.toString()),
+                              child: Text(
+                                i.toString(),
+                                style: textStyles.titleLg.copyWith(
+                                  fontSize: 24,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          TextButton(
+                            onPressed: _onExitPressed,
+                            child: Text(
+                              localizations.translate('exit'),
+                              style: textStyles.bodyMd.copyWith(
+                                fontSize: 16,
+                                color: colors.buttonPrimaryBg,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _onNumberPressed('0'),
+                            child: Text(
+                              '0',
+                              style: textStyles.titleLg.copyWith(
+                                fontSize: 24,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (_isBiometricEnabled &&
+                              (_biometricAvailability?.hasAnyBiometric ?? false))
+                            TextButton(
+                              onPressed: _pin.isEmpty ? _authenticate : _onDelete,
+                              child: _pin.isEmpty
+                                  ? biometricIconWidget(
+                                      availability: _biometricAvailability!,
+                                      size: 24,
+                                      color: colors.buttonPrimaryBg,
+                                    )
+                                  : Icon(
+                                      Icons.backspace_outlined,
+                                      color: colors.buttonPrimaryBg,
+                                    ),
+                            )
+                          else if (!_isBiometricEnabled && _pin.isNotEmpty)
+                            TextButton(
+                              onPressed: _onDelete,
+                              child: Icon(
+                                Icons.backspace_outlined,
+                                color: colors.buttonPrimaryBg,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ForgotPinScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          localizations.translate('forgot_pin'),
+                          style: textStyles.bodyMd.copyWith(
+                            color: colors.buttonPrimaryBg,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  childAspectRatio: 1.5,
-                  children: [
-                    for (var i = 1; i <= 9; i++)
-                      TextButton(
-                        onPressed: () => _onNumberPressed(i.toString()),
-                        child: Text(
-                          i.toString(),
-                          style: const TextStyle(
-                              fontSize: 24, color: Colors.black),
-                        ),
-                      ),
-                    TextButton(
-                      onPressed: _onExitPressed,
-                      child: Text(
-                        localizations.translate('exit'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color.fromARGB(255, 33, 41, 188),
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => _onNumberPressed('0'),
-                      child: const Text(
-                        '0',
-                        style: TextStyle(fontSize: 24, color: Colors.black),
-                      ),
-                    ),
-                    if (_isBiometricEnabled &&
-                        (_biometricAvailability?.hasAnyBiometric ?? false))
-                      TextButton(
-                        onPressed: _pin.isEmpty ? _authenticate : _onDelete,
-                        child: _pin.isEmpty
-                            ? biometricIconWidget(
-                                availability: _biometricAvailability!,
-                                size: 24,
-                                color: const Color.fromARGB(255, 33, 41, 188),
-                              )
-                            : const Icon(
-                                Icons.backspace_outlined,
-                                color: Color.fromARGB(255, 33, 41, 188),
-                              ),
-                      )
-                    else if (!_isBiometricEnabled && _pin.isNotEmpty)
-                      TextButton(
-                        onPressed: _onDelete,
-                        child: const Icon(
-                          Icons.backspace_outlined,
-                          color: Color.fromARGB(255, 33, 41, 188),
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => ForgotPinScreen(),
-                  ));
-                },
-                child: Text(
-                  localizations.translate('forgot_pin'),
-                  style:
-                      const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -249,6 +249,7 @@ Widget _buildTaskStatusList(
       return GestureDetector(
         onTap: () => onStatusSelected(status),
         child: buildDropDownStyles(
+          context: context,
           text: status.taskStatus?.name ?? "",
           isSelected: selectedValue == status.taskStatus?.name,
         ),

@@ -470,7 +470,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TaskStyles.tabTextStyle.copyWith(
+                style: TaskStyles.tabTextStyle(context).copyWith(
                   color: labelColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,

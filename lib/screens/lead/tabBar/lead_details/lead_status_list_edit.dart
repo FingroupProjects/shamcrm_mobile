@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +67,12 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final primaryText = context.adaptiveForegroundOn(fieldFill);
+    final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
+    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -79,13 +86,15 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                     style: statusTextStyle.copyWith(color: Colors.white),
                   ),
                   behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   backgroundColor: Colors.red,
                   elevation: 3,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   duration: const Duration(seconds: 3),
                 ),
               );
@@ -99,9 +108,10 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                       (status) => status.id.toString() == widget.selectedStatus,
                     );
                   } catch (e) {
-                    selectedStatusData = null; // Сбрасываем, если статус не найден
+                    selectedStatusData =
+                        null; // Сбрасываем, если статус не найден
                   }
-                } 
+                }
               });
             }
           },
@@ -113,56 +123,73 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('lead_status'),
-                    style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+                    style: statusTextStyle.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: primaryText,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
+                      color: fieldFill,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         width: 1,
-                        color: const Color(0xFFF4F7FD),
+                        color: fieldBorder,
                       ),
                     ),
                     child: CustomDropdown<LeadStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList, // Используем локальный список
-                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       enabled: true, // Всегда включено
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: fieldFill,
+                        expandedFillColor: colors.surfacePrimary,
                         closedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
+                          color: fieldBorder,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
+                          color: fieldBorder,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
                       ),
-                      listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
                         return Text(
                           item.title,
-                          style: statusTextStyle,
+                          style: statusTextStyle.copyWith(
+                            color: primaryText,
+                          ),
                         );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.title ?? AppLocalizations.of(context)!.translate('select_status'),
-                          style: statusTextStyle,
+                          selectedItem?.title ??
+                              AppLocalizations.of(context)!
+                                  .translate('select_status'),
+                          style: statusTextStyle.copyWith(
+                            color: primaryText,
+                          ),
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        AppLocalizations.of(context)!.translate('select_status'),
-                        style: statusTextStyle.copyWith(fontSize: 14),
+                        AppLocalizations.of(context)!
+                            .translate('select_status'),
+                        style: statusTextStyle.copyWith(
+                          fontSize: 14,
+                          color: hintTextColor,
+                        ),
                       ),
                       excludeSelected: false,
-                      initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+                      initialItem: statusList.contains(selectedStatusData)
+                          ? selectedStatusData
+                          : null,
                       onChanged: (value) {
                         if (value != null) {
                           widget.onSelectStatus(value);

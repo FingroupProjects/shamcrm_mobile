@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,15 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final primaryText = context.adaptiveForegroundOn(fieldFill);
+    final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
+    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final dropdownFill = colors.surfacePrimary;
+    final dropdownSelected = colors.surfaceElevated;
+    final dropdownIcon = primaryText.withValues(alpha: 0.92);
+
     return Column(
       children: [
         BlocBuilder<GetAllRegionBloc, GetAllRegionState>(
@@ -53,14 +63,14 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: context.appColors.textInverse,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.appColors.error,
                     elevation: 3,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     duration: Duration(seconds: 3),
@@ -93,7 +103,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xfff1E2E52),
+                    color: primaryText,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -108,24 +118,85 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     overlayHeight: 400,
                     enabled: true, // Всегда enabled
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: fieldFill,
+                      expandedFillColor: dropdownFill,
                       closedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
+                        color: fieldBorder,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: Color(0xffF4F7FD),
+                        color: fieldBorder,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      closedSuffixIcon: Icon(Icons.keyboard_arrow_down_rounded,
+                          color: dropdownIcon),
+                      expandedSuffixIcon: Icon(Icons.keyboard_arrow_up_rounded,
+                          color: dropdownIcon),
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: hintTextColor,
+                      ),
+                      headerStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: primaryText,
+                      ),
+                      listItemStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: primaryText,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: fieldFill,
+                        hintStyle: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: hintTextColor,
+                        ),
+                        textStyle: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: primaryText,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: hintTextColor,
+                        ),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(Icons.close_rounded, color: hintTextColor),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: fieldBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: fieldBorder, width: 1.2),
+                        ),
+                      ),
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor: dropdownSelected,
+                        highlightColor:
+                            dropdownSelected.withValues(alpha: 0.72),
+                        splashColor:
+                            context.appColors.overlay.withValues(alpha: 0),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return Text(
                         item.name,
                         style: TextStyle(
-                          color: Color(0xff1E2E52),
+                          color: primaryText,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
@@ -154,7 +225,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                                 fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
+                                color: hintTextColor,
                               ),
                             ),
                           ],
@@ -166,7 +237,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: primaryText,
                         ),
                       );
                     },
@@ -176,7 +247,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: hintTextColor,
                       ),
                     ),
                     excludeSelected: false,

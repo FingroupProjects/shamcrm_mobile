@@ -44,90 +44,109 @@ class ChatListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          _buildAvatar(context, chatItem.avatar),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        chatItem.name.isNotEmpty
-                            ? (chatItem.name == 'support'
-                                ? AppLocalizations.of(context)!
-                                    .translate('support_chat_name')
-                                : chatItem.name)
-                            : AppLocalizations.of(context)!
-                                .translate('no_name'),
-                        style: context.appTextStyles.bodyLg.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.textPrimary,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: context.appColors.borderSubtle.withValues(alpha: 0.7),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: context.appColors.shadow.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _buildAvatar(context, chatItem.avatar),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          chatItem.name.isNotEmpty
+                              ? (chatItem.name == 'support'
+                                  ? AppLocalizations.of(context)!
+                                      .translate('support_chat_name')
+                                  : chatItem.name)
+                              : AppLocalizations.of(context)!
+                                  .translate('no_name'),
+                          style: context.appTextStyles.bodyLg.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      formatChatTime(chatItem.time),
-                      style: context.appTextStyles.bodySm.copyWith(
-                        color: context.appColors.textMuted,
+                      const SizedBox(width: 8),
+                      Text(
+                        formatChatTime(chatItem.time),
+                        style: context.appTextStyles.bodySm.copyWith(
+                          color: context.appColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          children: parseHtmlToTextSpans(
-                            context,
-                            chatItem.message,
-                            context.appTextStyles.bodyMd.copyWith(
-                              color: context.appColors.textSecondary,
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            children: parseHtmlToTextSpans(
+                              context,
+                              chatItem.message,
+                              context.appTextStyles.bodyMd.copyWith(
+                                color: context.appColors.textPrimary
+                                    .withValues(alpha: 0.76),
+                              ),
                             ),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(width: 2),
-                    SizedBox(
-                      width: 33,
-                      height: 33,
-                      child: chatItem.unreadCount > 0
-                          ? Container(
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.appColors.buttonPrimaryBg,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                chatItem.unreadCount <= 9
-                                    ? '${chatItem.unreadCount}'
-                                    : '+9',
-                                style: context.appTextStyles.caption.copyWith(
-                                  color: context.appColors.textInverse,
-                                  fontWeight: FontWeight.w600,
+                      const SizedBox(width: 2),
+                      SizedBox(
+                        width: 33,
+                        height: 33,
+                        child: chatItem.unreadCount > 0
+                            ? Container(
+                                alignment: Alignment.center,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: context.appColors.buttonPrimaryBg,
+                                  shape: BoxShape.circle,
                                 ),
-                              ),
-                            )
-                          : const SizedBox(),
-                    ),
-                  ],
-                ),
-              ],
+                                child: Text(
+                                  chatItem.unreadCount <= 9
+                                      ? '${chatItem.unreadCount}'
+                                      : '+9',
+                                  style: context.appTextStyles.caption.copyWith(
+                                    color: context.appColors.textInverse,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              )
+                            : const SizedBox(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

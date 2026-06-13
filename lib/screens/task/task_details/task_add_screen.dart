@@ -32,6 +32,7 @@ import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1162,9 +1163,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
@@ -1200,7 +1204,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           IconButton(
             icon: Icon(
               isSettingsMode ? Icons.close : Icons.settings,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
             onPressed: () async {
               if (isSettingsMode) {
@@ -1285,7 +1289,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 : AppLocalizations.of(context)!.translate('appbar_settings'),
           ),
         ],
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: colors.surfacePrimary,
       ),
       body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
           listener: (context, configState) {
@@ -1789,6 +1793,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   Widget _buildFileSelection() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1798,7 +1803,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         SizedBox(height: 16),
@@ -1826,7 +1831,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -1857,7 +1862,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -1875,7 +1880,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colors.surfacePrimary,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -1886,7 +1891,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             ],
                           ),
                           child: Icon(Icons.close,
-                              size: 16, color: Color(0xff1E2E52)),
+                              size: 16, color: colors.textPrimary),
                         ),
                       ),
                     ),

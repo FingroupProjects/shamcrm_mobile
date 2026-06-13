@@ -15,6 +15,7 @@ import 'package:crm_task_manager/utils/active_chat_tracker.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/telegram_chat_app_bar.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
@@ -48,7 +49,6 @@ import 'package:crm_task_manager/api/service/http_log_model.dart';
 import 'package:crm_task_manager/api/service/http_logger.dart';
 import 'package:crm_task_manager/api/service/message_reaction_api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
@@ -91,8 +91,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FocusNode _focusNode = FocusNode();
+  final FocusNode _searchFocusNode = FocusNode();
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
   late PusherChannelsClient socketClient;
@@ -103,7 +105,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   int? _highlightedMessageId;
   bool _isMenuOpen = false;
   bool _isSearching = false;
-  String? _searchQuery;
   Timer? _searchDebounce;
   String? integrationUsername;
   String? channelName;
@@ -814,10 +815,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   void _onSearchChanged(String query) {
-    setState(() {
-      _searchQuery = query;
-    });
-
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
@@ -926,6 +923,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   Widget _buildScrollToBottomButton() {
+    final textStyles = context.appTextStyles;
     return AnimatedSlide(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
@@ -1001,8 +999,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                                 ? '99+'
                                 : '$_pendingNewMessagesCount',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: context.appColors.surfacePrimary,
+                            style: textStyles.bodySm.copyWith(
+                              color: context.appColors.textInverse,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1070,6 +1068,156 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       // ✅ ШАГ 2: Параллельно инициализируем сервисы и загружаем свежие данные
       _initializeServicesOptimized();
     });
+  }
+
+  void _openProfileAsync() {
+    unawaited(_openProfileAsyncInternal());
+  }
+
+  Future<void> _openProfileAsyncInternal() async {
+    if (_isRequestInProgress) return;
+    if (mounted) {
+      setState(() => _isRequestInProgress = true);
+    }
+    try {
+      if (widget.endPointInTab == 'lead') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                UserProfileScreen(chatId: widget.chatId),
+          ),
+        );
+      } else if (widget.endPointInTab == 'task') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                TaskByIdScreen(chatId: widget.chatId),
+          ),
+        );
+      } else if (widget.endPointInTab == 'corporate') {
+        try {
+          final getChatById =
+              await widget.apiService.getChatById(widget.chatId);
+          if (getChatById.chatUsers.isNotEmpty &&
+              getChatById.chatUsers.length == 2 &&
+              getChatById.group == null) {
+            String userIdCheck = '';
+            SharedPreferences prefs =
+                await SharedPreferences.getInstance();
+            userIdCheck = prefs.getString('userID') ?? '';
+            final otherUsers = getChatById.chatUsers
+                .where((user) =>
+                    user.participant.id.toString() !=
+                    userIdCheck)
+                .toList();
+
+            if (otherUsers.isNotEmpty) {
+              final participant = otherUsers.first.participant;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ParticipantProfileScreen(
+                    userId: participant.id.toString(),
+                    image: participant.image,
+                    name: participant.name,
+                    email: participant.email,
+                    phone: participant.phone,
+                    login: participant.login,
+                    lastSeen: participant.lastSeen.toString(),
+                    buttonChat: false,
+                  ),
+                ),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      CorporateProfileScreen(
+                    chatId: widget.chatId,
+                    chatItem: widget.chatItem,
+                  ),
+                ),
+              );
+            }
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    CorporateProfileScreen(
+                  chatId: widget.chatId,
+                  chatItem: widget.chatItem,
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint(
+              "Ошибка при открытии профиля корпоративного чата: $e");
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CorporateProfileScreen(
+                chatId: widget.chatId,
+                chatItem: widget.chatItem,
+              ),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.translate('error'),
+              style: context.appTextStyles.bodyLg.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: context.appColors.textInverse,
+              ),
+            ),
+            backgroundColor: context.appColors.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestInProgress = false);
+      } else {
+        _isRequestInProgress = false;
+      }
+    }
+  }
+
+  void _toggleSearch() {
+    final nextSearching = !_isSearching;
+    setState(() {
+      _isSearching = nextSearching;
+      if (!nextSearching) {
+        _searchController.clear();
+      }
+    });
+
+    if (nextSearching) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _searchFocusNode.requestFocus();
+        }
+      });
+      return;
+    }
+
+    _searchFocusNode.unfocus();
+    _searchDebounce?.cancel();
+    context.read<MessagingCubit>().resetAndSearch(
+          widget.chatId,
+          search: null,
+          chatType: widget.endPointInTab,
+        );
   }
 
   Future<void> _retryInitialization() async {
@@ -1459,14 +1607,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   }
 
   void _showInitializationError(String error) {
+    final textStyles = context.appTextStyles;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '${AppLocalizations.of(context)!.translate('partial_connection_error')}: ${_getReadableError(error)}',
-          style: TextStyle(
-            fontSize: 14,
+          style: textStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            color: context.appColors.surfacePrimary,
+            color: context.appColors.textInverse,
           ),
         ),
         backgroundColor: context.appColors.warning,
@@ -1709,109 +1857,114 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  height: 450,
-                  width: double.maxFinite,
-                  color: context.appColors.surfacePrimary,
-                  child: TableCalendar(
-                    firstDay: DateTime(2020),
-                    lastDay: DateTime(2101),
-                    focusedDay: currentDate,
-                    calendarFormat: CalendarFormat.month,
-                    startingDayOfWeek: StartingDayOfWeek.monday,
-                    locale: 'ru_RU',
-                    calendarStyle: CalendarStyle(
-                      todayDecoration: BoxDecoration(
-                        border: Border.all(
-                          color: context.appColors.buttonPrimaryBg,
-                          width: 2,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      todayTextStyle: TextStyle(
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                      outsideDaysVisible: true,
-                      outsideTextStyle: TextStyle(
-                        color: context.appColors.textSecondary
-                            .withValues(alpha: 0.3),
-                      ),
-                    ),
-                    daysOfWeekStyle: DaysOfWeekStyle(
-                      weekdayStyle: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      weekendStyle: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.appColors.error,
-                      ),
-                    ),
-                    headerStyle: HeaderStyle(
-                      formatButtonVisible: false,
-                      titleCentered: true,
-                      leftChevronVisible: true,
-                      rightChevronVisible: true,
-                      titleTextStyle:
-                          const TextStyle(fontSize: 18, fontFamily: 'Gilroy'),
-                      titleTextFormatter: (date, locale) {
-                        return DateFormat.yMMMM(locale).format(date);
-                      },
-                    ),
-                    calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, date, events) {
-                        if (events.isNotEmpty) {
-                          return Positioned(
-                            right: 18,
-                            bottom: 0,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: context.appColors.buttonPrimaryBg,
-                                shape: BoxShape.circle,
-                              ),
+                Builder(
+                  builder: (context) {
+                    final textStyles = context.appTextStyles;
+                    return Container(
+                      height: 450,
+                      width: double.maxFinite,
+                      color: context.appColors.surfacePrimary,
+                      child: TableCalendar(
+                        firstDay: DateTime(2020),
+                        lastDay: DateTime(2101),
+                        focusedDay: currentDate,
+                        calendarFormat: CalendarFormat.month,
+                        startingDayOfWeek: StartingDayOfWeek.monday,
+                        locale: 'ru_RU',
+                        calendarStyle: CalendarStyle(
+                          todayDecoration: BoxDecoration(
+                            border: Border.all(
+                              color: context.appColors.buttonPrimaryBg,
+                              width: 2,
                             ),
-                          );
-                        }
-                        return null;
-                      },
-                    ),
-                    eventLoader: (day) {
-                      final normalizedDay =
-                          DateTime(day.year, day.month, day.day);
-                      return events[normalizedDay] ?? [];
-                    },
-                    onDaySelected: (selectedDay, focusedDay) {
-                      final index =
-                          _findMessageIndexByDate(messages, selectedDay);
-                      if (index != -1) {
-                        Navigator.pop(context);
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _scrollToMessageIndex(selectedDay);
-                        });
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('no_messages_for_date')
-                                  .replaceFirst(
-                                      '{date}', formatDate(selectedDay)),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            backgroundColor: context.appColors.error,
-                            duration: const Duration(seconds: 2),
+                            shape: BoxShape.circle,
                           ),
-                        );
-                      }
-                    },
-                  ),
+                          todayTextStyle: textStyles.bodyMd.copyWith(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                          outsideDaysVisible: true,
+                          outsideTextStyle: textStyles.bodyMd.copyWith(
+                            color: context.appColors.textSecondary
+                                .withValues(alpha: 0.3),
+                          ),
+                        ),
+                        daysOfWeekStyle: DaysOfWeekStyle(
+                          weekdayStyle: textStyles.labelMd.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          weekendStyle: textStyles.labelMd.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: context.appColors.error,
+                          ),
+                        ),
+                        headerStyle: HeaderStyle(
+                          formatButtonVisible: false,
+                          titleCentered: true,
+                          leftChevronVisible: true,
+                          rightChevronVisible: true,
+                          titleTextStyle: textStyles.titleMd.copyWith(
+                            fontSize: 18,
+                          ),
+                          titleTextFormatter: (date, locale) {
+                            return DateFormat.yMMMM(locale).format(date);
+                          },
+                        ),
+                        calendarBuilders: CalendarBuilders(
+                          markerBuilder: (context, date, events) {
+                            if (events.isNotEmpty) {
+                              return Positioned(
+                                right: 18,
+                                bottom: 0,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: context.appColors.buttonPrimaryBg,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              );
+                            }
+                            return null;
+                          },
+                        ),
+                        eventLoader: (day) {
+                          final normalizedDay =
+                              DateTime(day.year, day.month, day.day);
+                          return events[normalizedDay] ?? [];
+                        },
+                        onDaySelected: (selectedDay, focusedDay) {
+                          final index =
+                              _findMessageIndexByDate(messages, selectedDay);
+                          if (index != -1) {
+                            Navigator.pop(context);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _scrollToMessageIndex(selectedDay);
+                            });
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('no_messages_for_date')
+                                      .replaceFirst(
+                                          '{date}', formatDate(selectedDay)),
+                                  style: textStyles.bodyLg.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                backgroundColor: context.appColors.error,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -1853,9 +2006,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
               AppLocalizations.of(context)!
                   .translate('no_messages_for_date')
                   .replaceFirst('{date}', formatDate(selectedDate)),
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1899,7 +2050,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     if (isTaskSection && !avatar.contains('<svg')) {
       return CircleAvatar(
         backgroundImage: AssetImage('assets/images/AvatarTask.png'),
-        radius: ChatSmsStyles.avatarRadius,
+        radius: 20.0,
         backgroundColor: context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {},
       );
@@ -1909,8 +2060,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
         return Container(
-          width: ChatSmsStyles.avatarRadius * 2,
-          height: ChatSmsStyles.avatarRadius * 2,
+          width: 20.0 * 2,
+          height: 20.0 * 2,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             image: DecorationImage(
@@ -1924,8 +2075,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         final backgroundColor = extractBackgroundColorFromSvg(avatar);
         if (text != null && backgroundColor != null) {
           return Container(
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
+            width: 20.0 * 2,
+            height: 20.0 * 2,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: backgroundColor,
@@ -1937,7 +2088,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             child: Center(
               child: Text(
                 text,
-                style: TextStyle(
+                style: context.appTextStyles.titleMd.copyWith(
                   color: context.appColors.textInverse,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -1949,8 +2100,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         } else {
           return SvgPicture.string(
             avatar,
-            width: ChatSmsStyles.avatarRadius * 2,
-            height: ChatSmsStyles.avatarRadius * 2,
+            width: 20.0 * 2,
+            height: 20.0 * 2,
             placeholderBuilder: (context) => CircularProgressIndicator(),
           );
         }
@@ -1960,7 +2111,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     try {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
-        radius: ChatSmsStyles.avatarRadius,
+        radius: 20.0,
         backgroundColor: isSupportAvatar
             ? context.appColors.textPrimary
             : context.appColors.surfacePrimary,
@@ -1971,7 +2122,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         backgroundImage: AssetImage(isTaskSection
             ? 'assets/images/AvatarTask.png'
             : 'assets/images/AvatarChat.png'),
-        radius: ChatSmsStyles.avatarRadius,
+        radius: 20.0,
         backgroundColor: isSupportAvatar
             ? context.appColors.textPrimary
             : context.appColors.surfacePrimary,
@@ -2033,220 +2184,25 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: context.appColors.surfacePrimary,
-            forceMaterialTransparency: false,
-            scrolledUnderElevation: 0,
-            elevation: 0,
-            centerTitle: false,
-            leadingWidth: 40,
-            leading: Transform.translate(
-              offset: const Offset(6, 0),
-              child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/arrow-left.png',
-                  width: 40,
-                  height: 40,
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: IconButton(
-                  icon: _isSearching
-                      ? const Icon(Icons.close)
-                      : Image.asset('assets/icons/AppBar/search.png',
-                          width: 24, height: 24),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = !_isSearching;
-                      _searchQuery = null;
-                    });
-                    if (!_isSearching) {
-                      _searchDebounce?.cancel();
-                      context.read<MessagingCubit>().resetAndSearch(
-                            widget.chatId,
-                            search: null,
-                            chatType: widget.endPointInTab,
-                          );
-                    }
-                  },
-                ),
-              ),
-            ],
-            title: Transform.translate(
-              offset: const Offset(-12, 0),
-              child: _isSearching
-                  ? TextField(
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!
-                            .translate('search_appbar'),
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(
-                            color: context.appColors.textPrimary,
-                            fontFamily: 'Gilroy'),
-                      ),
-                      onChanged: _onSearchChanged,
-                    )
-                  : GestureDetector(
-                      onTap: isSupportChat
-                          ? null
-                          : () async {
-                              if (_isRequestInProgress) return;
-                              setState(() {
-                                _isRequestInProgress = true;
-                              });
-                              try {
-                                if (widget.endPointInTab == 'lead') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => UserProfileScreen(
-                                          chatId: widget.chatId),
-                                    ),
-                                  );
-                                } else if (widget.endPointInTab == 'task') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          TaskByIdScreen(chatId: widget.chatId),
-                                    ),
-                                  );
-                                } else if (widget.endPointInTab ==
-                                    'corporate') {
-                                  try {
-                                    final getChatById = await widget.apiService
-                                        .getChatById(widget.chatId);
-                                    if (getChatById.chatUsers.isNotEmpty &&
-                                        getChatById.chatUsers.length == 2 &&
-                                        getChatById.group == null) {
-                                      String userIdCheck = '';
-                                      SharedPreferences prefs =
-                                          await SharedPreferences.getInstance();
-                                      userIdCheck =
-                                          prefs.getString('userID') ?? '';
-                                      final otherUsers = getChatById.chatUsers
-                                          .where((user) =>
-                                              user.participant.id.toString() !=
-                                              userIdCheck)
-                                          .toList();
-
-                                      if (otherUsers.isNotEmpty) {
-                                        final participant =
-                                            otherUsers.first.participant;
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ParticipantProfileScreen(
-                                              userId: participant.id.toString(),
-                                              image: participant.image,
-                                              name: participant.name,
-                                              email: participant.email,
-                                              phone: participant.phone,
-                                              login: participant.login,
-                                              lastSeen: participant.lastSeen
-                                                  .toString(),
-                                              buttonChat: false,
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        // Если не найден другой участник, открываем профиль группы
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                CorporateProfileScreen(
-                                              chatId: widget.chatId,
-                                              chatItem: widget.chatItem,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CorporateProfileScreen(
-                                            chatId: widget.chatId,
-                                            chatItem: widget.chatItem,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    debugPrint(
-                                        "Ошибка при открытии профиля корпоративного чата: $e");
-                                    // В случае ошибки открываем профиль группы
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            CorporateProfileScreen(
-                                          chatId: widget.chatId,
-                                          chatItem: widget.chatItem,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        AppLocalizations.of(context)!
-                                            .translate('error'),
-                                        style: TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: context.appColors.textInverse,
-                                        ),
-                                      ),
-                                      backgroundColor: context.appColors.error,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } finally {
-                                setState(() {
-                                  _isRequestInProgress = false;
-                                });
-                              }
-                            },
-                      child: Row(
-                        children: [
-                          _buildAvatar(widget.chatItem.avatar),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              isSupportChat
-                                  ? AppLocalizations.of(context)!
-                                      .translate('support_chat_name')
-                                  : widget.chatItem.name.isEmpty
-                                      ? AppLocalizations.of(context)!
-                                          .translate('no_name')
-                                      : widget.chatItem.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: ChatSmsStyles.appBarTitleColor,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight + 8),
+            child: TelegramChatAppBar(
+              name: isSupportChat
+                  ? AppLocalizations.of(context)!.translate('support_chat_name')
+                  : widget.chatItem.name.isEmpty
+                      ? AppLocalizations.of(context)!.translate('no_name')
+                      : widget.chatItem.name,
+              avatar: widget.chatItem.avatar,
+              isGroupChat: _isGroupChat ?? false,
+              isSearching: _isSearching,
+              isSupportChat: isSupportChat,
+              searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
+              onBack: () => Navigator.pop(context),
+              onProfileTap: isSupportChat ? null : _openProfileAsync,
+              onSearchToggle: _toggleSearch,
+              onSearchChanged: _onSearchChanged,
+              onPhoneTap: null, // Will be set when phone is available
             ),
           ),
           backgroundColor: context.appColors.backgroundSecondary,
@@ -2257,8 +2213,31 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 inputWidget()
               else
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 50),
-                  child: Center(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 50),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfacePrimary.withValues(
+                        alpha: 0.9,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: context.appColors.borderSubtle,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.appColors.shadow.withValues(
+                            alpha: 0.1,
+                          ),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
                     child: Text(
                       widget.canSendMessage
                           ? AppLocalizations.of(context)!
@@ -2266,11 +2245,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                           : AppLocalizations.of(context)!
                               .translate('24_hour_leads'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: context.appTextStyles.labelLg.copyWith(
                         fontSize: 16,
-                        fontFamily: 'Gilroy',
                         color: context.appColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        height: 1.35,
                       ),
                     ),
                   ),
@@ -2340,6 +2319,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     return BlocBuilder<MessagingCubit, MessagingState>(
       builder: (context, state) {
         final localizations = AppLocalizations.of(context)!;
+        final textStyles = context.appTextStyles;
         debugPrint(
             '=================-=== messageListUi: Building with state: $state');
 
@@ -2353,10 +2333,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 SizedBox(height: 16),
                 Text(
                   localizations.translate('partial_connection_error'),
-                  style: TextStyle(
+                  style: textStyles.titleMd.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Gilroy',
                     color: context.appColors.warning,
                   ),
                 ),
@@ -2366,9 +2345,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   child: Text(
                     state.error,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
+                    style: textStyles.bodyMd.copyWith(
                       color: context.appColors.textSecondary,
                     ),
                   ),
@@ -2391,8 +2368,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       ),
                       child: Text(
                         localizations.translate('retry'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
+                        style: textStyles.labelMd.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -2405,8 +2381,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                       },
                       child: Text(
                         localizations.translate('empty_chat'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
+                        style: textStyles.bodyMd.copyWith(
                           color: context.appColors.textSecondary,
                           fontSize: 14,
                         ),
@@ -2430,10 +2405,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                   SizedBox(height: 16),
                   Text(
                     localizations.translate('server_connection_error'),
-                    style: TextStyle(
+                    style: textStyles.titleMd.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Gilroy',
                       color: context.appColors.error,
                     ),
                   ),
@@ -2492,7 +2466,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
             return Center(
               child: Text(
                 AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: context.appColors.textPrimary),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textPrimary,
+                ),
               ),
             );
           }
@@ -2563,9 +2539,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                               child: Center(
                                 child: Text(
                                   formatDate(messageDate),
-                                  style: TextStyle(
+                                  style: context.appTextStyles.bodyMd.copyWith(
                                     fontSize: 14,
-                                    fontFamily: "Gilroy",
                                     fontWeight: FontWeight.w400,
                                     color: context.appColors.textPrimary,
                                   ),
@@ -2753,8 +2728,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                             .translate('answer_direct')
                         : AppLocalizations.of(context)!
                             .translate('answer_comment'),
-                    style: TextStyle(
-                        fontSize: 12, color: context.appColors.textSecondary),
+                    style: context.appTextStyles.bodySm.copyWith(
+                      fontSize: 12,
+                      color: context.appColors.textSecondary,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
@@ -2871,7 +2848,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
                 child: Text(
                   AppLocalizations.of(context)!
                       .translate('instagram_comment_reply_hint'),
-                  style: TextStyle(
+                  style: context.appTextStyles.labelMd.copyWith(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: context.appColors.textPrimary,
@@ -4194,8 +4171,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     _itemPositionsListener.itemPositions
         .removeListener(_handleVisiblePositionsChanged);
     _messageController.dispose();
+    _searchController.dispose();
     socketClient.dispose();
     _focusNode.dispose();
+    _searchFocusNode.dispose();
 
     // ✅ ШАГ 6: Обнуляем счетчик непрочитанных сообщений локально
     // Это скрывает счетчик до момента прихода нового сообщения от сервера
@@ -4642,7 +4621,7 @@ class MessageItemWidget extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   localizations.translate('reply_to_post'),
-                  style: TextStyle(
+                  style: context.appTextStyles.labelMd.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: context.appColors.textSecondary,
@@ -4656,7 +4635,7 @@ class MessageItemWidget extends StatelessWidget {
               maxLines: isPostExpanded ? null : 5,
               overflow:
                   isPostExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-              style: TextStyle(
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontSize: 13.5,
                 color: context.appColors.textPrimary,
                 height: 1.25,
@@ -4806,8 +4785,7 @@ class MessageItemWidget extends StatelessWidget {
       SnackBar(
         content: Text(
           AppLocalizations.of(context)!.translate('copy_message'),
-          style: TextStyle(
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyLg.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             color: context.appColors.textInverse,
@@ -4885,8 +4863,7 @@ class MessageItemWidget extends StatelessWidget {
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('sms_deletes_successfully'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
+            style: context.appTextStyles.bodyLg.copyWith(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               color: context.appColors.textInverse,

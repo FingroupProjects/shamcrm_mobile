@@ -8,6 +8,8 @@ import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
@@ -1331,9 +1333,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         BlocProvider.value(value: context.read<SalesFunnelBloc>()),
       ],
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           forceMaterialTransparency: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           title: CustomAppBar(
             SearchIconKey: keySearchIcon,
             menuIconKey: keyMenuIcon,
@@ -1506,14 +1514,27 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         ),
         body: isClickAvatarIcon
             ? ProfileScreen()
-            : Column(
+            : Stack(
+                fit: StackFit.expand,
                 children: [
-                  const SizedBox(height: 15),
-                  if (!_isSearching && _showCustomTabBar) _buildCustomTabBar(),
-                  Expanded(
-                    child: _isSearching || _hasActiveFilters()
-                        ? _buildManagerView()
-                        : _buildTabBarView(),
+                  const AppBackgroundOverlay(
+                    preset: AppBackgroundPreset.aurora,
+                  ),
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.top +
+                            kToolbarHeight +
+                            15,
+                      ),
+                      if (!_isSearching && _showCustomTabBar)
+                        _buildCustomTabBar(),
+                      Expanded(
+                        child: _isSearching || _hasActiveFilters()
+                            ? _buildManagerView()
+                            : _buildTabBarView(),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1694,7 +1715,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: filteredDeals.length + (showPaginationLoader ? 1 : 0),
+                itemCount:
+                    filteredDeals.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredDeals.length) {
                     return const Padding(
@@ -1865,8 +1887,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
         final blocCounts = context.read<DealBloc>().dealCountsSnapshot;
-        int dealCount =
-            blocCounts[statusId] ?? (_tabTitles[index]['deals_count'] as int?) ?? 0;
+        int dealCount = blocCounts[statusId] ??
+            (_tabTitles[index]['deals_count'] as int?) ??
+            0;
 
         if (state is DealLoaded) {
           dealCount = state.dealCounts[statusId] ??
@@ -1912,19 +1935,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         _showStatusOptions(context, index);
       },
       child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
+        // decoration: TaskStyles.tabButtonDecoration(isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle.copyWith(
-                color: isActive
-                    ? TaskStyles.activeColor
-                    : TaskStyles.inactiveColor,
-              ),
-            ),
+            // Text(
+            //   _tabTitles[index]['title'],
+            //   style: TaskStyles.tabTextStyle.copyWith(
+            //     color: isActive
+            //         ? TaskStyles.activeColor
+            //         : TaskStyles.inactiveColor,
+            //   ),
+            // ),
             Transform.translate(
               offset: const Offset(12, 0),
               child: Container(
@@ -2248,7 +2271,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     ));
                   });
                 }
-
               } else {
                 // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {

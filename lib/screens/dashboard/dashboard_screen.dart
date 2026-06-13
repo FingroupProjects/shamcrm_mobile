@@ -27,6 +27,8 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/use
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_skeleton.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_creditors_info.dart';
@@ -643,9 +645,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         forceMaterialTransparency: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         title: CustomAppBar(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
@@ -695,8 +703,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? ProfileScreen()
           : Stack(
               children: [
+                const Positioned.fill(
+                  child: AppBackgroundOverlay(
+                    preset: AppBackgroundPreset.aurora,
+                  ),
+                ),
                 Column(
                   children: [
+                    SizedBox(
+                      height:
+                          MediaQuery.of(context).padding.top + kToolbarHeight,
+                    ),
                     // ИЗМЕНЕНО: Показываем переключатель только если есть право
                     if (_hasAccountingDashboardPermission)
                       DashboardSwitcher(

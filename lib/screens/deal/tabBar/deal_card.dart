@@ -210,12 +210,12 @@ class _DealCardState extends State<DealCard>
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     text: widget.deal.name,
-                    style: TaskCardStyles.titleStyle,
-                    children: const <TextSpan>[
-                      TextSpan(
-                        text: '\n\u200B',
-                        style: TaskCardStyles.titleStyle,
-                      ),
+                    style: TaskCardStyles.titleStyle(context),
+                    children: <TextSpan>[
+                      // TextSpan(
+                      //   text: '\n\u200B',
+                      //   style: TaskCardStyles.titleStyle(context),
+                      // ),
                     ],
                   ),
                 ),

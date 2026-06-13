@@ -17,7 +17,9 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart' show DeleteFileDialog;
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart'
+    show DeleteFileDialog;
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -93,7 +95,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   bool isEndDateInvalid = false;
   List<FileHelper> files = [];
   final ApiService _apiService = ApiService();
-  List<TaskFiles> existingFiles = []; // Для отслеживания удаленных файлов с сервера
+  List<TaskFiles> existingFiles =
+      []; // Для отслеживания удаленных файлов с сервера
   bool _canUpdateTask = false;
   bool _hasTaskCreateForMySelfPermission = false;
   int? _currentUserId;
@@ -107,7 +110,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   // Режим настроек
   bool isSettingsMode = false;
   bool isSavingFieldOrder = false;
-  List<FieldConfiguration>? originalFieldConfigurations; // Для отслеживания изменений
+  List<FieldConfiguration>?
+      originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
 
   // Конфигурация полей с сервера
@@ -151,7 +155,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userIdString = prefs.getString('userID');
-      final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
+      final int? userId =
+          userIdString != null ? int.tryParse(userIdString) : null;
 
       final results = await Future.wait([
         _apiService.hasPermission('task.update'),
@@ -180,7 +185,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
     _selectedStatuses = widget.statusId;
     if (widget.startDate != null) {
       DateTime parsedStartDate = DateTime.parse(widget.startDate!);
-      startDateController.text = DateFormat('dd/MM/yyyy').format(parsedStartDate);
+      startDateController.text =
+          DateFormat('dd/MM/yyyy').format(parsedStartDate);
     }
     if (widget.endDate != null) {
       DateTime parsedEndDate = DateTime.parse(widget.endDate!);
@@ -189,7 +195,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
     descriptionController.text = widget.description ?? '';
     selectedProject = widget.project;
 
-    if (!_canUpdateTask && _hasTaskCreateForMySelfPermission && _currentUserId != null) {
+    if (!_canUpdateTask &&
+        _hasTaskCreateForMySelfPermission &&
+        _currentUserId != null) {
       selectedUsers = [_currentUserId.toString()];
     } else {
       selectedUsers = widget.user?.map((e) => e.toString()).toList() ?? [];
@@ -233,7 +241,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -304,7 +313,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close,
+                              size: 16, color: Color(0xff1E2E52)),
                         ),
                       ),
                     ),
@@ -322,7 +332,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
     if (kDebugMode) {
       print('TasksAddScreen: Loading field configuration for tasks');
     }
-    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+    context
+        .read<FieldConfigurationBloc>()
+        .add(FetchFieldConfiguration('tasks'));
   }
 
   Future<void> _saveFieldOrderToBackend() async {
@@ -334,7 +346,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           'id': config.id,
           'position': config.position,
           'is_active': config.isActive ? 1 : 0,
-          'is_required': config.originalRequired ? 1 : 0, // Используем originalRequired
+          'is_required':
+              config.originalRequired ? 1 : 0, // Используем originalRequired
           'show_on_table': config.showOnTable ? 1 : 0,
         });
       }
@@ -382,7 +395,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
   CustomField _getOrCreateCustomField(FieldConfiguration config) {
     final existingFieldIndex = customFields.indexWhere(
-          (field) => field.fieldName == config.fieldName && field.isCustomField,
+      (field) => field.fieldName == config.fieldName && field.isCustomField,
     );
 
     if (existingFieldIndex != -1) {
@@ -392,7 +405,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
       if (existingField.type == null ||
           existingField.type!.isEmpty ||
-          (configType != null && configType.isNotEmpty && existingField.type != configType)) {
+          (configType != null &&
+              configType.isNotEmpty &&
+              existingField.type != configType)) {
         customFields[existingFieldIndex] = existingField.copyWith(
           type: configType ?? 'string',
         );
@@ -417,7 +432,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   CustomField _getOrCreateDirectoryField(FieldConfiguration config) {
     // First, try to find existing field in customFields
     final existingField = customFields.firstWhere(
-          (field) => field.directoryId == config.directoryId,
+      (field) => field.directoryId == config.directoryId,
       orElse: () {
         // ✅ Only create new field if it doesn't exist
         // This happens when user adds a NEW directory field via UI
@@ -457,7 +472,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
       case 'description':
         return CustomTextField(
           controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          hintText:
+              AppLocalizations.of(context)!.translate('enter_description'),
           label: AppLocalizations.of(context)!.translate('description_list'),
           maxLines: 5,
           keyboardType: TextInputType.multiline,
@@ -469,7 +485,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
             selectedUsers: selectedUsers,
             onSelectUsers: (List<UserData> selectedUsersData) {
               setState(() {
-                selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+                selectedUsers = selectedUsersData
+                    .map((user) => user.id.toString())
+                    .toList();
               });
             },
           );
@@ -504,8 +522,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           },
         );
 
-    // case 'file':
-    //   return _buildFileSelection();
+      // case 'file':
+      //   return _buildFileSelection();
       default:
         return null;
     }
@@ -533,11 +551,14 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         directoryId: directoryField.directoryId!,
         directoryName: directoryField.fieldName,
         selectedField: directoryField.entryId != null
-            ? MainField(id: directoryField.entryId!, value: directoryField.controller.text)
+            ? MainField(
+                id: directoryField.entryId!,
+                value: directoryField.controller.text)
             : null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -549,7 +570,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index = customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: entryId,
@@ -565,7 +587,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
     return _buildStandardField(config);
   }
 
-  List<Widget> _withVerticalSpacing(List<Widget> widgets, {double spacing = 15}) {
+  List<Widget> _withVerticalSpacing(List<Widget> widgets,
+      {double spacing = 15}) {
     if (widgets.isEmpty) {
       return widgets;
     }
@@ -623,7 +646,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           selectedUsers: selectedUsers,
           onSelectUsers: (List<UserData> selectedUsersData) {
             setState(() {
-              selectedUsers = selectedUsersData.map((user) => user.id.toString()).toList();
+              selectedUsers =
+                  selectedUsersData.map((user) => user.id.toString()).toList();
             });
           },
         ),
@@ -665,11 +689,16 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
     );
   }
 
-  Future<void> _addCustomField(String fieldName, {bool isDirectory = false, int? directoryId, String? type}) async {
+  Future<void> _addCustomField(String fieldName,
+      {bool isDirectory = false, int? directoryId, String? type}) async {
     if (isDirectory && directoryId != null) {
-      bool directoryExists = customFields.any((field) => field.isDirectoryField && field.directoryId == directoryId);
+      bool directoryExists = customFields.any((field) =>
+          field.isDirectoryField && field.directoryId == directoryId);
       if (directoryExists) {
-        showCustomSnackBar(context: context, message: 'Справочник уже добавлен', isSuccess: true);
+        showCustomSnackBar(
+            context: context,
+            message: 'Справочник уже добавлен',
+            isSuccess: true);
         debugPrint("Directory with ID $directoryId already exists.");
         return;
       }
@@ -693,8 +722,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           });
           // Перезагружаем конфигурацию после успешной привязки справочника
           context.read<FieldConfigurationBloc>().add(
-            FetchFieldConfiguration('tasks'),
-          );
+                FetchFieldConfiguration('tasks'),
+              );
 
           // Сообщаем об успешном добавлении справочника
           ScaffoldMessenger.of(context).showSnackBar(
@@ -734,8 +763,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
       if (mounted) {
         context.read<FieldConfigurationBloc>().add(
-          FetchFieldConfiguration('tasks'),
-        );
+              FetchFieldConfiguration('tasks'),
+            );
         setState(() {
           customFields.add(CustomField(
             fieldName: fieldName,
@@ -753,7 +782,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   }
 
   void _showAddFieldMenu() {
-    final RenderBox? renderBox = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -797,7 +827,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         offset.dx,
         showAbove ? offset.dy + verticalOffset : offset.dy + verticalOffset,
         MediaQuery.of(context).size.width - offset.dx - size.width,
-        showAbove ? MediaQuery.of(context).size.height - offset.dy + verticalOffset : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
+        showAbove
+            ? MediaQuery.of(context).size.height - offset.dy + verticalOffset
+            : MediaQuery.of(context).size.height - offset.dy - size.height - 8,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -839,12 +871,13 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   // Проверка изменений в конфигурации полей
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
 
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
-            (f) => f.id == current.id,
+        (f) => f.id == current.id,
         orElse: () => current,
       );
 
@@ -861,62 +894,65 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   // Диалог подтверждения выхода из режима настроек без сохранения
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            AppLocalizations.of(context)!.translate('warning'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          content: Text(
-            AppLocalizations.of(context)!.translate('position_changes_will_not_be_saved'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                    onPressed: () => Navigator.of(context).pop(false),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                AppLocalizations.of(context)!.translate('warning'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('dont_save'),
-                    onPressed: () => Navigator.of(context).pop(true),
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
-                  ),
+              ),
+              content: Text(
+                AppLocalizations.of(context)!
+                    .translate('position_changes_will_not_be_saved'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
+                        onPressed: () => Navigator.of(context).pop(false),
+                        buttonColor: Color(0xff1E2E52),
+                        textColor: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: CustomButton(
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        buttonColor: Colors.red,
+                        textColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        );
-      },
-    ) ??
+            );
+          },
+        ) ??
         false;
   }
 
   bool _areFieldConfigurationsEqual(
-      List<FieldConfiguration> first,
-      List<FieldConfiguration> second,
-      ) {
+    List<FieldConfiguration> first,
+    List<FieldConfiguration> second,
+  ) {
     if (identical(first, second)) return true;
     if (first.length != second.length) return false;
     for (var i = 0; i < first.length; i++) {
@@ -937,7 +973,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   }
 
   Widget _buildSettingsMode() {
-    final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
+    final sortedFields = [...fieldConfigurations]
+      ..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
       children: [
@@ -949,7 +986,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
               return AnimatedBuilder(
                 animation: animation,
                 builder: (BuildContext context, Widget? child) {
-                  final double animValue = Curves.easeInOut.transform(animation.value);
+                  final double animValue =
+                      Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
 
@@ -968,7 +1006,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
               );
             },
             onReorder: (oldIndex, newIndex) {
-              if (oldIndex == sortedFields.length || newIndex == sortedFields.length + 1) {
+              if (oldIndex == sortedFields.length ||
+                  newIndex == sortedFields.length + 1) {
                 return;
               }
 
@@ -1002,7 +1041,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                     type: config.type,
                     isDirectory: config.isDirectory,
                     showOnTable: config.showOnTable,
-                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                    originalRequired: config
+                        .originalRequired, // Сохраняем оригинальное значение
                   ));
                 }
 
@@ -1015,7 +1055,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                   key: _addFieldButtonKey,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('add_field'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
                     textColor: Colors.white,
                     onPressed: _showAddFieldMenu,
@@ -1030,7 +1071,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
               return Container(
                 key: ValueKey('field_${config.id}'),
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -1083,14 +1125,13 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                             ],
                           ),
                           SizedBox(height: 12),
-                          if (config.fieldName != 'name' && 
-    config.fieldName != 'description' && 
-    config.fieldName != 'executor' &&
-    config.fieldName != 'project' &&
-    config.fieldName != 'deadline' &&
-    config.fieldName != 'task_status_id')
-
-                          GestureDetector(
+                          if (config.fieldName != 'name' &&
+                              config.fieldName != 'description' &&
+                              config.fieldName != 'executor' &&
+                              config.fieldName != 'project' &&
+                              config.fieldName != 'deadline' &&
+                              config.fieldName != 'task_status_id')
+                            GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 setState(() {
@@ -1109,17 +1150,20 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                                    originalRequired: config
+                                        .originalRequired, // Сохраняем оригинальное значение
                                   );
 
-                                  final idx = fieldConfigurations.indexWhere((f) => f.id == config.id);
+                                  final idx = fieldConfigurations
+                                      .indexWhere((f) => f.id == config.id);
                                   if (idx != -1) {
                                     fieldConfigurations[idx] = updatedConfig;
                                   }
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1129,9 +1173,13 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? Color(0xff4759FF)
+                                            : Colors.white,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? Color(0xff4759FF)
+                                              : Color(0xffCCD5E0),
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -1148,12 +1196,15 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      AppLocalizations.of(context)!.translate('show_field'),
+                                      AppLocalizations.of(context)!
+                                          .translate('show_field'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? Color(0xff1E2E52)
+                                            : Color(0xff6B7A99),
                                       ),
                                     ),
                                   ],
@@ -1183,91 +1234,94 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           ),
           child: isSavingFieldOrder
               ? Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color(0xff4759FF).withOpacity(0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Color(0xff4759FF).withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  SizedBox(width: 12),
-                  Text(
-                    AppLocalizations.of(context)!.translate('saving'),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-              : CustomButton(
-            buttonText: AppLocalizations.of(context)!.translate('save'),
-            buttonColor: Color(0xff4759FF),
-            textColor: Colors.white,
-            onPressed: () async {
-              setState(() {
-                isSavingFieldOrder = true;
-              });
-
-              try {
-                await _saveFieldOrderToBackend();
-
-                if (mounted) {
-                  setState(() {
-                    originalFieldConfigurations = null;
-                    isSettingsMode = false;
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Настройки полей сохранены',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
                         ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 2),
+                        SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.translate('saving'),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }
-              } catch (e) {
-                if (kDebugMode) {
-                  print('LeadAddScreen: Error in save button: $e');
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    isSavingFieldOrder = false;
-                  });
-                }
-              }
-            },
-          ),
+                  ),
+                )
+              : CustomButton(
+                  buttonText: AppLocalizations.of(context)!.translate('save'),
+                  buttonColor: Color(0xff4759FF),
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    setState(() {
+                      isSavingFieldOrder = true;
+                    });
+
+                    try {
+                      await _saveFieldOrderToBackend();
+
+                      if (mounted) {
+                        setState(() {
+                          originalFieldConfigurations = null;
+                          isSettingsMode = false;
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Настройки полей сохранены',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: Colors.green,
+                            elevation: 3,
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (kDebugMode) {
+                        print('LeadAddScreen: Error in save button: $e');
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          isSavingFieldOrder = false;
+                        });
+                      }
+                    }
+                  },
+                ),
         ),
       ],
     );
@@ -1300,8 +1354,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         return loc.translate('deadline');
       case 'task_status_id':
         return loc.translate('task_status');
-    // case 'file':
-    //   return loc.translate('file');
+      // case 'file':
+      //   return loc.translate('file');
       default:
         return config.fieldName;
     }
@@ -1333,15 +1387,18 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
       galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
       cameraLabel: AppLocalizations.of(context)!.translate('camera'),
       cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-      fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-      errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
     );
 
     // Если файлы выбраны, добавляем их
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var file in pickedFiles) {
-          files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+          files.add(FileHelper(
+              id: 0, name: file.name, path: file.path, size: file.sizeKB));
         }
       });
     }
@@ -1377,7 +1434,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                    AppLocalizations.of(context)!
+                        .translate('error_delete_file'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
@@ -1403,21 +1461,22 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
   @override
   Widget build(BuildContext context) {
     //print('TaskAddScreen: Building with selectedLead: $selectedLead, selectedManager: $selectedManager');
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
             AppLocalizations.of(context)!.translate('copy_task'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -1442,7 +1501,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           IconButton(
             icon: Icon(
               isSettingsMode ? Icons.close : Icons.settings,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
             onPressed: () async {
               if (isSettingsMode) {
@@ -1457,7 +1516,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                     setState(() {
                       // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
                       final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!.any((original) => original.id == current.id);
+                        return !originalFieldConfigurations!
+                            .any((original) => original.id == current.id);
                       }).toList();
 
                       // Восстанавливаем оригинальную конфигурацию
@@ -1467,7 +1527,9 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                       if (newFields.isNotEmpty) {
                         int maxPosition = fieldConfigurations.isEmpty
                             ? 0
-                            : fieldConfigurations.map((e) => e.position).reduce((a, b) => a > b ? a : b);
+                            : fieldConfigurations
+                                .map((e) => e.position)
+                                .reduce((a, b) => a > b ? a : b);
                         for (int i = 0; i < newFields.length; i++) {
                           fieldConfigurations.add(FieldConfiguration(
                             id: newFields[i].id,
@@ -1484,7 +1546,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                             type: newFields[i].type,
                             isDirectory: newFields[i].isDirectory,
                             showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i].originalRequired, // Сохраняем оригинальное значение
+                            originalRequired: newFields[i]
+                                .originalRequired, // Сохраняем оригинальное значение
                           ));
                         }
                       }
@@ -1503,7 +1566,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
               } else {
                 // Входим в режим настроек - сохраняем снимок конфигурации
                 setState(() {
-                  originalFieldConfigurations = fieldConfigurations.map((config) {
+                  originalFieldConfigurations =
+                      fieldConfigurations.map((config) {
                     return FieldConfiguration(
                       id: config.id,
                       tableName: config.tableName,
@@ -1519,7 +1583,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                       type: config.type,
                       isDirectory: config.isDirectory,
                       showOnTable: config.showOnTable,
-                      originalRequired: config.originalRequired, // Сохраняем оригинальное значение
+                      originalRequired: config
+                          .originalRequired, // Сохраняем оригинальное значение
                     );
                   }).toList();
                   isSettingsMode = true;
@@ -1555,269 +1620,294 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
       ),
       body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
           listenWhen: (previous, current) {
-            if (previous is FieldConfigurationLoaded && current is FieldConfigurationLoaded) {
-              return !_areFieldConfigurationsEqual(previous.fields, current.fields);
-            }
-            return true;
-          },
-          listener: (context, configState) {
-            if (configState is FieldConfigurationLoaded) {
-              if (kDebugMode) {
-                print('Task: Configuration loaded with ${configState.fields.length} fields');
+        if (previous is FieldConfigurationLoaded &&
+            current is FieldConfigurationLoaded) {
+          return !_areFieldConfigurationsEqual(previous.fields, current.fields);
+        }
+        return true;
+      }, listener: (context, configState) {
+        if (configState is FieldConfigurationLoaded) {
+          if (kDebugMode) {
+            print(
+                'Task: Configuration loaded with ${configState.fields.length} fields');
+          }
+
+          setState(() {
+            fieldConfigurations = configState.fields;
+            isConfigurationLoaded = true;
+
+            // ✅ ONLY initialize custom fields here, ONCE
+            // Check if already initialized to prevent duplicates
+            if (customFields.isEmpty) {
+              // Initialize custom fields from widget data
+              for (var customField in widget.taskCustomFields) {
+                // Ищем соответствующую конфигурацию поля
+                final matchingConfig = fieldConfigurations
+                    .where(
+                      (config) =>
+                          config.isCustomField &&
+                          config.fieldName == customField.name,
+                    )
+                    .firstOrNull;
+
+                // Используем type из конфигурации, если type из виджета пустой
+                final fieldType = (customField.type.isEmpty &&
+                        matchingConfig?.type != null)
+                    ? matchingConfig!.type
+                    : (customField.type.isNotEmpty ? customField.type : null);
+
+                final controller =
+                    TextEditingController(text: customField.value);
+                customFields.add(CustomField(
+                  fieldName: customField.name,
+                  controller: controller,
+                  uniqueId: Uuid().v4(),
+                  type: fieldType,
+                  isCustomField: true,
+                ));
               }
 
-              setState(() {
-                fieldConfigurations = configState.fields;
-                isConfigurationLoaded = true;
+              // Initialize directory values from widget data
+              if (widget.directoryValues != null &&
+                  widget.directoryValues!.isNotEmpty) {
+                final seen = <String>{};
+                final uniqueDirectoryValues =
+                    widget.directoryValues!.where((dirValue) {
+                  final key =
+                      '${dirValue.entry.directory.id}_${dirValue.entry.id}';
+                  return seen.add(key);
+                }).toList();
 
-                // ✅ ONLY initialize custom fields here, ONCE
-                // Check if already initialized to prevent duplicates
-                if (customFields.isEmpty) {
-                  // Initialize custom fields from widget data
-                  for (var customField in widget.taskCustomFields) {
-                    // Ищем соответствующую конфигурацию поля
-                    final matchingConfig = fieldConfigurations.where(
-                          (config) => config.isCustomField && config.fieldName == customField.name,
-                    ).firstOrNull;
+                for (var dirValue in uniqueDirectoryValues) {
+                  // Check if already exists to prevent duplicates
+                  final exists = customFields.any((f) =>
+                      f.isDirectoryField &&
+                      f.directoryId == dirValue.entry.directory.id);
 
-                    // Используем type из конфигурации, если type из виджета пустой
-                    final fieldType = (customField.type.isEmpty && matchingConfig?.type != null)
-                        ? matchingConfig!.type
-                        : (customField.type.isNotEmpty ? customField.type : null);
-
-                    final controller = TextEditingController(text: customField.value);
+                  if (!exists) {
+                    final controller = TextEditingController(
+                      text: (dirValue.entry.values.isNotEmpty
+                          ? dirValue.entry.values.first.value
+                          : ''),
+                    );
                     customFields.add(CustomField(
-                      fieldName: customField.name,
+                      fieldName: dirValue.entry.directory.name,
                       controller: controller,
+                      isDirectoryField: true,
+                      directoryId: dirValue.entry.directory.id,
+                      entryId: dirValue.entry.id,
                       uniqueId: Uuid().v4(),
-                      type: fieldType,
-                      isCustomField: true,
                     ));
                   }
-
-                  // Initialize directory values from widget data
-                  if (widget.directoryValues != null && widget.directoryValues!.isNotEmpty) {
-                    final seen = <String>{};
-                    final uniqueDirectoryValues = widget.directoryValues!.where((dirValue) {
-                      final key = '${dirValue.entry.directory.id}_${dirValue.entry.id}';
-                      return seen.add(key);
-                    }).toList();
-
-                    for (var dirValue in uniqueDirectoryValues) {
-                      // Check if already exists to prevent duplicates
-                      final exists = customFields.any((f) =>
-                      f.isDirectoryField &&
-                          f.directoryId == dirValue.entry.directory.id
-                      );
-
-                      if (!exists) {
-                        final controller = TextEditingController(
-                          text: (dirValue.entry.values.isNotEmpty
-                              ? dirValue.entry.values.first.value
-                              : ''),
-                        );
-                        customFields.add(CustomField(
-                          fieldName: dirValue.entry.directory.name,
-                          controller: controller,
-                          isDirectoryField: true,
-                          directoryId: dirValue.entry.directory.id,
-                          entryId: dirValue.entry.id,
-                          uniqueId: Uuid().v4(),
-                        ));
-                      }
-                    }
-                  }
                 }
-              });
-            } else if (configState is FieldConfigurationError) {
-              if (kDebugMode) {
-                print('Task: Configuration error: ${configState.message}');
               }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Ошибка загрузки конфигурации: ${configState.message}',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
             }
-          },
-          buildWhen: (previous, current) {
-            if (previous is FieldConfigurationLoaded && current is FieldConfigurationLoaded) {
-              return !_areFieldConfigurationsEqual(previous.fields, current.fields);
-            }
-            return previous.runtimeType != current.runtimeType;
-          },
-          builder: (context, configState) {
-            if (kDebugMode) {
-              print('TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
-            }
-
-            if (configState is FieldConfigurationLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              );
-            }
-
-            if (!isConfigurationLoaded) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    CircularProgressIndicator(
-                      color: Color(0xff1E2E52),
-                    ),
-                    SizedBox(height: 16),
-                    Text('Загрузка конфигурации...'),
-                  ],
-                ),
-              );
-            }
-
-            if (isSettingsMode) {
-              return _buildSettingsMode();
-            }
-
-            return BlocProvider.value(
-              value: _mainFieldBloc,
-              child: BlocListener<TaskBloc, TaskState>(
-                listener: (context, state) {
-                  if (state is TaskError) {
-                    showCustomSnackBar(
-                      context: context,
-                      message: AppLocalizations.of(context)!.translate(state.message),
-                      isSuccess: false,
-                    );
-                  } else if (state is TaskSuccess) {
-                    showCustomSnackBar(
-                      context: context,
-                      message: AppLocalizations.of(context)!.translate(state.message),
-                      isSuccess: true,
-                    );
-                    if (context.mounted) {
-                      Navigator.pop(context, true);
-                      context.read<TaskBloc>().add(FetchTaskStatuses());
-                    }
-                  }
-                },
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            FocusScope.of(context).unfocus();
-                          },
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ...(() {
-                                  final configured = _buildConfiguredFieldWidgets();
-                                  if (configured.isNotEmpty) {
-                                    return configured;
-                                  }
-                                  return _buildDefaultTaskWidgets();
-                                })(),
-
-                                // Отступ между сконфигурированными и пользовательскими полями
-                                if (customFields.where((field) {
-                                  return !fieldConfigurations.any((config) =>
-                                  (config.isCustomField && config.fieldName == field.fieldName) ||
-                                      (config.isDirectory && config.directoryId == field.directoryId));
-                                }).isNotEmpty)
-                                  const SizedBox(height: 16),
-
-                                // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
-                                ...(() {
-                                  final customFieldsList = customFields.where((field) {
-                                    // Исключаем поля, которые уже есть в серверной конфигурации
-                                    return !fieldConfigurations.any((config) =>
-                                    (config.isCustomField && config.fieldName == field.fieldName) ||
-                                        (config.isDirectory && config.directoryId == field.directoryId));
-                                  }).toList();
-
-                                  if (customFieldsList.isEmpty) return <Widget>[];
-
-                                  final customFieldWidgets = customFieldsList.map((field) {
-                                    return field.isDirectoryField && field.directoryId != null
-                                        ? MainFieldDropdownWidget(
-                                      directoryId: field.directoryId!,
-                                      directoryName: field.fieldName,
-                                      selectedField: field.entryId != null
-                                          ? MainField(id: field.entryId!, value: field.controller.text)
-                                          : null,
-                                      onSelectField: (MainField selectedField) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: selectedField.id,
-                                            controller: TextEditingController(
-                                                text: selectedField.value),
-                                          );
-                                        });
-                                      },
-                                      controller: field.controller,
-                                      onSelectEntryId: (int entryId) {
-                                        setState(() {
-                                          final idx = customFields.indexOf(field);
-                                          customFields[idx] = field.copyWith(
-                                            entryId: entryId,
-                                          );
-                                        });
-                                      },
-                                      initialEntryId: field.entryId,
-                                    )
-                                        : CustomFieldWidget(
-                                      fieldName: field.fieldName,
-                                      valueController: field.controller,
-                                      type: field.type,
-                                      isDirectory: false,
-                                    );
-                                  }).toList();
-
-                                  return _withVerticalSpacing(customFieldWidgets, spacing: 8);
-                                })(),
-
-                                // Всегда показываем выбор файлов внизу
-                                const SizedBox(height: 16),
-                                _buildFileSelection(),
-                                const SizedBox(height: 80), // Отступ внизу для кнопок
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      _buildActionButtons(context),
-                    ],
-                  ),
+          });
+        } else if (configState is FieldConfigurationError) {
+          if (kDebugMode) {
+            print('Task: Configuration error: ${configState.message}');
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Ошибка загрузки конфигурации: ${configState.message}',
+                style: const TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
                 ),
               ),
-            );
-          }),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }, buildWhen: (previous, current) {
+        if (previous is FieldConfigurationLoaded &&
+            current is FieldConfigurationLoaded) {
+          return !_areFieldConfigurationsEqual(previous.fields, current.fields);
+        }
+        return previous.runtimeType != current.runtimeType;
+      }, builder: (context, configState) {
+        if (kDebugMode) {
+          print(
+              'TaskAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+        }
+
+        if (configState is FieldConfigurationLoading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xff1E2E52),
+            ),
+          );
+        }
+
+        if (!isConfigurationLoaded) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                CircularProgressIndicator(
+                  color: Color(0xff1E2E52),
+                ),
+                SizedBox(height: 16),
+                Text('Загрузка конфигурации...'),
+              ],
+            ),
+          );
+        }
+
+        if (isSettingsMode) {
+          return _buildSettingsMode();
+        }
+
+        return BlocProvider.value(
+          value: _mainFieldBloc,
+          child: BlocListener<TaskBloc, TaskState>(
+            listener: (context, state) {
+              if (state is TaskError) {
+                showCustomSnackBar(
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
+                  isSuccess: false,
+                );
+              } else if (state is TaskSuccess) {
+                showCustomSnackBar(
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
+                  isSuccess: true,
+                );
+                if (context.mounted) {
+                  Navigator.pop(context, true);
+                  context.read<TaskBloc>().add(FetchTaskStatuses());
+                }
+              }
+            },
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        FocusScope.of(context).unfocus();
+                      },
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ...(() {
+                              final configured = _buildConfiguredFieldWidgets();
+                              if (configured.isNotEmpty) {
+                                return configured;
+                              }
+                              return _buildDefaultTaskWidgets();
+                            })(),
+
+                            // Отступ между сконфигурированными и пользовательскими полями
+                            if (customFields.where((field) {
+                              return !fieldConfigurations.any((config) =>
+                                  (config.isCustomField &&
+                                      config.fieldName == field.fieldName) ||
+                                  (config.isDirectory &&
+                                      config.directoryId == field.directoryId));
+                            }).isNotEmpty)
+                              const SizedBox(height: 16),
+
+                            // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                            ...(() {
+                              final customFieldsList =
+                                  customFields.where((field) {
+                                // Исключаем поля, которые уже есть в серверной конфигурации
+                                return !fieldConfigurations.any((config) =>
+                                    (config.isCustomField &&
+                                        config.fieldName == field.fieldName) ||
+                                    (config.isDirectory &&
+                                        config.directoryId ==
+                                            field.directoryId));
+                              }).toList();
+
+                              if (customFieldsList.isEmpty) return <Widget>[];
+
+                              final customFieldWidgets =
+                                  customFieldsList.map((field) {
+                                return field.isDirectoryField &&
+                                        field.directoryId != null
+                                    ? MainFieldDropdownWidget(
+                                        directoryId: field.directoryId!,
+                                        directoryName: field.fieldName,
+                                        selectedField: field.entryId != null
+                                            ? MainField(
+                                                id: field.entryId!,
+                                                value: field.controller.text)
+                                            : null,
+                                        onSelectField:
+                                            (MainField selectedField) {
+                                          setState(() {
+                                            final idx =
+                                                customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: selectedField.id,
+                                              controller: TextEditingController(
+                                                  text: selectedField.value),
+                                            );
+                                          });
+                                        },
+                                        controller: field.controller,
+                                        onSelectEntryId: (int entryId) {
+                                          setState(() {
+                                            final idx =
+                                                customFields.indexOf(field);
+                                            customFields[idx] = field.copyWith(
+                                              entryId: entryId,
+                                            );
+                                          });
+                                        },
+                                        initialEntryId: field.entryId,
+                                      )
+                                    : CustomFieldWidget(
+                                        fieldName: field.fieldName,
+                                        valueController: field.controller,
+                                        type: field.type,
+                                        isDirectory: false,
+                                      );
+                              }).toList();
+
+                              return _withVerticalSpacing(customFieldWidgets,
+                                  spacing: 8);
+                            })(),
+
+                            // Всегда показываем выбор файлов внизу
+                            const SizedBox(height: 16),
+                            _buildFileSelection(),
+                            const SizedBox(
+                                height: 80), // Отступ внизу для кнопок
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildActionButtons(context),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 
   _buildActionButtons(BuildContext context) {
-    return  Container(
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
       child: Row(
         children: [
           Expanded(
             child: CustomButton(
-              buttonText:
-              AppLocalizations.of(context)!.translate('cancel'),
+              buttonText: AppLocalizations.of(context)!.translate('cancel'),
               buttonColor: const Color(0xffF4F7FD),
               textColor: Colors.black,
               onPressed: () => Navigator.pop(context, null),
@@ -1845,13 +1935,11 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                         try {
                           if (startDateController.text.isNotEmpty) {
                             startDate = DateFormat('dd/MM/yyyy')
-                                .parseStrict(
-                                startDateController.text);
+                                .parseStrict(startDateController.text);
                           }
                           if (endDateController.text.isNotEmpty) {
                             endDate = DateFormat('dd/MM/yyyy')
-                                .parseStrict(
-                                endDateController.text);
+                                .parseStrict(endDateController.text);
                           }
                           if (startDate != null &&
                               endDate != null &&
@@ -1861,8 +1949,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                             });
                             _showErrorSnackBar(
                               AppLocalizations.of(context)!
-                                  .translate(
-                                  'start_date_after_end_date'),
+                                  .translate('start_date_after_end_date'),
                             );
                             return;
                           }
@@ -1886,34 +1973,28 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
                             if (fieldType == 'number' &&
                                 fieldValue.isNotEmpty) {
-                              if (!RegExp(r'^\d+$')
-                                  .hasMatch(fieldValue)) {
-                                _showErrorSnackBar(
-                                    AppLocalizations.of(context)!
-                                        .translate(
-                                        'enter_valid_number'));
+                              if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
+                                _showErrorSnackBar(AppLocalizations.of(context)!
+                                    .translate('enter_valid_number'));
                                 return;
                               }
                             }
 
                             if ((fieldType == 'date' ||
-                                fieldType == 'datetime') &&
+                                    fieldType == 'datetime') &&
                                 fieldValue.isNotEmpty) {
                               try {
                                 if (fieldType == 'date') {
-                                  DateFormat('dd/MM/yyyy')
-                                      .parse(fieldValue);
+                                  DateFormat('dd/MM/yyyy').parse(fieldValue);
                                 } else {
                                   DateFormat('dd/MM/yyyy HH:mm')
                                       .parse(fieldValue);
                                 }
                               } catch (e) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
+                                ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate(
+                                      AppLocalizations.of(context)!.translate(
                                           'enter_valid_${fieldType}'),
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
@@ -1936,7 +2017,8 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                                 'directory_id': field.directoryId!,
                                 'entry_id': field.entryId!,
                               });
-                            } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
+                            } else if (fieldName.isNotEmpty &&
+                                fieldValue.isNotEmpty) {
                               customFieldList.add({
                                 'key': fieldName,
                                 'value': fieldValue,
@@ -1947,37 +2029,32 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
                           // Для CreateTask используем только новые файлы (id == 0)
                           // Существующие файлы с сервера (id != 0) не передаем при создании новой задачи
-                          final newFiles = files
-                              .where((f) => f.id == 0)
-                              .toList();
+                          final newFiles =
+                              files.where((f) => f.id == 0).toList();
 
-                          final localizations =
-                          AppLocalizations.of(context)!;
+                          final localizations = AppLocalizations.of(context)!;
 
                           context.read<TaskBloc>().add(
-                            CreateTask(
-                              name: nameController.text,
-                              statusId:
-                              _selectedStatuses!.toInt(),
-                              taskStatusId:
-                              _selectedStatuses!.toInt(),
-                              startDate: startDate,
-                              endDate: endDate,
-                              projectId: selectedProject != null
-                                  ? int.parse(selectedProject!)
-                                  : null,
-                              userId: selectedUsers?.map(
-                                      (id) => int.parse(id))
-                                  .toList(),
-                              priority: selectedPriority,
-                              description:
-                              descriptionController.text,
-                              customFields: customFieldList,
-                              files: newFiles.isNotEmpty ? newFiles : null,
-                              directoryValues: directoryValues,
-                              localizations: localizations,
-                            ),
-                          );
+                                CreateTask(
+                                  name: nameController.text,
+                                  statusId: _selectedStatuses!.toInt(),
+                                  taskStatusId: _selectedStatuses!.toInt(),
+                                  startDate: startDate,
+                                  endDate: endDate,
+                                  projectId: selectedProject != null
+                                      ? int.parse(selectedProject!)
+                                      : null,
+                                  userId: selectedUsers
+                                      ?.map((id) => int.parse(id))
+                                      .toList(),
+                                  priority: selectedPriority,
+                                  description: descriptionController.text,
+                                  customFields: customFieldList,
+                                  files: newFiles.isNotEmpty ? newFiles : null,
+                                  directoryValues: directoryValues,
+                                  localizations: localizations,
+                                ),
+                              );
                         } catch (e) {
                           _showErrorSnackBar(
                             AppLocalizations.of(context)!

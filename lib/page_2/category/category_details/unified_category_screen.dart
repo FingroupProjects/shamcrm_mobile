@@ -90,7 +90,7 @@
 //           Padding(
 //             padding: const EdgeInsets.symmetric(vertical: 8),
 //             child: Container(
-//               decoration: TaskCardStyles.taskCardDecoration,
+//               decoration: TaskCardStyles.taskCardDecoration(context),
 //               child: Center(
 //                 child: Padding(
 //                   padding: const EdgeInsets.all(16),
@@ -266,7 +266,7 @@
 //       children: [
 //         Text(
 //           title,
-//           style: TaskCardStyles.titleStyle.copyWith(
+//           style: TaskCardStyles.titleStyle(context).copyWith(
 //             fontWeight: FontWeight.w500,
 //           ),
 //         ),

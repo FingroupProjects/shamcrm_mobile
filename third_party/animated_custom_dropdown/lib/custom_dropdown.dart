@@ -645,19 +645,31 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
         MultiSelectController(widget.initialItems ?? []);
 
     selectedItemNotifier.addListener(() {
+      if (!mounted) return;
       widget.onChanged?.call(selectedItemNotifier.value);
-      _formFieldState?.didChange((selectedItemNotifier.value, []));
-      if (widget.validateOnChange) {
-        _formFieldState?.validate();
-      }
+      final formFieldState = _formFieldState;
+      if (formFieldState == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _formFieldState == null) return;
+        formFieldState.didChange((selectedItemNotifier.value, []));
+        if (widget.validateOnChange) {
+          formFieldState.validate();
+        }
+      });
     });
 
     selectedItemsNotifier.addListener(() {
+      if (!mounted) return;
       widget.onListChanged?.call(selectedItemsNotifier.value);
-      _formFieldState?.didChange((null, selectedItemsNotifier.value));
-      if (widget.validateOnChange) {
-        _formFieldState?.validate();
-      }
+      final formFieldState = _formFieldState;
+      if (formFieldState == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _formFieldState == null) return;
+        formFieldState.didChange((null, selectedItemsNotifier.value));
+        if (widget.validateOnChange) {
+          formFieldState.validate();
+        }
+      });
     });
   }
 
@@ -692,6 +704,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
 
   @override
   void dispose() {
+    _formFieldState = null;
     if (widget.controller == null) {
       selectedItemNotifier.dispose();
     }
@@ -788,8 +801,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                   listItemPadding: widget.listItemPadding,
                   searchRequestLoadingIndicator:
                       widget.searchRequestLoadingIndicator,
-                  paginationLoadingIndicator:
-                      widget.paginationLoadingIndicator,
+                  paginationLoadingIndicator: widget.paginationLoadingIndicator,
                   dropdownType: widget._dropdownType,
                 );
               },

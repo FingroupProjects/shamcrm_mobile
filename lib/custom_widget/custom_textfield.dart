@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,12 +19,18 @@ class CustomTextField extends StatefulWidget {
   final String? errorText;
   final bool hasError;
   final Color backgroundColor;
+  final Color? labelColor;
+  final Color? hintColor;
+  final Color? textColor;
+  final Color? borderColor;
+  final Color? focusedBorderColor;
   final bool? enabled;
   final bool showEditButton;
   final VoidCallback? onEditPressed;
   final TextAlign textAlign; // ← Добавим для гибкости
 
-  CustomTextField({
+  const CustomTextField({
+    super.key,
     required this.controller,
     required this.hintText,
     required this.label,
@@ -40,13 +47,18 @@ class CustomTextField extends StatefulWidget {
     this.enabled,
     this.hasError = false,
     this.backgroundColor = const Color(0xffF4F7FD),
+    this.labelColor,
+    this.hintColor,
+    this.textColor,
+    this.borderColor,
+    this.focusedBorderColor,
     this.showEditButton = false,
     this.onEditPressed,
     this.textAlign = TextAlign.start, // ← Добавили
   });
 
   @override
-  _CustomTextFieldState createState() => _CustomTextFieldState();
+  State<CustomTextField> createState() => _CustomTextFieldState();
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
@@ -103,7 +115,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFD1D5DB).withOpacity(0.95),
+        color: const Color(0xFFD1D5DB).withValues(alpha: 0.95),
         border: const Border(
           top: BorderSide(
             color: Color(0xFF9CA3AF),
@@ -146,6 +158,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
         widget.hasError;
 
@@ -158,7 +171,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: const Color(0xff1E2E52),
+            color: widget.labelColor ?? colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -174,11 +187,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
           validator: widget.validator,
           onChanged: widget.onChanged,
           textAlign: widget.textAlign, // ← Используем новый параметр
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            color: widget.textColor ?? colors.textPrimary,
+          ),
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               fontFamily: 'Gilroy',
-              color: Color(0xff99A4BA),
+              color: widget.hintColor ?? colors.fieldHint,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -192,34 +209,49 @@ class _CustomTextFieldState extends State<CustomTextField> {
             suffixIcon: _buildSuffixIcon(),
             errorText: widget.errorText,
             errorMaxLines: 2,
-            errorStyle: const TextStyle(
+            errorStyle: TextStyle(
               fontSize: 14,
-              color: Colors.red,
+              color: colors.error,
               fontWeight: FontWeight.w400,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? Colors.red : Colors.transparent,
+                color: hasError
+                    ? colors.error
+                    : (widget.borderColor ?? Colors.transparent),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError
+                    ? colors.error
+                    : (widget.focusedBorderColor ??
+                        widget.borderColor ??
+                        Colors.transparent),
+                width: 1.2,
               ),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? Colors.red : Colors.grey.shade300,
+                color: hasError
+                    ? colors.error
+                    : (widget.borderColor ?? Colors.grey.shade300),
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: colors.error,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: colors.error,
                 width: 1.5,
               ),
             ),

@@ -19,6 +19,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_state.dart
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
@@ -225,6 +229,21 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   late final int _initialStatusId;
   int? _currentStatusId;
   bool _statusChangedFromDetails = false;
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.82);
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.16);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.94);
 
   String _getLeadErrorMessage(String error) {
     if (error.toLowerCase().contains('интернет')) {
@@ -1002,8 +1021,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       fontSize: 16,
       fontFamily: 'Gilroy',
       fontWeight: FontWeight.w500,
-      color: Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: _screenPrimaryText(context),
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
     );
 
     return GestureDetector(
@@ -1011,39 +1030,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
-              style: const TextStyle(
-
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
+              style: TextStyle(
                 fontFamily: 'Gilroy',
-
                 fontSize: 15,
-
                 fontWeight: FontWeight.w500,
-
-                color: Colors.white,
-
+                color: context.appColors.textInverse,
               ),
-
             ),
-
-            backgroundColor: Colors.green,
-
+            backgroundColor: context.appColors.success,
             behavior: SnackBarBehavior.floating,
-
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
-
           ),
-
         );
       },
       child: Text(
@@ -1059,6 +1063,58 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final baseTheme = Theme.of(context);
+    final baseColors = context.appColors;
+    final baseTextStyles = context.appTextStyles;
+    final baseShadows = context.appShadows;
+    final screenTheme = baseTheme.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        baseColors.copyWith(
+          surfacePrimary: _screenSurfaceBackground(context),
+          surfaceElevated: _screenSurfaceElevated(context),
+          textPrimary: _screenPrimaryText(context),
+          textSecondary: _screenSecondaryText(context),
+          textMuted: _screenHintText(context),
+          textInverse: _screenPrimaryText(context),
+          iconPrimary: _screenPrimaryText(context),
+          iconSecondary: _screenSecondaryText(context),
+          borderPrimary: _screenBorder(context),
+          borderSubtle: _screenBorder(context),
+          buttonSecondaryBg: _screenFieldBackground(context),
+          buttonSecondaryFg: _screenPrimaryText(context),
+          fieldBg: _screenFieldBackground(context),
+          fieldBorder: _screenBorder(context),
+          fieldHint: _screenHintText(context),
+          overlay: baseColors.overlay,
+        ),
+        baseTextStyles.copyWith(
+          titleLg: baseTextStyles.titleLg
+              .copyWith(color: _screenPrimaryText(context)),
+          titleMd: baseTextStyles.titleMd
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyLg: baseTextStyles.bodyLg
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyMd: baseTextStyles.bodyMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          bodySm: baseTextStyles.bodySm.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          labelLg: baseTextStyles.labelLg
+              .copyWith(color: _screenPrimaryText(context)),
+          labelMd: baseTextStyles.labelMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          caption:
+              baseTextStyles.caption.copyWith(color: _screenHintText(context)),
+        ),
+        baseShadows,
+      ],
+    );
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+    final formSurface = _screenSurfaceBackground(context);
+
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         //showTutorial();
@@ -1073,152 +1129,187 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         if (didPop) return;
         await _handleBackNavigation();
       },
-      child: Scaffold(
-        appBar: _buildAppBar(
+      child: Theme(
+        data: screenTheme,
+        child: Scaffold(
+          extendBodyBehindAppBar: false,
+          backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+          appBar: _buildAppBar(
             context,
             AppLocalizations.of(context)!.translate('view_lead') +
-                widget.leadId),
-        backgroundColor: Colors.white,
-        body: MultiBlocListener(
-          listeners: [
-            BlocListener<LeadByIdBloc, LeadByIdState>(
-              listener: (context, state) {
-                if (state is LeadByIdLoaded || state is LeadByIdError) {
-                  _leadDataReady = true;
-                  _tryHideCombinedLoader();
-                }
-                if (state is LeadByIdLoaded) {
-                  _loadLeadActionAvailability(lead: state.lead);
-                }
-                if (state is LeadByIdError) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    showCustomSnackBar(
-                      context: context,
-                      message: AppLocalizations.of(context)!
-                          .translate(state.message),
-                      isSuccess: false,
-                    );
-                  });
-                }
-              },
-            ),
-            BlocListener<NotesBloc, NotesState>(
-              listener: (context, state) {
-                if (state is NotesLoaded || state is NotesError) {
-                  _notesDataReady = true;
-                  _tryHideCombinedLoader();
-                }
-              },
-            ),
-            BlocListener<LeadDealsBloc, LeadDealsState>(
-              listener: (context, state) {
-                if (state is LeadDealsLoaded || state is LeadDealsError) {
-                  _dealsDataReady = true;
-                  _tryHideCombinedLoader();
-                }
-              },
-            ),
-            BlocListener<OrderByLeadBloc, OrderByLeadState>(
-              listener: (context, state) {
-                if (state is OrderByLeadLoaded || state is OrderByLeadError) {
-                  _ordersDataReady = true;
-                  _tryHideCombinedLoader();
-                }
-              },
-            ),
-          ],
-          child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
-            builder: (context, state) {
-              if (_showCombinedLoader || state is LeadByIdLoading) {
-                return Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                );
-              }
-
-              if (state is LeadByIdLoaded) {
-                LeadById lead = state.lead;
-                _updateDetails(lead);
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListView(
-                    controller: _scrollController,
-                    children: [
-                      _buildDetailsList(),
-                      if (_shouldShowAcceptDeclineButtons)
-                        _buildAcceptDeclineActions(),
-                      const SizedBox(height: 8),
-                      LeadNavigateToChat(
-                        key: keyLeadNavigateChat,
-                        leadId: int.parse(widget.leadId),
-                        leadName: widget.leadName,
-                        chats: state.lead.chats
-                            .map((chat) => {
-                                  'id': chat.id,
-                                  'integration': chat.integration != null
-                                      ? {
-                                          'id': chat.integration!.id,
-                                          'name': chat.integration!.name,
-                                          'username':
-                                              chat.integration!.username,
-                                        }
-                                      : null,
-                                })
-                            .toList(),
-                      ),
-                      const SizedBox(height: 8),
-                      if (selectedOrganization != null)
-                        LeadToC(
-                          leadId: int.parse(widget.leadId),
-                          selectedOrganization: selectedOrganization!,
-                        ),
-                      const SizedBox(height: 8),
-                      ActionHistoryWidget(leadId: int.parse(widget.leadId)),
-                      const SizedBox(height: 8),
-                      if (_canReadNotes)
-                        NotesWidget(
-                          leadId: int.parse(widget.leadId),
-                          key: keyLeadNotice,
-                          managerId: lead.manager?.id,
-                          autoFetch: false,
-                        ),
-                      if (_canReadDeal)
-                        DealsWidget(
-                          leadId: int.parse(widget.leadId),
-                          key: keyLeadDeal,
-                          autoFetch: false,
-                        ),
-                      if (_canReadOrders)
-                        OrdersWidget(
-                          entityId: int.parse(widget.leadId),
-                          clientPhone: lead.phone,
-                          autoFetch: false,
-                          key: GlobalKey(),
-                        ),
-                      ContactPersonWidget(
-                        leadId: int.parse(widget.leadId),
-                        key: keyLeadContactPerson,
-                      ),
-                    ],
+                widget.leadId,
+          ),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              const AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
+              ),
+              MultiBlocListener(
+                listeners: [
+                  BlocListener<LeadByIdBloc, LeadByIdState>(
+                    listener: (context, state) {
+                      if (state is LeadByIdLoaded || state is LeadByIdError) {
+                        _leadDataReady = true;
+                        _tryHideCombinedLoader();
+                      }
+                      if (state is LeadByIdLoaded) {
+                        _loadLeadActionAvailability(lead: state.lead);
+                      }
+                      if (state is LeadByIdError) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          showCustomSnackBar(
+                            context: context,
+                            message: AppLocalizations.of(context)!
+                                .translate(state.message),
+                            isSuccess: false,
+                          );
+                        });
+                      }
+                    },
                   ),
-                );
-              }
-
-              if (state is LeadByIdError) {
-                return Center(
-                  child: Text(
-                    _getLeadErrorMessage(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
+                  BlocListener<NotesBloc, NotesState>(
+                    listener: (context, state) {
+                      if (state is NotesLoaded || state is NotesError) {
+                        _notesDataReady = true;
+                        _tryHideCombinedLoader();
+                      }
+                    },
                   ),
-                );
-              }
-              return Center(child: Text(''));
-            },
+                  BlocListener<LeadDealsBloc, LeadDealsState>(
+                    listener: (context, state) {
+                      if (state is LeadDealsLoaded || state is LeadDealsError) {
+                        _dealsDataReady = true;
+                        _tryHideCombinedLoader();
+                      }
+                    },
+                  ),
+                  BlocListener<OrderByLeadBloc, OrderByLeadState>(
+                    listener: (context, state) {
+                      if (state is OrderByLeadLoaded ||
+                          state is OrderByLeadError) {
+                        _ordersDataReady = true;
+                        _tryHideCombinedLoader();
+                      }
+                    },
+                  ),
+                ],
+                child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
+                  builder: (context, state) {
+                    if (_showCombinedLoader || state is LeadByIdLoading) {
+                      return Center(
+                        child: CircularProgressIndicator(color: primaryText),
+                      );
+                    }
+
+                    if (state is LeadByIdLoaded) {
+                      LeadById lead = state.lead;
+                      _updateDetails(lead);
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                        child: ListView(
+                          controller: _scrollController,
+                          children: [
+                            Container(
+                              padding:
+                                  const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                              decoration: BoxDecoration(
+                                color: formSurface,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: subtleBorder),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.appColors.shadow
+                                        .withValues(alpha: 0.14),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 14),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  _buildDetailsList(),
+                                  if (_shouldShowAcceptDeclineButtons)
+                                    _buildAcceptDeclineActions(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            LeadNavigateToChat(
+                              key: keyLeadNavigateChat,
+                              leadId: int.parse(widget.leadId),
+                              leadName: widget.leadName,
+                              chats: state.lead.chats
+                                  .map((chat) => {
+                                        'id': chat.id,
+                                        'integration': chat.integration != null
+                                            ? {
+                                                'id': chat.integration!.id,
+                                                'name': chat.integration!.name,
+                                                'username':
+                                                    chat.integration!.username,
+                                              }
+                                            : null,
+                                      })
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 8),
+                            if (selectedOrganization != null)
+                              LeadToC(
+                                leadId: int.parse(widget.leadId),
+                                selectedOrganization: selectedOrganization!,
+                              ),
+                            const SizedBox(height: 8),
+                            ActionHistoryWidget(
+                                leadId: int.parse(widget.leadId)),
+                            const SizedBox(height: 8),
+                            if (_canReadNotes)
+                              NotesWidget(
+                                leadId: int.parse(widget.leadId),
+                                key: keyLeadNotice,
+                                managerId: lead.manager?.id,
+                                autoFetch: false,
+                              ),
+                            if (_canReadDeal)
+                              DealsWidget(
+                                leadId: int.parse(widget.leadId),
+                                key: keyLeadDeal,
+                                autoFetch: false,
+                              ),
+                            if (_canReadOrders)
+                              OrdersWidget(
+                                entityId: int.parse(widget.leadId),
+                                clientPhone: lead.phone,
+                                autoFetch: false,
+                                key: GlobalKey(),
+                              ),
+                            ContactPersonWidget(
+                              leadId: int.parse(widget.leadId),
+                              key: keyLeadContactPerson,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (state is LeadByIdError) {
+                      return Center(
+                        child: Text(
+                          _getLeadErrorMessage(state.message),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: primaryText,
+                          ),
+                        ),
+                      );
+                    }
+                    return Center(child: Text(''));
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1226,71 +1317,94 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final appBarGradient = [
+      _screenSurfaceElevated(context),
+      _screenFieldBackground(context),
+    ];
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+
     return AppBar(
-      backgroundColor: Colors.white,
+      automaticallyImplyLeading: false,
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
       forceMaterialTransparency: true,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: context.appColors.overlay.withValues(alpha: 0),
+      shadowColor: context.appColors.overlay.withValues(alpha: 0),
       centerTitle: false,
-      leadingWidth: 40,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () => _handleBackNavigation(),
-          ),
-        ),
-      ),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-      ),
-      actions: [
-        IconButton(
-          key: keyLeadHistory,
+      toolbarHeight: 74,
+      titleSpacing: 16,
+      title: AppBarShell(
+        leading: AppBarShell.capsule(
+          context,
+          width: AppBarShell.orbSize,
           padding: EdgeInsets.zero,
-          constraints: BoxConstraints(),
-          icon: Icon(
-            Icons.history,
-            size: 30,
-            color: Color.fromARGB(224, 0, 0, 0),
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: IconButton(
+            onPressed: _handleBackNavigation,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: primaryText,
+            ),
           ),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => HistoryDialog(
-                leadId: currentLead!.id,
-              ),
-            );
-          },
         ),
-        if (_canEditLead || _canDeleteLead)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_canEditLead)
-                IconButton(
+        center: AppBarShell.capsule(
+          context,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                color: primaryText,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: IconButton(
+                key: keyLeadHistory,
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => HistoryDialog(
+                      leadId: currentLead!.id,
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.history_rounded,
+                  color: primaryText,
+                  size: 20,
+                ),
+              ),
+            ),
+            if (_canEditLead) ...[
+              const SizedBox(width: 8),
+              AppBarShell.capsule(
+                context,
+                width: AppBarShell.orbSize,
+                padding: EdgeInsets.zero,
+                gradientColors: appBarGradient,
+                borderColor: subtleBorder,
+                child: IconButton(
                   key: keyLeadEdit,
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/edit.png',
-                    width: 24,
-                    height: 24,
-                  ),
                   onPressed: () async {
                     if (currentLead != null) {
                       final birthdayString = currentLead!.birthday != null &&
@@ -1336,8 +1450,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                 currentLead!.leadCustomFieldValues,
                             directoryValues: currentLead!.directoryValues,
                             existedFiles: currentLead!.files,
-                            // phoneVerifiedAt: currentLead!.phone_verified_at,
-                            // verificationCode: currentLead!.verification_code,
                             priceTypeId: currentLead!.priceType?.id.toString(),
                             priceTypeName: currentLead!.priceType?.name,
                           ),
@@ -1347,24 +1459,34 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         setState(() {
                           _statusChangedFromDetails = true;
                         });
-                        _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
-                        context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(
-                            leadId: int.parse(widget.leadId)));
+                        _loadFieldConfiguration();
+                        context.read<LeadByIdBloc>().add(
+                              FetchLeadByIdEvent(
+                                leadId: int.parse(widget.leadId),
+                              ),
+                            );
                         context.read<LeadBloc>().add(FetchLeadStatuses());
                       }
                     }
                   },
-                ),
-              if (_canDeleteLead)
-                IconButton(
-                  key: keyLeadDelete,
-                  padding: EdgeInsets.only(right: 8),
-                  constraints: BoxConstraints(),
-                  icon: Image.asset(
-                    'assets/icons/delete.png',
-                    width: 24,
-                    height: 24,
+                  icon: Icon(
+                    Icons.edit_rounded,
+                    color: primaryText,
+                    size: 20,
                   ),
+                ),
+              ),
+            ],
+            if (_canDeleteLead) ...[
+              const SizedBox(width: 8),
+              AppBarShell.capsule(
+                context,
+                width: AppBarShell.orbSize,
+                padding: EdgeInsets.zero,
+                gradientColors: appBarGradient,
+                borderColor: subtleBorder,
+                child: IconButton(
+                  key: keyLeadDelete,
                   onPressed: () {
                     showDialog<bool>(
                       context: context,
@@ -1385,10 +1507,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       }
                     });
                   },
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: context.appColors.error,
+                    size: 20,
+                  ),
                 ),
+              ),
             ],
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -1405,7 +1534,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 fontSize: 18,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF3935e7),
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -1664,7 +1793,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: Colors.white,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1673,7 +1802,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       const SizedBox(width: 4),
                       const Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xff1E2E52),
+                        color: Colors.white,
                         size: 16,
                       ),
                     ],
@@ -1718,6 +1847,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                         },
                         child: Container(
                           width: 100,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _screenFieldBackground(context),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: _screenBorder(context)),
+                          ),
                           child: Column(
                             children: [
                               Stack(
@@ -1739,10 +1875,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                     CircularProgressIndicator(
                                       value: _downloadProgress[file.id],
                                       strokeWidth: 3,
-                                      backgroundColor:
-                                          Colors.grey.withOpacity(0.3),
+                                      backgroundColor: context.appColors.overlay
+                                          .withValues(alpha: 0.2),
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xff1E2E52),
+                                        _screenPrimaryText(context),
                                       ),
                                     ),
                                 ],
@@ -1756,7 +1892,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                                  color: _screenPrimaryText(context),
                                 ),
                               ),
                             ],
@@ -1816,7 +1952,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: Color(0xFF1E2E52),
+                              color: _screenPrimaryText(context),
                               strokeWidth: 2,
                             ),
                           )
@@ -1829,7 +1965,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                   child: Icon(
                                     Icons.contacts,
                                     size: 24,
-                                    color: Color(0xFF1E2E52),
+                                    color: _screenPrimaryText(context),
                                   ),
                                 ),
                               )
@@ -1861,7 +1997,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: _screenHintText(context),
       ),
     );
   }
@@ -1880,39 +2016,26 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-
                 SnackBar(
-
                   content: Text(
-
-                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
                     style: const TextStyle(
-
                       fontFamily: 'Gilroy',
-
                       fontSize: 15,
-
                       fontWeight: FontWeight.w500,
-
                       color: Colors.white,
-
                     ),
-
                   ),
-
-                  backgroundColor: Colors.green,
-
+                  backgroundColor: context.appColors.success,
                   behavior: SnackBarBehavior.floating,
-
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
-
                 ),
-
               );
             },
             child: Text(
@@ -1921,7 +2044,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF1E2E52),
+                color: _screenPrimaryText(context),
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -1936,39 +2059,25 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: value));
           ScaffoldMessenger.of(context).showSnackBar(
-
             SnackBar(
-
               content: Text(
-
-                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                AppLocalizations.of(context)
+                        ?.translate('copied_to_clipboard') ??
+                    'Скопировано',
                 style: const TextStyle(
-
                   fontFamily: 'Gilroy',
-
                   fontSize: 15,
-
                   fontWeight: FontWeight.w500,
-
                   color: Colors.white,
-
                 ),
-
               ),
-
-              backgroundColor: Colors.green,
-
+              backgroundColor: context.appColors.success,
               behavior: SnackBarBehavior.floating,
-
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 2),
-
             ),
-
           );
         },
         child: Text(
@@ -1977,7 +2086,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1E2E52),
+            color: _screenPrimaryText(context),
             decoration: TextDecoration.underline,
           ),
         ),
@@ -1994,7 +2103,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Color(0xff1E2E52),
+              color: context.appColors.buttonPrimaryBg,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -2027,39 +2136,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
               style: const TextStyle(
-
                 fontFamily: 'Gilroy',
-
                 fontSize: 15,
-
                 fontWeight: FontWeight.w500,
-
                 color: Colors.white,
-
               ),
-
             ),
-
-            backgroundColor: Colors.green,
-
+            backgroundColor: context.appColors.success,
             behavior: SnackBarBehavior.floating,
-
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
-
           ),
-
         );
       },
       child: Text(
@@ -2068,7 +2162,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xFF1E2E52),
+          color: _screenPrimaryText(context),
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -2081,9 +2175,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: _screenSurfaceBackground(context),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _screenBorder(context)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2093,7 +2188,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: _screenPrimaryText(context),
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -2108,7 +2203,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     content,
                     textAlign: TextAlign.justify,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: _screenPrimaryText(context),
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -2123,8 +2218,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -2180,9 +2275,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       builder: (sheetContext) {
         return SafeArea(
           child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            decoration: BoxDecoration(
+              color: _screenSurfaceBackground(context),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _screenBorder(context)),
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -2193,7 +2290,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD6DEEF),
+                      color: _screenBorder(context),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -2244,8 +2341,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       child: Ink(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
+          color: _screenFieldBackground(context),
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _screenBorder(context)),
         ),
         child: Row(
           children: [
@@ -2253,10 +2351,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: _screenSurfaceElevated(context),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: const Color(0xFF4759FF)),
+              child: Icon(icon, color: context.appColors.buttonPrimaryBg),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -2265,30 +2363,30 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E2E52),
+                      color: _screenPrimaryText(context),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF99A4BA),
+                      color: _screenHintText(context),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
-              color: Color(0xFF99A4BA),
+              color: _screenHintText(context),
             ),
           ],
         ),
@@ -2395,7 +2493,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: _screenSurfaceBackground(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _screenBorder(context)),
+          ),
           title: Center(
             child: Text(
               AppLocalizations.of(context)!.translate('confirm_manager_title'),
@@ -2403,7 +2505,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1E2E52),
+                color: _screenPrimaryText(context),
               ),
             ),
           ),
@@ -2413,7 +2515,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1E2E52),
+              color: _screenPrimaryText(context),
             ),
           ),
           actions: [
@@ -2426,8 +2528,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     onPressed: () {
                       Navigator.of(context).pop(false);
                     },
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
+                    buttonColor: context.appColors.buttonDangerBg,
+                    textColor: context.appColors.buttonDangerFg,
                   ),
                 ),
                 SizedBox(width: 8),
@@ -2437,8 +2539,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     onPressed: () {
                       Navigator.of(context).pop(true);
                     },
-                    buttonColor: Color(0xFF1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: context.appColors.buttonPrimaryBg,
+                    textColor: context.appColors.buttonPrimaryFg,
                   ),
                 ),
               ],

@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/conversion/conversion_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
@@ -38,6 +41,7 @@ import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric_toggle.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/appearance_button_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
@@ -375,10 +379,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final content = SafeArea(
       top: !widget.embedded,
       child: Stack(
         children: [
+          const Positioned.fill(
+            child: AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SingleChildScrollView(
@@ -416,31 +425,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               selectedOrganization: _selectedOrganization,
                               onChanged: _onOrganizationChanged,
                             ),
+                            const AppearanceButtonWidget(),
                             ProfileEdit(),
                             LanguageButtonWidget(),
                             PinChangeWidget(),
-                            LogoutButtonWidget(),
+                            
                             if (_hasPermissionToAddLeadAndSwitch)
                               ToggleFeatureButton(),
                             BiometricToggleWidget(),
                             const HttpInspectorToggleWidget(),
                             if (_hasPermissionForOneC)
                               UpdateWidget1C(organization: selectedOrg),
+                              LogoutButtonWidget(),
                             const SizedBox(height: 20),
+                            
                             GestureDetector(
                               onTap: _openAppStoreLink,
                               child: Text(
                                 '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
+                                style: textStyles.bodySm.copyWith(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: Color.fromARGB(255, 6, 44, 231),
+                                  color: colors.buttonPrimaryBg,
                                   decoration: TextDecoration.none,
                                 ),
                               ),
                             ),
+                            
                           ],
                         );
                       } else if (state is OrganizationError) {
@@ -466,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Icon(
                               Icons.error_outline,
                               size: 80,
-                              color: Colors.red.shade400,
+                              color: colors.error,
                             ),
                             const SizedBox(height: 20),
                             Padding(
@@ -475,11 +487,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Text(
                                 state.message,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87),
+                                style: textStyles.bodyLg.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.textPrimary,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 30),
@@ -502,6 +514,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return content;
     }
 
-    return Scaffold(body: content);
+    return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
+      body: content,
+    );
   }
 }

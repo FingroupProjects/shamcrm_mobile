@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class LeadNavigateToChat extends StatefulWidget {
@@ -30,6 +31,13 @@ class LeadNavigateToChat extends StatefulWidget {
 }
 
 class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
+  BoxDecoration _sectionDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.appColors.textInverse.withValues(alpha: 0.16),
+        ),
+      );
   @override
   void initState() {
     super.initState();
@@ -73,7 +81,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -81,7 +89,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -102,18 +110,21 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     //print('LeadNavigateToChat: Opening chat list dialog');
                     _showChatListDialog(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         AppLocalizations.of(context)!.translate('go_to_chat'),
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        style: TextStyle(
+                          color: context.appColors.buttonPrimaryFg,
+                          fontSize: 16,
+                        ),
                       ),
                       Icon(
                         Icons.arrow_forward,
-                        color: Colors.white,
+                        color: context.appColors.buttonPrimaryFg,
                       ),
                     ],
                   ),
@@ -131,9 +142,12 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: context.appColors.textInverse.withValues(alpha: 0.16),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -143,7 +157,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                 child: Text(
                   AppLocalizations.of(context)!.translate('list_chat'),
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color:
+                        context.appColors.textInverse.withValues(alpha: 0.96),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Gilroy',
@@ -159,7 +174,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                       //print('LeadNavigateToChat: Loading state');
                       return Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.96),
                         ),
                       );
                     } else if (state is LeadToChatLoaded) {
@@ -172,7 +188,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                             AppLocalizations.of(context)!
                                 .translate('no_chat_in_list'),
                             style: TextStyle(
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textInverse
+                                  .withValues(alpha: 0.82),
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -201,83 +218,93 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                             : AppLocalizations.of(context)!
                                                 .translate('no_name_chat'));
                             //print('LeadNavigateToChat: Building chat item $index - Channel: $channelName, DisplayName: $displayName');
-                            return ListTile(
-                              leading: channelName == 'site'
-                                  ? Icon(
-                                      Icons.language,
-                                      size: 30,
-                                      color: Color(0xff1E2E52),
-                                    )
-                                  : Image.asset(
-                                      iconPath,
-                                      width: 30,
-                                      height: 30,
-                                    ),
-                              title: Text(
-                                displayName,
-                                style: TextStyle(
-                                  color: Color(0xff1E2E52),
-                                  fontSize: 18,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            return Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              onTap: () {
-                                //print('LeadNavigateToChat: Channel tapped - Channel: $channelName');
-                                // Собираем чаты для выбранного канала
-                                final chatsForChannel = leadtochat
-                                    .where((chat) =>
-                                        chat.channel.name == channelName)
-                                    .toList();
-                                //print('LeadNavigateToChat: Found ${chatsForChannel.length} chats for $channelName: $chatsForChannel');
+                              decoration: _sectionDecoration(context),
+                              child: ListTile(
+                                leading: channelName == 'site'
+                                    ? Icon(
+                                        Icons.language,
+                                        size: 30,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
+                                      )
+                                    : Image.asset(
+                                        iconPath,
+                                        width: 30,
+                                        height: 30,
+                                      ),
+                                title: Text(
+                                  displayName,
+                                  style: TextStyle(
+                                    color: context.appColors.textInverse
+                                        .withValues(alpha: 0.96),
+                                    fontSize: 18,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                onTap: () {
+                                  //print('LeadNavigateToChat: Channel tapped - Channel: $channelName');
+                                  // Собираем чаты для выбранного канала
+                                  final chatsForChannel = leadtochat
+                                      .where((chat) =>
+                                          chat.channel.name == channelName)
+                                      .toList();
+                                  //print('LeadNavigateToChat: Found ${chatsForChannel.length} chats for $channelName: $chatsForChannel');
 
-                                if (chatsForChannel.length == 1) {
-                                  //print('LeadNavigateToChat: Single chat found, navigating to chat ID: ${chatsForChannel[0].id}');
-                                  navigateToScreen(
-                                    context,
-                                    chatsForChannel[0].id,
-                                    chatsForChannel[0].canSendMessage,
-                                    chatsForChannel[0].channel.name,
-                                  );
-                                } else {
-                                  //print('LeadNavigateToChat: Multiple chats found, opening IntegrationListDialog');
-                                  final integrations =
-                                      chatsForChannel.map((chat) {
-                                    // Ищем соответствующий чат в widget.chats
-                                    final chatData = widget.chats?.firstWhere(
-                                      (c) => c['id'] == chat.id,
-                                      orElse: () => <String, dynamic>{},
+                                  if (chatsForChannel.length == 1) {
+                                    //print('LeadNavigateToChat: Single chat found, navigating to chat ID: ${chatsForChannel[0].id}');
+                                    navigateToScreen(
+                                      context,
+                                      chatsForChannel[0].id,
+                                      chatsForChannel[0].canSendMessage,
+                                      chatsForChannel[0].channel.name,
                                     );
-                                    final username = chatData != null &&
-                                            chatData['integration'] != null
-                                        ? chatData['integration']['username'] ??
-                                            ''
-                                        : '';
-                                    //print('LeadNavigateToChat: Processing chat ID: ${chat.id}, Username: $username');
-                                    return {
-                                      'id': chat.id,
-                                      'username': username,
-                                      'channel_name': chat.channel.name,
-                                    };
-                                  }).toList();
-                                  //print('LeadNavigateToChat: Integrations for dialog: $integrations');
-                                  Navigator.pop(
-                                      context); // Закрываем список чатов
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return IntegrationListDialog(
-                                        integrations: integrations,
-                                        leadId: widget.leadId,
-                                        leadName: widget.leadName,
-                                        canSendMessage:
-                                            chatsForChannel[0].canSendMessage,
-                                        initialChannelName: channelName,
+                                  } else {
+                                    //print('LeadNavigateToChat: Multiple chats found, opening IntegrationListDialog');
+                                    final integrations =
+                                        chatsForChannel.map((chat) {
+                                      // Ищем соответствующий чат в widget.chats
+                                      final chatData = widget.chats?.firstWhere(
+                                        (c) => c['id'] == chat.id,
+                                        orElse: () => <String, dynamic>{},
                                       );
-                                    },
-                                  );
-                                }
-                              },
+                                      final username = chatData != null &&
+                                              chatData['integration'] != null
+                                          ? chatData['integration']
+                                                  ['username'] ??
+                                              ''
+                                          : '';
+                                      //print('LeadNavigateToChat: Processing chat ID: ${chat.id}, Username: $username');
+                                      return {
+                                        'id': chat.id,
+                                        'username': username,
+                                        'channel_name': chat.channel.name,
+                                      };
+                                    }).toList();
+                                    //print('LeadNavigateToChat: Integrations for dialog: $integrations');
+                                    Navigator.pop(
+                                        context); // Закрываем список чатов
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return IntegrationListDialog(
+                                          integrations: integrations,
+                                          leadId: widget.leadId,
+                                          leadName: widget.leadName,
+                                          canSendMessage:
+                                              chatsForChannel[0].canSendMessage,
+                                          initialChannelName: channelName,
+                                        );
+                                      },
+                                    );
+                                  }
+                                },
+                              ),
                             );
                           },
                         );
@@ -289,7 +316,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                           AppLocalizations.of(context)!
                               .translate('no_chat_in_list'),
                           style: TextStyle(
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.textInverse
+                                .withValues(alpha: 0.82),
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
@@ -308,8 +336,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     //print('LeadNavigateToChat: Closing chat list dialog');
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],

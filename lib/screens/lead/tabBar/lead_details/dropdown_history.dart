@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_event.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,6 +19,14 @@ class ActionHistoryWidget extends StatefulWidget {
 class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
   bool isActionHistoryExpanded = false;
   List<LeadHistory> actionHistory = [];
+
+  BoxDecoration _sectionDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.appColors.textInverse.withValues(alpha: 0.16),
+        ),
+      );
 
   @override
   void initState() {
@@ -39,19 +48,21 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                backgroundColor: context.appColors.error,
                 elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -62,7 +73,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
           'История действий',
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
-          () => setState(() => isActionHistoryExpanded = !isActionHistoryExpanded),
+          () => setState(
+              () => isActionHistoryExpanded = !isActionHistoryExpanded),
         );
       },
     );
@@ -80,8 +92,9 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       child: Container(
         padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(12),
+          color: _sectionDecoration(context).color,
+          borderRadius: BorderRadius.circular(20),
+          border: _sectionDecoration(context).border,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,17 +124,18 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textInverse.withValues(alpha: 0.96),
           ),
         ),
-        Image.asset(
-          'assets/icons/tabBar/dropdown.png',
-          width: 16,
-          height: 16,
+        Icon(
+          isActionHistoryExpanded
+              ? Icons.keyboard_arrow_up_rounded
+              : Icons.keyboard_arrow_down_rounded,
+          color: context.appColors.textInverse.withValues(alpha: 0.82),
         ),
       ],
     );
@@ -153,11 +167,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     d,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff1E2E52),
+                      color:
+                          context.appColors.textInverse.withValues(alpha: 0.82),
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -176,11 +191,11 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Expanded(
           child: Text(
             status,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textInverse.withValues(alpha: 0.96),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -190,11 +205,11 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Expanded(
           child: Text(
             userAndDate,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textInverse.withValues(alpha: 0.72),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

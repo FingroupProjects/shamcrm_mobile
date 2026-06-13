@@ -8,6 +8,9 @@ import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
@@ -250,8 +253,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         projectIds: projectIdsList,
         authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
         department: _selectedDepartment,
-        directoryValues:
-            _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
+        directoryValues: _selectedDirectoryValues.isNotEmpty
+            ? _selectedDirectoryValues
+            : null,
       ));
     });
   }
@@ -993,22 +997,62 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       floatingActionButton: (!isClickAvatarIcon &&
               (_isSearching || _hasActiveFilters()) &&
               _hasPermissionToAddTask &&
               _getCreateTaskStatusId() != null)
-          ? FloatingActionButton(
-              heroTag: 'task_screen_filtered_fab',
-              onPressed: _openCreateTaskFromFilteredView,
-              backgroundColor: const Color(0xff1E2E52),
-              child: Image.asset('assets/icons/tabBar/add.png',
-                  width: 24, height: 24),
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _openCreateTaskFromFilteredView,
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  height: 54,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: colors.buttonPrimaryBg,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.shadow.withValues(alpha: 0.24),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, color: colors.buttonPrimaryFg),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Создать',
+                        style: context.appTextStyles.labelLg.copyWith(
+                          color: colors.buttonPrimaryFg,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             )
           : null,
       appBar: AppBar(
         forceMaterialTransparency: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         title: CustomAppBar(
             SearchIconKey: keySearchIcon,
             menuIconKey: keyMenuIcon,
@@ -1141,14 +1185,27 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
-          : Column(
+          : Stack(
+              fit: StackFit.expand,
               children: [
-                const SizedBox(height: 15),
-                if (!_isSearching && _showCustomTabBar) _buildCustomTabBar(),
-                Expanded(
-                  child: _isSearching || _hasActiveFilters()
-                      ? _buildUserView()
-                      : _buildTabBarView(),
+                const AppBackgroundOverlay(
+                  preset: AppBackgroundPreset.aurora,
+                ),
+                Column(
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).padding.top +
+                          kToolbarHeight +
+                          15,
+                    ),
+                    if (!_isSearching && _showCustomTabBar)
+                      _buildCustomTabBar(),
+                    Expanded(
+                      child: _isSearching || _hasActiveFilters()
+                          ? _buildUserView()
+                          : _buildTabBarView(),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1277,10 +1334,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
     return RefreshIndicator(
       onRefresh: () => _onRefresh(currentStatusId),
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: context.appColors.buttonPrimaryBg,
+      backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
-                controller: _listScrollController,
+        controller: _listScrollController,
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
@@ -1362,8 +1419,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             if (filteredTasks.isEmpty) {
               return RefreshIndicator(
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: context.appColors.buttonPrimaryBg,
+                backgroundColor: context.appColors.surfacePrimary,
                 child: Center(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -1386,12 +1443,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
             return RefreshIndicator(
               onRefresh: () => _onRefresh(currentStatusId),
-              color: const Color(0xff1E2E52),
-              backgroundColor: Colors.white,
+              color: context.appColors.buttonPrimaryBg,
+              backgroundColor: context.appColors.surfacePrimary,
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: filteredTasks.length + (showPaginationLoader ? 1 : 0),
+                itemCount:
+                    filteredTasks.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredTasks.length) {
                     return const Padding(
@@ -1446,6 +1504,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCustomTabBar() {
+    final colors = context.appColors;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       controller: _tabScrollController,
@@ -1462,8 +1521,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           }),
           if (_canCreateTaskStatus)
             IconButton(
-              icon: Image.asset('assets/icons/tabBar/add_black.png',
-                  width: 24, height: 24),
+              icon: Icon(
+                Icons.add_circle_rounded,
+                color: colors.buttonPrimaryBg,
+                size: 30,
+              ),
               onPressed: _addNewTab,
             ),
         ],
@@ -1543,6 +1605,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   // Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int taskCount) {
+    final colors = context.appColors;
+
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
@@ -1558,17 +1622,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _showStatusOptions(context, index);
       },
       child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
+        decoration: TaskStyles.tabButtonDecoration(context, isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle.copyWith(
+              style: TaskStyles.tabTextStyle(context).copyWith(
                 color: isActive
-                    ? TaskStyles.activeColor
-                    : TaskStyles.inactiveColor,
+                    ? TaskStyles.activeColor(context)
+                    : TaskStyles.inactiveColor(context),
               ),
             ),
             Transform.translate(
@@ -1576,19 +1640,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isActive
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xff99A4BA),
+                    color: isActive ? colors.textPrimary : colors.textSecondary,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   taskCount.toString(),
                   style: TextStyle(
-                    color: isActive ? Colors.black : const Color(0xff99A4BA),
+                    color: isActive ? colors.textPrimary : colors.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1618,20 +1680,21 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(8),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       items: [
         if (_canUpdateTaskStatus)
           PopupMenuItem(
             value: 'edit',
             child: ListTile(
               leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+              // keep action colors aligned with theme
               title: Text(
                 'Изменить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -1640,14 +1703,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+              leading:
+                  Icon(Icons.delete, color: context.appColors.iconSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -1797,10 +1861,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       debugPrint(
                           'TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
 
-                      final currentStatusId =
-                          _tabTitles[_tabController.index]['id'];
-                      bool hasActiveFilters = _hasActiveFilters();
-
                       // ИСПРАВЛЕНО: Устанавливаем флаг загрузки при переключении табов
                       setState(() {
                         _currentTabIndex = _tabController.index;
@@ -1812,58 +1872,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                         _scrollToActiveTab();
                       }
 
-                      // Преобразуем project_ids в List<int>
-                      List<int>? projectIdsList = _selectedProjects.isNotEmpty
-                          ? _selectedProjects
-                              .map((id) => int.parse(id))
-                              .toList()
-                          : null;
-
-                      context.read<TaskBloc>().add(FetchTasks(
-                            currentStatusId,
-                            query: _lastSearchQuery.isNotEmpty
-                                ? _lastSearchQuery
-                                : null,
-                            userIds: hasActiveFilters &&
-                                    _selectedUsers.isNotEmpty
-                                ? _selectedUsers.map((user) => user.id).toList()
-                                : null,
-                            statusIds:
-                                hasActiveFilters ? currentStatusId : null,
-                            fromDate: hasActiveFilters ? _fromDate : null,
-                            toDate: hasActiveFilters ? _toDate : null,
-                            overdue: hasActiveFilters ? _isOverdue : null,
-                            hasFile: hasActiveFilters ? _hasFile : null,
-                            hasDeal: hasActiveFilters ? _hasDeal : null,
-                            urgent: hasActiveFilters ? _isUrgent : null,
-                            reasonForRefusalIds: hasActiveFilters &&
-                                    _selectedReasonForRefusalIds.isNotEmpty
-                                ? _selectedReasonForRefusalIds
-                                : null,
-                            deadlinefromDate:
-                                hasActiveFilters ? _deadlinefromDate : null,
-                            deadlinetoDate:
-                                hasActiveFilters ? _deadlinetoDate : null,
-                            completedFromDate:
-                                hasActiveFilters ? _completedFromDate : null,
-                            completedToDate:
-                                hasActiveFilters ? _completedToDate : null,
-                            projectIds:
-                                hasActiveFilters ? projectIdsList : null,
-                            authors:
-                                hasActiveFilters && _selectedAuthors.isNotEmpty
-                                    ? _selectedAuthors
-                                    : null,
-                            department:
-                                hasActiveFilters ? _selectedDepartment : null,
-                            directoryValues: hasActiveFilters &&
-                                    _selectedDirectoryValues.isNotEmpty
-                                ? _selectedDirectoryValues
-                                : null,
-                          ));
-
                       debugPrint(
-                          'TaskScreen: FetchTasks dispatched for statusId: $currentStatusId');
+                          'TaskScreen: tab changed to index ${_tabController.index}');
                     }
                   }); // ← Закрываем listener здесь, только для нового контроллера!
                 }
@@ -1957,21 +1967,54 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   _pendingStatusIdAfterHardRefresh = null;
                 }
 
-                // ОПТИМИЗАЦИЯ: Убираем задержку и проверяем состояние перед загрузкой
-                // Автоматически загружаем задачи для активного статуса после refresh только если нет активных фильтров
-                if (_tabTitles.isNotEmpty && !_hasActiveFilters()) {
-                  final activeStatusId = _tabTitles[_currentTabIndex]['id'];
-                  final taskBloc = context.read<TaskBloc>();
+                if (_tabTitles.isNotEmpty) {
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final hasActiveFilters = _hasActiveFilters();
+                  final projectIdsList = _selectedProjects.isNotEmpty
+                      ? _selectedProjects.map((id) => int.parse(id)).toList()
+                      : null;
 
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!mounted || _hasActiveFilters()) return;
-                    taskBloc.add(FetchTasks(
-                      activeStatusId,
-                      reasonForRefusalIds:
-                          _selectedReasonForRefusalIds.isNotEmpty
+                    if (!mounted || _tabTitles.isEmpty) return;
+                    context.read<TaskBloc>().add(FetchTasks(
+                          currentStatusId,
+                          query: _lastSearchQuery.isNotEmpty
+                              ? _lastSearchQuery
+                              : null,
+                          userIds: hasActiveFilters && _selectedUsers.isNotEmpty
+                              ? _selectedUsers.map((user) => user.id).toList()
+                              : null,
+                          statusIds: hasActiveFilters ? currentStatusId : null,
+                          fromDate: hasActiveFilters ? _fromDate : null,
+                          toDate: hasActiveFilters ? _toDate : null,
+                          overdue: hasActiveFilters ? _isOverdue : null,
+                          hasFile: hasActiveFilters ? _hasFile : null,
+                          hasDeal: hasActiveFilters ? _hasDeal : null,
+                          urgent: hasActiveFilters ? _isUrgent : null,
+                          reasonForRefusalIds: hasActiveFilters &&
+                                  _selectedReasonForRefusalIds.isNotEmpty
                               ? _selectedReasonForRefusalIds
                               : null,
-                    ));
+                          deadlinefromDate:
+                              hasActiveFilters ? _deadlinefromDate : null,
+                          deadlinetoDate:
+                              hasActiveFilters ? _deadlinetoDate : null,
+                          completedFromDate:
+                              hasActiveFilters ? _completedFromDate : null,
+                          completedToDate:
+                              hasActiveFilters ? _completedToDate : null,
+                          projectIds: hasActiveFilters ? projectIdsList : null,
+                          authors:
+                              hasActiveFilters && _selectedAuthors.isNotEmpty
+                                  ? _selectedAuthors
+                                  : null,
+                          department:
+                              hasActiveFilters ? _selectedDepartment : null,
+                          directoryValues: hasActiveFilters &&
+                                  _selectedDirectoryValues.isNotEmpty
+                              ? _selectedDirectoryValues
+                              : null,
+                        ));
                   });
                 }
               } else {
@@ -2059,28 +2102,23 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 duration: Duration(milliseconds: 1000),
               ),
             )
-          : TabBarView(
-              controller: _tabController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: _tabTitles.map((status) {
-                return RefreshIndicator(
-                  onRefresh: () => _onRefresh(status['id']),
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
-                  child: TaskColumn(
-                    isTaskScreenTutorialCompleted:
-                        _isTaskScreenTutorialCompleted,
-                    statusId: status['id'],
-                    name: status['title'],
-                    userId: _selectedUserId,
-                    isActive:
-                        status['id'] == _tabTitles[_currentTabIndex]['id'],
-                    onStatusId: (newStatusId) {
-                      _hardRefreshAfterTaskChange(newStatusId);
-                    },
-                  ),
+          : Builder(
+              builder: (context) {
+                final int safeIndex =
+                    _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
+                final status = _tabTitles[safeIndex];
+
+                return TaskColumn(
+                  isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted,
+                  statusId: status['id'],
+                  name: status['title'],
+                  userId: _selectedUserId,
+                  isActive: true,
+                  onStatusId: (newStatusId) {
+                    _hardRefreshAfterTaskChange(newStatusId);
+                  },
                 );
-              }).toList(),
+              },
             ),
     );
   }

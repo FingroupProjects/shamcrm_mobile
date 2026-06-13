@@ -49,7 +49,7 @@ class PinnedMessageWidget extends StatelessWidget {
               height: 50,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: ChatSmsStyles.messageBubbleSenderColor,
+                color: context.appColors.buttonPrimaryBg,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -61,7 +61,7 @@ class PinnedMessageWidget extends StatelessWidget {
                     AppLocalizations.of(context)!.translate('pinned_message'),
                     style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: ChatSmsStyles.messageBubbleSenderColor,
+                      color: context.appColors.buttonPrimaryBg,
                     ),
                   ),
                   const SizedBox(height: 4),

@@ -155,6 +155,11 @@ class CustomTextFieldDate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final primaryText = context.adaptiveForegroundOn(fieldFill);
+    final hintTextColor = context.adaptiveHintOn(fieldFill);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -162,6 +167,7 @@ class CustomTextFieldDate extends StatelessWidget {
           label,
           style: context.appTextStyles.labelLg.copyWith(
             fontWeight: FontWeight.w500,
+            color: primaryText,
           ),
         ),
         const SizedBox(height: 8),
@@ -176,7 +182,7 @@ class CustomTextFieldDate extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: withTime ? '__/__/____ __:__' : '__/__/____',
                 hintStyle: context.appTextStyles.bodySm.copyWith(
-                  color: context.appColors.fieldHint,
+                  color: hintTextColor,
                 ),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12),
@@ -224,14 +230,17 @@ class CustomTextFieldDate extends StatelessWidget {
                   borderSide: hasError
                       ? BorderSide(color: context.appColors.error, width: 1.5)
                       : BorderSide(
-                          color: context.appColors.info,
+                          color: context.adaptiveFocusBorderOn(fieldFill),
                           width: 1.5,
                         ),
                 ),
                 filled: true,
-                fillColor: context.appColors.fieldBg,
+                fillColor: fieldFill,
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              ),
+              style: context.appTextStyles.bodyLg.copyWith(
+                color: primaryText,
               ),
             ),
           ),

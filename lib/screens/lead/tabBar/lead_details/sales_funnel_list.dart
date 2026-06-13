@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -11,10 +12,14 @@ class SalesFunnelWidget extends StatefulWidget {
   final String? selectedSalesFunnel;
   final ValueChanged<String?> onChanged;
 
-  SalesFunnelWidget({required this.selectedSalesFunnel, required this.onChanged});
+  const SalesFunnelWidget({
+    super.key,
+    required this.selectedSalesFunnel,
+    required this.onChanged,
+  });
 
   @override
-  _SalesFunnelWidgetState createState() => _SalesFunnelWidgetState();
+  State<SalesFunnelWidget> createState() => _SalesFunnelWidgetState();
 }
 
 class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
@@ -28,6 +33,18 @@ class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = context.appTextStyles.bodyMd.copyWith(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = titleStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+    final surfaceColor = context.appColors.surfacePrimary.withValues(alpha: 0.78);
+    final borderColor = context.appColors.borderSubtle.withValues(alpha: 0.36);
+
     return BlocListener<SalesFunnelBloc, SalesFunnelState>(
       listener: (context, state) {
         if (state is SalesFunnelError) {
@@ -78,90 +95,75 @@ class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('sales_funnel'),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
+                style: titleStyle,
               ),
-              const SizedBox(height: 4),
-              Container(
-                child: CustomDropdown<SalesFunnel>.search(
+              const SizedBox(height: 8),
+              CustomDropdown<SalesFunnel>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: state is SalesFunnelLoaded ? state.funnels : [],
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true, // Всегда enabled
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: surfaceColor,
+                    expandedFillColor: context.appColors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: borderColor,
                       width: 1,
                     ),
-                    closedBorderRadius: BorderRadius.circular(12),
+                    closedBorderRadius: BorderRadius.circular(18),
                     expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: borderColor,
                       width: 1,
                     ),
-                    expandedBorderRadius: BorderRadius.circular(12),
+                    expandedBorderRadius: BorderRadius.circular(18),
+                    hintStyle: hintStyle,
+                    headerStyle: titleStyle.copyWith(fontSize: 14),
+                    listItemStyle: titleStyle.copyWith(fontSize: 14),
+                    listItemDecoration: ListItemDecoration(
+                      selectedColor:
+                          context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+                      highlightColor:
+                          context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+                      splashColor: Colors.transparent,
+                    ),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: context.appColors.backgroundPrimary,
+                      textStyle: titleStyle.copyWith(fontSize: 14),
+                      hintStyle: hintStyle,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: borderColor),
+                      ),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,
-                      style: TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                      ),
+                      style: titleStyle.copyWith(fontSize: 14),
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     if (state is SalesFunnelLoading) {
                       return Row(
                         children: [
-                          // SizedBox(
-                          //   width: 16,
-                          //   height: 16,
-                          //   child: CircularProgressIndicator(
-                          //     strokeWidth: 2,
-                          //     valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                          //   ),
-                          // ),
                           Text(
                             AppLocalizations.of(context)!.translate('select_sales_funnel'),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
+                            style: hintStyle,
                           ),
                         ],
                       );
                     }
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_sales_funnel'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
-                      ),
-                          maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                      selectedItem.name,
+                      style: titleStyle.copyWith(fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_sales_funnel'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
-                    ),
+                    style: hintStyle,
                   ),
                   excludeSelected: false,
                   initialItem: (state is SalesFunnelLoaded && state.funnels.contains(selectedFunnelData))
@@ -183,7 +185,6 @@ class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
                     }
                   },
                 ),
-              ),
             ],
           );
         },

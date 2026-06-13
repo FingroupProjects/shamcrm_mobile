@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class SimpleSwitch extends StatelessWidget {
@@ -18,24 +19,26 @@ class SimpleSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title != null) Text(
           title!,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         if (title != null) const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: colors.surfacePrimary.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.42)),
           ),
           child: Row(
             children: [
@@ -44,21 +47,21 @@ class SimpleSwitch extends StatelessWidget {
                 child: Switch(
                   value: value,
                   onChanged: onChanged,
-                  activeColor: Colors.white,
-                  inactiveThumbColor: Colors.white,
-                  activeTrackColor: const Color(0xFF4A90E2),
-                  inactiveTrackColor: Colors.grey.withOpacity(0.5),
+                  activeColor: colors.buttonPrimaryFg,
+                  inactiveThumbColor: colors.surfacePrimary,
+                  activeTrackColor: colors.buttonPrimaryBg,
+                  inactiveTrackColor: colors.borderSubtle.withOpacity(0.5),
                 ),
               ),
               if (onText != null && offText != null) const SizedBox(width: 10),
               if (onText != null && offText != null) Expanded(
                 child: Text(
                   value ? onText! : offText!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),

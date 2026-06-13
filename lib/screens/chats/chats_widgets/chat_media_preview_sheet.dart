@@ -50,7 +50,7 @@ Future<ChatMediaPreviewResult?> showChatMediaPreviewSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: context.appColors.overlay.withValues(alpha: 0.0),
     builder: (_) => const _ChatMediaPickerSheet(),
   );
 }
@@ -310,6 +310,7 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -348,11 +349,9 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
                                 ? 'Недавние'
                                 : _recentAlbum!.name)
                             : 'Выбрано ${_selectedAssets.length}',
-                        style: TextStyle(
+                        style: textStyles.titleMd.copyWith(
                           color: colors.textPrimary,
-                          fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          fontFamily: 'Gilroy',
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -360,11 +359,8 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
                         _quality == ChatMediaQuality.hd
                             ? 'Отправка в хорошем качестве'
                             : 'Отправка в сжатом качестве',
-                        style: TextStyle(
+                        style: textStyles.bodySm.copyWith(
                           color: colors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
                         ),
                       ),
                     ],
@@ -518,16 +514,15 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
+                            color: colors.overlay.withValues(alpha: 0.55),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             _formatDuration(asset.duration),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: context.appTextStyles.bodySm.copyWith(
+                              color: colors.textInverse,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              fontFamily: 'Gilroy',
                             ),
                           ),
                         ),
@@ -542,18 +537,19 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? colors.buttonPrimaryBg
-                              : Colors.black.withValues(alpha: 0.22),
+                              : colors.overlay.withValues(alpha: 0.22),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(
+                            color: colors.textInverse,
+                            width: 2,
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           isSelected ? '${_selectionOrder(asset)}' : '',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+                          style: context.appTextStyles.bodySm.copyWith(
+                            color: colors.textInverse,
                             fontWeight: FontWeight.w700,
-                            fontFamily: 'Gilroy',
                           ),
                         ),
                       ),
@@ -643,6 +639,7 @@ class _FallbackMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textStyles = context.appTextStyles;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -658,22 +655,19 @@ class _FallbackMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: textStyles.titleMd.copyWith(
                 color: context.appColors.textPrimary,
-                fontSize: 18,
                 fontWeight: FontWeight.w700,
-                fontFamily: 'Gilroy',
               ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: textStyles.bodySm.copyWith(
                 color: context.appColors.textSecondary,
                 fontSize: 13,
                 height: 1.4,
-                fontFamily: 'Gilroy',
               ),
             ),
           ],
@@ -811,6 +805,7 @@ class _BottomPickerAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -827,11 +822,10 @@ class _BottomPickerAction extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: textStyles.bodySm.copyWith(
                 color: selected ? colors.textPrimary : colors.textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Gilroy',
               ),
             ),
           ],
@@ -884,16 +878,17 @@ class _QualityToggle extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? colors.buttonPrimaryBg : Colors.transparent,
+          color: selected
+              ? colors.buttonPrimaryBg
+              : colors.overlay.withValues(alpha: 0.0),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           title,
-          style: TextStyle(
-            color: selected ? Colors.white : colors.textSecondary,
+          style: context.appTextStyles.bodySm.copyWith(
+            color: selected ? colors.textInverse : colors.textSecondary,
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            fontFamily: 'Gilroy',
           ),
         ),
       ),
@@ -915,6 +910,7 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Material(
       color: enabled ? colors.buttonPrimaryBg : colors.borderSubtle,
       borderRadius: BorderRadius.circular(18),
@@ -928,15 +924,16 @@ class _SendButton extends StatelessWidget {
             child: count > 0
                 ? Text(
                     '$count',
-                    style: TextStyle(
-                      color: enabled ? Colors.white : colors.textSecondary,
+                    style: textStyles.bodyMd.copyWith(
+                      color:
+                          enabled ? colors.textInverse : colors.textSecondary,
                       fontWeight: FontWeight.w700,
-                      fontFamily: 'Gilroy',
                     ),
                   )
                 : Icon(
                     Icons.check_rounded,
-                    color: enabled ? Colors.white : colors.textSecondary,
+                    color:
+                        enabled ? colors.textInverse : colors.textSecondary,
                   ),
           ),
         ),

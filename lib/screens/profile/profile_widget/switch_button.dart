@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_toggle_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 class ToggleFeatureButton extends StatefulWidget {
@@ -20,6 +21,7 @@ class _ToggleFeatureButtonState extends State<ToggleFeatureButton> {
 
   Future<void> _loadFeatureState() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       _isFeatureEnabled = prefs.getBool('switchContact') ?? false;
     });
@@ -37,9 +39,9 @@ class _ToggleFeatureButtonState extends State<ToggleFeatureButton> {
   @override
   Widget build(BuildContext context) {
     return ProfileToggleCard(
-      icon: const Icon(
+      icon: Icon(
         Icons.import_export_rounded,
-        color: Color.fromARGB(255, 91, 77, 235),
+        color: context.appColors.buttonPrimaryBg,
         size: 22,
       ),
       title: _isFeatureEnabled

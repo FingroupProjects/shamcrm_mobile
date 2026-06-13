@@ -3,6 +3,9 @@ import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
@@ -817,109 +820,140 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-
-              // Логотип
-              Image.asset(
-                'assets/icons/playstore.png',
-                height: 160,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Заголовок
-              Text(
-                _isConfirming
-                    ? (_pinsDoNotMatch
-                        ? AppLocalizations.of(context)!
-                            .translate('pins_do_not_match_error')
-                        : AppLocalizations.of(context)!
-                            .translate('confirm_pin_title'))
-                    : AppLocalizations.of(context)!.translate('set_pin_title'),
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: _pinsDoNotMatch ? Colors.red : Colors.black,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // PIN индикаторы с анимацией
-              AnimatedBuilder(
-                animation: _shakeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset:
-                        Offset(_pinsDoNotMatch ? _shakeAnimation.value : 0, 0),
-                    child: Column(
-                      children: [
-                        _buildPinRow(_pin),
-                        if (_isConfirming) const SizedBox(height: 16),
-                        if (_isConfirming) _buildPinRow(_confirmPin),
-                      ],
+      backgroundColor: colors.backgroundPrimary,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary.withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: colors.borderSubtle.withValues(alpha: 0.42),
                     ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Цифровая клавиатура
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                childAspectRatio: 1.5,
-                children: [
-                  for (var i = 1; i <= 9; i++)
-                    TextButton(
-                      onPressed: () => _onNumberPressed(i.toString()),
-                      child: Text(
-                        i.toString(),
-                        style:
-                            const TextStyle(fontSize: 24, color: Colors.black),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icons/playstore.png',
+                        height: 132,
                       ),
-                    ),
-                  TextButton(
-                    onPressed: _onDelete,
-                    child: const Icon(Icons.backspace_outlined),
+                      const SizedBox(height: 16),
+                      Text(
+                        _isConfirming
+                            ? (_pinsDoNotMatch
+                                ? AppLocalizations.of(context)!
+                                    .translate('pins_do_not_match_error')
+                                : AppLocalizations.of(context)!
+                                    .translate('confirm_pin_title'))
+                            : AppLocalizations.of(context)!
+                                .translate('set_pin_title'),
+                        textAlign: TextAlign.center,
+                        style: textStyles.titleLg.copyWith(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: _pinsDoNotMatch
+                              ? colors.error
+                              : colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      AnimatedBuilder(
+                        animation: _shakeAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(
+                              _pinsDoNotMatch ? _shakeAnimation.value : 0,
+                              0,
+                            ),
+                            child: Column(
+                              children: [
+                                _buildPinRow(_pin),
+                                if (_isConfirming) const SizedBox(height: 16),
+                                if (_isConfirming) _buildPinRow(_confirmPin),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      GridView.count(
+                        crossAxisCount: 3,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        childAspectRatio: 1.45,
+                        children: [
+                          for (var i = 1; i <= 9; i++)
+                            TextButton(
+                              onPressed: () => _onNumberPressed(i.toString()),
+                              child: Text(
+                                i.toString(),
+                                style: textStyles.titleLg.copyWith(
+                                  fontSize: 24,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          TextButton(
+                            onPressed: _onDelete,
+                            child: Icon(
+                              Icons.backspace_outlined,
+                              color: colors.buttonPrimaryBg,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _onNumberPressed('0'),
+                            child: Text(
+                              '0',
+                              style: textStyles.titleLg.copyWith(
+                                fontSize: 24,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _onClear,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12.0,
+                            horizontal: 24.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('clear'),
+                          style: textStyles.labelLg.copyWith(
+                            color: colors.buttonPrimaryFg,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: () => _onNumberPressed('0'),
-                    child: const Text(
-                      '0',
-                      style: TextStyle(fontSize: 24, color: Colors.black),
-                    ),
-                  ),
-                  const SizedBox(),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Кнопка очистки
-              ElevatedButton(
-                onPressed: _onClear,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xff1E2E52),
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 10.0, horizontal: 20.0),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('clear'),
-                  style: TextStyle(color: Colors.white),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -935,10 +969,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           height: 16,
           decoration: BoxDecoration(
             color: _pinsDoNotMatch
-                ? Colors.red
+                ? context.appColors.error
                 : (index < pin.length
-                    ? const Color.fromARGB(255, 33, 41, 188)
-                    : Colors.grey.shade300),
+                    ? context.appColors.buttonPrimaryBg
+                    : context.appColors.borderSubtle.withValues(alpha: 0.48)),
             shape: BoxShape.circle,
           ),
         ),

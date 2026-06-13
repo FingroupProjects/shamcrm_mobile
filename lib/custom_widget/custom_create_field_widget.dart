@@ -110,6 +110,11 @@ class CustomFieldWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final primaryText = context.adaptiveForegroundOn(fieldFill);
+    final hintTextColor = context.adaptiveHintOn(fieldFill);
+
     TextInputType keyboardType;
     List<TextInputFormatter>? inputFormatters;
     bool readOnly = false;
@@ -150,6 +155,7 @@ class CustomFieldWidget extends StatelessWidget {
                 fieldName,
                 style: context.appTextStyles.labelLg.copyWith(
                   fontWeight: FontWeight.w500,
+                  color: primaryText,
                 ),
               ),
               const SizedBox(height: 8),
@@ -165,18 +171,21 @@ class CustomFieldWidget extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: hintText, // Используем динамическую подсказку
                     hintStyle: context.appTextStyles.bodyMd.copyWith(
-                      color: context.appColors.fieldHint,
+                      color: hintTextColor,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: context.appRadius.input,
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: context.appColors.fieldBg,
+                    fillColor: fieldFill,
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 10,
                       horizontal: 12,
                     ),
+                  ),
+                  style: context.appTextStyles.bodyLg.copyWith(
+                    color: primaryText,
                   ),
                 )
               else
@@ -184,13 +193,13 @@ class CustomFieldWidget extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                   decoration: BoxDecoration(
-                    color: context.appColors.fieldBg,
+                    color: fieldFill,
                     borderRadius: context.appRadius.input,
                   ),
                   child: Text(
                     fieldName,
                     style: context.appTextStyles.bodyLg.copyWith(
-                      color: context.appColors.textPrimary,
+                      color: primaryText,
                     ),
                   ),
                 ),

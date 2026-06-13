@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -19,8 +20,9 @@ class DeleteFileDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -61,8 +63,8 @@ class DeleteFileDialog extends StatelessWidget {
                 onPressed: () {
                   onCancel();
                 },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+                buttonColor: colors.error,
+                textColor: colors.textInverse,
               ),
             ),
             const SizedBox(width: 8),
@@ -73,8 +75,8 @@ class DeleteFileDialog extends StatelessWidget {
                 onPressed: () {
                   onDelete(fileId);
                 },
-                buttonColor: const Color(0xff1E2E52),
-                textColor: Colors.white,
+                buttonColor: colors.buttonPrimaryBg,
+                textColor: colors.buttonPrimaryFg,
               ),
             ),
           ],

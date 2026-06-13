@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class DashboardItem extends StatelessWidget {
   final String title;
@@ -13,11 +14,13 @@ class DashboardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.26)),
       ),
       child: Stack(
         children: [
@@ -32,11 +35,11 @@ class DashboardItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -50,12 +53,12 @@ class DashboardItem extends StatelessWidget {
                               text: TextSpan(
                                 children: [
                                   TextSpan(
-                                    text: parts[0], // Число
-                                    style: const TextStyle(
+                              text: parts[0], // Число
+                              style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                   const TextSpan(
@@ -65,11 +68,11 @@ class DashboardItem extends StatelessWidget {
                                     text: parts
                                         .sublist(1)
                                         .join(' '), // Остальная часть текста
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12, // Размер текста
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
-                                      color: Color(0xff6E7C97),
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -79,7 +82,7 @@ class DashboardItem extends StatelessWidget {
                           ],
                         );
                       },
-                    ).toList(),
+                    ),
                   ],
                 ),
               ),

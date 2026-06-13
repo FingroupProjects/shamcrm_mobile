@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
@@ -18,6 +19,7 @@ class LanguageButtonWidget extends StatelessWidget {
         _showLanguageDialog(context);
       },
       child: _buildProfileOption(
+        context: context,
         iconPath: 'assets/icons/languages/global2.png',
         text: localizations!.language,
       ),
@@ -34,16 +36,22 @@ class LanguageButtonWidget extends StatelessWidget {
           future: LanguageManager.getLanguage(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg,
+                  ),
+                ),
+              );
             }
 
             // Если язык не выбран, по умолчанию выбираем русский
             final currentLanguage = snapshot.data ?? 'ru';
 
             return Dialog(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surfacePrimary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -53,7 +61,7 @@ class LanguageButtonWidget extends StatelessWidget {
                     child: Text(
                       localizations!.selectLanguage,
                       style: TextStyle(
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.bold,
@@ -96,8 +104,8 @@ class LanguageButtonWidget extends StatelessWidget {
                     child: CustomButton(
                       buttonText: localizations.close,
                       onPressed: () => Navigator.pop(context),
-                      buttonColor: Color(0xff1E2E52),
-                      textColor: Colors.white,
+                      buttonColor: context.appColors.buttonPrimaryBg,
+                      textColor: context.appColors.buttonPrimaryFg,
                     ),
                   ),
                 ],
@@ -114,9 +122,15 @@ class LanguageButtonWidget extends StatelessWidget {
     final isSelected = currentLanguage == languageCode;
 
     return ListTile(
+      tileColor: context.appColors.surfacePrimary,
       leading: Image.asset(iconPath, width: 24, height: 24),
-      title: Text(language),
-      trailing: isSelected ? Icon(Icons.check, color: Color(0xff1E2E52)) : null,
+      title: Text(
+        language,
+        style: TextStyle(color: context.appColors.textPrimary),
+      ),
+      trailing: isSelected
+          ? Icon(Icons.check, color: context.appColors.buttonPrimaryBg)
+          : null,
       onTap: () {
         _changeLanguage(context, languageCode);
         Navigator.pop(context); // Закрыть диалог сразу после выбора языка
@@ -175,7 +189,7 @@ class LanguageButtonWidget extends StatelessWidget {
                         ?.translate('language_change_error') ??
                     'Ошибка при изменении языка',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
             ),
           );
         }
@@ -197,7 +211,7 @@ class LanguageButtonWidget extends StatelessWidget {
                       ?.translate('language_change_error') ??
                   'Ошибка при изменении языка',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
           ),
         );
       }
@@ -205,13 +219,21 @@ class LanguageButtonWidget extends StatelessWidget {
   }
 }
 
-Widget _buildProfileOption({required String iconPath, required String text}) {
+Widget _buildProfileOption({
+  required BuildContext context,
+  required String iconPath,
+  required String text,
+}) {
   return Container(
     margin: const EdgeInsets.symmetric(vertical: 8),
     padding: const EdgeInsets.all(16.0),
     decoration: BoxDecoration(
-      color: const Color(0xFFF4F7FD),
+      color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
       borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: context.appColors.borderSubtle.withValues(alpha: 0.42),
+      ),
+      boxShadow: context.appShadows.card,
     ),
     child: Row(
         children: [
@@ -219,13 +241,13 @@ Widget _buildProfileOption({required String iconPath, required String text}) {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 223, 225, 249),
+              color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Center(
+            child: Center(
               child: Icon(
                 Icons.language,
-                color: Color.fromARGB(255, 91, 77, 235),
+                color: context.appColors.buttonPrimaryBg,
                 size: 22,
               ),
             ),
@@ -234,18 +256,17 @@ Widget _buildProfileOption({required String iconPath, required String text}) {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xFF1E1E1E),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
-        Image.asset(
-          'assets/icons/arrow-right.png',
-          width: 16,
-          height: 16,
+        Icon(
+          Icons.chevron_right_rounded,
+          color: context.appColors.iconSecondary,
         ),
       ],
     ),

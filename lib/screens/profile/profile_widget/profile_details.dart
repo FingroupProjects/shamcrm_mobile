@@ -1,22 +1,15 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
-import 'package:crm_task_manager/bloc/organization/organization_event.dart';
-import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../custom_widget/country_data_list.dart';
 
 class ProfileDetailsPage extends StatefulWidget {
   const ProfileDetailsPage({super.key});
@@ -26,1069 +19,331 @@ class ProfileDetailsPage extends StatefulWidget {
 }
 
 class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
-  final TextEditingController NameController = TextEditingController();
-  final TextEditingController SurnameController = TextEditingController();
-  final TextEditingController PatronymicController = TextEditingController();
-  final TextEditingController roleController = TextEditingController();
-  final TextEditingController loginController = TextEditingController();
-  final TextEditingController userController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController imageController = TextEditingController();
-  File? _profileImage;
-  String? _selectedOrganization;
+  final _nameController = TextEditingController();
+  final _surnameController = TextEditingController();
+  final _roleController = TextEditingController();
+  final _loginController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+
   String _userImage = '';
-  File? _localImage;
-  final ImagePicker _picker = ImagePicker();
-  // Добавляем переменные для хранения ошибок
-  String? _nameError;
-  String? _surnameError;
-  String? _phoneError;
-  String? _emailError;
-  bool _isLoading = true; // Add loading state
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool isButtonDisabled = false;
-  bool readOnly = false;
-  final TextEditingController phoneController = TextEditingController();
-  String selectedDialCode = '+992'; // Default country code
-
-  // Функция валидации email
-  bool isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-    // Extract country code from phone if necessary
-  }
-
-  bool isValidName(String name) {
-    return name.trim().isNotEmpty && name.length >= 2;
-  }
-
-  String? _getImageToUpload() {
-    // Если есть локально выбранное изображение
-    if (_localImage != null) {
-      return _localImage!.path;
-    }
-    // Если существующее изображение имеет расширения png, jpeg, jpg, img
-    if (_userImage.endsWith('.png') ||
-        _userImage.endsWith('.jpg') ||
-        _userImage.endsWith('.jpeg') ||
-        _userImage.endsWith('.img')) {
-      return _userImage;
-    }
-
-    // Для SVG или других форматов возвращаем null
-    return null;
-  }
-
-  // Функция для выбора изображения с улучшенной обработкой
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        imageQuality: 80,
-        maxWidth: 1080,
-        maxHeight: 1080,
-      );
-
-      if (pickedFile != null) {
-        final file = File(pickedFile.path);
-
-        // Проверяем размер файла асинхронно
-        final int fileSize = await file.length();
-
-        if (fileSize > 2 * 1024 * 1024) {
-          // Если размер больше 2 MB
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_too_large'),
-                style: context.appTextStyles.bodyMd.copyWith(
-                  color: context.appColors.textInverse,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              backgroundColor: context.appColors.error,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-          return; // Прекращаем выполнение, если файл слишком большой
-        }
-
-        // Если файл подходит по размеру
-        setState(() {
-          _profileImage = file;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!
-                  .translate('image_selected_successfully'),
-              style: context.appTextStyles.bodyMd.copyWith(
-                color: context.appColors.textInverse,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            backgroundColor: context.appColors.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('image_selection_error'),
-            style: context.appTextStyles.bodyMd.copyWith(
-              color: context.appColors.textInverse,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          backgroundColor: context.appColors.error,
-        ),
-      );
-    }
-  }
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserPhone();
-    _loadInitialData();
-
-    _loadSelectedOrganization();
-    context.read<OrganizationBloc>().add(FetchOrganizations());
+    _loadData();
   }
 
-  Future<void> _loadInitialData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
     try {
-      await Future.wait([
-        _loadUserPhone(),
-        _loadSelectedOrganization(),
-      ]);
-    } catch (e) {
-      //print('Error loading initial data: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+      final prefs = await SharedPreferences.getInstance();
+      final uuid = prefs.getString('userID') ?? '';
+      if (uuid.isEmpty) return;
 
-  Future<void> _loadUserPhone() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+      final userProfile = await ApiService().getUserById(int.parse(uuid));
 
-    String UUID = prefs.getString('userID') ?? 'Не найдено';
-    String ULogin = prefs.getString('userLogin') ?? 'Не найдено';
-    String URoleName = prefs.getString('userRoleName') ?? 'Не найдено';
-
-    setState(() {
-      userController.text = UUID;
-      loginController.text = ULogin;
-      roleController.text = URoleName;
-    });
-
-    try {
-      UserByIdProfile userProfile =
-          await ApiService().getUserById(int.parse(UUID));
-      // Обработка телефона
-      String phoneNumber = userProfile.phone ?? '';
-      String detectedDialCode = '+992';
-      String phoneWithoutCode = phoneNumber;
-
-      // Проверяем код страны в полученном номере
-      for (var country in countries) {
-        if (phoneNumber.startsWith(country.dialCode)) {
-          detectedDialCode = country.dialCode;
-          phoneWithoutCode = phoneNumber.substring(country.dialCode.length);
-          break;
-        }
+      if (mounted) {
+        setState(() {
+          _nameController.text = userProfile.name ?? '';
+          _surnameController.text = userProfile.lastname ?? '';
+          _emailController.text = userProfile.email ?? '';
+          _loginController.text = prefs.getString('userLogin') ?? '';
+          _roleController.text = prefs.getString('userRoleName') ?? '';
+          _phoneController.text = userProfile.phone ?? '';
+          _userImage = userProfile.image ?? '';
+        });
       }
-      setState(() {
-        NameController.text = userProfile.name;
-        SurnameController.text = userProfile.lastname;
-        PatronymicController.text = userProfile.Pname;
-        emailController.text = userProfile.email;
-        selectedDialCode = detectedDialCode;
-        phoneController.text = phoneWithoutCode;
-        _userImage = userProfile.image ?? '';
-      });
-    } catch (e) {
-      //print('Ошибка при загрузке данных из API: $e');
-    }
+    } catch (_) {}
+    if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _loadSelectedOrganization() async {
-    final savedOrganization = await ApiService().getSelectedOrganization();
-    if (savedOrganization == null) {
-      final firstOrganization = await _getFirstOrganization();
-      if (firstOrganization != null) {
-        _onOrganizationChanged(firstOrganization);
-      }
-    } else {
-      setState(() {
-        _selectedOrganization = savedOrganization;
-      });
-    }
-  }
-
-  Future<String?> _getFirstOrganization() async {
-    final state = context.read<OrganizationBloc>().state;
-    if (state is OrganizationLoaded && state.organizations.isNotEmpty) {
-      return state.organizations.first.id.toString();
-    }
-    return null;
-  }
-
-  void _onOrganizationChanged(String? newOrganization) {
-    setState(() {
-      _selectedOrganization = newOrganization;
-    });
-
-    if (newOrganization != null) {
-      ApiService().saveSelectedOrganization(newOrganization);
-    }
-  }
-
-  Future<void> _showImagePickerDialog() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(
-                AppLocalizations.of(context)!.translate('gallery'),
-              ),
-              onTap: () async {
-                // Показываем диалог загрузки
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) {
-                    return Dialog(
-                      backgroundColor: context.appColors.surfacePrimary,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(
-                              color: context.appColors.buttonPrimaryBg,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              AppLocalizations.of(context)!
-                                  .translate('checking_image'),
-                              style: context.appTextStyles.bodyMd.copyWith(
-                                color: context.appColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-
-                final XFile? pickedFile = await _picker.pickImage(
-                  source: ImageSource.gallery,
-                  imageQuality: 80,
-                  maxWidth: 1080,
-                  maxHeight: 1080,
-                );
-
-                if (pickedFile != null) {
-                  try {
-                    final file = File(pickedFile.path);
-                    final int fileSize = await file.length();
-
-                    // Закрываем диалог загрузки
-                    Navigator.of(context).pop();
-
-                    if (fileSize > 2 * 1024 * 1024) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!
-                                .translate('file_size_limit'),
-                            style: context.appTextStyles.bodyMd.copyWith(
-                              color: context.appColors.textInverse,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          backgroundColor: context.appColors.error,
-                          behavior: SnackBarBehavior.floating,
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          duration: const Duration(seconds: 3),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(12)),
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _localImage = file;
-                      _userImage = '';
-                    });
-
-                    Navigator.pop(context); // Закрываем модальное окно выбора
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!
-                              .translate('image_selected_successfully'),
-                          style: context.appTextStyles.bodyMd.copyWith(
-                            color: context.appColors.textInverse,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: context.appColors.success,
-                        behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        duration: const Duration(seconds: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(12)),
-                        ),
-                      ),
-                    );
-                  } catch (e) {
-                    // Закрываем диалог загрузки, если он еще открыт
-                    Navigator.of(context).pop();
-                    Navigator.pop(context); // Закрываем модальное окно выбора
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!
-                              .translate('image_selection_error'),
-                          style: context.appTextStyles.bodyMd.copyWith(
-                            color: context.appColors.textInverse,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: context.appColors.error,
-                        behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                        ),
-                      ),
-                    );
-                  }
-                } else {
-                  // Если пользователь отменил выбор, закрываем диалог загрузки
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(
-                AppLocalizations.of(context)!.translate('camera'),
-              ),
-              onTap: () async {
-                // Показываем диалог загрузки
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) {
-                    return Dialog(
-                      backgroundColor: context.appColors.surfacePrimary,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(
-                              color: context.appColors.buttonPrimaryBg,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              AppLocalizations.of(context)!
-                                  .translate('checking_image'),
-                              style: context.appTextStyles.bodyMd.copyWith(
-                                color: context.appColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-
-                final XFile? pickedFile = await _picker.pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 80,
-                  maxWidth: 1080,
-                  maxHeight: 1080,
-                );
-
-                if (pickedFile != null) {
-                  try {
-                    final file = File(pickedFile.path);
-                    final int fileSize = await file.length();
-
-                    // Закрываем диалог загрузки
-                    Navigator.of(context).pop();
-
-                    if (fileSize > 2 * 1024 * 1024) {
-                      Navigator.pop(context); // Закрываем модальное окно выбора
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!
-                                .translate('file_size_limit'),
-                            style: context.appTextStyles.bodyMd.copyWith(
-                              color: context.appColors.textInverse,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          backgroundColor: context.appColors.error,
-                          behavior: SnackBarBehavior.floating,
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          duration: const Duration(seconds: 3),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(12)),
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _localImage = file;
-                      _userImage = '';
-                    });
-
-                    Navigator.pop(context); // Закрываем модальное окно выбора
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!
-                              .translate('image_selected_successfully'),
-                          style: context.appTextStyles.bodyMd.copyWith(
-                            color: context.appColors.textInverse,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: context.appColors.success,
-                        behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        duration: const Duration(seconds: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(12)),
-                        ),
-                      ),
-                    );
-                  } catch (e) {
-                    // Закрываем диалог загрузки, если он еще открыт
-                    Navigator.of(context).pop();
-                    Navigator.pop(context); // Закрываем модальное окно выбора
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!
-                              .translate('image_selection_error'),
-                          style: context.appTextStyles.bodyMd.copyWith(
-                            color: context.appColors.textInverse,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: context.appColors.error,
-                        behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                        ),
-                      ),
-                    );
-                  }
-                } else {
-                  // Если пользователь отменил выбор, закрываем диалог загрузки
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _surnameController.dispose();
+    _roleController.dispose();
+    _loginController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Функция для извлечения URL из SVG
-    Color? extractBackgroundColorFromSvg(String svg) {
-      final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-      if (fillMatch != null) {
-        final colorHex = fillMatch.group(1);
-        if (colorHex != null) {
-          final hex = colorHex.replaceAll('#', '');
-          return Color(int.parse('FF$hex', radix: 16));
-        }
-      }
-      return null;
-    }
+    final t = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
-    Widget buildSvgAvatar(String svg) {
-      if (svg.contains('image href=')) {
-        // Извлекаем URL изображения
-        final start = svg.indexOf('href="') + 6;
-        final end = svg.indexOf('"', start);
-        final imageUrl = svg.substring(start, end);
-
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
+    return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
+      appBar: AppBar(
+        toolbarHeight: 78,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
+        title: AppBarShell(
+          leading: AppBarShell.capsule(
+            context,
+            width: AppBarShell.orbSize,
+            padding: EdgeInsets.zero,
+            child: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: colors.iconPrimary,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
-        );
-      } else {
-        // Извлекаем текст из SVG и цвет фона
-        final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
-        final backgroundColor =
-            extractBackgroundColorFromSvg(svg) ?? context.appColors.surfaceElevated;
-
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: backgroundColor, // Теперь используем извлеченный цвет
-            border: Border.all(
-              color: context.appColors.textInverse,
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: Padding(
-                padding: EdgeInsets.all(40),
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: context.appColors.textInverse,
-                    fontSize: 120,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                    letterSpacing: 0,
-                  ),
-                  textAlign: TextAlign.center,
+          center: AppBarShell.capsule(
+            context,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                t.translate('profile_editor'),
+                style: textStyles.titleMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
                 ),
               ),
             ),
           ),
-        );
-      }
-    }
-
-    return Scaffold(
-      key: _formKey,
-      backgroundColor: context.appColors.backgroundPrimary,
-      appBar: AppBar(
-        title: Transform.translate(
-          offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
-          child: Text(
-            AppLocalizations.of(context)!.translate('profile_editor'),
-            style: context.appTextStyles.titleMd.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.appColors.textPrimary,
-            ),
-          ),
-        ),
-        centerTitle: false, // Заголовок остаётся слева
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Transform.translate(
-            offset:
-                const Offset(0, -2), // Поднимаем иконку стрелки немного вверх
+          trailing: AppBarShell.capsule(
+            context,
+            width: AppBarShell.orbSize,
+            padding: EdgeInsets.zero,
             child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
+              icon: Icon(
+                Icons.edit_outlined,
+                color: colors.iconPrimary,
+                size: 22,
               ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileEditPage()),
+              ),
             ),
           ),
         ),
-        leadingWidth: 40, // Уменьшаем ширину области для стрелки
-        backgroundColor: context.appColors.backgroundPrimary,
-        actions: [
-          IconButton(
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ProfileEditPage()),
-              );
-            },
-          ),
-        ],
       ),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
-                color: context.appColors.buttonPrimaryBg,
+                color: colors.buttonPrimaryBg,
               ),
             )
-          : Column(children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 16.0,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Column(
-                              children: [
-                                _localImage != null
-                                    ? CircleAvatar(
-                                        radius: 70,
-                                        backgroundImage:
-                                            FileImage(_localImage!),
-                                      )
-                                    : _userImage !=
-                                                AppLocalizations.of(context)!
-                                                    .translate('not_found') &&
-                                            _userImage.isNotEmpty
-                                        ? _userImage.contains('<svg')
-                                            ? buildSvgAvatar(_userImage)
-                                            : Container(
-                                                width: 140,
-                                                height: 140,
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(70),
-                                                  image: DecorationImage(
-                                                    image: NetworkImage(
-                                                        _userImage),
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              )
-                                        : CircleAvatar(
-                                            radius: 70,
-                                            backgroundColor:
-                                                context.appColors.borderPrimary,
-                                            child: Icon(
-                                              Icons.person,
-                                              size: 100,
-                                              color:
-                                                  context.appColors.textInverse,
-                                            ),
-                                          ),
-                                // const SizedBox(height: 10),
-                                // ElevatedButton(
-                                //   onPressed: _showImagePickerDialog,
-                                //   style: ElevatedButton.styleFrom(
-                                //     padding: const EdgeInsets.symmetric(
-                                //         horizontal: 16, vertical: 8),
-                                //     backgroundColor: const Color(0xff1E2E52),
-                                //   ),
-                                //   child: Text(
-                                //     _userImage ==
-                                //                 AppLocalizations.of(context)!
-                                //                     .translate('not_found') ||
-                                //             _userImage.isEmpty
-                                //         ? AppLocalizations.of(context)!
-                                //             .translate('change_photo')
-                                //         : AppLocalizations.of(context)!
-                                //             .translate('change_photo'),
-                                //     style: const TextStyle(
-                                //       color: Colors.white,
-                                //       fontSize: 16,
-                                //     ),
-                                //   ),
-                                // ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.8, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: NameController,
-                            hintText:
-                                AppLocalizations.of(context)!.translate('name'),
-                            label:
-                                AppLocalizations.of(context)!.translate('name'),
-                            readOnly: true,
-                            onChanged: (value) {
-                              setState(() {
-                                _nameError = null;
-                              });
-                            },
-                          ),
-                        ),
-                        if (_nameError != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4, left: 12),
-                              child: Text(
-                                _nameError!,
-                                style: context.appTextStyles.caption.copyWith(
-                                  color: context.appColors.error,
-                                ),
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.8, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: SurnameController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('surname'),
-                            label: AppLocalizations.of(context)!
-                                .translate('surname'),
-                            readOnly: true,
-                            onChanged: (value) {
-                              setState(() {
-                                _surnameError = null;
-                              });
-                            },
-                          ),
-                        ),
-                        if (_surnameError != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4, left: 12),
-                              child: Text(
-                                _surnameError!,
-                                style: context.appTextStyles.caption.copyWith(
-                                  color: context.appColors.error,
-                                ),
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.8, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: phoneController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('phone'),
-                            label: AppLocalizations.of(context)!
-                                .translate('phone'),
-                            readOnly: true,
-                            onChanged: (value) {
-                              setState(() {
-                                _surnameError = null;
-                              });
-                            },
-                          ),
-                        ),
-                        if (_surnameError != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4, left: 12),
-                              child: Text(
-                                _surnameError!,
-                                style: context.appTextStyles.caption.copyWith(
-                                  color: context.appColors.error,
-                                ),
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.8, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: roleController,
-                            hintText:
-                                AppLocalizations.of(context)!.translate('role'),
-                            label:
-                                AppLocalizations.of(context)!.translate('role'),
-                            readOnly: true,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.8, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: loginController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('login'),
-                            label: AppLocalizations.of(context)!
-                                .translate('login'),
-                            readOnly: true,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.8, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: emailController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('email'),
-                            label: AppLocalizations.of(context)!
-                                .translate('email'),
-                            readOnly: true,
-                            keyboardType: TextInputType.emailAddress,
-                            onChanged: (value) {
-                              setState(() {
-                                _emailError = null;
-                              });
-                            },
-                          ),
-                        ),
-                        if (_emailError != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4, left: 12),
-                              child: Text(
-                                _emailError!,
-                                style: context.appTextStyles.caption.copyWith(
-                                  color: context.appColors.error,
-                                ),
-                              ),
-                            ),
-                          ),
-                        BlocListener<ProfileBloc, ProfileState>(
-                          listener: (context, state) {
-                            if (state is ProfileSuccess) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate(
-                                        'profile_updated_successfully'),
-                                    style:
-                                        context.appTextStyles.bodyMd.copyWith(
-                                      color: context.appColors.textInverse,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor: context.appColors.success,
-                                  elevation: 3,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                              Navigator.pop(context);
-                            } else if (state is ProfileError) {
-                              String message;
-
-                              if (state.message.contains('500')) {
-                                message = AppLocalizations.of(context)!
-                                    .translate('server_error');
-                              } else if (state.message.contains('422')) {
-                                message = AppLocalizations.of(context)!
-                                    .translate('validation_error');
-                              } else if (state.message.contains('404')) {
-                                message = AppLocalizations.of(context)!
-                                    .translate('resource_not_found');
-                              } else {
-                                message = AppLocalizations.of(context)!
-                                    .translate('invalid_phone_number');
-                              }
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    message,
-                                    style:
-                                        context.appTextStyles.bodyMd.copyWith(
-                                      color: context.appColors.textInverse,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor: context.appColors.error,
-                                  elevation: 3,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          },
-                          child: Container(),
-                        ),
-                      ],
-                    ),
+          : Stack(
+              children: [
+                const Positioned.fill(
+                  child: AppBackgroundOverlay(
+                    preset: AppBackgroundPreset.aurora,
                   ),
                 ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.appColors.surfacePrimary,
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.appColors.shadow.withValues(alpha: 0.1),
-                      spreadRadius: 0,
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      _buildAvatar(t),
+                      const SizedBox(height: 28),
+                      _buildField(_nameController, t.translate('name'), Icons.person_outline),
+                      const SizedBox(height: 12),
+                      _buildField(_surnameController, t.translate('surname'), Icons.badge_outlined),
+                      const SizedBox(height: 12),
+                      _buildField(_phoneController, t.translate('phone'), Icons.phone_outlined),
+                      const SizedBox(height: 12),
+                      _buildField(_roleController, t.translate('role'), Icons.work_outline),
+                      const SizedBox(height: 12),
+                      _buildField(_loginController, t.translate('login'), Icons.person_outline),
+                      const SizedBox(height: 12),
+                      _buildField(_emailController, t.translate('email'), Icons.email_outlined),
+                      const SizedBox(height: 24),
+                      BlocListener<ProfileBloc, ProfileState>(
+                        listener: (context, state) {
+                          if (state is ProfileSuccess) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  t.translate('profile_updated_successfully'),
+                                  style: context.appTextStyles.bodyMd.copyWith(
+                                    color: context.appColors.textInverse,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: context.appColors.success,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                            Navigator.pop(context);
+                          } else if (state is ProfileError) {
+                            final map = {
+                              '500': 'server_error',
+                              '422': 'validation_error',
+                              '404': 'resource_not_found',
+                            };
+                            final key = map.keys.firstWhere(
+                              (k) => state.message.contains(k),
+                              orElse: () => '',
+                            );
+                            final msg = t.translate(key.isNotEmpty ? map[key]! : 'invalid_phone_number');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  msg,
+                                  style: context.appTextStyles.bodyMd.copyWith(
+                                    color: context.appColors.textInverse,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: context.appColors.error,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        },
+                        child: const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 ),
-                // padding: const EdgeInsets.all(16.0),
-                // child: BlocBuilder<ProfileBloc, ProfileState>(
-                //   builder: (context, state) {
-                //     return ElevatedButton(
-                //       style: ElevatedButton.styleFrom(
-                //         backgroundColor: const Color(0xff1E2E52),
-                //         padding: const EdgeInsets.symmetric(
-                //             horizontal: 16, vertical: 8),
-                //         minimumSize: Size(double.infinity, 48),
-                //       ),
-                //       onPressed: () async {
-                //         // Сбрасываем состояние ошибок
-                //         setState(() {
-                //           _nameError = null;
-                //           _surnameError = null;
-                //           _phoneError = null;
-                //           _emailError = null;
-                //         });
-
-                //         // Проверяем валидацию
-                //         bool isValid = true;
-
-                //         if (NameController.text.trim().isEmpty) {
-                //           setState(() {
-                //             _nameError = AppLocalizations.of(context)!
-                //                 .translate('name_required');
-                //           });
-                //           isValid = false;
-                //         }
-
-                //         if (SurnameController.text.trim().isEmpty) {
-                //           setState(() {
-                //             _surnameError = AppLocalizations.of(context)!
-                //                 .translate('surname_required');
-                //           });
-                //           isValid = false;
-                //         }
-
-                //         if (emailController.text.trim().isNotEmpty &&
-                //             !isValidEmail(emailController.text.trim())) {
-                //           setState(() {
-                //             _emailError = AppLocalizations.of(context)!
-                //                 .translate('invalid_email');
-                //           });
-                //           isValid = false;
-                //         }
-
-                //         if (!isValid) return;
-
-                //         try {
-                //           SharedPreferences prefs =
-                //               await SharedPreferences.getInstance();
-                //           String UUID = prefs.getString('userID') ?? '';
-
-                //           if (UUID.isEmpty) {
-                //             _showErrorMessage('Ошибка: UUID не найден');
-                //             return;
-                //           }
-
-                //           String UserNameProfile = NameController.text;
-                //           await prefs.setString(
-                //               'userNameProfile', UserNameProfile);
-
-                //           int userId = int.parse(UUID);
-                //           final image = _getImageToUpload();
-                //           context.read<ProfileBloc>().add(UpdateProfile(
-                //               userId: userId,
-                //               name: NameController.text.trim(),
-                //               sname: SurnameController.text.trim(),
-                //               phone: selectedDialCode + phoneController.text,
-                //               email: emailController.text.trim(),
-                //               image: image,
-                //               pname: ''));
-                //         } catch (e) {
-                //           _showErrorMessage(AppLocalizations.of(context)!
-                //               .translate('profile_update_error'));
-                //         }
-                //       },
-                //       child: Text(
-                //         AppLocalizations.of(context)!.translate('save'),
-                //         style: TextStyle(
-                //           color: Colors.white,
-                //           fontFamily: 'Gilroy',
-                //           fontWeight: FontWeight.w600,
-                //           fontSize: 16,
-                //         ),
-                //       ),
-                //     );
-                //   },
-                // )
-              )
-            ]),
+              ],
+            ),
     );
   }
 
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: context.appTextStyles.bodyMd.copyWith(
-            color: context.appColors.textInverse,
-            fontWeight: FontWeight.w500,
+  Widget _buildAvatar(AppLocalizations t) {
+    Widget defaultAvatar() => CircleAvatar(
+          radius: 70,
+          backgroundColor: context.appColors.borderPrimary,
+          child: Icon(Icons.person, size: 100, color: context.appColors.textInverse),
+        );
+
+    if (_userImage.isEmpty || _userImage == 'Не найдено') {
+      return defaultAvatar();
+    }
+
+    if (_userImage.contains('<svg')) {
+      final svg = _userImage;
+      if (svg.contains('image href=')) {
+        final start = svg.indexOf('href="') + 6;
+        final end = svg.indexOf('"', start);
+        final url = svg.substring(start, end);
+        return Container(
+          width: 140,
+          height: 140,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover),
+          ),
+        );
+      }
+      // SVG с текстом
+      Color? extractColor(String s) {
+        final m = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(s);
+        if (m != null) return Color(int.parse('FF${m.group(1)!.replaceAll('#', '')}', radix: 16));
+        return null;
+      }
+      final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
+      final bg = extractColor(svg) ?? context.appColors.surfaceElevated;
+      return Container(
+        width: 140,
+        height: 140,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: bg,
+          border: Border.all(color: context.appColors.textInverse, width: 1),
+        ),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 120, fontWeight: FontWeight.w500),
+              ),
+            ),
           ),
         ),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      );
+    }
+
+    return Container(
+      width: 140,
+      height: 140,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(70),
+        image: DecorationImage(image: NetworkImage(_userImage), fit: BoxFit.cover),
+      ),
+    );
+  }
+
+  Widget _buildField(TextEditingController controller, String label, IconData icon) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.42),
         ),
-        backgroundColor: context.appColors.error,
-        elevation: 3,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: const Duration(seconds: 3),
+        boxShadow: context.appShadows.card,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: context.appColors.buttonPrimaryBg, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: context.appTextStyles.caption.copyWith(
+                    color: context.appColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  controller.text.isNotEmpty ? controller.text : '—',
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

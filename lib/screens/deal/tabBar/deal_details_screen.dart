@@ -969,7 +969,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
               children: [
                 Text(
                   headerTitle,
-                  style: TaskCardStyles.titleStyle.copyWith(
+                  style: TaskCardStyles.titleStyle(context).copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1090,7 +1090,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
           width: double.infinity,
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration(context),
           child: const Center(
             child: Padding(
               padding: EdgeInsets.all(16),
@@ -1131,7 +1131,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         width: double.infinity,
-        decoration: TaskCardStyles.taskCardDecoration,
+        decoration: TaskCardStyles.taskCardDecoration(context),
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [

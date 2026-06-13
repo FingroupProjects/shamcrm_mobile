@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -31,7 +33,8 @@ class CustomAppBarSimple extends StatefulWidget {
   State<CustomAppBarSimple> createState() => _CustomAppBarSimpleState();
 }
 
-class _CustomAppBarSimpleState extends State<CustomAppBarSimple> with TickerProviderStateMixin {
+class _CustomAppBarSimpleState extends State<CustomAppBarSimple>
+    with TickerProviderStateMixin {
   bool _isSearching = false;
   late TextEditingController _searchController;
   late FocusNode focusNode;
@@ -81,8 +84,10 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple> with TickerProv
   Future<void> _loadUserProfile() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      String UUID = prefs.getString('userID') ?? AppLocalizations.of(context)!.translate('not_found');
-      UserByIdProfile userProfile = await ApiService().getUserById(int.parse(UUID));
+      String UUID = prefs.getString('userID') ??
+          AppLocalizations.of(context)!.translate('not_found');
+      UserByIdProfile userProfile =
+          await ApiService().getUserById(int.parse(UUID));
 
       if (userProfile.image != null && userProfile.image != _lastLoadedImage) {
         setState(() {
@@ -179,8 +184,10 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple> with TickerProv
           ),
         );
       } else {
-        final text = RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
-        final backgroundColor = extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
+        final text =
+            RegExp(r'>([^<]+)</text>').firstMatch(imageSource)?.group(1) ?? '';
+        final backgroundColor =
+            extractBackgroundColorFromSvg(imageSource) ?? Color(0xFF2C2C2C);
 
         return Container(
           width: 40,
@@ -236,109 +243,119 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple> with TickerProv
     );
   }
 
+  Widget _buildAppBarAssetIcon(
+    BuildContext context,
+    String assetPath, {
+    Color? color,
+    double size = 24,
+  }) {
+    return Image.asset(
+      assetPath,
+      width: size,
+      height: size,
+      color: color ?? context.appColors.iconPrimary,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: kToolbarHeight,
-      color: Colors.white,
-      padding: EdgeInsets.zero,
-      child: Row(children: [
-        Container(
-          width: 40,
-          height: 40,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: _buildAvatarImage(_userImage),
-            onPressed: widget.onClickProfileAvatar,
-          ),
+    return AppBarShell(
+      leading: AppBarShell.capsule(
+        context,
+        width: AppBarShell.orbSize,
+        padding: EdgeInsets.zero,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          icon: _buildAvatarImage(_userImage),
+          onPressed: widget.onClickProfileAvatar,
         ),
-        SizedBox(width: 8),
-        if (!_isSearching)
-          Expanded(
-            child: Text(
-              widget.title,
-              style: TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
-        if (_isSearching)
-          Expanded(
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: _isSearching ? 200.0 : 0.0,
-              child: TextField(
-                controller: _searchController,
-                focusNode: focusNode,
-                onChanged: widget.onChangedSearchInput,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
-                ),
-                style: TextStyle(fontSize: 16),
-                autofocus: true,
-              ),
-            ),
-          ),
-        if (widget.showSearchIcon)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('search'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 0),
+      ),
+      center: AppBarShell.capsule(
+        context,
+        child: !_isSearching
+            ? Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: context.appTextStyles.titleLg.copyWith(
+                        color: context.appColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
-              ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: _isSearching
-                    ? Icon(Icons.close)
-                    : Image.asset(
-                  'assets/icons/AppBar/search.png',
-                  width: 24,
-                  height: 24,
+              )
+            : AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: _isSearching ? 200.0 : 0.0,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: focusNode,
+                  onChanged: widget.onChangedSearchInput,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('search_appbar'),
+                    border: InputBorder.none,
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.fieldHint,
+                    ),
+                  ),
+                  style: context.appTextStyles.bodyLg.copyWith(
+                    color: context.appColors.textPrimary,
+                  ),
+                  autofocus: true,
                 ),
-                onPressed: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      _searchController.clear();
-                      FocusScope.of(context).unfocus();
-                    }
-                  });
-                  widget.clearButtonClick(_isSearching);
-                  if (_isSearching) {
-                    Future.delayed(Duration(milliseconds: 100), () {
-                      FocusScope.of(context).requestFocus(focusNode);
-                    });
-                  }
-                  if (kDebugMode) {
-                    //print('CustomAppBarSimple: Переключение поиска: $_isSearching');
-                  }
-                },
               ),
-            ),
-          ),
-      ]),
+      ),
+      trailing: widget.showSearchIcon
+          ? AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              child: Tooltip(
+                message: AppLocalizations.of(context)!.translate('search'),
+                preferBelow: false,
+                decoration: BoxDecoration(
+                  color: context.appColors.surfacePrimary,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: context.appShadows.card,
+                ),
+                textStyle: context.appTextStyles.bodySm.copyWith(
+                  color: context.appColors.textPrimary,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                  icon: _isSearching
+                      ? Icon(Icons.close, color: context.appColors.iconPrimary)
+                      : _buildAppBarAssetIcon(
+                          context,
+                          'assets/icons/AppBar/search.png',
+                        ),
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = !_isSearching;
+                      if (!_isSearching) {
+                        _searchController.clear();
+                        FocusScope.of(context).unfocus();
+                      }
+                    });
+                    widget.clearButtonClick(_isSearching);
+                    if (_isSearching) {
+                      Future.delayed(Duration(milliseconds: 100), () {
+                        FocusScope.of(context).requestFocus(focusNode);
+                      });
+                    }
+                    if (kDebugMode) {
+                      //print('CustomAppBarSimple: Переключение поиска: $_isSearching');
+                    }
+                  },
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
-

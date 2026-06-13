@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
-import 'package:crm_task_manager/utils/app_colors.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -123,18 +123,39 @@ class ThanosDeleteWrapperState extends State<ThanosDeleteWrapper>
   }
 
   CustomPainter _buildPainter(double progress) {
+    final colors = context.appColors;
     switch (widget.effectType) {
       case ThanosEffectType.text:
         return _DustParticlePainter(
-            image: _snapshot, progress: progress, seed: 42);
+          image: _snapshot,
+          progress: progress,
+          seed: 42,
+          inverseColor: colors.textInverse,
+          accentColor: colors.warning,
+        );
       case ThanosEffectType.voice:
         return _WaveCollapsePainter(
-            image: _snapshot, progress: progress, seed: 7);
+          image: _snapshot,
+          progress: progress,
+          seed: 7,
+          inverseColor: colors.textInverse,
+          accentColor: colors.info,
+        );
       case ThanosEffectType.file:
-        return _WindBlowPainter(image: _snapshot, progress: progress, seed: 13);
+        return _WindBlowPainter(
+          image: _snapshot,
+          progress: progress,
+          seed: 13,
+          inverseColor: colors.textInverse,
+          accentColor: colors.info,
+        );
       case ThanosEffectType.image:
         return _PixelFadePainter(
-            image: _snapshot, progress: progress, seed: 99);
+          image: _snapshot,
+          progress: progress,
+          seed: 99,
+          inverseColor: colors.textInverse,
+        );
     }
   }
 }
@@ -147,6 +168,8 @@ class _DustParticlePainter extends CustomPainter {
   final ui.Image? image;
   final double progress;
   final int seed;
+  final Color inverseColor;
+  final Color accentColor;
 
   static const int _cols = 28;
   static const int _rows = 14;
@@ -155,7 +178,11 @@ class _DustParticlePainter extends CustomPainter {
   bool _initialized = false;
 
   _DustParticlePainter(
-      {required this.image, required this.progress, required this.seed});
+      {required this.image,
+      required this.progress,
+      required this.seed,
+      required this.inverseColor,
+      required this.accentColor});
 
   void _init(Size size) {
     if (_initialized) return;
@@ -190,7 +217,7 @@ class _DustParticlePainter extends CustomPainter {
       // Рисуем оригинал с угасанием
       final overallAlpha = (1.0 - progress * 2).clamp(0.0, 1.0);
       if (overallAlpha > 0) {
-        paint.color = AppColors.textPrimaryWhite.withValues(alpha: overallAlpha);
+        paint.color = inverseColor.withValues(alpha: overallAlpha);
         canvas.saveLayer(Offset.zero & size, paint);
         paintImage(
           canvas: canvas,
@@ -222,14 +249,14 @@ class _DustParticlePainter extends CustomPainter {
         final dst = Rect.fromCenter(center: pos, width: p.size, height: p.size);
 
         paint
-          ..color = AppColors.textPrimaryWhite.withValues(alpha: alpha)
+          ..color = inverseColor.withValues(alpha: alpha)
           ..filterQuality = FilterQuality.low;
 
         canvas.saveLayer(dst.inflate(2), paint);
         canvas.drawImageRect(image!, src, dst, Paint());
         canvas.restore();
       } else {
-        paint.color = AppColors.textAdditionalOrange.withValues(alpha: alpha);
+        paint.color = accentColor.withValues(alpha: alpha);
         canvas.drawCircle(pos, p.size / 2, paint);
       }
     }
@@ -264,9 +291,15 @@ class _WaveCollapsePainter extends CustomPainter {
   final ui.Image? image;
   final double progress;
   final int seed;
+  final Color inverseColor;
+  final Color accentColor;
 
   _WaveCollapsePainter(
-      {required this.image, required this.progress, required this.seed});
+      {required this.image,
+      required this.progress,
+      required this.seed,
+      required this.inverseColor,
+      required this.accentColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -284,7 +317,7 @@ class _WaveCollapsePainter extends CustomPainter {
 
     if (image != null) {
       final paint = Paint()
-        ..color = AppColors.textPrimaryWhite.withValues(alpha: alpha)
+        ..color = inverseColor.withValues(alpha: alpha)
         ..filterQuality = FilterQuality.low;
       canvas.saveLayer(Offset.zero & size, paint);
       paintImage(
@@ -309,7 +342,7 @@ class _WaveCollapsePainter extends CustomPainter {
       final ringAlpha = (sin(t * pi)).clamp(0.0, 1.0);
 
       final paint = Paint()
-        ..color = AppColors.primaryBlue.withValues(alpha: ringAlpha * 0.55)
+        ..color = accentColor.withValues(alpha: ringAlpha * 0.55)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.5 + rng.nextDouble() * 2;
 
@@ -330,9 +363,15 @@ class _WindBlowPainter extends CustomPainter {
   final ui.Image? image;
   final double progress;
   final int seed;
+  final Color inverseColor;
+  final Color accentColor;
 
   _WindBlowPainter(
-      {required this.image, required this.progress, required this.seed});
+      {required this.image,
+      required this.progress,
+      required this.seed,
+      required this.inverseColor,
+      required this.accentColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -359,7 +398,7 @@ class _WindBlowPainter extends CustomPainter {
         );
 
         final paint = Paint()
-          ..color = AppColors.textPrimaryWhite.withValues(alpha: alpha)
+          ..color = inverseColor.withValues(alpha: alpha)
           ..filterQuality = FilterQuality.low;
 
         canvas.saveLayer(dstRect.inflate(1), paint);
@@ -369,7 +408,7 @@ class _WindBlowPainter extends CustomPainter {
 
       if (t > 0.1 && t < 0.85) {
         final windPaint = Paint()
-          ..color = AppColors.primaryBlue.withValues(alpha: alpha * 0.4)
+          ..color = accentColor.withValues(alpha: alpha * 0.4)
           ..strokeWidth = 0.8
           ..style = PaintingStyle.stroke;
         final y = i * stripH + stripH / 2;
@@ -395,11 +434,15 @@ class _PixelFadePainter extends CustomPainter {
   final ui.Image? image;
   final double progress;
   final int seed;
+  final Color inverseColor;
 
   static const int _blockSize = 8;
 
   _PixelFadePainter(
-      {required this.image, required this.progress, required this.seed});
+      {required this.image,
+      required this.progress,
+      required this.seed,
+      required this.inverseColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -444,7 +487,7 @@ class _PixelFadePainter extends CustomPainter {
     final sparkCount = (totalBlocks * progress * 0.15).round();
     final deadBlocks = indices.skip(liveCount).take(sparkCount);
     final sparkPaint = Paint()
-      ..color = AppColors.textPrimaryWhite.withValues(alpha: (1.0 - progress) * 0.7);
+      ..color = inverseColor.withValues(alpha: (1.0 - progress) * 0.7);
 
     for (final b in deadBlocks) {
       final r = b ~/ cols;

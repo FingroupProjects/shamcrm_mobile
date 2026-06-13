@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class CustomTextFieldNoLabel extends StatefulWidget {
   final TextEditingController controller;
@@ -44,6 +45,7 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
     // Determine if the field has an error
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
         widget.hasError;
+    final colors = context.appColors;
 
     return TextFormField(
       controller: widget.controller,
@@ -56,16 +58,16 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
       onChanged: widget.onChanged,
       decoration: InputDecoration(
         hintText: widget.hintText,
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           fontFamily: 'Gilroy',
-          color: Color(0xff99A4BA),
+          color: colors.fieldHint,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: const Color(0xffF4F7FD),
+        fillColor: colors.fieldBg,
         contentPadding:
             const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         prefixIcon: widget.prefixIcon,
@@ -77,7 +79,7 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
                       : 'assets/icons/Profile/eye_close.png',
                   width: 24,
                   height: 24,
-                  color: const Color(0xff99A4BA),
+                  color: colors.iconSecondary,
                 ),
                 onPressed: () {
                   setState(() {
@@ -88,9 +90,9 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
             : widget.suffixIcon,
         errorText: widget.errorText,
         // Уменьшенный размер шрифта для ошибки и выравнивание по левому краю
-        errorStyle: const TextStyle(
+        errorStyle: TextStyle(
           fontSize: 12, // Уменьшенный размер шрифта
-          color: Colors.red,
+          color: colors.error,
           fontWeight: FontWeight.w400,
         ),
         // Смещение текста ошибки влево
@@ -99,28 +101,28 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: hasError ? Colors.red : Colors.transparent,
+            color: hasError ? colors.error : Colors.transparent,
           ),
         ),
         // Не менять цвет при фокусе, сохранять прозрачную или красную границу
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: hasError ? Colors.red : Colors.transparent, // Не меняем цвет границы при фокусе
+            color: hasError ? colors.error : Colors.transparent,
             width: hasError ? 1.5 : 0,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Colors.red,
+          borderSide: BorderSide(
+            color: colors.error,
             width: 1.5,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Colors.red,
+          borderSide: BorderSide(
+            color: colors.error,
             width: 1.5,
           ),
         ),

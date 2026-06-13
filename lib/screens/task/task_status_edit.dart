@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
@@ -85,7 +86,13 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
     });
   }
 
-  Widget _buildCheckbox(String label, bool value, Function(bool?) onChanged) {
+  Widget _buildCheckbox(
+    BuildContext context,
+    String label,
+    bool value,
+    Function(bool?) onChanged,
+  ) {
+    final colors = context.appColors;
     return Row(
       children: [
         Transform.scale(
@@ -93,13 +100,13 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: colors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
           ),
         ),
-        Text(label, style: _textStyle()),
+        Text(label, style: _textStyle().copyWith(color: colors.textPrimary)),
       ],
     );
   }
@@ -109,6 +116,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
     return BlocConsumer<TaskBloc, TaskState>(
       bloc: _taskBloc,
       listener: (context, state) {
+        final colors = context.appColors;
         if (state is TaskStatusLoaded && !_dataLoaded) {
           setState(() {
             _titleController.text = state.taskStatus.taskStatus!.name;
@@ -129,7 +137,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -137,7 +145,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: colors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -156,7 +164,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -164,7 +172,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -184,7 +192,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -200,12 +208,12 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Colors.black.withOpacity(0.8),
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close,
-                            size: 24, color: Colors.grey[600]),
+                            size: 24, color: context.appColors.iconSecondary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -216,8 +224,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                   Expanded(
                     child: state is TaskLoading
                         ? const Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)))
+                            child: CircularProgressIndicator())
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,6 +242,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                 ),
                                 const SizedBox(height: 20),
                                 _buildCheckbox(
+                                  context,
                                   'С доступом',
                                   needsPermission,
                                   (value) {
@@ -249,6 +257,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                   },
                                 ),
                                 _buildCheckbox(
+                                  context,
                                   'Завершающий этап',
                                   finalStep,
                                   (value) {
@@ -260,6 +269,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                   },
                                 ),
                                 _buildCheckbox(
+                                  context,
                                   'Проверяющий этап',
                                   checkingStep,
                                   (value) {
@@ -271,6 +281,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                   },
                                 ),
                                 _buildCheckbox(
+                                  context,
                                   'Неразобранные',
                                   isUnassembled,
                                   (value) {
@@ -301,7 +312,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                       margin: const EdgeInsets.only(top: 16),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: const Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                       child: TextButton(
                         onPressed: _saveChanges,
@@ -311,13 +322,13 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                             vertical: 10,
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Сохранить',
                           style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: context.appColors.buttonPrimaryFg,
                           ),
                         ),
                       ),

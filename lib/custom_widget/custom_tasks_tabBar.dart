@@ -1,27 +1,38 @@
 // lib/styles/task_styles.dart
 
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class TaskStyles {
-  static const Color activeColor = Color(0xfff1E2E52);
-  static const Color inactiveColor = Color(0xfff99A4BA);
-  static const Color borderActiveColor = Color(0xfff1E2E52);
-  static const Color borderInactiveColor = Color(0xfffDFE3EC);
-  
-  static const TextStyle tabTextStyle = TextStyle(
-    fontWeight: FontWeight.w400,
-    fontFamily: 'Gilroy',
-    fontSize: 14,
-  );
+  static Color activeColor(BuildContext context) =>
+      context.appColors.textPrimary;
+  static Color inactiveColor(BuildContext context) =>
+      context.appColors.textSecondary;
+  static Color borderActiveColor(BuildContext context) =>
+      context.appColors.buttonPrimaryBg.withValues(alpha: 0.55);
+  static Color borderInactiveColor(BuildContext context) =>
+      context.appColors.borderSubtle.withValues(alpha: 0.32);
 
-  static BoxDecoration tabButtonDecoration(bool isActive) {
+  static TextStyle tabTextStyle(BuildContext context) =>
+      context.appTextStyles.bodySm.copyWith(
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Gilroy',
+        fontSize: 14,
+      );
+
+  static BoxDecoration tabButtonDecoration(BuildContext context, bool isActive) {
     return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
+      color: isActive
+          ? context.appColors.surfaceAccent.withValues(alpha: 0.24)
+          : context.appColors.surfacePrimary.withValues(alpha: 0.74),
+      borderRadius: BorderRadius.circular(16),
       border: Border.all(
-        color: isActive ? borderActiveColor : borderInactiveColor,
+        color: isActive
+            ? borderActiveColor(context)
+            : borderInactiveColor(context),
         width: 1,
       ),
+      boxShadow: isActive ? context.appShadows.card : const [],
     );
   }
 }

@@ -99,7 +99,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
       child: Container(
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-        decoration: MyTaskCardStyles.taskCardDecoration,
+        decoration: MyTaskCardStyles.taskCardDecoration(context),
         child: Stack(
           children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -111,11 +111,11 @@ class _MyTaskCardState extends State<MyTaskCard> {
                       TextSpan(
                         text: widget.task.name ??
                             AppLocalizations.of(context)!.translate('no_name'),
-                        style: MyTaskCardStyles.titleStyle,
-                        children: const <TextSpan>[
+                        style: MyTaskCardStyles.titleStyle(context),
+                        children: <TextSpan>[
                           TextSpan(
                             text: '\n\u200B',
-                            style: TaskCardStyles.titleStyle,
+                            style: MyTaskCardStyles.titleStyle(context),
                           ),
                         ],
                       ),

@@ -117,9 +117,11 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: context.appColors.surfacePrimary,
+                color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.appColors.borderSubtle),
+                border: Border.all(
+                  color: context.appColors.borderSubtle.withValues(alpha: 0.42),
+                ),
                 boxShadow: context.appShadows.card,
               ),
               child: DropdownButtonFormField<String>(

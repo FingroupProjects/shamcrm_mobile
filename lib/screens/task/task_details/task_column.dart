@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
@@ -20,7 +21,8 @@ class TaskColumn extends StatefulWidget {
   final bool isTaskScreenTutorialCompleted;
   final bool isActive;
 
-  TaskColumn({
+  const TaskColumn({
+    super.key,
     required this.statusId,
     required this.name,
     required this.onStatusId,
@@ -30,14 +32,13 @@ class TaskColumn extends StatefulWidget {
   });
 
   @override
-  _TaskColumnState createState() => _TaskColumnState();
+  State<TaskColumn> createState() => TaskColumnState();
 }
 
-class _TaskColumnState extends State<TaskColumn> {
+class TaskColumnState extends State<TaskColumn> {
   bool _hasPermissionToAddTask = false;
   final ApiService _apiService = ApiService();
   final ScrollController _scrollController = ScrollController();
-  bool _scrollListenerAdded = false;
   bool _isInitialLoad = true; // Флаг первой загрузки
 
   List<TargetFocus> targets = [];
@@ -263,7 +264,6 @@ class _TaskColumnState extends State<TaskColumn> {
   void didUpdateWidget(TaskColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.statusId != widget.statusId) {
-      _scrollListenerAdded = false;
       _isInitialLoad = true; // Сбрасываем флаг при смене статуса
     }
 
@@ -327,9 +327,10 @@ class _TaskColumnState extends State<TaskColumn> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     // ОПТИМИЗАЦИЯ: Используем существующий блок из контекста, не создаем новый
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           // Получаем блок из контекста
@@ -375,8 +376,8 @@ class _TaskColumnState extends State<TaskColumn> {
               }
 
               return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.textPrimary,
+                backgroundColor: colors.surfacePrimary,
                 onRefresh: _onRefresh,
                 child: Column(
                   children: [
@@ -385,7 +386,8 @@ class _TaskColumnState extends State<TaskColumn> {
                       child: ListView.builder(
                         controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: tasks.length + (showPaginationLoader ? 1 : 0),
+                        itemCount:
+                            tasks.length + (showPaginationLoader ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index >= tasks.length) {
                             return const Padding(
@@ -419,8 +421,8 @@ class _TaskColumnState extends State<TaskColumn> {
                                   taskBloc.add(FetchTasks(widget.statusId));
                                 }
                               },
-                              onStatusId: (StatusTaskId) {
-                                widget.onStatusId(StatusTaskId);
+                              onStatusId: (statusTaskId) {
+                                widget.onStatusId(statusTaskId);
                               },
                             ),
                           );
@@ -455,8 +457,8 @@ class _TaskColumnState extends State<TaskColumn> {
 
               // Показываем "Нет задач" только когда загрузка завершена
               return RefreshIndicator(
-                backgroundColor: Colors.white,
-                color: Color(0xff1E2E52),
+                backgroundColor: colors.surfacePrimary,
+                color: colors.textPrimary,
                 onRefresh: _onRefresh,
                 child: ListView(
                   physics: AlwaysScrollableScrollPhysics(),
@@ -472,7 +474,8 @@ class _TaskColumnState extends State<TaskColumn> {
                             style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy'),
+                                fontFamily: 'Gilroy',
+                                color: colors.textSecondary),
                           ),
                         ],
                       ),
@@ -534,8 +537,8 @@ class _TaskColumnState extends State<TaskColumn> {
             // Показываем пустой список при ошибке
             return RefreshIndicator(
               onRefresh: _onRefresh,
-              color: Color(0xff1E2E52),
-              backgroundColor: Colors.white,
+              color: colors.textPrimary,
+              backgroundColor: colors.surfacePrimary,
               child: ListView(
                 physics: AlwaysScrollableScrollPhysics(),
                 children: [
@@ -585,7 +588,7 @@ class _TaskColumnState extends State<TaskColumn> {
                   }
                 });
               },
-              backgroundColor: Color(0xff1E2E52),
+              backgroundColor: colors.textPrimary,
               child: Image.asset('assets/icons/tabBar/add.png',
                   width: 24, height: 24),
             )

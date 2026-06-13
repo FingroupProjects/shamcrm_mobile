@@ -57,6 +57,11 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
       fontWeight: FontWeight.w500,
       color: context.appColors.textPrimary,
     );
+    final hintStyle = managerTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+    final borderColor = context.appColors.borderSubtle;
     return FormField<List<ManagerData>>(
       // Changed: Wrapped in FormField for validation
       validator: (value) {
@@ -132,6 +137,31 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: managerTextStyle,
+                      listItemStyle: managerTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor:
+                            context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+                        highlightColor:
+                            context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.backgroundPrimary,
+                        textStyle: managerTextStyle,
+                        hintStyle: hintStyle,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       // Added: "Select All" option as first item
@@ -211,9 +241,7 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     },
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!.translate('select_manager'),
-                      style: managerTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      style: hintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectManagers(values);

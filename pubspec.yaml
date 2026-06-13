@@ -27,7 +27,8 @@ dependencies:
   share_plus: ^10.1.4
   dropdown_search: ^6.0.2
   dart_pusher_channels: ^1.2.3
-  social_media_recorder: ^1.2.1
+  social_media_recorder:
+    path: third_party/social_media_recorder
   fl_chart: ^0.69.0
   firebase_core: ^3.6.0
   firebase_messaging: ^15.2.9
@@ -178,6 +179,7 @@ flutter:
     - assets/audio/voice_operator.mp3
     - assets/icons/MyNavBar/money_ON.png
     - assets/icons/sip/
+    - assets/icons/files/add_for_dark.png
 
   fonts:
     - family: Gilroy

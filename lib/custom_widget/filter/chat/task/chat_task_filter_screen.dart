@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
@@ -17,7 +18,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crm_task_manager/custom_widget/filter/deal/deal_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 
@@ -45,7 +45,7 @@ class ChatTaskFilterScreen extends StatefulWidget {
   final bool? initialUnreadOnly;
 
   const ChatTaskFilterScreen({
-    Key? key,
+    super.key,
     this.onUsersSelected,
     this.onStatusSelected,
     this.onDateRangeSelected,
@@ -67,10 +67,10 @@ class ChatTaskFilterScreen extends StatefulWidget {
     this.initialProjects,
     this.initialTaskNumber,
     this.initialUnreadOnly,
-  }) : super(key: key);
+  });
 
   @override
-  _ChatTaskFilterScreenState createState() => _ChatTaskFilterScreenState();
+  State<ChatTaskFilterScreen> createState() => _ChatTaskFilterScreenState();
 }
 
 class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
@@ -82,10 +82,6 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   DateTime? _toDate;
   DateTime? _deadlinefromDate;
   DateTime? _deadlinetoDate;
-  bool _isOverdue = false;
-  bool _hasFile = false;
-  bool _hasDeal = false;
-  bool _isUrgent = false;
   String? _selectedDepartment;
   bool _isDepartmentEnabled = false;
   Map<int, MainField?> _selectedDirectoryFields = {};
@@ -100,10 +96,6 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
       _selectedStatuses = widget.initialStatuses;
       _fromDate = widget.initialFromDate;
       _toDate = widget.initialToDate;
-      _isOverdue = widget.initialIsOverdue ?? false;
-      _hasFile = widget.initialHasFile ?? false;
-      _hasDeal = widget.initialHasDeal ?? false;
-      _isUrgent = widget.initialIsUrgent ?? false;
       _deadlinefromDate = widget.initialDeadlineFromDate;
       _deadlinetoDate = widget.initialDeadlineToDate;
       _selectedDepartment = widget.initialDepartment;
@@ -241,7 +233,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
           _directoryLinks = response.data!;
           for (var link in _directoryLinks) {
             _selectedDirectoryFields[link.id] =
-                _selectedDirectoryFields[link.id] ?? null;
+                _selectedDirectoryFields[link.id];
           }
         });
       }
@@ -253,6 +245,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   }
 
   void _selectDateRange() async {
+    final colors = context.appColors;
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
@@ -262,19 +255,59 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
           : null,
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
+          data: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: colors.backgroundPrimary,
+            dialogTheme: DialogThemeData(backgroundColor: colors.surfacePrimary),
+            colorScheme: ColorScheme.dark(
+              primary: colors.buttonPrimaryBg,
+              onPrimary: colors.buttonPrimaryFg,
+              surface: colors.surfacePrimary,
+              onSurface: colors.textPrimary,
+              secondary: colors.buttonPrimaryBg.withValues(alpha: 0.18),
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
+                foregroundColor: colors.buttonPrimaryBg,
               ),
+            ),
+            appBarTheme: AppBarTheme(
+              backgroundColor: colors.surfacePrimary,
+              foregroundColor: colors.textPrimary,
+              elevation: 0,
+            ),
+            dividerColor: colors.borderSubtle.withValues(alpha: 0.3),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: Colors.transparent,
+              headerBackgroundColor: colors.surfacePrimary,
+              headerForegroundColor: colors.textPrimary,
+              rangePickerBackgroundColor: colors.surfacePrimary,
+              rangePickerHeaderBackgroundColor: colors.surfacePrimary,
+              rangePickerHeaderForegroundColor: colors.textPrimary,
+              weekdayStyle: TextStyle(color: colors.textSecondary),
+              dayStyle: TextStyle(color: colors.textPrimary),
+              todayForegroundColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg),
+              todayBorder: BorderSide(color: colors.buttonPrimaryBg),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryFg;
+                }
+                return colors.textPrimary;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryBg;
+                }
+                return null;
+              }),
+              rangeSelectionBackgroundColor:
+                  colors.buttonPrimaryBg.withValues(alpha: 0.18),
+              rangeSelectionOverlayColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg.withValues(alpha: 0.12)),
+              yearForegroundColor: WidgetStatePropertyAll(colors.textPrimary),
+              yearBackgroundColor:
+                  WidgetStatePropertyAll(colors.surfacePrimary.withValues(alpha: 0.8)),
             ),
           ),
           child: child!,
@@ -290,6 +323,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   }
 
   void _selectDeadline() async {
+    final colors = context.appColors;
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
@@ -299,19 +333,59 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
           : null,
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
+          data: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: colors.backgroundPrimary,
+            dialogTheme: DialogThemeData(backgroundColor: colors.surfacePrimary),
+            colorScheme: ColorScheme.dark(
+              primary: colors.buttonPrimaryBg,
+              onPrimary: colors.buttonPrimaryFg,
+              surface: colors.surfacePrimary,
+              onSurface: colors.textPrimary,
+              secondary: colors.buttonPrimaryBg.withValues(alpha: 0.18),
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
+                foregroundColor: colors.buttonPrimaryBg,
               ),
+            ),
+            appBarTheme: AppBarTheme(
+              backgroundColor: colors.surfacePrimary,
+              foregroundColor: colors.textPrimary,
+              elevation: 0,
+            ),
+            dividerColor: colors.borderSubtle.withValues(alpha: 0.3),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: Colors.transparent,
+              headerBackgroundColor: colors.surfacePrimary,
+              headerForegroundColor: colors.textPrimary,
+              rangePickerBackgroundColor: colors.surfacePrimary,
+              rangePickerHeaderBackgroundColor: colors.surfacePrimary,
+              rangePickerHeaderForegroundColor: colors.textPrimary,
+              weekdayStyle: TextStyle(color: colors.textSecondary),
+              dayStyle: TextStyle(color: colors.textPrimary),
+              todayForegroundColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg),
+              todayBorder: BorderSide(color: colors.buttonPrimaryBg),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryFg;
+                }
+                return colors.textPrimary;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryBg;
+                }
+                return null;
+              }),
+              rangeSelectionBackgroundColor:
+                  colors.buttonPrimaryBg.withValues(alpha: 0.18),
+              rangeSelectionOverlayColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg.withValues(alpha: 0.12)),
+              yearForegroundColor: WidgetStatePropertyAll(colors.textPrimary),
+              yearBackgroundColor:
+                  WidgetStatePropertyAll(colors.surfacePrimary.withValues(alpha: 0.8)),
             ),
           ),
           child: child!,
@@ -328,230 +402,267 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
 
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       title: Text(
         title,
-        style: const TextStyle(
+        style: context.appTextStyles.bodyMd.copyWith(
           fontSize: 16,
-          color: Colors.black54,
-          fontFamily: 'Gilroy',
+          color: context.appColors.textPrimary,
+          fontWeight: FontWeight.w500,
         ),
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:
-          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+      activeThumbColor: context.appColors.buttonPrimaryFg,
+      inactiveTrackColor: context.appColors.borderSubtle.withValues(alpha: 0.55),
+      activeTrackColor: context.appColors.buttonPrimaryBg,
+      inactiveThumbColor: context.appColors.surfacePrimary,
+    );
+  }
+
+  Widget _buildSectionCard({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.38),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildDateRangeCard({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return _buildSectionCard(
+      child:
+      InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.calendar_today_rounded,
+                  color: context.appColors.buttonPrimaryBg,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required VoidCallback onPressed,
+    required bool isPrimary,
+  }) {
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        backgroundColor: isPrimary
+            ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
+            : context.appColors.surfacePrimary.withValues(alpha: 0.78),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        side: BorderSide(
+          color: isPrimary
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.45)
+              : context.appColors.borderSubtle.withValues(alpha: 0.42),
+        ),
+      ),
+      child: Text(
+        label,
+        style: context.appTextStyles.labelMd.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: isPrimary
+              ? context.appColors.buttonPrimaryBg
+              : context.appColors.textSecondary,
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
-        titleSpacing: 0,
-        title: Text(
-          AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-              fontFamily: 'Gilroy'),
-        ),
-        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        toolbarHeight: 84,
+        titleSpacing: 16,
         forceMaterialTransparency: true,
-        elevation: 1,
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                widget.onResetFilters?.call();
-                _selectedUsers.clear();
-                _selectedAuthors.clear();
-                _selectedProjects.clear();
-                _selectedStatuses = null;
-                _fromDate = null;
-                _toDate = null;
-                _isOverdue = false;
-                _hasFile = false;
-                _hasDeal = false;
-                _isUrgent = false;
-                _deadlinefromDate = null;
-                _deadlinetoDate = null;
-                _selectedDepartment = null;
-                _selectedDirectoryFields.clear();
-                for (var link in _directoryLinks) {
-                  _selectedDirectoryFields[link.id] = null;
-                }
-                _unreadOnly = false;
-              });
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+        elevation: 0,
+        title: AppBarShell(
+          leading: AppBarShell.capsule(
+            context,
+            width: AppBarShell.orbSize,
+            padding: EdgeInsets.zero,
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: Icon(
+                Icons.arrow_back_rounded,
+                color: context.appColors.iconPrimary,
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          TextButton(
-            onPressed: () async {
-              await TaskCache.clearAllTasks();
-              await _saveFilterState();
-
-              final filters = <String, dynamic>{};
-
-              if (_selectedDepartment != null) {
-                filters['department_id'] = int.tryParse(_selectedDepartment!);
-              }
-              if (_fromDate != null) {
-                filters['task_created_from'] =
-                    _fromDate!.toIso8601String().split('T')[0];
-              }
-              if (_toDate != null) {
-                filters['task_created_to'] =
-                    _toDate!.toIso8601String().split('T')[0];
-              }
-              if (_deadlinefromDate != null) {
-                filters['deadline_from'] =
-                    _deadlinefromDate!.toIso8601String().split('T')[0];
-              }
-              if (_deadlinetoDate != null) {
-                filters['deadline_to'] =
-                    _deadlinetoDate!.toIso8601String().split('T')[0];
-              }
-              if (_selectedUsers.isNotEmpty) {
-                filters['executor_ids'] =
-                    _selectedUsers.map((user) => user.id).toList();
-              }
-              if (_selectedAuthors.isNotEmpty) {
-                filters['author_ids'] =
-                    _selectedAuthors.map((id) => int.parse(id)).toList();
-              }
-              if (_selectedProjects.isNotEmpty) {
-                filters['project_ids'] =
-                    _selectedProjects.map((id) => int.parse(id)).toList();
-              }
-              if (_selectedStatuses != null) {
-                filters['task_status_ids'] = [_selectedStatuses!];
-              }
-              if (_unreadOnly == true) {
-                filters['unread_only'] = true;
-              }
-
-              debugPrint('APPLYING TASK FILTERS: $filters');
-              widget.onUsersSelected?.call(filters);
-
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+          center: AppBarShell.capsule(
+            context,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                AppLocalizations.of(context)!.translate('filter'),
+                style: context.appTextStyles.titleLg.copyWith(
+                  color: context.appColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
-        ],
+          trailing: AppBarShell.capsule(
+            context,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildActionButton(
+                  label: AppLocalizations.of(context)!.translate('reset'),
+                  isPrimary: false,
+                  onPressed: () {
+                    setState(() {
+                      widget.onResetFilters?.call();
+                      _selectedUsers.clear();
+                      _selectedAuthors.clear();
+                      _selectedProjects.clear();
+                      _selectedStatuses = null;
+                      _fromDate = null;
+                      _toDate = null;
+                      _deadlinefromDate = null;
+                      _deadlinetoDate = null;
+                      _selectedDepartment = null;
+                      _selectedDirectoryFields.clear();
+                      for (var link in _directoryLinks) {
+                        _selectedDirectoryFields[link.id] = null;
+                      }
+                      _unreadOnly = false;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildActionButton(
+                  label: AppLocalizations.of(context)!.translate('apply'),
+                  isPrimary: true,
+                  onPressed: () async {
+                    await TaskCache.clearAllTasks();
+                    await _saveFilterState();
+
+                    final filters = <String, dynamic>{};
+
+                    if (_selectedDepartment != null) {
+                      filters['department_id'] = int.tryParse(_selectedDepartment!);
+                    }
+                    if (_fromDate != null) {
+                      filters['task_created_from'] =
+                          _fromDate!.toIso8601String().split('T')[0];
+                    }
+                    if (_toDate != null) {
+                      filters['task_created_to'] =
+                          _toDate!.toIso8601String().split('T')[0];
+                    }
+                    if (_deadlinefromDate != null) {
+                      filters['deadline_from'] =
+                          _deadlinefromDate!.toIso8601String().split('T')[0];
+                    }
+                    if (_deadlinetoDate != null) {
+                      filters['deadline_to'] =
+                          _deadlinetoDate!.toIso8601String().split('T')[0];
+                    }
+                    if (_selectedUsers.isNotEmpty) {
+                      filters['executor_ids'] =
+                          _selectedUsers.map((user) => user.id).toList();
+                    }
+                    if (_selectedAuthors.isNotEmpty) {
+                      filters['author_ids'] =
+                          _selectedAuthors.map((id) => int.parse(id)).toList();
+                    }
+                    if (_selectedProjects.isNotEmpty) {
+                      filters['project_ids'] =
+                          _selectedProjects.map((id) => int.parse(id)).toList();
+                    }
+                    if (_selectedStatuses != null) {
+                      filters['task_status_ids'] = [_selectedStatuses!];
+                    }
+                    if (_unreadOnly == true) {
+                      filters['unread_only'] = true;
+                    }
+
+                    widget.onUsersSelected?.call(filters);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: Column(
           children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectDateRange,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _fromDate != null && _toDate != null
-                            ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_date_range'),
-                        style: const TextStyle(
-                            color: Colors.black54, fontSize: 14),
-                      ),
-                      const Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
-                ),
-              ),
+            _buildDateRangeCard(
+              label: _fromDate != null && _toDate != null
+                  ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
+                  : AppLocalizations.of(context)!.translate('select_date_range'),
+              onTap: _selectDateRange,
             ),
             const SizedBox(height: 8),
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectDeadline,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _deadlinefromDate != null && _deadlinetoDate != null
-                            ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_deadline_range'),
-                        style: const TextStyle(
-                            color: Colors.black54, fontSize: 14),
-                      ),
-                      const Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
-                ),
-              ),
+            _buildDateRangeCard(
+              label: _deadlinefromDate != null && _deadlinetoDate != null
+                  ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
+                  : AppLocalizations.of(context)!.translate('select_deadline_range'),
+              onTap: _selectDeadline,
             ),
             const SizedBox(height: 8),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildSectionCard(
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         child: UserMultiSelectWidget(
                           selectedUsers: _selectedUsers
                               .map((user) => user.id.toString())
@@ -565,12 +676,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildSectionCard(
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         child: TaskStatusRadioGroupWidget(
                           selectedStatus: _selectedStatuses?.toString(),
                           onSelectStatus: (TaskStatus selectedStatusData) {
@@ -582,12 +690,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildSectionCard(
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         child: ProjectMultiSelectWidget(
                           selectedProjects: _selectedProjects,
                           onSelectProjects:
@@ -602,12 +707,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    _buildSectionCard(
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         child: AuthorMultiSelectWidget(
                           selectedAuthors: _selectedAuthors,
                           onSelectAuthors:
@@ -621,13 +723,11 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 8),
                     if (_isDepartmentEnabled)
-                      Card(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
+                      _buildSectionCard(
                         child: Padding(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(10),
                           child: BlocProvider(
                             create: (context) => DepartmentBloc(ApiService()),
                             child: DepartmentWidget(
@@ -641,10 +741,8 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                           ),
                         ),
                       ),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                    if (_isDepartmentEnabled) const SizedBox(height: 8),
+                    _buildSectionCard(
                       child: Column(
                         children: [
                           _buildSwitchTile(

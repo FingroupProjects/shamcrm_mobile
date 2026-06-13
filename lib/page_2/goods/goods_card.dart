@@ -241,7 +241,7 @@ class _GoodsCardState extends State<GoodsCard> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration(context),
           child: Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
@@ -253,7 +253,7 @@ class _GoodsCardState extends State<GoodsCard> {
                     children: [
                       Text(
                         widget.goodsName,
-                        style: TaskCardStyles.titleStyle,
+                        style: TaskCardStyles.titleStyle(context),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -270,22 +270,22 @@ class _GoodsCardState extends State<GoodsCard> {
                         text: widget.goodsDescription != 'null'
                             ? TextSpan(
                                 text: widget.goodsDescription,
-                                style: TaskCardStyles.priorityStyle.copyWith(
+                                style: TaskCardStyles.priorityStyle(context).copyWith(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xff1E2E52),
                                 ),
-                                children: const <TextSpan>[
-                                  TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
+                                children: <TextSpan>[
+                                  TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle(context)),
                                 ],
                               )
-                            : const TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
+                            : TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle(context)),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${AppLocalizations.of(context)!.translate('subcategory_card')}${widget.goodsCategory}',
-                        style: TaskCardStyles.priorityStyle.copyWith(
+                        style: TaskCardStyles.priorityStyle(context).copyWith(
                           fontSize: 14,
                           color: const Color(0xff1E2E52),
                           fontWeight: FontWeight.w600,

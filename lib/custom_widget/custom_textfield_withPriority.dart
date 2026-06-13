@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class CustomTextFieldWithPriority extends StatefulWidget {
   final TextEditingController controller;
@@ -21,7 +22,8 @@ class CustomTextFieldWithPriority extends StatefulWidget {
   final Function(bool?)? onPriorityChanged;
   final String priorityText;
 
-  CustomTextFieldWithPriority({
+  const CustomTextFieldWithPriority({
+    super.key,
     required this.controller,
     required this.hintText,
     required this.label,
@@ -43,7 +45,7 @@ class CustomTextFieldWithPriority extends StatefulWidget {
   });
 
   @override
-  _CustomTextFieldWithPriorityState createState() =>
+  State<CustomTextFieldWithPriority> createState() =>
       _CustomTextFieldWithPriorityState();
 }
 
@@ -51,8 +53,8 @@ class _CustomTextFieldWithPriorityState
     extends State<CustomTextFieldWithPriority>
     with SingleTickerProviderStateMixin {
   bool _isPasswordVisible = false;
-  late AnimationController _animationController;
-  late Animation<double> _fillAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _fillAnimation;
 
   @override
   void initState() {
@@ -61,20 +63,10 @@ class _CustomTextFieldWithPriorityState
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fillAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Если данные приходят уже включёнными, то сразу показываем цветную иконку
-    if (widget.isPrioritySelected) {
-      _animationController.value = 1.0;
-    } else {
-      _animationController.value = 0.0;
-    }
+    _fillAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.value = widget.isPrioritySelected ? 1 : 0;
   }
 
   @override
@@ -84,14 +76,12 @@ class _CustomTextFieldWithPriorityState
   }
 
   @override
-  void didUpdateWidget(CustomTextFieldWithPriority oldWidget) {
+  void didUpdateWidget(covariant CustomTextFieldWithPriority oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isPrioritySelected != oldWidget.isPrioritySelected) {
-      if (widget.isPrioritySelected) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
+      widget.isPrioritySelected
+          ? _animationController.forward()
+          : _animationController.reverse();
     }
   }
 
@@ -101,35 +91,19 @@ class _CustomTextFieldWithPriorityState
       height: 20,
       child: Stack(
         children: [
-          // Базовая иконка для выключенного состояния
-          Image.asset(
-            'assets/icons/icon-fire-no-color.png',
-            width: 20,
-            height: 20,
-          ),
-          // Анимированная цветная иконка
+          Image.asset('assets/icons/icon-fire-no-color.png', width: 20, height: 20),
           AnimatedBuilder(
             animation: _fillAnimation,
             builder: (context, child) {
               return ShaderMask(
-                shaderCallback: (Rect bounds) {
-                  return LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    // Используем две остановки с одинаковым значением для резкого перехода
-                    stops: [_fillAnimation.value, _fillAnimation.value],
-                    colors: [
-                      Colors.white,
-                      Colors.transparent,
-                    ],
-                  ).createShader(bounds);
-                },
+                shaderCallback: (bounds) => LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  stops: [_fillAnimation.value, _fillAnimation.value],
+                  colors: const [Colors.white, Colors.transparent],
+                ).createShader(bounds),
                 blendMode: BlendMode.dstIn,
-                child: Image.asset(
-                  'assets/icons/icon-fire-color.png',
-                  width: 20,
-                  height: 20,
-                ),
+                child: Image.asset('assets/icons/icon-fire-color.png', width: 20, height: 20),
               );
             },
           ),
@@ -138,36 +112,10 @@ class _CustomTextFieldWithPriorityState
     );
   }
 
-  Widget _buildPrioritySection() {
-    if (!widget.showPriority) return const SizedBox.shrink();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Checkbox(
-          value: widget.isPrioritySelected,
-          onChanged: widget.onPriorityChanged,
-          activeColor: const Color(0xff1E2E52),
-        ),
-        Text(
-          widget.priorityText,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(width: 4),
-        _buildAnimatedFireIcon(),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty ||
-        widget.hasError;
+    final colors = context.appColors;
+    final hasError = (widget.errorText != null && widget.errorText!.isNotEmpty) || widget.hasError;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,17 +125,37 @@ class _CustomTextFieldWithPriorityState
           children: [
             Text(
               widget.label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xfff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
-            _buildPrioritySection(),
+            if (widget.showPriority)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    value: widget.isPrioritySelected,
+                    onChanged: widget.onPriorityChanged,
+                    activeColor: colors.buttonPrimaryBg,
+                  ),
+                  Text(
+                    widget.priorityText,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  _buildAnimatedFireIcon(),
+                ],
+              ),
           ],
         ),
-        const SizedBox(height: 0),
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword && !_isPasswordVisible,
@@ -199,61 +167,44 @@ class _CustomTextFieldWithPriorityState
           onChanged: widget.onChanged,
           decoration: InputDecoration(
             hintText: widget.hintText,
-            hintStyle: const TextStyle(
-              fontFamily: 'Gilroy',
-              color: Color(0xff99A4BA),
-            ),
+            hintStyle: TextStyle(fontFamily: 'Gilroy', color: colors.fieldHint),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            fillColor: colors.fieldBg,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.isPassword
                 ? IconButton(
                     icon: Icon(
-                      _isPasswordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                      color: const Color(0xff99A4BA),
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: colors.iconSecondary,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
+                    onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                   )
                 : widget.suffixIcon,
             errorText: widget.errorText,
-            errorStyle: const TextStyle(
+            errorStyle: TextStyle(
               fontSize: 14,
-              // fontFamily: 'Gilroy',
-              color: Colors.red,
+              color: colors.error,
               fontWeight: FontWeight.w400,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? Colors.red : Colors.transparent,
+                color: hasError ? colors.error : Colors.transparent,
                 width: 1.5,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: colors.error, width: 1.5),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: colors.error, width: 1.5),
             ),
           ),
         ),

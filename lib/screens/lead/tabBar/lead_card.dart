@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
@@ -130,10 +131,11 @@ class _LeadCardState extends State<LeadCard>
 
   Color getBorderColor(String? sourceName) {
     return sourceColors[sourceName] ??
-        Color(0xFFB0BEC5); // Универсальный серый по умолчанию
+        context.appColors.borderPrimary; // Универсальный theme fallback
   }
 
   Widget _buildHourglassIcon() {
+    final colors = context.appColors;
     if (widget.lead.leadStatus?.isSuccess ?? false) {
       return Container();
     }
@@ -147,23 +149,23 @@ class _LeadCardState extends State<LeadCard>
           height: 18,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: lastUpdate > 5 ? Colors.red : Color(0xff99A4BA),
+            color: lastUpdate > 5 ? colors.error : colors.textSecondary,
           ),
           child: Center(
             child: Icon(
               Icons.hourglass_empty,
               size: 14,
-              color: Colors.white,
+              color: colors.textInverse,
             ),
           ),
         ),
         Text(
           ' $lastUpdate',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
           ),
         ),
         const SizedBox(width: 8),
@@ -173,6 +175,7 @@ class _LeadCardState extends State<LeadCard>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     String iconPath =
         sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
 
@@ -220,21 +223,22 @@ class _LeadCardState extends State<LeadCard>
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: shouldBlink
-                ? TaskCardStyles.taskCardDecoration.copyWith(
+                ? TaskCardStyles.taskCardDecoration(context).copyWith(
                     border: Border.all(
-                      color: borderColor.withOpacity(_fadeAnimation.value),
+                      color:
+                          borderColor.withValues(alpha: _fadeAnimation.value),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            borderColor.withOpacity(_fadeAnimation.value * 0.3),
+                        color: borderColor.withValues(
+                            alpha: _fadeAnimation.value * 0.3),
                         blurRadius: 6,
                         spreadRadius: 1,
                       ),
                     ],
                   )
-                : TaskCardStyles.taskCardDecoration,
+                : TaskCardStyles.taskCardDecoration(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -243,12 +247,12 @@ class _LeadCardState extends State<LeadCard>
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     text: widget.lead.name,
-                    style: TaskCardStyles.titleStyle,
+                    style: TaskCardStyles.titleStyle(context),
                     children: const <TextSpan>[
-                      TextSpan(
-                        text: '\n\u200B',
-                        style: TaskCardStyles.titleStyle,
-                      ),
+                      // TextSpan(
+                      //   text: '\n\u200B',
+                      //   style: TaskCardStyles.titleStyle(context),
+                      // ),
                     ],
                   ),
                 ),
@@ -264,7 +268,7 @@ class _LeadCardState extends State<LeadCard>
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xfff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           Flexible(
@@ -290,9 +294,12 @@ class _LeadCardState extends State<LeadCard>
                                     horizontal: 8, vertical: 4),
                                 child: Container(
                                   decoration: BoxDecoration(
+                                    color: colors.surfacePrimary
+                                        .withValues(alpha: 0.56),
                                     border: Border.all(
-                                      color: Color(0xff1E2E52),
-                                      width: 0.2,
+                                      color: colors.borderSubtle
+                                          .withValues(alpha: 0.48),
+                                      width: 1,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -304,21 +311,21 @@ class _LeadCardState extends State<LeadCard>
                                       Flexible(
                                         child: Text(
                                           dropdownValue,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontFamily: 'Gilroy',
                                             fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
+                                            color: colors.textPrimary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      Image.asset(
-                                        'assets/icons/tabBar/dropdown.png',
-                                        width: 20,
-                                        height: 20,
+                                      Icon(
+                                        Icons.expand_more_rounded,
+                                        size: 20,
+                                        color: colors.iconSecondary,
                                       ),
                                     ],
                                   ),
@@ -346,13 +353,14 @@ class _LeadCardState extends State<LeadCard>
                         const SizedBox(width: 8),
                         Text(
                           widget.lead.source?.name ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ],
                     ),
@@ -396,11 +404,11 @@ class _LeadCardState extends State<LeadCard>
                                 ),
                                 Text(
                                   ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff99A4BA),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                               ],
@@ -413,18 +421,19 @@ class _LeadCardState extends State<LeadCard>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Color(0xFFE9EDF5),
+                              color:
+                                  colors.surfaceAccent.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               widget.lead.manager?.name ??
                                   AppLocalizations.of(context)!
                                       .translate('system_text'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
+                                color: colors.textSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

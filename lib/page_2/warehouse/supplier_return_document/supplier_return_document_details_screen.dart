@@ -788,7 +788,7 @@ class _SupplierReturnDocumentDetailsScreenState
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
+              decoration: TaskCardStyles.taskCardDecoration(context),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -835,7 +835,7 @@ class _SupplierReturnDocumentDetailsScreenState
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration(context),
           child: Padding(
             padding:
                 const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
@@ -850,7 +850,7 @@ class _SupplierReturnDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle.copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1069,7 +1069,7 @@ class _SupplierReturnDocumentDetailsScreenState
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
+          style: TaskCardStyles.titleStyle(context).copyWith(
             fontWeight: FontWeight.w500,
           ),
         ),

@@ -1,6 +1,7 @@
 // Модель для представления файла с необходимыми атрибутами
 import 'dart:io';
 
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class FileHelper {
@@ -38,26 +39,42 @@ Widget buildFileIcon(List<FileHelper> files, String fileName, String fileExtensi
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           // Если не удалось загрузить превью, показываем иконку
-          return Image.asset(
-            'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
+          return ColorFiltered(
+            colorFilter:
+                const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            child: Image.asset(
+              'assets/icons/files/file.png',
+              width: 60,
+              height: 60,
+            ),
           );
         },
       ),
     );
   } else {
     // Для остальных типов файлов показываем иконку по расширению
-    return Image.asset(
-      'assets/icons/files/$fileExtension.png',
-      width: 60,
-      height: 60,
-      errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
-        return Image.asset(
-          'assets/icons/files/file.png',
-          width: 60,
-          height: 60,
+    return Builder(
+      builder: (context) {
+        final colors = context.appColors;
+        final asset = 'assets/icons/files/$fileExtension.png';
+        return ColorFiltered(
+          colorFilter: ColorFilter.mode(colors.textInverse, BlendMode.srcIn),
+          child: Image.asset(
+            asset,
+            width: 60,
+            height: 60,
+            errorBuilder: (context, error, stackTrace) {
+              return ColorFiltered(
+                colorFilter:
+                    ColorFilter.mode(colors.textInverse, BlendMode.srcIn),
+                child: Image.asset(
+                  'assets/icons/files/file.png',
+                  width: 60,
+                  height: 60,
+                ),
+              );
+            },
+          ),
         );
       },
     );

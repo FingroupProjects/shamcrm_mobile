@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/animated_text_field.dart';
+import 'package:crm_task_manager/core/theme/components/rich_text_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/tamplate_chat.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/templates_panel.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,6 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:flutter_svg/svg.dart';
 import 'dart:async';
 
@@ -42,7 +41,7 @@ class InputField extends StatefulWidget {
   });
 
   @override
-  _InputFieldState createState() => _InputFieldState();
+  State<InputField> createState() => _InputFieldState();
 }
 
 class _InputFieldState extends State<InputField>
@@ -56,7 +55,6 @@ class _InputFieldState extends State<InputField>
   late Animation<double> _fadeAnimation;
 
   String _htmlContent = '';
-  String _displayText = '';
   bool _wasKeyboardVisible = false;
   bool _hasText = false;
 
@@ -78,7 +76,6 @@ class _InputFieldState extends State<InputField>
     widget.messageController.addListener(_updateTextState);
 
     _htmlContent = widget.messageController.text;
-    _displayText = _htmlToDisplayText(_htmlContent);
     _hasText = widget.messageController.text.isNotEmpty;
 
     WidgetsBinding.instance.addObserver(this);
@@ -122,24 +119,11 @@ class _InputFieldState extends State<InputField>
     }
   }
 
-  String _htmlToDisplayText(String html) {
-    return html
-        .replaceAll('<strong>', '')
-        .replaceAll('</strong>', '')
-        .replaceAll('<em>', '')
-        .replaceAll('</em>', '')
-        .replaceAll('<s>', '')
-        .replaceAll('</s>', '')
-        .replaceAllMapped(RegExp(r'<a href="[^"]*"[^>]*>([^<]*)</a>'),
-            (match) => match.group(1) ?? '');
-  }
-
   String _getHtmlContent() {
     return _htmlContent;
   }
 
   void _handleTextChange(String text) {
-    _displayText = text;
     _htmlContent = text;
 
     setState(() {
@@ -193,7 +177,7 @@ class _InputFieldState extends State<InputField>
     _removeOverlay();
     if (_showTemplates) {
       _overlayEntry = _createOverlayEntry();
-      Overlay.of(context)!.insert(_overlayEntry!);
+      Overlay.of(context).insert(_overlayEntry!);
     }
   }
 
@@ -206,7 +190,7 @@ class _InputFieldState extends State<InputField>
     _removeFormattingOverlay();
     if (_showFormattingPanel) {
       _formattingOverlay = _createFormattingOverlayEntry();
-      Overlay.of(context)!.insert(_formattingOverlay!);
+      Overlay.of(context).insert(_formattingOverlay!);
     }
   }
 
@@ -221,17 +205,6 @@ class _InputFieldState extends State<InputField>
       _animationController.reverse().then((_) => _removeFormattingOverlay());
     });
     widget.focusNode.requestFocus();
-  }
-
-  Map<String, bool> _checkDeviceCapabilities() {
-    return {
-      'record': true,
-    };
-  }
-
-  void _recordText() {
-    final text = widget.messageController.text;
-    _closeFormattingPanel();
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -261,7 +234,6 @@ class _InputFieldState extends State<InputField>
                   onTemplateSelected: (templateText) {
                     widget.messageController.text = templateText;
                     _htmlContent = templateText;
-                    _displayText = templateText;
                     setState(() {
                       _showTemplates = false;
                       _animationController
@@ -694,6 +666,8 @@ class _InputFieldState extends State<InputField>
       _htmlContent = editingMessage.text;
     }
 
+    final textStyles = context.appTextStyles;
+
     return GestureDetector(
       onTap: () {
         if (_showFormattingPanel) {
@@ -728,25 +702,26 @@ class _InputFieldState extends State<InputField>
                           'assets/icons/chats/menu_icons/reply.svg',
                           width: 16,
                           height: 16,
-                          color: context.appColors.iconSecondary,
+                          colorFilter: ColorFilter.mode(
+                            context.appColors.iconSecondary,
+                            BlendMode.srcIn,
+                          ),
                         ),
                         const SizedBox(width: 6),
                         RichText(
                           text: TextSpan(
                             text: AppLocalizations.of(context)!
                                 .translate('in_answer'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                            style: textStyles.bodySm.copyWith(
                               color: context.appColors.textSecondary,
+                              fontWeight: FontWeight.w500,
                             ),
                             children: [
                               TextSpan(
                                 text: replyingToMessage.senderName,
-                                style: TextStyle(
-                                  fontSize: 12,
+                                style: textStyles.bodySm.copyWith(
+                                  color: context.appColors.buttonPrimaryBg,
                                   fontWeight: FontWeight.w600,
-                                  color: ChatSmsStyles.messageBubbleSenderColor,
                                 ),
                               ),
                             ],
@@ -762,8 +737,7 @@ class _InputFieldState extends State<InputField>
                                 ? AppLocalizations.of(context)!
                                     .translate('voice_message')
                                 : stripHtmlTags(replyingToMessage.text),
-                            style: TextStyle(
-                              fontSize: 14,
+                            style: textStyles.bodyMd.copyWith(
                               color: context.appColors.textPrimary,
                               fontWeight: FontWeight.w500,
                             ),
@@ -808,17 +782,19 @@ class _InputFieldState extends State<InputField>
                           'assets/icons/chats/menu_icons/edit.svg',
                           width: 16,
                           height: 16,
-                          color: context.appColors.iconSecondary,
+                          colorFilter: ColorFilter.mode(
+                            context.appColors.iconSecondary,
+                            BlendMode.srcIn,
+                          ),
                         ),
                         const SizedBox(width: 6),
                         RichText(
                           text: TextSpan(
                             text: AppLocalizations.of(context)!
                                 .translate('edit_message'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                            style: textStyles.bodySm.copyWith(
                               color: context.appColors.textSecondary,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -838,7 +814,7 @@ class _InputFieldState extends State<InputField>
                 ),
               ),
 
-            // ✅ ИСПРАВЛЕННАЯ СТРУКТУРА СО STACK - БЕЗ OVERFLOW
+            // Поле ввода
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: (context.watch<ListenSenderFileCubit>().state)
@@ -855,7 +831,15 @@ class _InputFieldState extends State<InputField>
                       children: [
                         // Основной контейнер с полями ввода
                         Container(
-                          decoration: ChatSmsStyles.inputFieldDecoration,
+                          decoration: BoxDecoration(
+                            color: context.appColors.surfacePrimary.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: context.appColors.textInverse.withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                            boxShadow: context.appShadows.card,
+                          ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
@@ -866,6 +850,7 @@ class _InputFieldState extends State<InputField>
                                     'assets/icons/chats/menu-button.png',
                                     width: 20,
                                     height: 20,
+                                    color: context.appColors.iconPrimary,
                                   ),
                                   iconSize: 20,
                                   padding: EdgeInsets.all(8),
@@ -878,9 +863,9 @@ class _InputFieldState extends State<InputField>
                                   },
                                 ),
 
-                              // Текстовое поле
+                              // RichTextField вместо AnimatedTextField
                               Expanded(
-                                child: AnimatedTextField(
+                                child: RichTextField(
                                   controller: widget.messageController,
                                   focusNode: widget.focusNode,
                                   onChanged: _handleTextChange,
@@ -889,19 +874,18 @@ class _InputFieldState extends State<InputField>
                                   hintText: AppLocalizations.of(context)!
                                       .translate('enter_your_sms'),
                                   style:
-                                      ChatSmsStyles.messageTextStyle.copyWith(
+                                      context.appTextStyles.bodyMd.copyWith(
                                     color: context.appColors.textPrimary,
                                     fontSize: 15,
                                     height: 1.3,
                                   ),
-                                  hintStyle: TextStyle(
-                                    fontSize: 15,
+                                  hintStyle: textStyles.bodyMd.copyWith(
                                     color: context.appColors.fieldHint,
                                     fontWeight: FontWeight.w400,
                                     height: 1.3,
                                   ),
                                   fillColor: context.appColors.overlay.withValues(alpha: 0.0),
-                                  borderRadius: ChatSmsStyles.inputBorderRadius,
+                                  borderRadius: BorderRadius.circular(20),
                                   contentPadding: EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 15,
@@ -917,6 +901,7 @@ class _InputFieldState extends State<InputField>
                                   'assets/icons/chats/file.png',
                                   width: 20,
                                   height: 20,
+                                  color: context.appColors.iconPrimary,
                                 ),
                                 iconSize: 20,
                                 padding: EdgeInsets.all(8),
@@ -1006,7 +991,6 @@ class _InputFieldState extends State<InputField>
                   }
                   widget.messageController.clear();
                   _htmlContent = '';
-                  _displayText = '';
                   setState(() {
                     _showTemplates = false;
                     _showFormattingPanel = false;
@@ -1024,12 +1008,16 @@ class _InputFieldState extends State<InputField>
                 decoration: BoxDecoration(
                   color: context.appColors.fieldBg,
                   borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: context.appColors.borderSubtle,
+                  ),
                 ),
                 child: Center(
                   child: Image.asset(
                     'assets/icons/chats/send.png',
                     width: 18,
                     height: 18,
+                    color: context.appColors.iconPrimary,
                   ),
                 ),
               ),
@@ -1037,7 +1025,6 @@ class _InputFieldState extends State<InputField>
           );
   }
 
-  // ✅ ФИНАЛЬНАЯ версия кнопки записи голоса без overflow
   Widget _buildVoiceRecorder() {
     return (context.watch<ListenSenderVoiceCubit>().state)
         ? Container(
@@ -1060,23 +1047,84 @@ class _InputFieldState extends State<InputField>
             initRecordPackageWidth: 36,
             fullRecordPackageHeight: 36,
             startRecording: () {},
-            stopRecording: (_time) {},
+            stopRecording: (time) {},
             sendRequestFunction: widget.sendRequestFunction,
             cancelText: AppLocalizations.of(context)!.translate('cancel'),
-            cancelTextStyle: TextStyle(
-              fontSize: 14,
+            cancelTextStyle: context.appTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
             ),
             slideToCancelText:
                 AppLocalizations.of(context)!.translate('cancel_chat_sms'),
-            slideToCancelTextStyle: TextStyle(
-              fontSize: 14,
+            slideToCancelTextStyle: context.appTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
             ),
+            cancelTextBackGroundColor:
+                context.appColors.surfacePrimary.withValues(alpha: 0.94),
             recordIconBackGroundColor: context.appColors.fieldBg,
-            counterTextStyle: TextStyle(
-              fontSize: 12,
+            recordIconWhenLockBackGroundColor: context.appColors.fieldBg,
+            backGroundColor:
+                context.appColors.surfacePrimary.withValues(alpha: 0.94),
+            counterBackGroundColor: context.appColors.fieldBg,
+            counterTextStyle: context.appTextStyles.bodySm.copyWith(
               fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
+            ),
+            recordIcon: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.appColors.fieldBg,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.appColors.borderSubtle),
+              ),
+              child: Icon(
+                Icons.mic_rounded,
+                size: 18,
+                color: context.appColors.iconPrimary,
+              ),
+            ),
+            recordIconWhenLockedRecord: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.appColors.fieldBg,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.appColors.borderSubtle),
+              ),
+              child: Icon(
+                Icons.mic_rounded,
+                size: 18,
+                color: context.appColors.iconPrimary,
+              ),
+            ),
+            lockButton: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: context.appColors.surfacePrimary.withValues(alpha: 0.96),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.appColors.borderSubtle),
+              ),
+              child: Icon(
+                Icons.lock_outline_rounded,
+                size: 16,
+                color: context.appColors.iconPrimary,
+              ),
+            ),
+            sendButtonIcon: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: context.appColors.fieldBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.appColors.borderSubtle),
+              ),
+              child: Icon(
+                Icons.send_rounded,
+                size: 16,
+                color: context.appColors.iconPrimary,
+              ),
             ),
             encode: AudioEncoderType.AAC,
             radius: BorderRadius.circular(18),
@@ -1097,7 +1145,6 @@ class _InputFieldState extends State<InputField>
           WidgetsBinding.instance.addPostFrameCallback((_) {
             widget.messageController.text = selectedText;
             _htmlContent = selectedText;
-            _displayText = selectedText;
 
             widget.focusNode.requestFocus();
 

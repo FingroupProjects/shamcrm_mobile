@@ -4,6 +4,7 @@ import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_screen.dart';
@@ -657,9 +658,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _buildEmbeddedProfileOverlay(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Positioned.fill(
       child: Material(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         child: Column(
           children: [
             SafeArea(
@@ -667,13 +670,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: Container(
                 height: 68,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: colors.surfacePrimary,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colors.borderSubtle.withValues(alpha: 0.2),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
                 child: Row(
                   children: [
                     Container(
                       width: 42,
                       height: 42,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2447B8),
+                      decoration: BoxDecoration(
+                        color: colors.buttonPrimaryBg,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -681,11 +693,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         _profileHeaderName.isNotEmpty
                             ? _profileHeaderName.substring(0, 1).toUpperCase()
                             : 'P',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: textStyles.titleLg.copyWith(
+                          color: colors.textInverse,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          fontFamily: 'Gilroy',
                         ),
                       ),
                     ),
@@ -695,27 +706,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         _currentSectionTitle(localizations),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF1E2E52),
+                        style: textStyles.titleLg.copyWith(
+                          color: colors.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          fontFamily: 'Gilroy',
                         ),
                       ),
                     ),
                     IconButton(
                       onPressed: () {},
-                      icon: const Icon(Icons.search, color: Color(0xFF1E2E52)),
+                      icon: Icon(Icons.search, color: colors.iconSecondary),
                     ),
                     IconButton(
                       onPressed: () {},
-                      icon: const Icon(Icons.notifications_none,
-                          color: Color(0xFF1E2E52)),
+                      icon: Icon(Icons.notifications_none,
+                          color: colors.iconSecondary),
                     ),
                     IconButton(
                       onPressed: () {},
-                      icon:
-                          const Icon(Icons.more_vert, color: Color(0xFF1E2E52)),
+                      icon: Icon(Icons.more_vert, color: colors.iconSecondary),
                     ),
                   ],
                 ),
@@ -1184,7 +1193,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           return Scaffold(
             body: safeBody,
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            extendBody: true,
             bottomNavigationBar: currentWidget is NoAccessScreen
                 ? const SizedBox.shrink()
                 : ValueListenableBuilder<ChatUnreadCounts>(

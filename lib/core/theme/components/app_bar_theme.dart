@@ -7,10 +7,12 @@ class AppAppBarTheme {
     AppThemeTextStyles textStyles,
   ) {
     return AppBarTheme(
-      backgroundColor: colors.surfacePrimary,
+      backgroundColor: Colors.transparent,
       foregroundColor: colors.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       centerTitle: false,
       iconTheme: IconThemeData(color: colors.iconPrimary),
       titleTextStyle: textStyles.titleLg,

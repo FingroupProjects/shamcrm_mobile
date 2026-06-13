@@ -456,17 +456,17 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             }
           },
           child: Container(
-            decoration: TaskStyles.tabButtonDecoration(isActive),
+            decoration: TaskStyles.tabButtonDecoration(context, isActive),
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   _tabTitles[index]['title'],
-                  style: TaskStyles.tabTextStyle.copyWith(
+                  style: TaskStyles.tabTextStyle(context).copyWith(
                     color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
+                        ? TaskStyles.activeColor(context)
+                        : TaskStyles.inactiveColor(context),
                   ),
                 ),
                 Transform.translate(

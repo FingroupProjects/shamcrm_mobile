@@ -1,45 +1,55 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class TaskCardStyles {
-  // Цвета и размеры для контейнеров
-  static BoxDecoration taskCardDecoration = BoxDecoration(
-    color: Color(0xffF4F7FD), // Исправлено: убрано лишнее "f" в коде цвета
-    borderRadius: BorderRadius.circular(16),
-  );
+  static BoxDecoration taskCardDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.42),
+        ),
+        boxShadow: context.appShadows.card,
+      );
 
-  // Стиль заголовка
-  static const TextStyle titleStyle = TextStyle(
-    fontWeight: FontWeight.w600,
-    fontSize: 18,
-    color: Color(0xff1E2E52),
-    fontFamily: 'Gilroy',
-  );
+  static TextStyle titleStyle(BuildContext context) =>
+      context.appTextStyles.bodyLg.copyWith(
+        fontWeight: FontWeight.w700,
+        fontSize: 18,
+        color: context.appColors.textPrimary,
+        fontFamily: 'Gilroy',
+      );
 
-  // Стиль текста для приоритетов
-  static const TextStyle priorityStyle = TextStyle(
-    color: Color(0xffEC6648),
-    fontWeight: FontWeight.w500,
-    fontSize: 12,
-    fontFamily: 'Gilroy',
-  );
+  static TextStyle priorityStyle(BuildContext context) =>
+      context.appTextStyles.caption.copyWith(
+        color: context.appColors.warning,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+        fontFamily: 'Gilroy',
+      );
 
-  // Стиль контейнера приоритета
-  static BoxDecoration priorityContainerDecoration = BoxDecoration(
-    color: Color(0xffFCE3DE),
-    borderRadius: BorderRadius.circular(5),
-  );
+  static BoxDecoration priorityContainerDecoration(BuildContext context) =>
+      BoxDecoration(
+        color: context.appColors.warning.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(8),
+      );
 
-  // Стиль для DropdownButton
-  static BoxDecoration dropdownDecoration = BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(8),
-  );
+  static BoxDecoration dropdownDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.36),
+        ),
+      );
 
   // Стиль для ElevatedButton
-  static ButtonStyle selectedButtonStyle(bool isSelected) {
+  static ButtonStyle selectedButtonStyle(BuildContext context, bool isSelected) {
     return ElevatedButton.styleFrom(
-      backgroundColor: isSelected ? Color(0xff1E2E52) : Colors.grey[200],
-      foregroundColor: isSelected ? Colors.white : Colors.black,
+      backgroundColor: isSelected
+          ? context.appColors.buttonPrimaryBg
+          : context.appColors.surfacePrimary.withValues(alpha: 0.72),
+      foregroundColor: isSelected
+          ? context.appColors.buttonPrimaryFg
+          : context.appColors.textPrimary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),

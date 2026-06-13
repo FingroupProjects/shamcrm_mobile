@@ -5,7 +5,10 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_event.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
@@ -1003,52 +1006,44 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return Scaffold(
       key: _formKey,
       appBar: AppBar(
-        title: Transform.translate(
-          offset: const Offset(-10, 0), // Двигаем заголовок ближе к стрелке
-          child: Text(
-            AppLocalizations.of(context)!.translate('profile_editor'),
-            style: context.appTextStyles.titleMd.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.appColors.textPrimary,
-            ),
-          ),
-        ),
-        centerTitle: false, // Заголовок остаётся слева
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Transform.translate(
-            offset:
-                const Offset(0, -2), // Поднимаем иконку стрелки немного вверх
+        toolbarHeight: 78,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
+        title: AppBarShell(
+          leading: AppBarShell.capsule(
+            context,
+            width: AppBarShell.orbSize,
+            padding: EdgeInsets.zero,
             child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: context.appColors.iconPrimary,
+                size: 20,
               ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
           ),
+          center: AppBarShell.capsule(
+            context,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                AppLocalizations.of(context)!.translate('profile_editor'),
+                style: context.appTextStyles.titleMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+          trailing: const SizedBox.shrink(),
         ),
-        leadingWidth: 40, // Уменьшаем ширину области для стрелки
-        // actions: [
-        //   IconButton(
-        //     icon: Image.asset(
-        //       'assets/icons/edit.png',
-        //       width: 24,
-        //       height: 24,
-        //     ),
-        //     onPressed: () {
-        //       Navigator.push(
-        //         context,
-        //         MaterialPageRoute(
-        //             builder: (context) => const ProfileEditPage()),
-        //       );
-        //     },
-        //   ),
-        // ],
-        backgroundColor: context.appColors.backgroundPrimary,
       ),
       body: _isLoading
           ? Center(
@@ -1056,7 +1051,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 color: context.appColors.buttonPrimaryBg,
               ),
             )
-          : Column(children: [
+          : Stack(children: [
+              const Positioned.fill(
+                child: AppBackgroundOverlay(
+                  preset: AppBackgroundPreset.aurora,
+                ),
+              ),
+              Column(children: [
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -1112,9 +1113,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                   onPressed: _showImagePickerDialog,
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
+                                        horizontal: 18, vertical: 10),
                                     backgroundColor:
                                         context.appColors.buttonPrimaryBg,
+                                    foregroundColor:
+                                        context.appColors.buttonPrimaryFg,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
                                   ),
                                   child: Text(
                                     _userImage ==
@@ -1142,6 +1149,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               .translate('enter_name'),
                           label:
                               AppLocalizations.of(context)!.translate('name'),
+                          backgroundColor: context.appColors.surfacePrimary
+                              .withValues(alpha: 0.78),
+                          labelColor: context.appColors.textSecondary,
+                          hintColor: context.appColors.fieldHint,
+                          textColor: context.appColors.textPrimary,
+                          borderColor: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                          focusedBorderColor:
+                              context.appColors.buttonPrimaryBg,
                           onChanged: (value) {
                             setState(() {
                               _nameError = null;
@@ -1168,6 +1184,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               .translate('enter_surname'),
                           label: AppLocalizations.of(context)!
                               .translate('surname'),
+                          backgroundColor: context.appColors.surfacePrimary
+                              .withValues(alpha: 0.78),
+                          labelColor: context.appColors.textSecondary,
+                          hintColor: context.appColors.fieldHint,
+                          textColor: context.appColors.textPrimary,
+                          borderColor: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                          focusedBorderColor:
+                              context.appColors.buttonPrimaryBg,
                           onChanged: (value) {
                             setState(() {
                               _surnameError = null;
@@ -1193,6 +1218,17 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           selectedDialCode: selectedDialCode,
                           phoneNumberLengths:
                               phoneNumberLengths, // Передача длины номеров
+                          backgroundColor: context.appColors.surfacePrimary
+                              .withValues(alpha: 0.78),
+                          labelColor: context.appColors.textSecondary,
+                          hintColor: context.appColors.fieldHint,
+                          textColor: context.appColors.textPrimary,
+                          borderColor: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                          focusedBorderColor:
+                              context.appColors.buttonPrimaryBg,
+                          dropdownBackgroundColor:
+                              context.appColors.surfacePrimary,
                           onInputChanged: (String number) {
                             for (var country in countries) {
                               if (number.startsWith(country.dialCode)) {
@@ -1215,6 +1251,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 .translate('enter_role'),
                             label:
                                 AppLocalizations.of(context)!.translate('role'),
+                            backgroundColor: context.appColors.surfacePrimary
+                                .withValues(alpha: 0.62),
+                            labelColor: context.appColors.textMuted,
+                            hintColor: context.appColors.fieldHint,
+                            textColor: context.appColors.textSecondary,
+                            borderColor: context.appColors.borderSubtle
+                                .withValues(alpha: 0.32),
+                            focusedBorderColor:
+                                context.appColors.borderSubtle,
                             readOnly: true,
                           ),
                         ),
@@ -1227,6 +1272,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 .translate('enter_login'),
                             label: AppLocalizations.of(context)!
                                 .translate('login'),
+                            backgroundColor: context.appColors.surfacePrimary
+                                .withValues(alpha: 0.62),
+                            labelColor: context.appColors.textMuted,
+                            hintColor: context.appColors.fieldHint,
+                            textColor: context.appColors.textSecondary,
+                            borderColor: context.appColors.borderSubtle
+                                .withValues(alpha: 0.32),
+                            focusedBorderColor:
+                                context.appColors.borderSubtle,
                             readOnly: true,
                           ),
                         ),
@@ -1237,6 +1291,15 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                               .translate('enter_email'),
                           label:
                               AppLocalizations.of(context)!.translate('email'),
+                          backgroundColor: context.appColors.surfacePrimary
+                              .withValues(alpha: 0.78),
+                          labelColor: context.appColors.textSecondary,
+                          hintColor: context.appColors.fieldHint,
+                          textColor: context.appColors.textPrimary,
+                          borderColor: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                          focusedBorderColor:
+                              context.appColors.buttonPrimaryBg,
                           keyboardType: TextInputType.emailAddress,
                           onChanged: (value) {
                             setState(() {
@@ -1336,7 +1399,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               ),
               Container(
                   decoration: BoxDecoration(
-                    color: context.appColors.surfacePrimary,
+                    color:
+                        context.appColors.surfacePrimary.withValues(alpha: 0.78),
+                    border: Border(
+                      top: BorderSide(
+                        color: context.appColors.borderSubtle
+                            .withValues(alpha: 0.42),
+                      ),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: context.appColors.shadow.withValues(alpha: 0.1),
@@ -1353,8 +1423,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: context.appColors.buttonPrimaryBg,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          minimumSize: Size(double.infinity, 48),
+                              horizontal: 16, vertical: 10),
+                          minimumSize: const Size(double.infinity, 52),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
                         ),
                         onPressed: () async {
                           // Сбрасываем состояние ошибок
@@ -1434,7 +1508,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                       );
                     },
                   ))
-            ]),
+            ])]),
     );
   }
 

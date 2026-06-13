@@ -100,7 +100,7 @@ class _TasksWidgetState extends State<TasksWidget> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
+              decoration: TaskCardStyles.taskCardDecoration(context),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -150,7 +150,7 @@ class _TasksWidgetState extends State<TasksWidget> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration(context),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -168,7 +168,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                     children: [
                       Text(
                         task.name,
-                        style: TaskCardStyles.titleStyle,
+                        style: TaskCardStyles.titleStyle(context),
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 4),
@@ -176,7 +176,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                         children: [
                           Text(
                             '${AppLocalizations.of(context)!.translate('status_details')} ${task.taskStatus?.taskStatus?.name ?? ''} ',
-                            style: TaskCardStyles.priorityStyle.copyWith(
+                            style: TaskCardStyles.priorityStyle(context).copyWith(
                               color: Color(0xff1E2E52),
                             ),
                           ),
@@ -187,7 +187,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                         children: [
                           Text(
                             '${AppLocalizations.of(context)!.translate('deadLine')}$formattedDateTo',
-                            style: TaskCardStyles.priorityStyle.copyWith(
+                            style: TaskCardStyles.priorityStyle(context).copyWith(
                               color: Color(0xff1E2E52),
                             ),
                           ),
@@ -229,7 +229,7 @@ class _TasksWidgetState extends State<TasksWidget> {
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
+          style: TaskCardStyles.titleStyle(context).copyWith(
             fontWeight: FontWeight.w500,
           ),
         ),

@@ -20,7 +20,7 @@ class AppColorTokens {
       textPrimary: isDark ? palette.neutral900 : palette.primary700,
       textSecondary: isDark ? palette.neutral700 : palette.neutral800,
       textMuted: isDark ? palette.neutral600 : palette.neutral600,
-      textInverse: isDark ? palette.neutral0 : palette.neutral0,
+      textInverse: isDark ? palette.neutral900 : palette.neutral0,
       iconPrimary: isDark ? palette.neutral900 : palette.primary700,
       iconSecondary: isDark ? palette.neutral700 : palette.neutral700,
       borderPrimary: isDark ? palette.neutral400 : palette.neutral300,

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/workday_status_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/services/workday_capture_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -253,6 +254,8 @@ class _WorkdayCardState extends State<WorkdayCard> {
       return const SizedBox.shrink();
     }
 
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final canStart = !_isSubmitting && !(_status?.isActive ?? false);
     final canEnd = !_isSubmitting && (_status?.isActive ?? false);
 
@@ -261,40 +264,40 @@ class _WorkdayCardState extends State<WorkdayCard> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE7EAF3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A1E2E52),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.42),
+        ),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.work_history_outlined, color: Color(0xFF4A3DF0)),
+              Icon(
+                Icons.work_history_outlined,
+                color: colors.buttonPrimaryBg,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Рабочий день',
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 18,
+                  style: textStyles.bodyLg.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
               if (_isLoading || _isSubmitting)
-                const SizedBox(
+                SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: colors.buttonPrimaryBg,
+                  ),
                 ),
             ],
           ),
@@ -305,14 +308,14 @@ class _WorkdayCardState extends State<WorkdayCard> {
             children: [
               _ActionButton(
                 title: 'Начать работу',
-                backgroundColor: const Color(0xFF4A3DF0),
-                disabledColor: const Color(0xFFB7B0F9),
+                backgroundColor: colors.buttonPrimaryBg,
+                disabledColor: colors.fieldBorder,
                 onPressed: canStart ? () => _handleAction(isStart: true) : null,
               ),
               _ActionButton(
                 title: 'Завершить работу',
-                backgroundColor: const Color(0xFFE34848),
-                disabledColor: const Color(0xFFF1A7A7),
+                backgroundColor: colors.error,
+                disabledColor: colors.fieldBorder,
                 onPressed: canEnd ? () => _handleAction(isStart: false) : null,
               ),
             ],
@@ -320,11 +323,9 @@ class _WorkdayCardState extends State<WorkdayCard> {
           const SizedBox(height: 12),
           Text(
             _buildSubtitle(),
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
+            style: textStyles.bodySm.copyWith(
               fontWeight: FontWeight.w500,
-              color: Color(0xFF5F6B84),
+              color: colors.textSecondary,
             ),
           ),
         ],

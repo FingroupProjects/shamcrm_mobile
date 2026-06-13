@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 /// Универсальный диалог для выбора типа источника файла
 /// Поддерживает: Файлы, Галерея, Камера
@@ -22,7 +23,7 @@ class FilePickerDialog {
     // Показываем диалог выбора типа
     final String? selectedType = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -38,7 +39,7 @@ class FilePickerDialog {
                 height: 4,
                 margin: EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Color(0xffE0E0E0),
+                  color: context.appColors.borderSubtle,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -52,7 +53,7 @@ class FilePickerDialog {
                 onTap: () => Navigator.pop(context, 'file'),
               ),
               
-              Divider(height: 1, color: Color(0xffF0F0F0)),
+              Divider(height: 1, color: context.appColors.borderSubtle),
               
               // Кнопка "Галерея"
               _buildOption(
@@ -63,7 +64,7 @@ class FilePickerDialog {
                 onTap: () => Navigator.pop(context, 'gallery'),
               ),
               
-              Divider(height: 1, color: Color(0xffF0F0F0)),
+              Divider(height: 1, color: context.appColors.borderSubtle),
               
               // Кнопка "Камера"
               _buildOption(
@@ -85,7 +86,7 @@ class FilePickerDialog {
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Color(0xffF4F7FD),
+                      backgroundColor: context.appColors.surfaceAccent.withValues(alpha: 0.24),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -96,7 +97,7 @@ class FilePickerDialog {
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   ),
@@ -165,7 +166,7 @@ class FilePickerDialog {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -181,14 +182,14 @@ class FilePickerDialog {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
             Spacer(),
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: Color(0xffBDBDBD),
+              color: context.appColors.iconSecondary,
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -95,6 +96,15 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final primaryText = context.adaptiveForegroundOn(fieldFill);
+    final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
+    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final dropdownFill = colors.surfacePrimary;
+    final dropdownSelected = colors.surfaceElevated;
+    final dropdownIcon = primaryText.withValues(alpha: 0.92);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -106,11 +116,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: context.appColors.textInverse,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -121,7 +131,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.appColors.error,
                     elevation: 3,
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 16),
@@ -157,11 +167,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.translate('manager'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: primaryText,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -175,24 +185,83 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: fieldFill,
+                    expandedFillColor: dropdownFill,
                     closedBorder: Border.all(
-                      color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                      color: widget.hasError ? colors.error : fieldBorder,
                       width: 1.5,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                      color: widget.hasError ? colors.error : fieldBorder,
                       width: 1.5,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    closedSuffixIcon: Icon(Icons.keyboard_arrow_down_rounded,
+                        color: dropdownIcon),
+                    expandedSuffixIcon: Icon(Icons.keyboard_arrow_up_rounded,
+                        color: dropdownIcon),
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: hintTextColor,
+                    ),
+                    headerStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: primaryText,
+                    ),
+                    listItemStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: primaryText,
+                    ),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: fieldFill,
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: hintTextColor,
+                      ),
+                      textStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: primaryText,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: hintTextColor,
+                      ),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(Icons.close_rounded, color: hintTextColor),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: fieldBorder),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: fieldBorder, width: 1.2),
+                      ),
+                    ),
+                    listItemDecoration: ListItemDecoration(
+                      selectedColor: dropdownSelected,
+                      highlightColor: dropdownSelected.withValues(alpha: 0.72),
+                      splashColor:
+                          context.appColors.overlay.withValues(alpha: 0),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       '${item.name} ${item.lastname ?? ''}'.trim(),
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: primaryText,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
@@ -206,11 +275,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                       return Text(
                         AppLocalizations.of(context)!
                             .translate('select_manager'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: hintTextColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -219,11 +288,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     return Text(
                       '${selectedItem.name} ${selectedItem.lastname ?? ''}'
                           .trim(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: primaryText,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -231,11 +300,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   },
                   hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_manager'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: hintTextColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

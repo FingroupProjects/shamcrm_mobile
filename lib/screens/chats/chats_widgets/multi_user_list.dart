@@ -13,7 +13,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final bool hasError;
   final String? errorText;
 
-  UserMultiSelectWidget({
+  const UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
@@ -98,7 +98,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             child: Center(
               child: Text(
                 text,
-                style: TextStyle(
+                style: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.textInverse,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -127,6 +127,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final textStyles = context.appTextStyles;
     return Column(
       children: [
         BlocBuilder<GetAllClientBloc, GetAllClientState>(
@@ -156,10 +157,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('users_list'),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
+                    style: textStyles.bodyLg.copyWith(
                       color: context.appColors.textPrimary,
                     ),
                   ),
@@ -213,10 +211,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                 const SizedBox(width: 10),
                                 Text(
                                   AppLocalizations.of(context)!.translate('select_all'),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
+                                  style: textStyles.bodyLg.copyWith(
                                     color: context.appColors.textPrimary,
                                   ),
                                 ),
@@ -262,12 +257,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               ],
                               Flexible(
                                 child: Text(
-                                  item.name!,
+                                  item.name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Gilroy',
+                                  style: textStyles.bodyLg.copyWith(
                                     color: context.appColors.textPrimary,
                                   ),
                                 ),
@@ -285,20 +277,14 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               ? AppLocalizations.of(context)!
                                   .translate('select_users')
                               : '${AppLocalizations.of(context)!.translate('selected_users')}$selectedUsersCount',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
+                          style: textStyles.bodyLg.copyWith(
                             color: context.appColors.textPrimary,
                           ),
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
                           AppLocalizations.of(context)!.translate('select_users'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
+                          style: textStyles.bodyLg.copyWith(
                             color: context.appColors.textSecondary,
                           )),
                       onListChanged: (values) {
@@ -317,9 +303,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         widget.errorText!,
-                        style: TextStyle(
+                        style: textStyles.bodySm.copyWith(
                           color: context.appColors.error,
-                          fontSize: 12,
                         ),
                       ),
                     ),

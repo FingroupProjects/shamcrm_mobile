@@ -9,14 +9,14 @@ import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
-import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
+
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -510,7 +510,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                                 value: funnel,
                                 child: Text(
                                   funnel.name,
-                                  style: TextStyle(
+                                  style: context.appTextStyles.bodyLg.copyWith(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                     color: context.appColors.textPrimary,
@@ -564,7 +564,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                         Flexible(
                           child: Text(
                             title,
-                            style: TextStyle(
+                            style: context.appTextStyles.titleLg.copyWith(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                               color: context.appColors.textPrimary,
@@ -582,7 +582,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(
+                  style: context.appTextStyles.titleLg.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: context.appColors.textPrimary,
@@ -778,7 +778,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
+      textStyleSkip: context.appTextStyles.titleLg.copyWith(
         color: context.appColors.textInverse,
         fontSize: 20,
         fontWeight: FontWeight.w600,
@@ -1137,9 +1137,15 @@ class _ChatsScreenState extends State<ChatsScreen>
           BlocProvider.value(value: context.read<SalesFunnelBloc>()),
         ],
         child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
             forceMaterialTransparency: true,
-            elevation: 1,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
             title: CustomAppBar(
               title: '',
               titleWidget: isClickAvatarIcon
@@ -1208,86 +1214,110 @@ class _ChatsScreenState extends State<ChatsScreen>
               },
               clearButtonClickFiltr: (bool) {},
             ),
-            backgroundColor: context.appColors.surfacePrimary,
           ),
-          backgroundColor: context.appColors.backgroundPrimary,
           body: isClickAvatarIcon
               ? ProfileScreen()
-              : _isPermissionsChecked
-                  ? Column(
-                      children: [
-                        SizedBox(height: 12),
-                        if (_hasActiveFilters)
-                          Container(
-                            margin: EdgeInsets.symmetric(horizontal: 16),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.filter_list,
-                                    color: context.appColors.buttonPrimaryBg, size: 18),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _getActiveFiltersText(),
-                                    style: TextStyle(
-                                      color: context.appColors.buttonPrimaryBg,
-                                      fontSize: 14,
-                                    ),
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const AppBackgroundOverlay(
+                      preset: AppBackgroundPreset.aurora,
+                    ),
+                    _isPermissionsChecked
+                        ? Column(
+                            children: [
+                              SizedBox(
+                                height: MediaQuery.of(context).padding.top +
+                                    kToolbarHeight +
+                                    12,
+                              ),
+                              if (_hasActiveFilters)
+                                Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 16),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: context.appColors.buttonPrimaryBg
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
+                                        width: 1),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.filter_list,
+                                          color:
+                                              context.appColors.buttonPrimaryBg,
+                                          size: 18),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _getActiveFiltersText(),
+                                          style: context.appTextStyles.bodyMd
+                                              .copyWith(
+                                            color: context
+                                                .appColors.buttonPrimaryBg,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _resetFilters,
+                                        child: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate('reset'),
+                                          style: context.appTextStyles.bodyMd
+                                              .copyWith(
+                                            color: context
+                                                .appColors.buttonPrimaryBg,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: _resetFilters,
-                                  child: Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('reset'),
-                                    style: TextStyle(
-                                      color: context.appColors.buttonPrimaryBg,
-                                      fontSize: 14,
-                                    ),
-                                  ),
+                              if (_hasActiveFilters) SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ValueListenableBuilder<ChatUnreadCounts>(
+                                  valueListenable:
+                                      ChatUnreadCounterService.instance.counts,
+                                  builder: (context, chatCounts, _) {
+                                    debugPrint(
+                                      'ChatsScreen.tabs builder: total=${chatCounts.total}, lead=${chatCounts.lead}, task=${chatCounts.task}, support=${chatCounts.support}, initialized=${chatCounts.isInitialized}, loading=${chatCounts.isLoading}',
+                                    );
+                                    return Row(
+                                      children: List.generate(
+                                        _tabTitles.length,
+                                        (index) {
+                                          if ((index == 0 && !_showLeadChat) ||
+                                              (index == 1 && !_showTaskChat) ||
+                                              (index == 2 &&
+                                                  !_showCorporateChat)) {
+                                            return Container();
+                                          }
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8),
+                                            child: _buildTabButton(
+                                                index, chatCounts),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ],
-                            ),
-                          ),
-                        if (_hasActiveFilters) SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ValueListenableBuilder<ChatUnreadCounts>(
-                            valueListenable:
-                                ChatUnreadCounterService.instance.counts,
-                            builder: (context, chatCounts, _) {
-                              debugPrint(
-                                'ChatsScreen.tabs builder: total=${chatCounts.total}, lead=${chatCounts.lead}, task=${chatCounts.task}, support=${chatCounts.support}, initialized=${chatCounts.isInitialized}, loading=${chatCounts.isLoading}',
-                              );
-                              return Row(
-                                children:
-                                    List.generate(_tabTitles.length, (index) {
-                                  if ((index == 0 && !_showLeadChat) ||
-                                      (index == 1 && !_showTaskChat) ||
-                                      (index == 2 && !_showCorporateChat)) {
-                                    return Container();
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: _buildTabButton(index, chatCounts),
-                                  );
-                                }),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Expanded(child: _buildTabBarView()),
-                      ],
-                    )
-                  : Center(child: CircularProgressIndicator()),
+                              ),
+                              SizedBox(height: 12),
+                              Expanded(child: _buildTabBarView()),
+                            ],
+                          )
+                        : Center(child: CircularProgressIndicator()),
+                  ],
+                ),
           floatingActionButton: (selectTabIndex == 2)
               ? FloatingActionButton(
                   onPressed: () {
@@ -1359,15 +1389,39 @@ class _ChatsScreenState extends State<ChatsScreen>
           clipBehavior: Clip.none,
           children: [
             Container(
-              decoration: TaskStyles.tabButtonDecoration(isActive),
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.92)
+                    : context.appColors.surfacePrimary.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.borderSubtle.withValues(alpha: 0.7),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isActive
+                        ? context.appColors.buttonPrimaryBg.withValues(
+                            alpha: 0.22,
+                          )
+                        : context.appColors.shadow.withValues(alpha: 0.06),
+                    blurRadius: isActive ? 16 : 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
               child: Center(
                 child: Text(
                   _tabTitles[index],
-                  style: TaskStyles.tabTextStyle.copyWith(
+                  style: context.appTextStyles.labelLg.copyWith(
                     color: isActive
-                        ? TaskStyles.activeColor
-                        : TaskStyles.inactiveColor,
+                        ? context.appColors.buttonPrimaryFg
+                        : context.appColors.textPrimary.withValues(alpha: 0.76),
+                    fontFamily: 'Golos',
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ),
@@ -1417,7 +1471,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       alignment: Alignment.center,
       child: Text(
         count > 99 ? '99+' : '$count',
-        style: TextStyle(
+        style: context.appTextStyles.bodySm.copyWith(
           color: context.appColors.textInverse,
           fontSize: 12,
           fontWeight: FontWeight.w700,
@@ -1660,7 +1714,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                   ? localizations.translate('no_internet_connection')
                   : localizations.translate('error'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: context.appTextStyles.displayLg.copyWith(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: context.appColors.textPrimary,
@@ -1672,7 +1726,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                   ? 'Чаты появятся сразу после восстановления сети.'
                   : message,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: context.appColors.textSecondary,
@@ -1688,7 +1742,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: context.appColors.buttonPrimaryBg,
                   side: BorderSide(
-                    color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.35),
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.35),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
@@ -1899,7 +1954,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: TextStyle(
+                  style: context.appTextStyles.bodyLg.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: context.appColors.textInverse,
@@ -1926,13 +1981,18 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
                   Text(
                     AppLocalizations.of(context)!
                         .translate('nothing_found_chat'),
-                    style:
-                        TextStyle(fontSize: 18, color: context.appColors.textPrimary),
+                    style: context.appTextStyles.titleMd.copyWith(
+                      fontSize: 18,
+                      color: context.appColors.textPrimary,
+                    ),
                   ),
                   SizedBox(height: 8),
                   Text(
                     AppLocalizations.of(context)!.translate('list_empty_chat'),
-                    style: TextStyle(fontSize: 16, color: context.appColors.textSecondary),
+                    style: context.appTextStyles.bodyLg.copyWith(
+                      fontSize: 16,
+                      color: context.appColors.textSecondary,
+                    ),
                   ),
                 ],
               ),

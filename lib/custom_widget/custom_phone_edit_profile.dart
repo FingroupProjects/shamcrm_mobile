@@ -11,6 +11,13 @@ class CustomPhoneNumberInput extends StatefulWidget {
   final String? selectedDialCode;
   final bool readOnly;
   final Map<String, int> phoneNumberLengths;
+  final Color? backgroundColor;
+  final Color? labelColor;
+  final Color? hintColor;
+  final Color? textColor;
+  final Color? borderColor;
+  final Color? focusedBorderColor;
+  final Color? dropdownBackgroundColor;
 
   CustomPhoneNumberInput({
     required this.controller,
@@ -19,6 +26,13 @@ class CustomPhoneNumberInput extends StatefulWidget {
     this.selectedDialCode,
     required this.phoneNumberLengths,
     this.readOnly = false,
+    this.backgroundColor,
+    this.labelColor,
+    this.hintColor,
+    this.textColor,
+    this.borderColor,
+    this.focusedBorderColor,
+    this.dropdownBackgroundColor,
   });
 
   @override
@@ -194,17 +208,18 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         children: [
           Text(
             widget.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
+              color: widget.labelColor ?? const Color(0xff1E2E52),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xffF4F7FD),
+              color: widget.backgroundColor ?? const Color(0xffF4F7FD),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Center(
@@ -220,21 +235,26 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
+            color: widget.labelColor ?? const Color(0xff1E2E52),
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: widget.controller,
           readOnly: widget.readOnly,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            color: widget.textColor ?? const Color(0xff1E2E52),
+          ),
           decoration: InputDecoration(
             hintText: AppLocalizations.of(context)!.translate('enter_phone_number'),
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               fontFamily: 'Gilroy',
-              color: Color(0xff99A4BA),
+              color: widget.hintColor ?? const Color(0xff99A4BA),
             ),
             errorText: _errorText,
             errorStyle: const TextStyle(
@@ -249,16 +269,16 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.transparent,
-                width: 0,
+              borderSide: BorderSide(
+                color: widget.borderColor ?? Colors.transparent,
+                width: widget.borderColor == null ? 0 : 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.transparent,
-                width: 0,
+              borderSide: BorderSide(
+                color: widget.focusedBorderColor ?? Colors.transparent,
+                width: widget.focusedBorderColor == null ? 0 : 1.4,
               ),
             ),
             errorBorder: OutlineInputBorder(
@@ -276,12 +296,12 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               ),
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
+            fillColor: widget.backgroundColor ?? const Color(0xffF4F7FD),
             contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: DropdownButtonHideUnderline(
               child: DropdownButton<Country>(
                 value: selectedCountry,
-                dropdownColor: Colors.white,
+                dropdownColor: widget.dropdownBackgroundColor ?? Colors.white,
                 borderRadius: BorderRadius.circular(6),
                 menuMaxHeight: 500,
                 itemHeight: 48,
@@ -295,10 +315,11 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                         const SizedBox(width: 4),
                         Text(
                           country.dialCode,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
+                            color: widget.textColor ?? const Color(0xff1E2E52),
                           ),
                         ),
                       ],

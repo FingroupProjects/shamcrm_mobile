@@ -7,6 +7,8 @@ import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/core/theme/app_theme.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -195,6 +197,7 @@ void main() {
       }
 
       final initialMessage = await _safeLoadInitialMessage();
+      await AppThemeController.instance.initialize();
       _safeConfigureSystemUi();
       final savedLocale = await _safeLoadLocale();
       runApp(MyApp(
@@ -859,8 +862,8 @@ class _MyAppState extends State<MyApp> {
             title: 'shamCRM',
             navigatorKey: navigatorKey,
             scaffoldMessengerKey: scaffoldMessengerKey,
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
+            theme: AppTheme.light(themeController.lightPalette),
+            darkTheme: AppTheme.dark(themeController.darkPalette),
             themeMode: themeController.themeMode,
             localizationsDelegates: [
               AppLocalizations.delegate,
@@ -882,8 +885,16 @@ class _MyAppState extends State<MyApp> {
               return supportedLocales.first;
             },
             builder: (context, child) {
+              final colors = context.appColors;
+              final themeController = context.watch<AppThemeController>();
               final appChild = Stack(
+                fit: StackFit.expand,
                 children: [
+                  ColoredBox(color: colors.backgroundPrimary),
+                  AppBackgroundOverlay(
+                    preset: themeController.backgroundPreset,
+                    imagePath: themeController.backgroundImagePath,
+                  ),
                   NativeInternetAwareWrapper(
                     child: child ?? const SizedBox.shrink(),
                   ),

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -21,7 +22,7 @@ void DropdownBottomSheet(
 
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.appColors.surfacePrimary,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -38,7 +39,7 @@ void DropdownBottomSheet(
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 7),
                   decoration: BoxDecoration(
-                    color: Color(0xfffDFE3EC),
+                    color: context.appColors.borderSubtle,
                     borderRadius: BorderRadius.circular(1200),
                   ),
                 ),
@@ -70,7 +71,7 @@ void DropdownBottomSheet(
                             child: buildDropDownStyles(
                               text: status.taskStatus!.name ?? "",
                               isSelected:
-                                  selectedValue == status.taskStatus!.name,
+                                  selectedValue == status.taskStatus!.name, context: context,
                             ),
                           );
                         }).toList(),
@@ -81,14 +82,14 @@ void DropdownBottomSheet(
                 isLoading
                     ? Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.buttonPrimaryBg,
                         ),
                       )
                     : CustomButton(
                         buttonText:
                             AppLocalizations.of(context)!.translate('save'),
-                        buttonColor: Color(0xfff4F40EC),
-                        textColor: Colors.white,
+                        buttonColor: context.appColors.buttonPrimaryBg,
+                        textColor: context.appColors.buttonPrimaryFg,
                         onPressed: () async {
                           if (selectedStatusId != null) {
                             final prefs = await SharedPreferences.getInstance();
@@ -137,7 +138,7 @@ void DropdownBottomSheet(
                                       fontFamily: 'Gilroy',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -170,21 +171,21 @@ void DropdownBottomSheet(
                                 ScaffoldMessenger.of(rootContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      error.message,
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
-                                      ),
+                                    error.message,
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: context.appColors.textInverse,
                                     ),
+                                  ),
                                     behavior: SnackBarBehavior.floating,
                                     margin: EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: Colors.red,
+                                  backgroundColor: Colors.red,
                                     elevation: 3,
                                     padding: EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),

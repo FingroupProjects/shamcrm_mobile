@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
@@ -82,6 +81,7 @@ class FileMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textStyles = context.appTextStyles;
     final fileExtension = _extractFileExtension();
     final iconPath = _buildPrimaryIconPath(fileExtension);
     final fallbackIconPath = _buildFallbackIconPath(fileExtension);
@@ -113,9 +113,11 @@ class FileMessageBubble extends StatelessWidget {
             if (isLeadChat || isGroupChat == true || !isSender)
               Text(
                 senderName,
-                style: TextStyle(
+                style: textStyles.labelMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: isSender ? context.appColors.textSecondary : context.appColors.textPrimary,
+                  color: isSender
+                      ? context.appColors.textSecondary
+                      : context.appColors.textPrimary,
                 ),
               ),
             GestureDetector(
@@ -126,8 +128,8 @@ class FileMessageBubble extends StatelessWidget {
                 constraints: BoxConstraints(maxWidth: 200),
                 decoration: BoxDecoration(
                   color: isSender
-                      ? ChatSmsStyles.messageBubbleSenderColor
-                      : ChatSmsStyles.messageBubbleReceiverColor,
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
@@ -167,8 +169,11 @@ class FileMessageBubble extends StatelessWidget {
                     Flexible(
                       child: Text(
                         fileName,
-                        style: TextStyle(
-                            color: isSender ? context.appColors.textInverse : context.appColors.textPrimary),
+                        style: textStyles.bodyMd.copyWith(
+                          color: isSender
+                              ? context.appColors.textInverse
+                              : context.appColors.textPrimary,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -198,11 +203,10 @@ class FileMessageBubble extends StatelessWidget {
               children: [
                 Text(
                   time,
-                  style: const TextStyle(
+                  style: textStyles.caption.copyWith(
                     fontSize: 12,
-                    color: ChatSmsStyles.appBarTitleColor,
+                    color: context.appColors.textSecondary,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -211,7 +215,7 @@ class FileMessageBubble extends StatelessWidget {
                     isRead ? Icons.done_all : Icons.done_all,
                     size: 18,
                     color: isRead
-                        ? const Color.fromARGB(255, 45, 28, 235)
+                        ? context.appColors.info
                         : context.appColors.textSecondary.withValues(alpha: 0.5),
                   ),
               ],

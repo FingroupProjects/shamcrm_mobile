@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
@@ -35,6 +35,14 @@ class OrdersWidget extends StatefulWidget {
 
 class _OrdersWidgetState extends State<OrdersWidget> {
   late ScrollController _scrollController;
+
+  BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.appColors.textInverse.withValues(alpha: 0.16),
+        ),
+      );
 
   Future<void> _refreshOrders() async {
     if (!mounted) return;
@@ -91,13 +99,14 @@ class _OrdersWidgetState extends State<OrdersWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTitleRow(AppLocalizations.of(context)!.translate('appbar_orders')),
+        _buildTitleRow(
+            AppLocalizations.of(context)!.translate('appbar_orders')),
         SizedBox(height: 8),
         if (orders.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
+              decoration: _cardDecoration(context),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -107,7 +116,8 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color:
+                          context.appColors.textInverse.withValues(alpha: 0.72),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -129,7 +139,8 @@ class _OrdersWidgetState extends State<OrdersWidget> {
       ],
     );
   }
- String formatPaymentType(String? paymentType, BuildContext context) {
+
+  String formatPaymentType(String? paymentType, BuildContext context) {
     switch (paymentType?.toLowerCase()) {
       case 'cash':
         return 'Наличными';
@@ -143,98 +154,122 @@ class _OrdersWidgetState extends State<OrdersWidget> {
         return AppLocalizations.of(context)!.translate('');
     }
   }
-Widget _buildOrderItem(Order order) {
-  String formattedDate = order.createdAt != null
-      ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
-      : AppLocalizations.of(context)!.translate('');
 
-  return GestureDetector(
-    onTap: () async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrderDetailsScreen(
-            orderId: order.id,
-            order: order,
-            categoryName: '',
+  Widget _buildOrderItem(Order order) {
+    String formattedDate = order.createdAt != null
+        ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+        : AppLocalizations.of(context)!.translate('');
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OrderDetailsScreen(
+              orderId: order.id,
+              order: order,
+              categoryName: '',
+            ),
           ),
-        ),
-      );
-      await _refreshOrders();
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: TaskCardStyles.taskCardDecoration,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Image.asset(
-                'assets/icons/MyNavBar/deal_ON.png',
-                width: 24,
-                height: 24,
-                color: Color(0xff1E2E52),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${AppLocalizations.of(context)!.translate('order_title')}№${order.orderNumber}',
-                      style: TaskCardStyles.titleStyle,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                     SizedBox(height: 4),
-                    Text(
-                      '${AppLocalizations.of(context)!.translate('creation_date_details')} ${formattedDate}',
-                      style: TaskCardStyles.priorityStyle.copyWith(
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      '${AppLocalizations.of(context)!.translate('payment_method')}: ${formatPaymentType(order.paymentMethod, context)}',
-                      style: TaskCardStyles.priorityStyle.copyWith(
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      '${AppLocalizations.of(context)!.translate('status_details')} ${order.orderStatus.name}',
-                      style: TaskCardStyles.priorityStyle.copyWith(
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      '${AppLocalizations.of(context)!.translate('summa_history')} ${order.sum}',
-                      style: TaskCardStyles.priorityStyle.copyWith(
-                        color: Color(0xff1E2E52),
-                        // fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                   
-                  ],
+        );
+        await _refreshOrders();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Container(
+          decoration: _cardDecoration(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/icons/MyNavBar/deal_ON.png',
+                  width: 24,
+                  height: 24,
+                  color: context.appColors.buttonPrimaryBg,
                 ),
-              ),
-            ],
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('order_title')}№${order.orderNumber}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.96),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('creation_date_details')} ${formattedDate}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.82),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('payment_method')}: ${formatPaymentType(order.paymentMethod, context)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.82),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('status_details')} ${order.orderStatus.name}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.82),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '${AppLocalizations.of(context)!.translate('summa_history')} ${order.sum}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.96),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildTitleRow(String title) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w700,
+            color: context.appColors.textInverse.withValues(alpha: 0.96),
           ),
         ),
         TextButton(
@@ -246,7 +281,8 @@ Widget _buildOrderItem(Order order) {
                   leadId: widget.relationType == 'lead'
                       ? widget.entityId
                       : widget.leadId,
-                  dealId: widget.relationType == 'deal' ? widget.entityId : null,
+                  dealId:
+                      widget.relationType == 'deal' ? widget.entityId : null,
                   clientPhone: widget.clientPhone, // Передаем телефон клиента
                 ),
               ),
@@ -262,9 +298,9 @@ Widget _buildOrderItem(Order order) {
             await _refreshOrders();
           },
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
+            foregroundColor: context.appColors.buttonPrimaryFg,
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: Color(0xff1E2E52),
+            backgroundColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -275,7 +311,7 @@ Widget _buildOrderItem(Order order) {
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.buttonPrimaryFg,
             ),
           ),
         ),

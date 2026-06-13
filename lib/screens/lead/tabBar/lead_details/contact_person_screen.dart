@@ -2,7 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_bloc.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/contact_person_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person_delete.dart';
@@ -15,7 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 class ContactPersonWidget extends StatefulWidget {
   final int leadId;
 
-  ContactPersonWidget({Key? key,required this.leadId}) : super(key: key);
+  ContactPersonWidget({Key? key, required this.leadId}) : super(key: key);
 
   @override
   _ContactPersonWidgetState createState() => _ContactPersonWidgetState();
@@ -24,6 +24,14 @@ class ContactPersonWidget extends StatefulWidget {
 class _ContactPersonWidgetState extends State<ContactPersonWidget> {
   List<ContactPerson> contactPerson = [];
   late ScrollController _scrollController;
+
+  BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.appColors.textInverse.withValues(alpha: 0.16),
+        ),
+      );
 
   @override
   void initState() {
@@ -96,7 +104,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
+              decoration: _cardDecoration(context),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -106,7 +114,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color:
+                          context.appColors.textInverse.withValues(alpha: 0.72),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -137,7 +146,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: _cardDecoration(context),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -146,7 +155,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                   'assets/icons/contactPerson.png',
                   width: 24,
                   height: 24,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.buttonPrimaryBg,
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -155,7 +164,13 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                     children: [
                       Text(
                         '${contactPerson.name}',
-                        style: TaskCardStyles.titleStyle,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.96),
+                        ),
                         maxLines: 2,
                       ),
                       Row(
@@ -166,7 +181,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E2E52),
+                              color: context.appColors.textInverse
+                                  .withValues(alpha: 0.82),
                             ),
                             maxLines: 1,
                           ),
@@ -179,7 +195,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF1E2E52),
+                                  color: context.appColors.textInverse
+                                      .withValues(alpha: 0.96),
                                   decoration: TextDecoration.underline,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -196,7 +213,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E2E52),
+                              color: context.appColors.textInverse
+                                  .withValues(alpha: 0.72),
                             ),
                           ),
                           Expanded(
@@ -206,7 +224,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF1E2E52),
+                                color: context.appColors.textInverse
+                                    .withValues(alpha: 0.96),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -221,7 +240,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E2E52),
+                              color: context.appColors.textInverse
+                                  .withValues(alpha: 0.72),
                             ),
                           ),
                           Expanded(
@@ -231,7 +251,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF1E2E52),
+                                color: context.appColors.textInverse
+                                    .withValues(alpha: 0.96),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -246,7 +267,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF1E2E52),
+                              color: context.appColors.textInverse
+                                  .withValues(alpha: 0.72),
                             ),
                           ),
                           Expanded(
@@ -256,7 +278,8 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF1E2E52),
+                                color: context.appColors.textInverse
+                                    .withValues(alpha: 0.96),
                               ),
                               minFontSize:
                                   12, // Уменьшится до 12, если не влезает
@@ -270,7 +293,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                  icon: Icon(Icons.delete, color: context.appColors.error),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -309,8 +332,11 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w700,
+            color: context.appColors.textInverse.withValues(alpha: 0.96),
           ),
         ),
         TextButton(
@@ -328,9 +354,9 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
             });
           },
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
+            foregroundColor: context.appColors.buttonPrimaryFg,
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: Color(0xff1E2E52),
+            backgroundColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -341,7 +367,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.buttonPrimaryFg,
             ),
           ),
         ),

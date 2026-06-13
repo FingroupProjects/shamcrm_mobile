@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -40,11 +39,19 @@ class PinnedLeadMessageWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
         decoration: BoxDecoration(
-          color: context.appColors.surfacePrimary,
+          color: context.appColors.surfacePrimary.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: context.appColors.borderSubtle,
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: context.appColors.shadow.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -53,7 +60,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
               height: 50,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: ChatSmsStyles.messageBubbleSenderColor,
+                color: context.appColors.buttonPrimaryBg,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -80,11 +87,19 @@ class PinnedLeadMessageWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('account_request'),
-                    style: context.appTextStyles.bodyMd.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: ChatSmsStyles.messageBubbleSenderColor,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.appColors.buttonPrimaryBg,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('account_request'),
+                      style: context.appTextStyles.labelMd.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.appColors.buttonPrimaryFg,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

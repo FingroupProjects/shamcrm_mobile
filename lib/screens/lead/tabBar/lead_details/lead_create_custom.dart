@@ -1,10 +1,12 @@
 import 'package:crm_task_manager/custom_widget/field_type_list.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class AddCustomFieldDialog extends StatefulWidget {
-  final Function(String, {String? type}) onAddField; // Update signature to use named parameter
+  final Function(String, {String? type})
+      onAddField; // Update signature to use named parameter
 
   AddCustomFieldDialog({required this.onAddField});
 
@@ -18,15 +20,19 @@ class _AddCustomFieldDialogState extends State<AddCustomFieldDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colors.borderSubtle),
+      ),
       title: Text(
         AppLocalizations.of(context)!.translate('add_field'),
-        style: TextStyle(
-          fontSize: 20,
-          fontFamily: 'Gilroy',
+        style: textStyles.titleMd.copyWith(
           fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       content: Column(
@@ -40,41 +46,47 @@ class _AddCustomFieldDialogState extends State<AddCustomFieldDialog> {
               });
             },
           ),
-                    SizedBox(height: 16),
-Align(
-  alignment: Alignment.centerLeft,
-  child: Text(
-    AppLocalizations.of(context)!.translate('enter_title'),
-    style: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w500,
-      color: Color(0xff1E2E52),
-      fontFamily: 'Gilroy',
-    ),
-  ),
-),
-SizedBox(height: 6),
-
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              AppLocalizations.of(context)!.translate('enter_title'),
+              style: textStyles.labelLg.copyWith(
+                fontWeight: FontWeight.w500,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
           TextField(
             controller: fieldNameController,
+            style: textStyles.bodyLg.copyWith(
+              color: colors.textPrimary,
+            ),
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.translate('enter_name_field'),
-              hintStyle: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff99A4BA),
+              hintText:
+                  AppLocalizations.of(context)!.translate('enter_name_field'),
+              hintStyle: textStyles.bodyMd.copyWith(
+                color: colors.fieldHint,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: Color(0xffF4F7FD),
-              contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              fillColor: colors.fieldBg,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderPrimary),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
           ),
-          
         ],
       ),
       actions: [
@@ -87,16 +99,17 @@ SizedBox(height: 6),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+                buttonColor: colors.buttonDangerBg,
+                textColor: colors.buttonDangerFg,
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('add'),
                 onPressed: () {
-                  if (fieldNameController.text.isNotEmpty && selectedFieldTypeKey != null) {
+                  if (fieldNameController.text.isNotEmpty &&
+                      selectedFieldTypeKey != null) {
                     widget.onAddField(
                       fieldNameController.text,
                       type: selectedFieldTypeKey, // Use named parameter
@@ -106,21 +119,20 @@ SizedBox(height: 6),
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(context)!.translate('fill_required_fields'),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
+                          AppLocalizations.of(context)!
+                              .translate('fill_required_fields'),
+                          style: textStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: colors.textInverse,
                           ),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: colors.error,
                       ),
                     );
                   }
                 },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
+                buttonColor: colors.buttonPrimaryBg,
+                textColor: colors.buttonPrimaryFg,
               ),
             ),
           ],

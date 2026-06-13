@@ -5,7 +5,6 @@ import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
 
 class ImageMessageBubble extends StatefulWidget {
@@ -75,6 +74,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final textStyles = context.appTextStyles;
     // Исправление: Добавляем /storage к пути, если его нет в filePath
     final String normalizedFilePath = widget.filePath.startsWith('storage/')
         ? widget.filePath
@@ -120,7 +120,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                 !widget.isSender)
               Text(
                 widget.senderName,
-                style: TextStyle(
+                style: textStyles.labelMd.copyWith(
                   fontWeight: FontWeight.w600,
                   color: widget.isSender
                       ? context.appColors.textSecondary
@@ -234,11 +234,10 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                         ),
                         child: Text(
                           widget.time,
-                          style: const TextStyle(
+                          style: textStyles.caption.copyWith(
                             fontSize: 12,
-                            color: ChatSmsStyles.appBarTitleColor,
+                            color: context.appColors.textSecondary,
                             fontWeight: FontWeight.w400,
-                            fontFamily: 'Gilroy',
                           ),
                         ),
                       ),
@@ -248,7 +247,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                           widget.isRead ? Icons.done_all : Icons.done_all,
                           size: 18,
                           color: widget.isRead
-                              ? const Color.fromARGB(255, 45, 28, 235)
+                              ? context.appColors.info
                               : context.appColors.textSecondary
                                   .withValues(alpha: 0.5),
                         ),
@@ -269,10 +268,9 @@ class _ImageLoadingPlaceholder extends StatefulWidget {
   final double height;
 
   const _ImageLoadingPlaceholder({
-    Key? key,
     required this.width,
     required this.height,
-  }) : super(key: key);
+  });
 
   @override
   State<_ImageLoadingPlaceholder> createState() =>
@@ -343,11 +341,10 @@ class _ImageErrorPlaceholder extends StatelessWidget {
   final VoidCallback onRetry;
 
   const _ImageErrorPlaceholder({
-    Key? key,
     required this.width,
     required this.height,
     required this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -365,8 +362,10 @@ class _ImageErrorPlaceholder extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 AppLocalizations.of(context)!.translate('loading'),
-                style: TextStyle(
-                    color: context.appColors.textSecondary, fontSize: 12),
+                style: context.appTextStyles.bodySm.copyWith(
+                  color: context.appColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),

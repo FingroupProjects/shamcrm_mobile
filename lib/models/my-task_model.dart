@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/task_model.dart';
 
 class MyTask {
   final int id;
@@ -12,19 +14,28 @@ class MyTask {
   final MyTaskFile? file;
   final List<MyTaskCustomField> taskCustomFields;
   final int? overdue;
+  // Дополнительные поля как в Task (nullable — приходят если есть)
+  final int? priority;
+  final Project? project;
+  final List<UserTaskImage>? usersImage;
+  final String? userName;
 
   MyTask({
     required this.id,
     required this.name,
     this.taskNumber,
-    required this.startDate,
-    required this.endDate,
+    this.startDate,
+    this.endDate,
     this.description,
     required this.statusId,
     this.taskStatus,
     this.file,
     required this.taskCustomFields,
     this.overdue,
+    this.priority,
+    this.project,
+    this.usersImage,
+    this.userName,
   });
 
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
@@ -49,6 +60,16 @@ class MyTask {
                 .toList()
             : [],
         overdue: json['overdue'] is int ? json['overdue'] : 0,
+        priority: json['priority'] is int ? json['priority'] : null,
+        project: json['project'] != null
+            ? Project.fromJson(json['project'])
+            : null,
+        usersImage: json['users_image'] != null
+            ? (json['users_image'] as List)
+                .map((u) => UserTaskImage.fromJson(u))
+                .toList()
+            : null,
+        userName: json['user']?['name'],
       );
     } catch (e) {
       debugPrint('Error parsing MyTask: $e, JSON: $json');
@@ -77,6 +98,9 @@ class MyTask {
       'file': file?.toJson(),
       'task_custom_fields': taskCustomFields.map((e) => e.toJson()).toList(),
       'overdue': overdue,
+      'priority': priority,
+      'project': project?.toJson(),
+      'users_image': usersImage?.map((u) => u.toJson())?.toList(),
     };
   }
 }

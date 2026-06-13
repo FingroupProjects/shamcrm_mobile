@@ -4,17 +4,19 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 
-class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigurationState> {
+class FieldConfigurationBloc
+    extends Bloc<FieldConfigurationEvent, FieldConfigurationState> {
   final ApiService apiService;
 
-  FieldConfigurationBloc(this.apiService) : super(const FieldConfigurationInitial()) {
+  FieldConfigurationBloc(this.apiService)
+      : super(const FieldConfigurationInitial()) {
     on<FetchFieldConfiguration>(_onFetchFieldConfiguration);
   }
 
   Future<void> _onFetchFieldConfiguration(
-      FetchFieldConfiguration event,
-      Emitter<FieldConfigurationState> emit,
-      ) async {
+    FetchFieldConfiguration event,
+    Emitter<FieldConfigurationState> emit,
+  ) async {
     if (kDebugMode) {
       //print('FieldConfigurationBloc: Starting to fetch configuration for table: ${event.tableName}');
     }
@@ -77,8 +79,7 @@ class FieldConfigurationBloc extends Bloc<FieldConfigurationEvent, FieldConfigur
       // );
 
       // Получаем ВСЕ поля (не фильтруем по isActive) и сортируем по position
-      final allFields = response.result
-          .toList()
+      final allFields = response.result.toList()
         ..sort((a, b) => a.position.compareTo(b.position));
 
       if (kDebugMode) {

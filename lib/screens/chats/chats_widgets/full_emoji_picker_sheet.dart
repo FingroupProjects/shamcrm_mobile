@@ -10,10 +10,10 @@ class FullEmojiPickerSheet extends StatefulWidget {
   final String? channelKey;
 
   const FullEmojiPickerSheet({
-    Key? key,
+    super.key,
     required this.onEmojiSelected,
     this.channelKey,
-  }) : super(key: key);
+  });
 
   @override
   State<FullEmojiPickerSheet> createState() => _FullEmojiPickerSheetState();
@@ -128,7 +128,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
                 alignment: Alignment.center,
                 child: Text(
                   emoji,
-                  style: const TextStyle(fontSize: 26),
+                  style: context.appTextStyles.titleLg.copyWith(fontSize: 26),
                 ),
               ),
             );
@@ -147,8 +147,14 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       ),
       child: TextField(
         controller: _searchController,
+        style: context.appTextStyles.bodyMd.copyWith(
+          color: context.appColors.textPrimary,
+        ),
         decoration: InputDecoration(
           hintText: localizations.translate('search_emoji'),
+          hintStyle: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.fieldHint,
+          ),
           prefixIcon: Icon(Icons.search, color: context.appColors.iconSecondary),
           suffixIcon: _isSearching
               ? IconButton(
@@ -173,7 +179,9 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
       return Center(
         child: Text(
           localizations.translate('emoji_not_found'),
-          style: TextStyle(color: context.appColors.textSecondary),
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textSecondary,
+          ),
         ),
       );
     }
@@ -194,6 +202,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
   }
 
   Widget _buildCategoriesWithTabs() {
+    final textStyles = context.appTextStyles;
     final fullReactions = EmojiData.reactionsForSource(
       'full_picker',
       channelKey: widget.channelKey,
@@ -202,7 +211,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
     return Column(
       children: [
         // Категории как иконки
-        Container(
+        SizedBox(
           height: 50,
           child: TabBar(
             controller: _tabController,
@@ -221,7 +230,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
               Tab(
                 child: Text(
                   fullReactions.isNotEmpty ? fullReactions.first : '🙂',
-                  style: const TextStyle(fontSize: 24),
+                  style: textStyles.titleLg.copyWith(fontSize: 24),
                 ),
               ),
             ],
@@ -263,7 +272,7 @@ class _FullEmojiPickerSheetState extends State<FullEmojiPickerSheet>
         child: Center(
           child: Text(
             emoji,
-            style: const TextStyle(fontSize: 28),
+            style: context.appTextStyles.titleLg.copyWith(fontSize: 28),
           ),
         ),
       ),

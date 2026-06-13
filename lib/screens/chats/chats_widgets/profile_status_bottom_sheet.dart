@@ -250,6 +250,7 @@ Widget _buildStatusList(
       return GestureDetector(
         onTap: () => onStatusSelected(status),
         child: buildDropDownStyles(
+          context: context,
           text: status.title,
           isSelected: selectedValue == status.title,
         ),

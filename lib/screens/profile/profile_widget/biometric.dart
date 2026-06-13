@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/auth/pin_change_screen.dart'; // ✅ НОВЫЙ ИМПОРТ
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -18,17 +19,21 @@ class PinChangeWidget extends StatelessWidget {
           ),
         );
       },
-      child: _buildPinOption(localizations),
+      child: _buildPinOption(context, localizations),
     );
   }
 
-  Widget _buildPinOption(AppLocalizations localizations) {
+  Widget _buildPinOption(BuildContext context, AppLocalizations localizations) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.42),
+        ),
+        boxShadow: context.appShadows.card,
       ),
       child: Row(
         children: [
@@ -36,13 +41,13 @@ class PinChangeWidget extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 223, 225, 249),
+              color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Center(
+            child: Center(
               child: Icon(
                 Icons.lock_outline,
-                color: Color.fromARGB(255, 91, 77, 235),
+                color: context.appColors.buttonPrimaryBg,
                 size: 22,
               ),
             ),
@@ -51,18 +56,17 @@ class PinChangeWidget extends StatelessWidget {
           Expanded(
             child: Text(
               localizations.translate('change_pin_code'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xFF1E1E1E),
+                color: context.appColors.textPrimary,
               ),
             ),
           ),
-          Image.asset(
-            'assets/icons/arrow-right.png',
-            width: 16,
-            height: 16,
+          Icon(
+            Icons.chevron_right_rounded,
+            color: context.appColors.iconSecondary,
           ),
         ],
       ),

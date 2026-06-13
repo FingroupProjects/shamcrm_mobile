@@ -9,10 +9,10 @@ import 'package:radio_group_v2/widgets/view_models/radio_group_controller.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ClientRadioGroupWidget extends StatefulWidget {
-  Function(UserData) onSelectUser;
+  final ValueChanged<UserData> onSelectUser;
   final bool hasError;
   final String? errorText;
-  ClientRadioGroupWidget({
+  const ClientRadioGroupWidget({
     super.key,
     required this.onSelectUser,
     this.hasError = false,
@@ -61,7 +61,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
   }
 
   Widget buildUserAvatar(UserData userData) {
-    if (userData.image == null) return SizedBox(width: 31, height: 31);
+    if (userData.image == null) return const SizedBox(width: 31, height: 31);
 
     final imageUrl = extractImageUrlFromSvg(userData.image!);
 
@@ -85,7 +85,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                 ),
               ],
             )
-          : Container(
+          : SizedBox(
               width: 31,
               height: 31,
               child: Center(
@@ -103,6 +103,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final textStyles = context.appTextStyles;
     return Column(
       children: [
         BlocBuilder<GetAllClientBloc, GetAllClientState>(
@@ -126,10 +127,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                   SizedBox(height: 12),
                   Text(
                     AppLocalizations.of(context)!.translate('user'), 
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
+                    style: textStyles.bodyLg.copyWith(
                       color: context.appColors.textPrimary,
                     ),
                   ),
@@ -168,7 +166,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                           child: Row(
                             children: [
                               buildUserAvatar(item),
-                              Text(item.name!),
+                              Text(item.name),
                             ],
                           ),
                         );
@@ -178,7 +176,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                         return Row(
                           children: [
                             buildUserAvatar(selectedItem),
-                            Text(selectedItem.name!),
+                            Text(selectedItem.name),
                           ],
                         );
                       },
@@ -193,9 +191,8 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         widget.errorText!,
-                        style: TextStyle(
+                        style: textStyles.bodySm.copyWith(
                           color: context.appColors.error,
-                          fontSize: 12,
                         ),
                       ),
                     ),

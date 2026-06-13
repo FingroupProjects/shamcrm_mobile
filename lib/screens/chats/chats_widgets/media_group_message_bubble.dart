@@ -410,6 +410,8 @@ class _MediaTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final remoteUrl = _buildRemoteUrl();
     final viewableImagePath = _isLocalFile ? item.path : remoteUrl;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return GestureDetector(
       onTap: item.isImage && !isMenuOpen && viewableImagePath != null
@@ -432,40 +434,39 @@ class _MediaTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildMediaContent(remoteUrl),
+            _buildMediaContent(context, remoteUrl),
             if (item.isVideo)
               Center(
                 child: Container(
                   width: 54,
                   height: 54,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.34),
+                    color: colors.overlay.withValues(alpha: 0.34),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.play_arrow_rounded,
                     size: 34,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
               ),
             if (extraCount > 0)
               Container(
-                color: Colors.black.withValues(alpha: 0.44),
+                color: colors.overlay.withValues(alpha: 0.44),
                 alignment: Alignment.center,
                 child: Text(
                   '+$extraCount',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: textStyles.displayLg.copyWith(
+                    color: colors.textInverse,
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    fontFamily: 'Gilroy',
                   ),
                 ),
               ),
             if (item.isUploading)
               Container(
-                color: Colors.black.withValues(alpha: 0.28),
+                color: colors.overlay.withValues(alpha: 0.28),
                 alignment: Alignment.center,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -480,18 +481,17 @@ class _MediaTile extends StatelessWidget {
                             strokeWidth: 2.6,
                             value: item.uploadProgress.clamp(0, 1),
                             backgroundColor:
-                                Colors.white.withValues(alpha: 0.18),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                                colors.textInverse.withValues(alpha: 0.18),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.textInverse,
                             ),
                           ),
                           Text(
                             '${(item.uploadProgress.clamp(0, 1) * 100).round()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: textStyles.bodySm.copyWith(
+                              color: colors.textInverse,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              fontFamily: 'Gilroy',
                             ),
                           ),
                         ],
@@ -506,7 +506,7 @@ class _MediaTile extends StatelessWidget {
     );
   }
 
-  Widget _buildMediaContent(String? remoteUrl) {
+  Widget _buildMediaContent(BuildContext context, String? remoteUrl) {
     if (item.isImage) {
       if (_isLocalFile) {
         return Image.file(File(item.path), fit: BoxFit.cover);
@@ -524,11 +524,11 @@ class _MediaTile extends StatelessWidget {
     }
 
     return Container(
-      color: const Color(0xFF111827),
+      color: context.appColors.surfaceElevated,
       alignment: Alignment.center,
       child: Icon(
         item.isVideo ? Icons.videocam_rounded : Icons.image_rounded,
-        color: Colors.white,
+        color: context.appColors.textInverse,
         size: 28,
       ),
     );
@@ -554,11 +554,11 @@ class _VideoThumbnailPreview extends StatelessWidget {
           return Image.memory(snapshot.data!, fit: BoxFit.cover);
         }
         return Container(
-          color: const Color(0xFF111827),
+          color: context.appColors.surfaceElevated,
           alignment: Alignment.center,
-          child: const Icon(
+          child: Icon(
             Icons.videocam_rounded,
-            color: Colors.white,
+            color: context.appColors.textInverse,
             size: 30,
           ),
         );
@@ -582,34 +582,35 @@ class _StatusOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.42),
+        color: colors.overlay.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isUploading)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(right: 5),
               child: SizedBox(
                 width: 10,
                 height: 10,
                 child: CircularProgressIndicator(
                   strokeWidth: 1.6,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.textInverse),
                 ),
               ),
             ),
           Text(
             time,
-            style: const TextStyle(
+            style: textStyles.bodySm.copyWith(
               fontSize: 12,
-              color: Colors.white,
+              color: colors.textInverse,
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
             ),
           ),
           if (isSender) ...[
@@ -618,8 +619,8 @@ class _StatusOverlay extends StatelessWidget {
               Icons.done_all,
               size: 16,
               color: isRead
-                  ? const Color.fromARGB(255, 73, 170, 255)
-                  : Colors.white.withValues(alpha: 0.7),
+                  ? colors.info
+                  : colors.textInverse.withValues(alpha: 0.7),
             ),
           ],
         ],

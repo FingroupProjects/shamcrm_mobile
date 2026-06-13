@@ -53,6 +53,11 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
       fontWeight: FontWeight.w500,
       color: context.appColors.textPrimary,
     );
+    final hintStyle = sourceTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+    final borderColor = context.appColors.borderSubtle;
     return FormField<List<SourceData>>(
       // Изменено: Обёрнуто в FormField для валидации
       validator: (value) {
@@ -125,6 +130,31 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: sourceTextStyle,
+                      listItemStyle: sourceTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor:
+                            context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+                        highlightColor:
+                            context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.backgroundPrimary,
+                        textStyle: sourceTextStyle,
+                        hintStyle: hintStyle,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       // Добавлено: Опция "Выделить всех" как первый элемент
@@ -199,9 +229,7 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                     },
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!.translate('select_source'),
-                      style: sourceTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      style: hintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectSources(values);

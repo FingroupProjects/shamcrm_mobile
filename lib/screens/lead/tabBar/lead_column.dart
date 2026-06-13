@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -61,7 +62,9 @@ class _LeadColumnState extends State<LeadColumn> {
 
   void _onScroll() {
     final bloc = context.read<LeadBloc>();
-    if (!_scrollController.hasClients || bloc.allLeadsFetched || bloc.isFetching) {
+    if (!_scrollController.hasClients ||
+        bloc.allLeadsFetched ||
+        bloc.isFetching) {
       return;
     }
 
@@ -187,10 +190,11 @@ class _LeadColumnState extends State<LeadColumn> {
         Center(
           child: Text(
             AppLocalizations.of(context)!.translate('no_lead_in_status'),
-            style: const TextStyle(
+            style: context.appTextStyles.bodyMd.copyWith(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
+              color: context.appColors.textSecondary,
             ),
           ),
         ),
@@ -200,11 +204,15 @@ class _LeadColumnState extends State<LeadColumn> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     debugPrint('LeadColumn: Building for statusId: ${widget.statusId}');
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
+        color: colors.buttonPrimaryBg,
+        backgroundColor: colors.surfacePrimary,
         child: BlocBuilder<LeadBloc, LeadState>(
           builder: (context, state) {
             debugPrint('LeadColumn: BlocBuilder state: ${state.runtimeType}');
@@ -250,13 +258,14 @@ class _LeadColumnState extends State<LeadColumn> {
                     SnackBar(
                       content: Text(
                         AppLocalizations.of(context)!.translate(state.message),
-                        style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white),
+                        style: textStyles.bodyMd.copyWith(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: colors.textInverse,
+                        ),
                       ),
-                      backgroundColor: Colors.red,
+                      backgroundColor: colors.error,
                       behavior: SnackBarBehavior.floating,
                       margin: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
@@ -278,11 +287,11 @@ class _LeadColumnState extends State<LeadColumn> {
                       child: Text(
                         state.message,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: textStyles.bodyMd.copyWith(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -295,7 +304,13 @@ class _LeadColumnState extends State<LeadColumn> {
                               FetchLeads(widget.statusId, ignoreCache: true),
                             );
                       },
-                      child: const Text('Повторить'),
+                      child: Text(
+                        'Повторить',
+                        style: textStyles.labelMd.copyWith(
+                          fontFamily: 'Gilroy',
+                          color: colors.buttonPrimaryBg,
+                        ),
+                      ),
                     ),
                   ),
                 ],

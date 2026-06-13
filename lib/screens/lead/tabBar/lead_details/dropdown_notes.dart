@@ -2,7 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/notes_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_notes.dart';
@@ -16,7 +16,8 @@ class NotesWidget extends StatefulWidget {
   final int leadId;
   final int? managerId; // Добавляем managerId
   final bool autoFetch;
-  NotesWidget({Key? key, required this.leadId, this.managerId, this.autoFetch = true})
+  NotesWidget(
+      {Key? key, required this.leadId, this.managerId, this.autoFetch = true})
       : super(key: key);
 
   @override
@@ -30,6 +31,14 @@ class _NotesWidgetState extends State<NotesWidget> {
   bool _canUpdateNotes = false;
   bool _canDeleteNotes = false;
   final ApiService _apiService = ApiService();
+
+  BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.appColors.textInverse.withValues(alpha: 0.16),
+        ),
+      );
 
   Future<void> _checkPermissions() async {
     final canCreate = await _apiService.hasPermission('notice.create');
@@ -87,7 +96,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -95,7 +104,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: context.appColors.error,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: Duration(seconds: 3),
@@ -136,7 +145,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        decoration: TaskCardStyles.taskCardDecoration,
+        decoration: _cardDecoration(context),
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -149,7 +158,8 @@ class _NotesWidgetState extends State<NotesWidget> {
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+                    color:
+                        context.appColors.textInverse.withValues(alpha: 0.72),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -164,7 +174,8 @@ class _NotesWidgetState extends State<NotesWidget> {
   Widget _buildNoteItem(Notes note) {
     final formattedDate = note.date != null
         ? DateFormat('dd.MM.yyyy HH:mm')
-            .format(DateTime.parse(note.date!).add(Duration(hours: 5))) : null;
+            .format(DateTime.parse(note.date!).add(Duration(hours: 5)))
+        : null;
     final createDate = note.createDate != null
         ? DateFormat('dd.MM.yyyy HH:mm')
             .format(DateTime.parse(note.createDate!).add(Duration(hours: 5)))
@@ -174,7 +185,7 @@ class _NotesWidgetState extends State<NotesWidget> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: _cardDecoration(context),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -183,7 +194,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                   'assets/icons/leads/notes.png',
                   width: 24,
                   height: 24,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.buttonPrimaryBg,
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -192,15 +203,25 @@ class _NotesWidgetState extends State<NotesWidget> {
                     children: [
                       Text(
                         note.title,
-                        style: TaskCardStyles.titleStyle,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.96),
+                        ),
                       ),
                       if (formattedDate != null) ...[
                         SizedBox(height: 4),
                         Text(
                           "${AppLocalizations.of(context)!.translate('date_reminder')} $formattedDate",
-                          style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff1E2E52),
-                        ),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.textInverse
+                                .withValues(alpha: 0.82),
+                          ),
                         ),
                       ],
                       SizedBox(height: 4),
@@ -208,8 +229,12 @@ class _NotesWidgetState extends State<NotesWidget> {
                         AppLocalizations.of(context)!
                                 .translate('created_at_contact') +
                             createDate,
-                        style: TaskCardStyles.priorityStyle.copyWith(
-                          color: Color(0xff1E2E52),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.82),
                         ),
                       ),
                     ],
@@ -217,7 +242,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                 ),
                 if (_canDeleteNotes)
                   IconButton(
-                    icon: Icon(Icons.delete, color: Color(0xff1E2E52)),
+                    icon: Icon(Icons.delete, color: context.appColors.error),
                     onPressed: () => _showDeleteNoteDialog(note),
                   ),
               ],
@@ -234,17 +259,20 @@ class _NotesWidgetState extends State<NotesWidget> {
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w700,
+            color: context.appColors.textInverse.withValues(alpha: 0.96),
           ),
         ),
         if (_canCreateNotes)
           TextButton(
             onPressed: _showAddNoteDialog,
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: context.appColors.buttonPrimaryFg,
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              backgroundColor: Color(0xff1E2E52),
+              backgroundColor: context.appColors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -255,7 +283,7 @@ class _NotesWidgetState extends State<NotesWidget> {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: context.appColors.buttonPrimaryFg,
               ),
             ),
           ),
@@ -266,7 +294,7 @@ class _NotesWidgetState extends State<NotesWidget> {
   void _showAddNoteDialog() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       isScrollControlled: true,
       builder: (BuildContext context) {
         return Padding(

@@ -2,6 +2,8 @@ import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
@@ -65,6 +67,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   Future<void> _checkPermissions() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
@@ -140,12 +143,13 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasMoneyOutcome = false;
       _hasOrder = false;
       _showReferences = false;
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-      _initializeDocuments();
     }
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+    });
+    _initializeDocuments();
   }
 
   void _initializeDocuments() {
@@ -301,6 +305,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     //   );
     // }
 
+    if (!mounted) return;
     setState(() {
       _documents = allDocuments;
     });
@@ -576,6 +581,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
@@ -601,32 +607,38 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
-          : _isLoading
-              ? const Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                )
-              : _documents.isEmpty
-                  ? _buildNoPermissionsWidget()
-                  : Container(
-                      color: const Color(0xffF8F9FB),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (_documents.isNotEmpty) _buildDocumentGrid(),
-                            if (_showReferences) ...[
-                              const SizedBox(height: 16),
-                              _buildReferencesButton(),
-                            ],
-                            const SizedBox(height: 20),
-                          ],
-                        ),
-                      ),
+          : Stack(
+              fit: StackFit.expand,
+              children: [
+                const AppBackgroundOverlay(
+                  preset: AppBackgroundPreset.aurora,
+                ),
+                if (_isLoading)
+                  const Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: Duration(milliseconds: 1000),
                     ),
+                  )
+                else if (_documents.isEmpty)
+                  _buildNoPermissionsWidget()
+                else
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_documents.isNotEmpty) _buildDocumentGrid(),
+                        if (_showReferences) ...[
+                          const SizedBox(height: 16),
+                          _buildReferencesButton(),
+                        ],
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 

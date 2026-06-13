@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
@@ -354,14 +355,16 @@ class _DealColumnState extends State<DealColumn> {
   }
 
   Widget _buildDealsList(List<Deal> deals) {
+    final colors = context.appColors;
     final currentState = _dealBloc.state;
-    final bool showPaginationLoader =
-        currentState is DealDataLoaded && currentState.isLoadingMore && deals.isNotEmpty;
+    final bool showPaginationLoader = currentState is DealDataLoaded &&
+        currentState.isLoadingMore &&
+        deals.isNotEmpty;
 
     if (deals.isNotEmpty) {
       return RefreshIndicator(
-        color: Color(0xff1E2E52),
-        backgroundColor: Colors.white,
+        color: colors.buttonPrimaryBg,
+        backgroundColor: colors.surfacePrimary,
         onRefresh: _onRefresh,
         child: ListView.builder(
           controller: _scrollController,
@@ -407,8 +410,8 @@ class _DealColumnState extends State<DealColumn> {
     }
 
     return RefreshIndicator(
-      color: Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: colors.buttonPrimaryBg,
+      backgroundColor: colors.surfacePrimary,
       onRefresh: _onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -438,7 +441,7 @@ class _DealColumnState extends State<DealColumn> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
           if (state is DealLoading) {

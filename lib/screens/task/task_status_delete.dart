@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<TaskBloc, TaskState>(
       listener: (context, state) {
         if (state is TaskError) {
@@ -35,7 +37,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
                 borderRadius:
                     BorderRadius.circular(12), // Радиус, как у текстового поля
               ),
-              backgroundColor: Colors.red, // Цвет фона, как у текстового поля
+              backgroundColor: colors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(
                   vertical: 12,
@@ -46,7 +48,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_task_status'), 
@@ -54,7 +56,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -64,7 +66,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -77,8 +79,8 @@ class DeleteTaskStatusDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop(); // Закрываем диалог
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: colors.error,
+                  textColor: colors.surfacePrimary,
                 ),
               ),
               SizedBox(width: 8),
@@ -106,7 +108,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: colors.error,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             duration: Duration(seconds: 3),
@@ -133,7 +135,7 @@ class DeleteTaskStatusDialog extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: colors.success,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             duration: Duration(seconds: 3),
@@ -143,8 +145,8 @@ class DeleteTaskStatusDialog extends StatelessWidget {
         context.read<TaskBloc>().add(FetchTaskStatuses());
       }
     },
-    buttonColor: Color(0xff1E2E52),
-    textColor: Colors.white,
+    buttonColor: colors.textPrimary,
+    textColor: colors.surfacePrimary,
   ),
 ),
               

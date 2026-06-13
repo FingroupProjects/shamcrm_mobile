@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/act_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_structure_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/goods_movement_filter.dart';
@@ -338,127 +340,153 @@ class _CustomAppBarState extends State<CustomAppBarReports>
     );
   }
 
+  Widget _buildAppBarAssetIcon(
+    BuildContext context,
+    String assetPath, {
+    Color? color,
+    double size = 24,
+  }) {
+    return Image.asset(
+      assetPath,
+      width: size,
+      height: size,
+      color: color ?? context.appColors.iconPrimary,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Calculate if current tab has filters
     final isFiltering =
         widget.currentFilters[widget.currentTabIndex]?.isNotEmpty ?? false;
 
-    return Container(
-      width: double.infinity,
-      height: kToolbarHeight,
-      color: Colors.white,
-      padding: EdgeInsets.zero,
-      child: Row(children: [
-        Container(
-          width: 40,
-          height: 40,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: _buildAvatarImage(_userImage),
-            onPressed: widget.onClickProfileAvatar,
-          ),
+    return AppBarShell(
+      leading: AppBarShell.capsule(
+        context,
+        width: AppBarShell.orbSize,
+        padding: EdgeInsets.zero,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          icon: _buildAvatarImage(_userImage),
+          onPressed: widget.onClickProfileAvatar,
         ),
-        SizedBox(width: 8),
-        if (!_isSearching)
-          Expanded(
-            child: Text(
-              widget.title,
-              style: TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
-        if (_isSearching)
-          Expanded(
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: _isSearching ? 200.0 : 0.0,
-              child: TextField(
-                controller: _searchController,
-                focusNode: focusNode,
-                onChanged: widget.onChangedSearchInput,
-                onSubmitted: (value) {
-                  widget.onChangedSearchInput?.call(value);
-                },
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
-                ),
-                style: TextStyle(fontSize: 16),
-                autofocus: true,
-              ),
-            ),
-          ),
-        if (widget.showSearchIcon)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
-              message: AppLocalizations.of(context)!.translate('search'),
-              preferBelow: false,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: Offset(0, 0),
+      ),
+      center: AppBarShell.capsule(
+        context,
+        child: !_isSearching
+            ? Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: context.appTextStyles.titleLg.copyWith(
+                        color: context.appColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
+              )
+            : AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: _isSearching ? 200.0 : 0.0,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: focusNode,
+                  onChanged: widget.onChangedSearchInput,
+                  onSubmitted: (value) {
+                    widget.onChangedSearchInput?.call(value);
+                  },
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('search_appbar'),
+                    border: InputBorder.none,
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.fieldHint,
+                    ),
+                  ),
+                  style: context.appTextStyles.bodyLg.copyWith(
+                    color: context.appColors.textPrimary,
+                  ),
+                  autofocus: true,
+                ),
               ),
-              textStyle: TextStyle(
-                fontSize: 12,
-                color: Colors.black,
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: _isSearching
-                    ? Icon(Icons.close)
-                    : Image.asset(
-                        'assets/icons/AppBar/search.png',
-                        width: 24,
-                        height: 24,
+      ),
+      trailing: (widget.showSearchIcon || widget.showFilterIcon)
+          ? AppBarShell.capsule(
+              context,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.showSearchIcon)
+                    Tooltip(
+                      message:
+                          AppLocalizations.of(context)!.translate('search'),
+                      preferBelow: false,
+                      decoration: BoxDecoration(
+                        color: context.appColors.surfacePrimary,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: context.appShadows.card,
                       ),
-                onPressed: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      _searchController.clear();
-                      FocusScope.of(context).unfocus();
-                    }
-                  });
-                  widget.clearButtonClick(_isSearching);
-                  if (_isSearching) {
-                    Future.delayed(Duration(milliseconds: 100), () {
-                      FocusScope.of(context).requestFocus(focusNode);
-                    });
-                  }
-                  if (kDebugMode) {
-                    ////print('CustomAppBarReports: Переключение поиска: $_isSearching');
-                  }
-                },
+                      textStyle: context.appTextStyles.bodySm.copyWith(
+                        color: context.appColors.textPrimary,
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                        icon: _isSearching
+                            ? Icon(Icons.close,
+                                color: context.appColors.iconPrimary)
+                            : _buildAppBarAssetIcon(
+                                context,
+                                'assets/icons/AppBar/search.png',
+                              ),
+                        onPressed: () {
+                          setState(() {
+                            _isSearching = !_isSearching;
+                            if (!_isSearching) {
+                              _searchController.clear();
+                              FocusScope.of(context).unfocus();
+                            }
+                          });
+                          widget.clearButtonClick(_isSearching);
+                          if (_isSearching) {
+                            Future.delayed(Duration(milliseconds: 100), () {
+                              FocusScope.of(context).requestFocus(focusNode);
+                            });
+                          }
+                          if (kDebugMode) {
+                            ////print('CustomAppBarReports: Переключение поиска: $_isSearching');
+                          }
+                        },
+                      ),
+                    ),
+                  if (widget.showSearchIcon && widget.showFilterIcon)
+                    Container(
+                      width: 1,
+                      height: 24,
+                      color: context.appColors.borderSubtle.withValues(
+                        alpha: 0.28,
+                      ),
+                    ),
+                  if (widget.showFilterIcon)
+                    IconButton(
+                      icon: _buildAppBarAssetIcon(
+                        context,
+                        'assets/icons/AppBar/filter.png',
+                        color: isFiltering
+                            ? _iconColor
+                            : context.appColors.iconPrimary,
+                      ),
+                      onPressed: () => navigateToFilterScreen(context),
+                    ),
+                ],
               ),
-            ),
-          ),
-        if (widget.showFilterIcon)
-          IconButton(
-            icon: Image.asset(
-              'assets/icons/AppBar/filter.png',
-              width: 24,
-              height: 24,
-              color: isFiltering ? _iconColor : null,
-            ),
-            onPressed: () => navigateToFilterScreen(context),
-          ),
-      ]),
+            )
+          : null,
     );
   }
 

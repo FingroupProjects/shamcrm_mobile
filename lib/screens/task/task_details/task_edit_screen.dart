@@ -19,6 +19,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dar
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart'
     show DeleteFileDialog;
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -246,8 +247,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   Future<ReasonForRefusalSubmitData?> _collectReasonForRefusalIfNeeded() async {
-    final bool statusChanged = _selectedStatuses != null &&
-        _selectedStatuses != widget.statusId;
+    final bool statusChanged =
+        _selectedStatuses != null && _selectedStatuses != widget.statusId;
     final targetStatus = await _resolveSelectedTaskStatusData();
     final bool requiresReason =
         _askReasonForRefusal && targetStatus?.isUnassembled == true;
@@ -263,6 +264,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }
 
   Widget _buildFileSelection() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -272,7 +274,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         SizedBox(height: 16),
@@ -301,7 +303,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -969,11 +971,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   // Диалог подтверждения выхода из режима настроек без сохранения
   Future<bool> _showExitSettingsDialog() async {
+    final colors = context.appColors;
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
               title: Text(
                 AppLocalizations.of(context)!.translate('warning'),
                 style: TextStyle(
@@ -1537,21 +1540,22 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   @override
   Widget build(BuildContext context) {
     //print('TaskAddScreen: Building with selectedLead: $selectedLead, selectedManager: $selectedManager');
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
             AppLocalizations.of(context)!.translate('task_edit'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -1576,7 +1580,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           IconButton(
             icon: Icon(
               isSettingsMode ? Icons.close : Icons.settings,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
             onPressed: () async {
               if (isSettingsMode) {

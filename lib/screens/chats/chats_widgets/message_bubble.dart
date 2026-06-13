@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
@@ -53,8 +52,8 @@ class MessageBubble extends StatelessWidget {
   final Function(String emoji)? onReactionTap; // Callback для реакций
   final VoidCallback? onLongPress; // Callback для long press
 
-  MessageBubble({
-    Key? key,
+  const MessageBubble({
+    super.key,
     required this.message,
     required this.time,
     required this.isSender,
@@ -74,10 +73,11 @@ class MessageBubble extends StatelessWidget {
     this.reactions = const [], // Реакции по умолчанию пустой список
     this.onReactionTap, // Callback для реакций
     this.onLongPress, // Callback для long press
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final textStyles = context.appTextStyles;
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: isHighlighted
@@ -107,7 +107,7 @@ class MessageBubble extends StatelessWidget {
               if (isLeadChat || isGroupChat == true || !isSender)
                 Text(
                   senderName,
-                  style: TextStyle(
+                  style: textStyles.labelMd.copyWith(
                     fontWeight: FontWeight.w600,
                     color:
                         isSender ? context.appColors.textSecondary : context.appColors.textPrimary,
@@ -118,10 +118,10 @@ class MessageBubble extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
                   color: isNote
-                      ? ChatSmsStyles.messageBubbleNoteColor
+                      ? context.appColors.warning
                       : isSender
-                          ? ChatSmsStyles.messageBubbleSenderColor
-                          : ChatSmsStyles.messageBubbleReceiverColor,
+                          ? context.appColors.buttonPrimaryBg
+                          : context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -149,7 +149,7 @@ class MessageBubble extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           AppLocalizations.of(context)!.translate('edited_sms'),
-                          style: TextStyle(
+                          style: textStyles.bodySm.copyWith(
                             fontSize: 10,
                             color: isSender
                                 ? context.appColors.textInverse.withValues(alpha: 0.7)
@@ -188,13 +188,12 @@ class MessageBubble extends StatelessWidget {
                             children: [
                               Text(
                                 time,
-                                style: TextStyle(
+                                style: textStyles.bodySm.copyWith(
                                   fontSize: 11,
                                   color: isSender
                                   ? context.appColors.textInverse.withValues(alpha: 0.7)
                                       : context.appColors.textSecondary,
                                   fontWeight: FontWeight.w400,
-                                  fontFamily: 'Gilroy',
                                 ),
                               ),
                               const SizedBox(width: 3),
@@ -221,6 +220,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildReplyPreview(BuildContext context) {
+    final textStyles = context.appTextStyles;
     final replyText = _stripHtmlTags(replyMessage ?? '').trim();
     final isTapEnabled = isTargetReferralReplyPreview
         ? onTargetReferralTap != null
@@ -283,11 +283,10 @@ class MessageBubble extends StatelessWidget {
                     children: [
                       Text(
                         authorLabel,
-                        style: TextStyle(
+                        style: textStyles.bodySm.copyWith(
                           fontSize: 11,
                           height: 1.1,
                           fontWeight: FontWeight.w700,
-                          fontFamily: 'Gilroy',
                           color: titleColor,
                         ),
                       ),
@@ -296,10 +295,9 @@ class MessageBubble extends StatelessWidget {
                         replyText,
                         maxLines: maxPreviewLines,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: textStyles.bodySm.copyWith(
                           fontSize: 12,
                           height: 1.2,
-                          fontFamily: 'Gilroy',
                           color: bodyColor,
                         ),
                       ),
@@ -373,6 +371,7 @@ class MessageBubble extends StatelessWidget {
 
   // Универсальный обработчик клика по ссылке
   void _handleLinkTap(BuildContext context, String url) {
+    final textStyles = context.appTextStyles;
     // Вариант 1: Показываем меню с опциями (текущая логика)
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
@@ -394,6 +393,7 @@ class MessageBubble extends StatelessWidget {
       ),
       items: [
         _buildMenuItem(
+          context: context,
           icon: 'assets/icons/chats/menu_icons/open.svg',
           text: AppLocalizations.of(context)!.translate('open_url_source'),
           iconColor: context.appColors.textPrimary,
@@ -404,6 +404,7 @@ class MessageBubble extends StatelessWidget {
           },
         ),
         _buildMenuItem(
+          context: context,
           icon: 'assets/icons/chats/menu_icons/copy.svg',
           text: AppLocalizations.of(context)!.translate('copy'),
           iconColor: context.appColors.textPrimary,
@@ -416,8 +417,7 @@ class MessageBubble extends StatelessWidget {
                 content: Text(
                   AppLocalizations.of(context)!
                       .translate('copy_url_source_text'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
+                  style: textStyles.bodyLg.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: context.appColors.textInverse,
@@ -451,10 +451,10 @@ class MessageBubble extends StatelessWidget {
 
     // Определяем базовый стиль текста в зависимости от isNote
     final baseStyle = isNote
-        ? ChatSmsStyles.messageTextStyle.copyWith(color: context.appColors.textPrimary)
+        ? context.appTextStyles.bodyMd.copyWith(color: context.appColors.textPrimary)
         : isSender
-            ? ChatSmsStyles.senderMessageTextStyle
-            : ChatSmsStyles.receiverMessageTextStyle;
+            ? context.appTextStyles.bodyMd.copyWith(color: context.appColors.textInverse)
+            : context.appTextStyles.bodyMd.copyWith(color: context.appColors.textPrimary);
 
     if (!isHtml) {
       // Простой текст — ищем ссылки регуляркой
@@ -606,6 +606,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   PopupMenuItem _buildMenuItem({
+    required BuildContext context,
     required String icon,
     required String text,
     required Color iconColor,
@@ -625,17 +626,16 @@ class MessageBubble extends StatelessWidget {
                   icon,
                   width: 24,
                   height: 24,
-                  color: iconColor,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
               if (icon.isNotEmpty) const SizedBox(width: 10),
               Flexible(
                 child: Text(
                   text,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: context.appTextStyles.bodyLg.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
                     color: textColor,
                   ),
                 ),

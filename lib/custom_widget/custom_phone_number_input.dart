@@ -308,6 +308,12 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final primaryText = context.adaptiveForegroundOn(fieldFill);
+    final hintTextColor = context.adaptiveHintOn(fieldFill);
+    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+
     if (_isLoading) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,14 +322,18 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             widget.label,
             style: context.appTextStyles.labelLg.copyWith(
               fontWeight: FontWeight.w500,
+              color: primaryText,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: context.appColors.fieldBg,
+              color: fieldFill,
               borderRadius: context.appRadius.input,
+              border: Border.all(
+                color: fieldBorder,
+              ),
             ),
             child: const Center(
               child: CircularProgressIndicator(),
@@ -340,6 +350,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           widget.label,
           style: context.appTextStyles.labelLg.copyWith(
             fontWeight: FontWeight.w500,
+            color: primaryText,
           ),
         ),
         const SizedBox(height: 8),
@@ -349,14 +360,14 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             hintText:
                 AppLocalizations.of(context)!.translate('enter_phone_number'),
             hintStyle: context.appTextStyles.bodyMd.copyWith(
-              color: context.appColors.fieldHint,
+              color: hintTextColor,
             ),
             border: OutlineInputBorder(
               borderRadius: context.appRadius.input,
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: context.appColors.fieldBg,
+            fillColor: fieldFill,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             prefixIcon: InkWell(
@@ -370,6 +381,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                       selectedCountry?.dialCode ?? '+?',
                       style: context.appTextStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w500,
+                        color: primaryText,
                       ),
                     ),
                   ),
@@ -381,7 +393,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                     ),
                   ),
                   Icon(Icons.arrow_drop_down,
-                      color: context.appColors.iconSecondary),
+                      color: primaryText.withValues(alpha: 0.9)),
                 ],
               ),
             ),
@@ -391,7 +403,14 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: context.appRadius.input,
-              borderSide: const BorderSide(color: Colors.transparent),
+              borderSide: BorderSide(color: fieldBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: context.appRadius.input,
+              borderSide: BorderSide(
+                color: context.adaptiveFocusBorderOn(fieldFill),
+                width: 1.2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: context.appRadius.input,
@@ -414,6 +433,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             _phoneNumberPasteFormatter(),
           ],
           validator: widget.validator,
+          style: context.appTextStyles.bodyLg.copyWith(
+            color: primaryText,
+          ),
         ),
       ],
     );

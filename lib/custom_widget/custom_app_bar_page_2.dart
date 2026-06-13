@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
@@ -564,6 +565,20 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     );
   }
 
+  Widget _buildAppBarAssetIcon(
+    BuildContext context,
+    String assetPath, {
+    Color? color,
+    double size = 24,
+  }) {
+    return Image.asset(
+      assetPath,
+      width: size,
+      height: size,
+      color: color ?? context.appColors.iconPrimary,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeFilterColor = context.appColors.buttonPrimaryBg;
@@ -578,60 +593,92 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       color: context.appColors.textPrimary,
     );
 
-    return Container(
-      width: double.infinity,
-      height: kToolbarHeight,
-      color: context.appColors.surfacePrimary,
-      padding: EdgeInsets.zero,
-      child: Row(children: [
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: _buildAvatarImage(_userImage),
-            onPressed: widget.onClickProfileAvatar,
-          ),
+    return AppBarShell(
+      leading: AppBarShell.capsule(
+        context,
+        width: AppBarShell.orbSize,
+        padding: EdgeInsets.zero,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          icon: _buildAvatarImage(_userImage),
+          onPressed: widget.onClickProfileAvatar,
         ),
-        const SizedBox(width: 8),
-        if (!_isSearching)
-          Expanded(
-            child: Text(
-              widget.title,
-              style: context.appTextStyles.titleLg.copyWith(
-                color: context.appColors.textPrimary,
-              ),
-            ),
-          ),
-        if (_isSearching)
-          Expanded(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: _isSearching ? 200.0 : 0.0,
-              child: TextField(
-                controller: _searchController,
-                focusNode: focusNode,
-                onChanged: widget.onChangedSearchInput,
-                decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
-                  hintStyle: context.appTextStyles.bodyMd.copyWith(
-                    color: context.appColors.fieldHint,
+      ),
+      center: AppBarShell.capsule(
+        context,
+        child: !_isSearching
+            ? Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: context.appTextStyles.titleLg.copyWith(
+                        color: context.appColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                ],
+              )
+            : AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: _isSearching ? 200.0 : 0.0,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: focusNode,
+                  onChanged: widget.onChangedSearchInput,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('search_appbar'),
+                    border: InputBorder.none,
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.fieldHint,
+                    ),
+                  ),
+                  style: context.appTextStyles.bodyLg.copyWith(
+                    color: context.appColors.textPrimary,
+                  ),
+                  autofocus: true,
                 ),
-                style: context.appTextStyles.bodyLg.copyWith(
-                  color: context.appColors.textPrimary,
-                ),
-                autofocus: true,
               ),
-            ),
-          ),
-        if (widget.showSearchIcon)
-          Transform.translate(
-            offset: const Offset(10, 0),
-            child: Tooltip(
+      ),
+      trailing: _buildActionGroupCapsule(
+        context,
+        blinkingFilterColor: blinkingFilterColor,
+        tooltipDecoration: tooltipDecoration,
+        tooltipTextStyle: tooltipTextStyle,
+      ),
+    );
+  }
+
+  Widget? _buildActionGroupCapsule(
+    BuildContext context, {
+    required Color blinkingFilterColor,
+    required BoxDecoration tooltipDecoration,
+    required TextStyle tooltipTextStyle,
+  }) {
+    final hasActions = widget.showSearchIcon ||
+        widget.showFilterIncomeIcon ||
+        widget.showFilterIncomingIcon ||
+        widget.showFilterManufactureIcon ||
+        widget.showFilterClientSaleIcon ||
+        widget.showFilterClientReturnIcon ||
+        (widget.showFilterIcon && _canCreateProduct) ||
+        (widget.showFilterOrderIcon && _canCreateOrder);
+
+    if (!hasActions) {
+      return null;
+    }
+
+    return AppBarShell.capsule(
+      context,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.showSearchIcon)
+            Tooltip(
               message: AppLocalizations.of(context)!.translate('search'),
               preferBelow: false,
               decoration: tooltipDecoration,
@@ -640,11 +687,10 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 icon: _isSearching
-                    ? Icon(Icons.close)
-                    : Image.asset(
+                    ? Icon(Icons.close, color: context.appColors.iconPrimary)
+                    : _buildAppBarAssetIcon(
+                        context,
                         'assets/icons/AppBar/search.png',
-                        width: 24,
-                        height: 24,
                       ),
                 onPressed: () {
                   setState(() {
@@ -660,132 +706,94 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                       FocusScope.of(context).requestFocus(focusNode);
                     });
                   }
-                  if (kDebugMode) {
-                    ////print('CustomAppBarPage2: Переключение поиска: $_isSearching');
-                  }
                 },
               ),
             ),
-          ),
-        if (widget.showFilterIncomeIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
+          if (widget.showFilterIncomeIcon)
+            _buildFilterActionButton(
+              context,
+              color: _isIncomeFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToIncomeFilterScreen(context),
+            ),
+          if (widget.showFilterIncomingIcon)
+            _buildFilterActionButton(
+              context,
+              color: _isIncomingFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToIncomingFilterScreen(context),
+            ),
+          if (widget.showFilterManufactureIcon)
+            _buildFilterActionButton(
+              context,
+              color: _isManufactureFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToManufactureFilterScreen(context),
+            ),
+          if (widget.showFilterClientSaleIcon)
+            _buildFilterActionButton(
+              context,
+              color: _isClientSaleFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToClientSaleFilterScreen(context),
+            ),
+          if (widget.showFilterClientReturnIcon)
+            _buildFilterActionButton(
+              context,
+              color: _isClientReturnFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToClientReturnFilterScreen(context),
+            ),
+          if (widget.showFilterIcon && _canCreateProduct)
+            IconButton(
+              icon: Image.asset(
+                'assets/icons/AppBar/scanner.png',
                 width: 24,
                 height: 24,
-                color: _isIncomeFiltering ? blinkingFilterColor : null,
+                color: context.appColors.iconPrimary,
               ),
+              onPressed: _scanBarcode,
+              tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
             ),
-            onPressed: () {
-              navigateToIncomeFilterScreen(context);
-            },
-          ),
-        if (widget.showFilterIncomingIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isIncomingFiltering ? blinkingFilterColor : null,
-              ),
+          if (widget.showFilterIcon && _canCreateProduct)
+            _buildFilterActionButton(
+              context,
+              color: _isGoodsFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToGoodsFilterScreen(context),
             ),
-            onPressed: () {
-              navigateToIncomingFilterScreen(context);
-            },
-          ),
-        if (widget.showFilterManufactureIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isManufactureFiltering ? blinkingFilterColor : null,
-              ),
+          if (widget.showFilterOrderIcon && _canCreateOrder)
+            _buildFilterActionButton(
+              context,
+              color: _isOrdersFiltering
+                  ? blinkingFilterColor
+                  : context.appColors.iconPrimary,
+              onPressed: () => navigateToOrderFilterScreen(context),
             ),
-            onPressed: () {
-              navigateToManufactureFilterScreen(context);
-            },
-          ),
-        if (widget.showFilterClientSaleIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isClientSaleFiltering ? blinkingFilterColor : null,
-              ),
-            ),
-            onPressed: () {
-              navigateToClientSaleFilterScreen(context);
-            },
-          ),
-        if (widget.showFilterClientReturnIcon)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isClientReturnFiltering ? blinkingFilterColor : null,
-              ),
-            ),
-            onPressed: () {
-              navigateToClientReturnFilterScreen(context);
-            },
-          ),
-        if (widget.showFilterIcon && _canCreateProduct)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Image.asset(
-                'assets/icons/AppBar/scanner.png', // Предполагается, что есть иконка для штрихкода
-                width: 24,
-                height: 24,
-              ),
-            ),
-            onPressed: _scanBarcode,
-            tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
-          ),
-        if (widget.showFilterIcon && _canCreateProduct)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isGoodsFiltering ? blinkingFilterColor : null,
-              ),
-            ),
-            onPressed: () {
-              navigateToGoodsFilterScreen(context);
-            },
-          ),
-        if (widget.showFilterOrderIcon && _canCreateOrder)
-          IconButton(
-            icon: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Image.asset(
-                'assets/icons/AppBar/filter.png',
-                width: 24,
-                height: 24,
-                color: _isOrdersFiltering ? blinkingFilterColor : null,
-              ),
-            ),
-            onPressed: () {
-              navigateToOrderFilterScreen(context);
-            },
-          ),
-      ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterActionButton(
+    BuildContext context, {
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: Image.asset(
+        'assets/icons/AppBar/filter.png',
+        width: 24,
+        height: 24,
+        color: color,
+      ),
+      onPressed: onPressed,
     );
   }
 

@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
@@ -108,19 +107,19 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
           VoiceMessageView(
             innerPadding: 8,
             backgroundColor: widget.message.isMyMessage
-                ? ChatSmsStyles.messageBubbleSenderColor
-                : ChatSmsStyles.messageBubbleReceiverColor,
+                ? context.appColors.buttonPrimaryBg
+                : context.appColors.surfacePrimary,
             activeSliderColor: widget.message.isMyMessage
                 ? context.appColors.surfacePrimary
-                : ChatSmsStyles.messageBubbleSenderColor,
+                : context.appColors.buttonPrimaryBg,
             circlesColor: widget.message.isMyMessage
                 ? context.appColors.surfacePrimary.withValues(alpha: 0.2)
-                : ChatSmsStyles.messageBubbleSenderColor,
+                : context.appColors.buttonPrimaryBg,
             controller: _audioController,
             counterTextStyle: TextStyle(
               color: widget.message.isMyMessage
                   ? context.appColors.surfacePrimary
-                  : ChatSmsStyles.messageBubbleSenderColor,
+                  : context.appColors.buttonPrimaryBg,
             ),
           ),
           if (widget.reactions.isNotEmpty)
@@ -146,11 +145,9 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
             children: [
               Text(
                 time(widget.message.createMessateTime),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: ChatSmsStyles.appBarTitleColor,
+                style: context.appTextStyles.bodySm.copyWith(
+                  color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
                 ),
               ),
               const SizedBox(width: 3),

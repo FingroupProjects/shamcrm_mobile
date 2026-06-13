@@ -11,6 +11,8 @@ import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
@@ -1009,9 +1011,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         BlocProvider.value(value: context.read<SalesFunnelBloc>()),
       ],
       child: Scaffold(
-        backgroundColor: context.appColors.surfacePrimary,
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           forceMaterialTransparency: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           title: CustomAppBar(
             SearchIconKey: keySearchIcon,
             menuIconKey: keyMenuIcon,
@@ -1202,17 +1210,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ),
         body: isClickAvatarIcon
             ? ProfileScreen()
-            : Column(
+            : Stack(
+                fit: StackFit.expand,
                 children: [
-                  const SizedBox(height: 15),
-                  if (!_isSearching &&
-                      _selectedManagerIds == null &&
-                      _showCustomTabBar)
-                    _buildCustomTabBar(),
-                  Expanded(
-                    child: _isSearching || _selectedManagerIds != null
-                        ? _buildManagerView()
-                        : _buildTabBarView(),
+                  const AppBackgroundOverlay(
+                    preset: AppBackgroundPreset.aurora,
+                  ),
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.top +
+                            kToolbarHeight +
+                            15,
+                      ),
+                      if (!_isSearching &&
+                          _selectedManagerIds == null &&
+                          _showCustomTabBar)
+                        _buildCustomTabBar(),
+                      Expanded(
+                        child: _isSearching || _selectedManagerIds != null
+                            ? _buildManagerView()
+                            : _buildTabBarView(),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1225,7 +1245,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   if (_isSwitch) {
                     showModalBottomSheet(
-                      backgroundColor: context.appColors.surfacePrimary,
+                      backgroundColor: context.appColors.surfaceElevated,
                       context: context,
                       shape: RoundedRectangleBorder(
                         borderRadius:
@@ -1241,14 +1261,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                 AppLocalizations.of(context)!
                                     .translate('add_for_current_status'),
                                 style: TextStyle(
-                                  color: context.appColors.buttonPrimaryBg,
+                                  color: context.appColors.textPrimary,
                                   fontSize: 20,
                                   fontFamily: "Gilroy",
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               SizedBox(height: 8),
-                              Divider(color: context.appColors.buttonPrimaryBg),
+                              Divider(color: context.appColors.borderSubtle),
                               ListTile(
                                 title: Row(
                                   mainAxisAlignment:
@@ -1258,7 +1278,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       AppLocalizations.of(context)!
                                           .translate('new_lead_in_switch'),
                                       style: TextStyle(
-                                        color: context.appColors.buttonPrimaryBg,
+                                        color: context.appColors.textPrimary,
                                         fontSize: 16,
                                         fontFamily: "Gilroy",
                                         fontWeight: FontWeight.w500,
@@ -1266,7 +1286,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                     ),
                                     Icon(
                                       Icons.add,
-                                      color: context.appColors.buttonPrimaryBg,
+                                      color: context.appColors.iconPrimary,
                                       size: 25,
                                     ),
                                   ],
@@ -1309,7 +1329,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       AppLocalizations.of(context)!
                                           .translate('import_contact'),
                                       style: TextStyle(
-                                        color: context.appColors.buttonPrimaryBg,
+                                        color: context.appColors.textPrimary,
                                         fontSize: 16,
                                         fontFamily: "Gilroy",
                                         fontWeight: FontWeight.w500,
@@ -1317,7 +1337,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                     ),
                                     Icon(
                                       Icons.contacts,
-                                      color: context.appColors.buttonPrimaryBg,
+                                      color: context.appColors.iconPrimary,
                                       size: 25,
                                     ),
                                   ],
@@ -1676,27 +1696,68 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCustomTabBar() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      controller: _tabScrollController,
-      child: Row(
-        children: [
-          ...List.generate(_tabTitles.length, (index) {
-            if (_tabKeys.length <= index) {
-              _tabKeys.add(GlobalKey());
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildTabButton(index),
-            );
-          }),
-          if (_canCreateLeadStatus)
-            IconButton(
-              icon: Image.asset('assets/icons/tabBar/add_black.png',
-                  width: 24, height: 24),
-              onPressed: _addNewTab,
-            ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
         ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        controller: _tabScrollController,
+        child: Row(
+          children: [
+            ...List.generate(_tabTitles.length, (index) {
+              if (_tabKeys.length <= index) {
+                _tabKeys.add(GlobalKey());
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _buildTabButton(index),
+              );
+            }),
+            if (_canCreateLeadStatus)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: _addNewTab,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.appColors.surfacePrimary
+                            .withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: context.appColors.borderSubtle
+                              .withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Image.asset(
+                        'assets/icons/tabBar/add_black.png',
+                        width: 20,
+                        height: 20,
+                        color: context.appColors.iconPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1756,7 +1817,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: context.appColors.textSecondary),
+              leading:
+                  Icon(Icons.delete, color: context.appColors.textSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
@@ -1815,6 +1877,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
 // Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int leadCount) {
+    final title = (_tabTitles[index]['title'] as String?)?.trim() ?? '';
+
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
@@ -1830,43 +1894,71 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       onLongPress: () {
         _showStatusOptions(context, index);
       },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        decoration: BoxDecoration(
+          color: isActive
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
+              : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isActive
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.55)
+                : context.appColors.borderSubtle.withValues(alpha: 0.35),
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : const [],
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle.copyWith(
-                color: isActive
-                    ? TaskStyles.activeColor
-                    : TaskStyles.inactiveColor,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                title.isEmpty ? 'Статус' : title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.textPrimary
+                      : context.appColors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                ),
               ),
             ),
-            Transform.translate(
-              offset: const Offset(12, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: context.appColors.textInverse,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isActive
-                        ? context.appColors.buttonPrimaryBg
-                        : context.appColors.textSecondary,
-                    width: 1,
-                  ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: context.appColors.textInverse.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.7)
+                      : context.appColors.borderSubtle.withValues(alpha: 0.45),
+                  width: 1,
                 ),
-                child: Text(
-                  leadCount.toString(),
-                  style: TextStyle(
-                    color: isActive
-                        ? context.appColors.textPrimary
-                        : context.appColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              child: Text(
+                leadCount.toString(),
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.textPrimary
+                      : context.appColors.textSecondary,
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),

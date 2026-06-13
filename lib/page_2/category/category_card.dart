@@ -137,20 +137,20 @@ Widget build(BuildContext context) {
     },
     child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        decoration: TaskCardStyles.taskCardDecoration,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.categoryName,
-                      style: TaskCardStyles.titleStyle,
+        child: Container(
+          decoration: TaskCardStyles.taskCardDecoration(context),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.categoryName,
+                        style: TaskCardStyles.titleStyle(context),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Padding(

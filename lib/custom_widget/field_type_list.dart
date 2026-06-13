@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class FieldTypeList extends StatefulWidget {
@@ -28,19 +29,20 @@ class _FieldTypeListState extends State<FieldTypeList> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final fieldTypes = getFieldTypes(context);
     
     List<DropdownMenuItem<String>> dropdownItems = fieldTypes
         .map<DropdownMenuItem<String>>((fieldType) {
       return DropdownMenuItem<String>(
         value: fieldType['key'],
-        child: Text(
+          child: Text(
           fieldType['name'],
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       );
@@ -55,13 +57,13 @@ class _FieldTypeListState extends State<FieldTypeList> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: colors.surfacePrimary.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButtonFormField<String>(
@@ -75,7 +77,7 @@ class _FieldTypeListState extends State<FieldTypeList> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.fieldHint,
               ),
             ),
             items: dropdownItems,
@@ -100,25 +102,25 @@ class _FieldTypeListState extends State<FieldTypeList> {
                 horizontal: 16,
               ),
               border: OutlineInputBorder(
-                borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                borderSide: BorderSide(color: colors.borderSubtle),
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                borderSide: BorderSide(color: colors.borderSubtle),
                 borderRadius: BorderRadius.circular(12),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Color(0xFFF4F7FD)),
+                borderSide: BorderSide(color: colors.buttonPrimaryBg),
                 borderRadius: BorderRadius.circular(12),
               ),
               filled: true,
-              fillColor: const Color(0xFFF4F7FD),
+              fillColor: colors.surfacePrimary,
             ),
-            dropdownColor: Colors.white,
+            dropdownColor: colors.surfacePrimary,
             icon: Icon(
               Icons.keyboard_arrow_down,
               size: 20,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),

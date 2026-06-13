@@ -732,7 +732,7 @@ class _ManufactureDocumentDetailsScreenState
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              decoration: TaskCardStyles.taskCardDecoration,
+              decoration: TaskCardStyles.taskCardDecoration(context),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -783,7 +783,7 @@ class _ManufactureDocumentDetailsScreenState
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Container(
-          decoration: TaskCardStyles.taskCardDecoration,
+          decoration: TaskCardStyles.taskCardDecoration(context),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -798,13 +798,13 @@ class _ManufactureDocumentDetailsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            good.fullName ?? good.good?.name ?? 'N/A',
-                            style: TaskCardStyles.titleStyle
-                                .copyWith(fontSize: 14),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          // Text(
+                          //   good.fullName ?? good.good?.name ?? 'N/A',
+                          //   style: TaskCardStyles.titleStyle
+                          //       .copyWith(fontSize: 14),
+                          //   maxLines: 2,
+                          //   overflow: TextOverflow.ellipsis,
+                          // ),
                           const SizedBox(height: 10),
                           Container(
                             width: double.infinity,
@@ -1172,7 +1172,7 @@ class _ManufactureDocumentDetailsScreenState
       children: [
         Text(
           title,
-          style: TaskCardStyles.titleStyle.copyWith(
+          style: TaskCardStyles.titleStyle(context).copyWith(
             fontWeight: FontWeight.w500,
           ),
         ),
