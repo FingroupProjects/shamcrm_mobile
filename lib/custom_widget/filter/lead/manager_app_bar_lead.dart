@@ -199,26 +199,93 @@ class _ManagerFilterScreenState extends State<ManagerFilterScreen> {
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
       builder: (BuildContext context, Widget? child) {
+        final colors = context.appColors;
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: context.appColors.surfacePrimary,
-            colorScheme: ColorScheme.light(
-              primary: context.appColors.buttonPrimaryBg,
-              onPrimary: context.appColors.buttonPrimaryFg,
-              onSurface: context.appColors.textPrimary,
-              secondary:
-                  context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+          data: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: colors.surfacePrimary,
+            canvasColor: colors.surfacePrimary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.buttonPrimaryBg,
+              onPrimary: colors.buttonPrimaryFg,
+              surface: colors.surfacePrimary,
+              onSurface: colors.textPrimary,
+              secondary: colors.buttonSecondaryBg.withValues(alpha: 0.16),
+              onSecondary: colors.textPrimary,
             ),
             dialogTheme: DialogThemeData(
-              backgroundColor: context.appColors.surfacePrimary,
+              backgroundColor: colors.surfacePrimary,
+            ),
+            appBarTheme: AppBarTheme(
+              backgroundColor: colors.surfacePrimary,
+              foregroundColor: colors.textPrimary,
+              surfaceTintColor: colors.surfacePrimary,
+              elevation: 0,
+            ),
+            dividerColor: colors.borderSubtle,
+            textTheme: ThemeData.dark().textTheme.apply(
+                  bodyColor: colors.textPrimary,
+                  displayColor: colors.textPrimary,
+                ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: colors.surfacePrimary,
+              headerBackgroundColor: colors.surfacePrimary,
+              headerForegroundColor: colors.textPrimary,
+              weekdayStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+              dayStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+              yearStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+              rangePickerHeaderForegroundColor: colors.textPrimary,
+              rangePickerBackgroundColor: colors.surfacePrimary,
+              rangeSelectionBackgroundColor:
+                  colors.buttonPrimaryBg.withValues(alpha: 0.18),
+              rangeSelectionOverlayColor: WidgetStatePropertyAll(
+                  colors.buttonPrimaryBg.withValues(alpha: 0.10)),
+              todayForegroundColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg),
+              todayBackgroundColor: WidgetStatePropertyAll(
+                colors.buttonPrimaryBg.withValues(alpha: 0.12),
+              ),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryFg;
+                }
+                return colors.textPrimary;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryBg;
+                }
+                return null;
+              }),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: colors.textSecondary,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: colors.buttonPrimaryBg,
+              ),
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: context.appColors.buttonPrimaryBg,
+                foregroundColor: colors.buttonPrimaryBg,
               ),
             ),
           ),
-          child: child!,
+          child: ColoredBox(
+            color: colors.surfacePrimary,
+            child: child!,
+          ),
         );
       },
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -99,10 +100,11 @@ class _SpeedGaugeState extends State<SpeedGauge>
 
   void _showDetails() {
     if (_isLoading || _error != null) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -121,14 +123,14 @@ class _SpeedGaugeState extends State<SpeedGauge>
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -144,7 +146,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -153,7 +155,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xffEC4899),
+                    color: colors.success,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -247,6 +249,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final isEmpty = _speedHours <= 0;
     final displaySpeedHours = isEmpty ? _previewSpeedHours : _speedHours;
@@ -255,14 +258,16 @@ class _SpeedGaugeState extends State<SpeedGauge>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: colors.shadow.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -278,11 +283,11 @@ class _SpeedGaugeState extends State<SpeedGauge>
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: colors.surfaceElevated,
                     borderRadius: BorderRadius.circular(17),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: colors.shadow.withValues(alpha: 0.12),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -290,7 +295,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                   ),
                   child: Icon(
                     Icons.speed_rounded,
-                    color: Color(0xff0F172A),
+                    color: colors.iconPrimary,
                     size: 18,
                   ),
                 ),
@@ -301,7 +306,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -309,10 +314,10 @@ class _SpeedGaugeState extends State<SpeedGauge>
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: colors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: colors.surfaceElevated,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -334,7 +339,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -344,7 +349,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -392,6 +397,19 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                             unitSuffix: _unitSuffix(),
                                             labelFontSize:
                                                 responsive.smallFontSize,
+                                            baseArcColor:
+                                                colors.surfaceElevated,
+                                            tickMajorColor: colors.borderSubtle,
+                                            tickMinorColor: colors.borderSubtle
+                                                .withValues(alpha: 0.72),
+                                            labelColor: colors.textMuted,
+                                            successColor: colors.success,
+                                            warningColor: colors.warning,
+                                            errorColor: colors.error,
+                                            accentColor: colors.buttonPrimaryBg,
+                                            accentForegroundColor:
+                                                colors.textInverse,
+                                            shadowColor: colors.shadow,
                                           ),
                                         ),
                                         Positioned(
@@ -405,7 +423,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
                                                 fontSize:
                                                     responsive.largeFontSize,
                                                 fontWeight: FontWeight.w700,
-                                                color: Color(0xff22C55E),
+                                                color: colors.success,
                                                 fontFamily: 'Golos',
                                               ),
                                             ),
@@ -432,12 +450,32 @@ class SpeedGaugePainter extends CustomPainter {
   final double maxHours;
   final double labelFontSize;
   final String unitSuffix;
+  final Color baseArcColor;
+  final Color tickMajorColor;
+  final Color tickMinorColor;
+  final Color labelColor;
+  final Color successColor;
+  final Color warningColor;
+  final Color errorColor;
+  final Color accentColor;
+  final Color accentForegroundColor;
+  final Color shadowColor;
 
   SpeedGaugePainter(
       {required this.speedHours,
       this.maxHours = 10,
       this.labelFontSize = 12,
-      this.unitSuffix = ' h'});
+      this.unitSuffix = ' h',
+      required this.baseArcColor,
+      required this.tickMajorColor,
+      required this.tickMinorColor,
+      required this.labelColor,
+      required this.successColor,
+      required this.warningColor,
+      required this.errorColor,
+      required this.accentColor,
+      required this.accentForegroundColor,
+      required this.shadowColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -448,7 +486,7 @@ class SpeedGaugePainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final basePaint = Paint()
-      ..color = const Color(0xff334155)
+      ..color = baseArcColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round;
@@ -462,10 +500,10 @@ class SpeedGaugePainter extends CustomPainter {
       ..shader = SweepGradient(
         startAngle: startAngle,
         endAngle: startAngle + sweepAngle,
-        colors: const [
-          Color(0xff22C55E),
-          Color(0xffF59E0B),
-          Color(0xffEF4444),
+        colors: [
+          successColor,
+          warningColor,
+          errorColor,
         ],
         stops: const [0.0, 0.6, 1.0],
       ).createShader(rect)
@@ -476,7 +514,7 @@ class SpeedGaugePainter extends CustomPainter {
     if (sweepAngle > 0) {
       canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
       final endCapPaint = Paint()
-        ..color = const Color(0xffEF4444)
+        ..color = errorColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 14
         ..strokeCap = StrokeCap.round;
@@ -491,12 +529,12 @@ class SpeedGaugePainter extends CustomPainter {
     }
 
     final majorTickPaint = Paint()
-      ..color = const Color(0xffE2E8F0)
+      ..color = tickMajorColor
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
     final minorTickPaint = Paint()
-      ..color = const Color(0xffCBD5E1)
+      ..color = tickMinorColor
       ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;
 
@@ -525,7 +563,7 @@ class SpeedGaugePainter extends CustomPainter {
     final labelStyle = TextStyle(
       fontSize: labelFontSize,
       fontWeight: FontWeight.w600,
-      color: Color(0xff94A3B8),
+      color: labelColor,
       fontFamily: 'Golos',
     );
 
@@ -553,12 +591,15 @@ class SpeedGaugePainter extends CustomPainter {
         center.dy + pointerLength * math.sin(pointerAngle),
       );
       final pointerShadow = Paint()
-        ..color = Colors.black.withValues(alpha: 0.12)
+        ..color = shadowColor.withValues(alpha: 0.16)
         ..strokeWidth = 7
         ..strokeCap = StrokeCap.round;
       final pointerPaint = Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xFFE5E7EB), Color(0xFFCBD5E1)],
+        ..shader = LinearGradient(
+          colors: [
+            tickMajorColor.withValues(alpha: 0.9),
+            tickMinorColor.withValues(alpha: 0.95),
+          ],
         ).createShader(Rect.fromPoints(center, pointerEnd))
         ..strokeWidth = 4
         ..strokeCap = StrokeCap.round;
@@ -567,11 +608,11 @@ class SpeedGaugePainter extends CustomPainter {
     }
 
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.12)
+      ..color = shadowColor.withValues(alpha: 0.16)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, 8, shadowPaint);
-    canvas.drawCircle(center, 7, Paint()..color = const Color(0xff6366F1));
-    canvas.drawCircle(center, 3, Paint()..color = Colors.white);
+    canvas.drawCircle(center, 7, Paint()..color = accentColor);
+    canvas.drawCircle(center, 3, Paint()..color = accentForegroundColor);
   }
 
   @override

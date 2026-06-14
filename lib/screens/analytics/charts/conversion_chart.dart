@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -122,10 +123,11 @@ class _ConversionChartState extends State<ConversionChart> {
 
   void _showDetails() {
     if (_conversionData.isEmpty) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -144,14 +146,14 @@ class _ConversionChartState extends State<ConversionChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -170,7 +172,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -179,7 +181,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff6366F1),
+                          color: colors.buttonPrimaryBg,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -196,20 +198,23 @@ class _ConversionChartState extends State<ConversionChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final isEmpty =
         _conversionData.isEmpty || _conversionData.every((v) => v == 0);
     final chartData = isEmpty ? _previewData : _conversionData;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: colors.shadow.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -239,7 +244,7 @@ class _ConversionChartState extends State<ConversionChart> {
                   ),
                   child: Icon(
                     Icons.bar_chart,
-                    color: Colors.white,
+                    color: colors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -249,7 +254,7 @@ class _ConversionChartState extends State<ConversionChart> {
                   style: TextStyle(
                     fontSize: responsive.titleFontSize,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xff0F172A),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -257,10 +262,10 @@ class _ConversionChartState extends State<ConversionChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: colors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: colors.surfaceElevated,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -282,7 +287,7 @@ class _ConversionChartState extends State<ConversionChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -292,7 +297,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -328,16 +333,18 @@ class _ConversionChartState extends State<ConversionChart> {
                                 barTouchData: BarTouchData(
                                   enabled: true,
                                   touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (group) => Colors.white,
-                                    tooltipBorder: const BorderSide(
-                                        color: Color(0xffE2E8F0)),
+                                    getTooltipColor: (group) =>
+                                        colors.surfacePrimary,
+                                    tooltipBorder: BorderSide(
+                                      color: colors.borderSubtle,
+                                    ),
                                     tooltipRoundedRadius: 8,
                                     getTooltipItem:
                                         (group, groupIndex, rod, rodIndex) {
                                       return BarTooltipItem(
                                         '${_formatPercent(rod.toY)}%',
                                         TextStyle(
-                                          color: Color(0xff0F172A),
+                                          color: colors.textPrimary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: responsive.bodyFontSize,
                                           fontFamily: 'Golos',
@@ -366,7 +373,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                                   value.toInt() + 1,
                                                 ),
                                                 style: TextStyle(
-                                                  color: Color(0xff64748B),
+                                                  color: colors.textSecondary,
                                                   fontSize:
                                                       responsive.smallFontSize,
                                                   fontFamily: 'Golos',
@@ -395,7 +402,7 @@ class _ConversionChartState extends State<ConversionChart> {
                                         return Text(
                                           label,
                                           style: TextStyle(
-                                            color: Color(0xff64748B),
+                                            color: colors.textSecondary,
                                             fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
                                           ),
@@ -424,8 +431,8 @@ class _ConversionChartState extends State<ConversionChart> {
                                         strokeWidth: 0,
                                       );
                                     }
-                                    return const FlLine(
-                                      color: Color(0xffE2E8F0),
+                                    return FlLine(
+                                      color: colors.borderSubtle,
                                       strokeWidth: 1,
                                     );
                                   },
@@ -447,9 +454,9 @@ class _ConversionChartState extends State<ConversionChart> {
           if (!_isLoading && _error == null && _conversionData.isNotEmpty)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: colors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -466,7 +473,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -476,7 +483,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -493,7 +500,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -503,7 +510,7 @@ class _ConversionChartState extends State<ConversionChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),

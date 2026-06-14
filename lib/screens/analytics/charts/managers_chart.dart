@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -111,10 +112,11 @@ class _ManagersChartState extends State<ManagersChart> {
 
   void _showDetails() {
     if (_managers.isEmpty) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -133,14 +135,14 @@ class _ManagersChartState extends State<ManagersChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -159,7 +161,7 @@ class _ManagersChartState extends State<ManagersChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -167,7 +169,7 @@ class _ManagersChartState extends State<ManagersChart> {
                         '${analyticsText(context, 'analytics_total_deals', fallback: 'Total deals')}: ${m.totalDeals} • ${analyticsText(context, 'analytics_successful_deals', fallback: 'Successful deals')}: ${m.successfulDeals}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -176,7 +178,7 @@ class _ManagersChartState extends State<ManagersChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff10B981),
+                          color: colors.success,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -220,6 +222,7 @@ class _ManagersChartState extends State<ManagersChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final isEmpty = _managers.isEmpty ||
         _managers.every((m) =>
@@ -237,14 +240,16 @@ class _ManagersChartState extends State<ManagersChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: colors.shadow.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -274,7 +279,7 @@ class _ManagersChartState extends State<ManagersChart> {
                   ),
                   child: Icon(
                     Icons.person_outline,
-                    color: Colors.white,
+                    color: colors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -285,7 +290,7 @@ class _ManagersChartState extends State<ManagersChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -293,10 +298,10 @@ class _ManagersChartState extends State<ManagersChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: colors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: colors.surfaceElevated,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -375,7 +380,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -385,7 +390,7 @@ class _ManagersChartState extends State<ManagersChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -423,9 +428,9 @@ class _ManagersChartState extends State<ManagersChart> {
           if (!_isLoading && _error == null)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: colors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -443,7 +448,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,
-                            color: Color(0xff64748B),
+                            color: colors.textSecondary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -459,7 +464,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           style: TextStyle(
                             fontSize: responsive.largeFontSize,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xff0F172A),
+                            color: colors.textPrimary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -479,7 +484,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,
-                            color: Color(0xff64748B),
+                            color: colors.textSecondary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -491,7 +496,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           style: TextStyle(
                             fontSize: responsive.largeFontSize,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xff0F172A),
+                            color: colors.textPrimary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -511,7 +516,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,
-                            color: Color(0xff64748B),
+                            color: colors.textSecondary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -523,7 +528,7 @@ class _ManagersChartState extends State<ManagersChart> {
                           style: TextStyle(
                             fontSize: responsive.largeFontSize,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xff0F172A),
+                            color: colors.textPrimary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -563,7 +568,8 @@ class _ManagersChartState extends State<ManagersChart> {
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (group) => Colors.white,
-                    tooltipBorder: const BorderSide(color: Color(0xffE2E8F0)),
+                    tooltipBorder:
+                        BorderSide(color: context.appColors.borderSubtle),
                     tooltipRoundedRadius: 8,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       if (rodIndex != 0) return null;
@@ -571,7 +577,7 @@ class _ManagersChartState extends State<ManagersChart> {
                       return BarTooltipItem(
                         '${m.managerName}\n',
                         TextStyle(
-                          color: const Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: responsive.smallFontSize,
                           fontFamily: 'Golos',
@@ -581,7 +587,7 @@ class _ManagersChartState extends State<ManagersChart> {
                             text:
                                 '${analyticsText(context, 'analytics_total_deals', fallback: 'Total deals')}: ${m.totalDeals}\n',
                             style: TextStyle(
-                              color: const Color(0xff6366F1),
+                              color: context.appColors.buttonPrimaryBg,
                               fontWeight: FontWeight.w600,
                               fontSize: responsive.smallFontSize,
                               fontFamily: 'Golos',
@@ -591,7 +597,7 @@ class _ManagersChartState extends State<ManagersChart> {
                             text:
                                 '${analyticsText(context, 'analytics_successful_deals', fallback: 'Successful deals')}: ${m.successfulDeals}\n',
                             style: TextStyle(
-                              color: const Color(0xff10B981),
+                              color: context.appColors.success,
                               fontWeight: FontWeight.w600,
                               fontSize: responsive.smallFontSize,
                               fontFamily: 'Golos',
@@ -601,7 +607,7 @@ class _ManagersChartState extends State<ManagersChart> {
                             text:
                                 '${analyticsText(context, 'analytics_amount', fallback: 'Amount')}: ${_formatMoney(m.totalSum)}\n',
                             style: TextStyle(
-                              color: const Color(0xffF59E0B),
+                              color: context.appColors.warning,
                               fontWeight: FontWeight.w600,
                               fontSize: responsive.smallFontSize,
                               fontFamily: 'Golos',
@@ -611,7 +617,7 @@ class _ManagersChartState extends State<ManagersChart> {
                             text:
                                 '${analyticsText(context, 'analytics_successful_amount', fallback: 'Successful amount')}: ${_formatMoney(m.successfulSum)}',
                             style: TextStyle(
-                              color: const Color(0xffEC4899),
+                              color: context.appColors.info,
                               fontWeight: FontWeight.w600,
                               fontSize: responsive.smallFontSize,
                               fontFamily: 'Golos',
@@ -638,7 +644,7 @@ class _ManagersChartState extends State<ManagersChart> {
                               child: Text(
                                 _shortName(managers[index].managerName),
                                 style: TextStyle(
-                                  color: Color(0xff64748B),
+                                  color: context.appColors.textSecondary,
                                   fontSize: responsive.xSmallFontSize,
                                   fontFamily: 'Golos',
                                 ),
@@ -659,7 +665,7 @@ class _ManagersChartState extends State<ManagersChart> {
                       ),
                       style: TextStyle(
                         fontSize: responsive.xSmallFontSize,
-                        color: Color(0xff94A3B8),
+                        color: context.appColors.textMuted,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -671,7 +677,7 @@ class _ManagersChartState extends State<ManagersChart> {
                         return Text(
                           value.toInt().toString(),
                           style: TextStyle(
-                            color: Color(0xff64748B),
+                            color: context.appColors.textSecondary,
                             fontSize: responsive.smallFontSize,
                             fontFamily: 'Golos',
                           ),
@@ -693,7 +699,7 @@ class _ManagersChartState extends State<ManagersChart> {
                         return Text(
                           _formatMoney(revenueValue),
                           style: TextStyle(
-                            color: Color(0xff94A3B8),
+                            color: context.appColors.textMuted,
                             fontSize: responsive.xSmallFontSize,
                             fontFamily: 'Golos',
                           ),
@@ -708,8 +714,8 @@ class _ManagersChartState extends State<ManagersChart> {
                   horizontalInterval:
                       maxDeals <= 0 ? 1 : (maxDeals / 5).ceilToDouble(),
                   getDrawingHorizontalLine: (value) {
-                    return const FlLine(
-                      color: Color(0xffE2E8F0),
+                    return FlLine(
+                      color: context.appColors.borderSubtle,
                       strokeWidth: 1,
                     );
                   },
@@ -739,7 +745,7 @@ class _ManagersChartState extends State<ManagersChart> {
                   ),
                   style: TextStyle(
                     fontSize: responsive.xSmallFontSize,
-                    color: Color(0xff94A3B8),
+                    color: context.appColors.textMuted,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -803,7 +809,7 @@ class _ManagersChartState extends State<ManagersChart> {
               label,
               style: TextStyle(
                 fontSize: responsive.smallFontSize,
-                color: Color(0xff64748B),
+                color: context.appColors.textSecondary,
                 fontFamily: 'Golos',
               ),
             ),
@@ -845,7 +851,7 @@ class _ManagersChartState extends State<ManagersChart> {
               label,
               style: TextStyle(
                 fontSize: responsive.smallFontSize,
-                color: Color(0xff64748B),
+                color: context.appColors.textSecondary,
                 fontFamily: 'Golos',
               ),
             ),
@@ -958,7 +964,7 @@ class _LineOverlayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final dotPaint = Paint()
-      ..color = Colors.white
+      ..color = Colors.transparent
       ..style = PaintingStyle.fill;
 
     final dotBorderPaint = Paint()
@@ -1082,7 +1088,7 @@ class _LineLegendPainter extends CustomPainter {
 
     // Draw dot in the center
     final dotPaint = Paint()
-      ..color = Colors.white
+      ..color = Colors.transparent
       ..style = PaintingStyle.fill;
     final dotBorder = Paint()
       ..color = color

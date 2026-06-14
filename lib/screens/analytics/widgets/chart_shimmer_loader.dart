@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class AnalyticsChartShimmerLoader extends StatelessWidget {
   const AnalyticsChartShimmerLoader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final shimmerColor =
+        context.appColors.surfaceElevated.withValues(alpha: 0.92);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: ShimmerWave(
@@ -16,7 +19,7 @@ class AnalyticsChartShimmerLoader extends StatelessWidget {
               height: 12,
               width: 140,
               decoration: BoxDecoration(
-                color: const Color(0xffE5E7EB),
+                color: shimmerColor,
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -45,8 +48,8 @@ class AnalyticsChartShimmerLoader extends StatelessWidget {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: const BoxDecoration(
-                    color: Color(0xffE5E7EB),
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -55,7 +58,7 @@ class AnalyticsChartShimmerLoader extends StatelessWidget {
                   child: Container(
                     height: 10,
                     decoration: BoxDecoration(
-                      color: const Color(0xffE5E7EB),
+                      color: shimmerColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -77,6 +80,8 @@ class _Bar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shimmerColor =
+        context.appColors.surfaceElevated.withValues(alpha: 0.92);
     return Expanded(
       child: Align(
         alignment: Alignment.bottomCenter,
@@ -85,7 +90,7 @@ class _Bar extends StatelessWidget {
           child: Container(
             width: width,
             decoration: BoxDecoration(
-              color: const Color(0xffE5E7EB),
+              color: shimmerColor,
               borderRadius: BorderRadius.circular(8),
             ),
           ),

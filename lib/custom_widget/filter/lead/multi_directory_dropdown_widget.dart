@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -19,22 +20,17 @@ class MultiDirectoryDropdownWidget extends StatefulWidget {
   });
 
   @override
-  State<MultiDirectoryDropdownWidget> createState() => _MultiDirectoryDropdownWidgetState();
+  State<MultiDirectoryDropdownWidget> createState() =>
+      _MultiDirectoryDropdownWidgetState();
 }
 
-class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWidget> {
+class _MultiDirectoryDropdownWidgetState
+    extends State<MultiDirectoryDropdownWidget> {
   List<MainField> mainFieldsList = [];
   List<MainField> _selectedFields = [];
   String? errorMessage;
   bool _isLoading = false;
   bool allSelected = false;
-
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -63,13 +59,13 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
   void _syncSelectedFields() {
     final initial = widget.initialFields ?? [];
     final initialIds = initial.map((e) => e.id).toSet();
-    final filtered = mainFieldsList
-        .where((item) => initialIds.contains(item.id))
-        .toList();
+    final filtered =
+        mainFieldsList.where((item) => initialIds.contains(item.id)).toList();
 
     setState(() {
       _selectedFields = filtered;
-      allSelected = mainFieldsList.isNotEmpty && _selectedFields.length == mainFieldsList.length;
+      allSelected = mainFieldsList.isNotEmpty &&
+          _selectedFields.length == mainFieldsList.length;
     });
   }
 
@@ -114,6 +110,14 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
   @override
   Widget build(BuildContext context) {
     final hasError = errorMessage != null;
+    final statusTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = statusTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,87 +129,148 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: context.appColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: hasError ? Colors.red : const Color(0xFFE5E7EB),
+              color: hasError
+                  ? context.appColors.error
+                  : context.appColors.borderSubtle,
             ),
           ),
           child: _isLoading
-              ? const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                ),
-              ),
-            ),
-          )
-              : hasError
               ? Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Text(
-              errorMessage!,
-              style: const TextStyle(color: Colors.red, fontSize: 16),
-            ),
-          )
-              : CustomDropdown<MainField>.multiSelectSearch(
-            items: mainFieldsList,
-            initialItems: _selectedFields,
-            searchHintText: AppLocalizations.of(context)!.translate('search'),
-            overlayHeight: 400,
-            decoration: CustomDropdownDecoration(
-              closedFillColor: const Color(0xffF4F7FD),
-              expandedFillColor: Colors.white,
-              closedBorder: Border.all(color: Colors.transparent, width: 1),
-              closedBorderRadius: BorderRadius.circular(12),
-              expandedBorder: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-              expandedBorderRadius: BorderRadius.circular(12),
-            ),
-            listItemBuilder: (context, item, isSelected, onItemSelect) {
-              if (mainFieldsList.isNotEmpty && mainFieldsList.indexOf(item) == 0) {
-                return Column(
-                  children: [
-                    _buildSelectAllTile(),
-                    const Divider(height: 20, color: Color(0xFFE5E7EB)),
-                    _buildListItem(item, isSelected, onItemSelect),
-                  ],
-                );
-              }
-              return _buildListItem(item, isSelected, onItemSelect);
-            },
-            headerListBuilder: (context, hint, enabled) {
-              if (_selectedFields.isEmpty) {
-                return Text(
-                  AppLocalizations.of(context)!.translate('select_field'),
-                  style: statusTextStyle,
-                );
-              }
-              final display = _selectedFields.map((field) => field.value).join(', ');
-              return Text(
-                display,
-                style: statusTextStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
-            hintBuilder: (context, hint, enabled) => Text(
-              AppLocalizations.of(context)!.translate('select_field'),
-              style: statusTextStyle.copyWith(fontSize: 14),
-            ),
-            onListChanged: (values) {
-              setState(() {
-                _selectedFields = List<MainField>.from(values);
-                allSelected = _selectedFields.length == mainFieldsList.length && mainFieldsList.isNotEmpty;
-              });
-              widget.onSelectField(_selectedFields);
-            },
-          ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.appColors.buttonPrimaryBg,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : hasError
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      child: Text(
+                        errorMessage!,
+                        style: TextStyle(
+                          color: context.appColors.error,
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
+                  : CustomDropdown<MainField>.multiSelectSearch(
+                      items: mainFieldsList,
+                      initialItems: _selectedFields,
+                      searchHintText:
+                          AppLocalizations.of(context)!.translate('search'),
+                      overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                        closedFillColor: context.appColors.fieldBg,
+                        expandedFillColor: context.appColors.surfacePrimary,
+                        closedBorder:
+                            Border.all(color: Colors.transparent, width: 1),
+                        closedBorderRadius: BorderRadius.circular(12),
+                        expandedBorder: Border.all(
+                          color: context.appColors.borderSubtle,
+                          width: 1,
+                        ),
+                        expandedBorderRadius: BorderRadius.circular(12),
+                        hintStyle: hintStyle,
+                        headerStyle: statusTextStyle,
+                        listItemStyle: statusTextStyle,
+                        listItemDecoration: ListItemDecoration(
+                          selectedColor: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.14),
+                          highlightColor: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.08),
+                          splashColor: Colors.transparent,
+                        ),
+                        searchFieldDecoration: SearchFieldDecoration(
+                          fillColor: context.appColors.fieldBg,
+                          textStyle: statusTextStyle.copyWith(fontSize: 14),
+                          hintStyle: hintStyle,
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: context.appColors.textSecondary,
+                          ),
+                          suffixIcon: (onClear) => IconButton(
+                            onPressed: onClear,
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: context.appColors.textSecondary,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: context.appColors.borderSubtle,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: context.appColors.buttonPrimaryBg,
+                            ),
+                          ),
+                        ),
+                      ),
+                      listItemBuilder:
+                          (context, item, isSelected, onItemSelect) {
+                        if (mainFieldsList.isNotEmpty &&
+                            mainFieldsList.indexOf(item) == 0) {
+                          return Column(
+                            children: [
+                              _buildSelectAllTile(),
+                              Divider(
+                                height: 20,
+                                color: context.appColors.borderSubtle,
+                              ),
+                              _buildListItem(item, isSelected, onItemSelect),
+                            ],
+                          );
+                        }
+                        return _buildListItem(item, isSelected, onItemSelect);
+                      },
+                      headerListBuilder: (context, hint, enabled) {
+                        if (_selectedFields.isEmpty) {
+                          return Text(
+                            AppLocalizations.of(context)!
+                                .translate('select_field'),
+                            style: statusTextStyle,
+                          );
+                        }
+                        final display = _selectedFields
+                            .map((field) => field.value)
+                            .join(', ');
+                        return Text(
+                          display,
+                          style: statusTextStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                      hintBuilder: (context, hint, enabled) => Text(
+                        AppLocalizations.of(context)!.translate('select_field'),
+                        style: statusTextStyle.copyWith(fontSize: 14),
+                      ),
+                      onListChanged: (values) {
+                        setState(() {
+                          _selectedFields = List<MainField>.from(values);
+                          allSelected =
+                              _selectedFields.length == mainFieldsList.length &&
+                                  mainFieldsList.isNotEmpty;
+                        });
+                        widget.onSelectField(_selectedFields);
+                      },
+                    ),
         ),
         if (hasError)
           Padding(
@@ -213,9 +278,9 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
             child: Text(
               errorMessage!,
               style: const TextStyle(
-                color: Colors.red,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
+                color: Colors.red,
               ),
             ),
           ),
@@ -225,6 +290,10 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
 
   Widget _buildSelectAllTile() {
     final label = AppLocalizations.of(context)!.translate('select_all');
+    final statusTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -236,12 +305,21 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                border: Border.all(
+                  color: context.appColors.textPrimary,
+                  width: 1,
+                ),
                 borderRadius: BorderRadius.circular(4),
-                color: allSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: allSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
               ),
               child: allSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  ? Icon(
+                      Icons.check,
+                      color: context.appColors.textInverse,
+                      size: 14,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),
@@ -257,7 +335,12 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
     );
   }
 
-  Widget _buildListItem(MainField item, bool isSelected, VoidCallback onItemSelect) {
+  Widget _buildListItem(
+      MainField item, bool isSelected, VoidCallback onItemSelect) {
+    final statusTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -268,12 +351,21 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                border: Border.all(
+                  color: context.appColors.textPrimary,
+                  width: 1,
+                ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  ? Icon(
+                      Icons.check,
+                      color: context.appColors.textInverse,
+                      size: 14,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),

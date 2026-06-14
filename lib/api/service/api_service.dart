@@ -3054,11 +3054,13 @@ class ApiService {
     int? daysWithoutActivity,
     int? numberOfDaysDeal,
     List<Map<String, dynamic>>? directoryValues,
+    int? salesFunnelId,
     bool bypassAnalyticsCache = false,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final organizationId = await getSelectedOrganization();
-    final salesFunnelId = await getSelectedSalesFunnel();
+    final effectiveSalesFunnelId =
+        salesFunnelId?.toString() ?? await getSelectedSalesFunnel();
 
     if (organizationId == null ||
         organizationId.isEmpty ||
@@ -3070,19 +3072,19 @@ class ApiService {
       debugPrint('🔍 getLeadStatuses - START WITH FILTERS');
       debugPrint('🔍 getLeadStatuses - organizationId: $organizationId');
       debugPrint(
-          '🔍 getLeadStatuses - salesFunnelId: ${salesFunnelId ?? "NULL"}');
+          '🔍 getLeadStatuses - salesFunnelId: ${effectiveSalesFunnelId ?? "NULL"}');
     }
 
     final cacheKey =
-        'cachedLeadStatuses_${organizationId}_funnel_${salesFunnelId ?? "null"}';
+        'cachedLeadStatuses_${organizationId}_funnel_${effectiveSalesFunnelId ?? "null"}';
 
     try {
       String path = '/lead/statuses?organization_id=$organizationId';
 
-      if (salesFunnelId != null &&
-          salesFunnelId.isNotEmpty &&
-          salesFunnelId != 'null') {
-        path += '&sales_funnel_id=$salesFunnelId';
+      if (effectiveSalesFunnelId != null &&
+          effectiveSalesFunnelId.isNotEmpty &&
+          effectiveSalesFunnelId != 'null') {
+        path += '&sales_funnel_id=$effectiveSalesFunnelId';
       }
 
       // Добавляем фильтры к запросу статусов

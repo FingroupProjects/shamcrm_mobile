@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -102,10 +103,11 @@ class _OrdersChartState extends State<OrdersChart> {
 
   void _showDetails() {
     if (_data == null || _data!.chartData.isEmpty) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -124,14 +126,14 @@ class _OrdersChartState extends State<OrdersChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -151,7 +153,7 @@ class _OrdersChartState extends State<OrdersChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -159,7 +161,7 @@ class _OrdersChartState extends State<OrdersChart> {
                         '${analyticsText(context, 'successful', fallback: 'Successful')}: ${point.successfulOrders} • ${analyticsText(context, 'cancelled', fallback: 'Cancelled')}: ${point.canceledOrders}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -168,7 +170,7 @@ class _OrdersChartState extends State<OrdersChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff14B8A6),
+                          color: colors.info,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -185,6 +187,7 @@ class _OrdersChartState extends State<OrdersChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final points = _data?.chartData ?? [];
     final isEmpty = points.isEmpty || (_data?.totalOrders ?? 0) == 0;
@@ -198,14 +201,16 @@ class _OrdersChartState extends State<OrdersChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: colors.shadow.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -227,7 +232,7 @@ class _OrdersChartState extends State<OrdersChart> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xff14B8A6).withOpacity(0.3),
+                        color: const Color(0xff14B8A6).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -235,7 +240,7 @@ class _OrdersChartState extends State<OrdersChart> {
                   ),
                   child: Icon(
                     Icons.shopping_cart_outlined,
-                    color: Colors.white,
+                    color: colors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -248,7 +253,7 @@ class _OrdersChartState extends State<OrdersChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -257,10 +262,10 @@ class _OrdersChartState extends State<OrdersChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: colors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: colors.surfaceElevated,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -282,7 +287,7 @@ class _OrdersChartState extends State<OrdersChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -292,7 +297,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -339,9 +344,10 @@ class _OrdersChartState extends State<OrdersChart> {
                                       enabled: true,
                                       touchTooltipData: BarTouchTooltipData(
                                         getTooltipColor: (group) =>
-                                            Colors.white,
-                                        tooltipBorder: const BorderSide(
-                                            color: Color(0xffE2E8F0)),
+                                            colors.surfacePrimary,
+                                        tooltipBorder: BorderSide(
+                                          color: colors.borderSubtle,
+                                        ),
                                         tooltipRoundedRadius: 8,
                                         getTooltipItem:
                                             (group, groupIndex, rod, rodIndex) {
@@ -360,7 +366,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                           return BarTooltipItem(
                                             '$monthLabel\n',
                                             TextStyle(
-                                              color: const Color(0xff0F172A),
+                                              color: colors.textPrimary,
                                               fontWeight: FontWeight.w700,
                                               fontSize:
                                                   responsive.smallFontSize,
@@ -371,8 +377,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                                 text:
                                                     '${analyticsText(context, 'analytics_total_orders', fallback: 'Total orders')}: ${item.totalOrders}\n',
                                                 style: TextStyle(
-                                                  color:
-                                                      const Color(0xff64748B),
+                                                  color: colors.textSecondary,
                                                   fontWeight: FontWeight.w600,
                                                   fontSize:
                                                       responsive.smallFontSize,
@@ -383,8 +388,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                                 text:
                                                     '${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successfulOrders}\n',
                                                 style: TextStyle(
-                                                  color:
-                                                      const Color(0xff14B8A6),
+                                                  color: colors.info,
                                                   fontWeight: FontWeight.w600,
                                                   fontSize:
                                                       responsive.smallFontSize,
@@ -395,8 +399,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                                 text:
                                                     '${analyticsText(context, 'cancelled', fallback: 'Cancelled')}: ${item.canceledOrders}',
                                                 style: TextStyle(
-                                                  color:
-                                                      const Color(0xffEF4444),
+                                                  color: colors.error,
                                                   fontWeight: FontWeight.w600,
                                                   fontSize:
                                                       responsive.smallFontSize,
@@ -434,8 +437,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                                   child: Text(
                                                     label,
                                                     style: TextStyle(
-                                                      color: const Color(
-                                                          0xff64748B),
+                                                      color:
+                                                          colors.textSecondary,
                                                       fontSize: responsive
                                                           .smallFontSize,
                                                       fontFamily: 'Golos',
@@ -457,7 +460,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                           ),
                                           style: TextStyle(
                                             fontSize: responsive.smallFontSize,
-                                            color: Color(0xff94A3B8),
+                                            color: colors.textMuted,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -469,7 +472,7 @@ class _OrdersChartState extends State<OrdersChart> {
                                             return Text(
                                               value.toInt().toString(),
                                               style: TextStyle(
-                                                color: Color(0xff64748B),
+                                                color: colors.textSecondary,
                                                 fontSize:
                                                     responsive.smallFontSize,
                                                 fontFamily: 'Golos',
@@ -494,8 +497,8 @@ class _OrdersChartState extends State<OrdersChart> {
                                           ? 1
                                           : (maxOrders / 5).ceilToDouble(),
                                       getDrawingHorizontalLine: (value) {
-                                        return const FlLine(
-                                          color: Color(0xffE2E8F0),
+                                        return FlLine(
+                                          color: colors.borderSubtle,
                                           strokeWidth: 1,
                                         );
                                       },
@@ -526,9 +529,9 @@ class _OrdersChartState extends State<OrdersChart> {
           if (!_isLoading && _error == null)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: colors.borderSubtle),
                 ),
               ),
               child: LayoutBuilder(
@@ -547,7 +550,7 @@ class _OrdersChartState extends State<OrdersChart> {
                             fallback: 'Total orders',
                           ),
                           value: '${_data?.totalOrders ?? 0}',
-                          valueColor: const Color(0xff0F172A),
+                          valueColor: colors.textPrimary,
                           alignment: CrossAxisAlignment.start,
                           responsive: responsive,
                           isCompact: true,
@@ -562,7 +565,7 @@ class _OrdersChartState extends State<OrdersChart> {
                             fallback: 'Successful',
                           ),
                           value: successText,
-                          valueColor: const Color(0xff10B981),
+                          valueColor: colors.success,
                           alignment: CrossAxisAlignment.center,
                           responsive: responsive,
                           isCompact: true,
@@ -577,7 +580,7 @@ class _OrdersChartState extends State<OrdersChart> {
                             fallback: 'Average check',
                           ),
                           value: _data?.averageCheck.toStringAsFixed(1) ?? '0',
-                          valueColor: const Color(0xff0F172A),
+                          valueColor: colors.textPrimary,
                           alignment: CrossAxisAlignment.center,
                           responsive: responsive,
                           isCompact: true,
@@ -592,7 +595,7 @@ class _OrdersChartState extends State<OrdersChart> {
                             fallback: 'Revenue',
                           ),
                           value: _data?.revenue.toStringAsFixed(0) ?? '0',
-                          valueColor: const Color(0xff0F172A),
+                          valueColor: colors.textPrimary,
                           alignment: CrossAxisAlignment.end,
                           responsive: responsive,
                           isCompact: true,
@@ -627,7 +630,7 @@ class _OrdersChartState extends State<OrdersChart> {
             fontSize: isCompact
                 ? (responsive.smallFontSize - 1).clamp(9, 14).toDouble()
                 : responsive.smallFontSize,
-            color: const Color(0xff64748B),
+            color: context.appColors.textSecondary,
             fontFamily: 'Golos',
           ),
         ),

@@ -48,7 +48,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
   void didUpdateWidget(covariant CustomFieldMultiSelect oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!listEquals(oldWidget.items, widget.items) ||
-        !listEquals(oldWidget.initialSelectedValues, widget.initialSelectedValues)) {
+        !listEquals(
+            oldWidget.initialSelectedValues, widget.initialSelectedValues)) {
       _syncSelected();
     }
   }
@@ -60,7 +61,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
 
     setState(() {
       _selectedValues = filtered;
-      allSelected = widget.items.isNotEmpty && filtered.length == widget.items.length;
+      allSelected =
+          widget.items.isNotEmpty && filtered.length == widget.items.length;
     });
   }
 
@@ -71,11 +73,14 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
     return FormField<List<String>>(
       initialValue: _selectedValues,
       validator: widget.isRequired && _selectedValues.isEmpty
-          ? (_) => widget.validationMessage ?? AppLocalizations.of(context)!.translate('field_required')
+          ? (_) =>
+              widget.validationMessage ??
+              AppLocalizations.of(context)!.translate('field_required')
           : null,
       builder: (FormFieldState<List<String>> field) {
         final hasError = field.hasError;
-        final placeholder = widget.hintText ?? AppLocalizations.of(context)!.translate('select_value');
+        final placeholder = widget.hintText ??
+            AppLocalizations.of(context)!.translate('select_value');
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,16 +107,66 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
               child: CustomDropdown<String>.multiSelectSearch(
                 items: widget.items,
                 initialItems: _selectedValues,
-                searchHintText: widget.searchHintText ?? AppLocalizations.of(context)!.translate('search'),
+                searchHintText: widget.searchHintText ??
+                    AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: widget.overlayHeight ?? 400,
                 enabled: !widget.isLoading,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: colors.surfacePrimary.withValues(alpha: 0.78),
+                  closedFillColor:
+                      colors.surfacePrimary.withValues(alpha: 0.78),
                   expandedFillColor: colors.surfacePrimary,
                   closedBorder: Border.all(color: Colors.transparent, width: 1),
                   closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(color: colors.borderSubtle, width: 1),
+                  expandedBorder:
+                      Border.all(color: colors.borderSubtle, width: 1),
                   expandedBorderRadius: BorderRadius.circular(12),
+                  hintStyle: textStyles.bodyMd.copyWith(
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                  ),
+                  headerStyle: textStyles.bodyMd.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  listItemStyle: textStyles.bodyMd.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  listItemDecoration: ListItemDecoration(
+                    selectedColor:
+                        colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                    highlightColor:
+                        colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                    splashColor: Colors.transparent,
+                  ),
+                  searchFieldDecoration: SearchFieldDecoration(
+                    fillColor: colors.surfacePrimary.withValues(alpha: 0.82),
+                    textStyle: textStyles.bodyMd.copyWith(
+                      fontSize: 14,
+                      color: colors.textPrimary,
+                    ),
+                    hintStyle: textStyles.bodyMd.copyWith(
+                      fontSize: 14,
+                      color: colors.textSecondary,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: colors.textSecondary,
+                    ),
+                    suffixIcon: (onClear) => IconButton(
+                      onPressed: onClear,
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: colors.borderSubtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                    ),
+                  ),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   final isFirstOriginal = widget.items.indexOf(item) == 0;
@@ -121,39 +176,50 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                       children: [
                         // === Select All Tile (inline для доступа к field) ===
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           child: GestureDetector(
                             onTap: widget.items.isEmpty || widget.isLoading
                                 ? null
                                 : () {
-                              final newAll = !allSelected;
-                              final newSelected = newAll ? List<String>.from(widget.items) : <String>[];
-                              setState(() {
-                                allSelected = newAll;
-                                _selectedValues = newSelected;
-                              });
-                              widget.onChanged(newSelected);
-                              field.didChange(newSelected);
-                            },
+                                    final newAll = !allSelected;
+                                    final newSelected = newAll
+                                        ? List<String>.from(widget.items)
+                                        : <String>[];
+                                    setState(() {
+                                      allSelected = newAll;
+                                      _selectedValues = newSelected;
+                                    });
+                                    widget.onChanged(newSelected);
+                                    field.didChange(newSelected);
+                                  },
                             child: Row(
                               children: [
                                 Container(
                                   width: 18,
                                   height: 18,
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: colors.buttonPrimaryBg, width: 1),
+                                    border: Border.all(
+                                        color: colors.buttonPrimaryBg,
+                                        width: 1),
                                     borderRadius: BorderRadius.circular(4),
-                                    color: allSelected ? colors.buttonPrimaryBg : Colors.transparent,
+                                    color: allSelected
+                                        ? colors.buttonPrimaryBg
+                                        : Colors.transparent,
                                   ),
                                   child: allSelected
-                                      ? Icon(Icons.check, color: colors.buttonPrimaryFg, size: 14)
+                                      ? Icon(Icons.check,
+                                          color: colors.buttonPrimaryFg,
+                                          size: 14)
                                       : null,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    AppLocalizations.of(context)!.translate('select_all'),
-                                    style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+                                    AppLocalizations.of(context)!
+                                        .translate('select_all'),
+                                    style: textStyles.bodyMd
+                                        .copyWith(color: colors.textPrimary),
                                   ),
                                 ),
                               ],
@@ -166,7 +232,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                     );
                   }
 
-                  return _buildListItem(context, item, isSelected, onItemSelect);
+                  return _buildListItem(
+                      context, item, isSelected, onItemSelect);
                 },
                 headerListBuilder: (context, hint, enabled) {
                   if (widget.isLoading) {
@@ -176,22 +243,25 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.buttonPrimaryBg),
                         ),
                       ),
                     );
                   }
-                  
+
                   if (_selectedValues.isEmpty) {
                     return Text(
                       placeholder,
-                      style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+                      style:
+                          textStyles.bodyMd.copyWith(color: colors.textPrimary),
                     );
                   }
                   final display = _selectedValues.join(', ');
                   return Text(
                     display,
-                    style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+                    style:
+                        textStyles.bodyMd.copyWith(color: colors.textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   );
@@ -204,21 +274,25 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.buttonPrimaryBg),
                         ),
                       ),
                     );
                   }
-                  
+
                   return Text(
                     placeholder,
-                    style: textStyles.bodyMd.copyWith(fontSize: 14, color: colors.textPrimary),
+                    style: textStyles.bodyMd
+                        .copyWith(fontSize: 14, color: colors.textPrimary),
                   );
                 },
                 onListChanged: (values) {
                   setState(() {
                     _selectedValues = List<String>.from(values);
-                    allSelected = _selectedValues.length == widget.items.length && widget.items.isNotEmpty;
+                    allSelected =
+                        _selectedValues.length == widget.items.length &&
+                            widget.items.isNotEmpty;
                   });
                   widget.onChanged(_selectedValues);
                   field.didChange(values);
@@ -243,7 +317,8 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
     );
   }
 
-  Widget _buildListItem(BuildContext context, String item, bool isSelected, VoidCallback onItemSelect) {
+  Widget _buildListItem(BuildContext context, String item, bool isSelected,
+      VoidCallback onItemSelect) {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     return Padding(

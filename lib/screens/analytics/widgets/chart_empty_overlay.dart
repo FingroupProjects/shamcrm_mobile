@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 
@@ -16,6 +17,7 @@ class ChartEmptyOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Stack(
       children: [
         Positioned.fill(child: child),
@@ -26,14 +28,16 @@ class ChartEmptyOverlay extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.85),
+                  color: colors.surfacePrimary.withValues(alpha: 0.90),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xffE2E8F0)),
+                  border: Border.all(
+                    color: colors.borderSubtle.withValues(alpha: 0.34),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: colors.shadow.withValues(alpha: 0.16),
+                      blurRadius: 14,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
@@ -44,10 +48,10 @@ class ChartEmptyOverlay extends StatelessWidget {
                         'no_data_to_display',
                         fallback: 'No data',
                       ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff94A3B8),
+                    color: colors.textSecondary,
                     fontFamily: 'Golos',
                   ),
                 ),

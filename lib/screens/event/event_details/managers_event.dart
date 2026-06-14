@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +60,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textInverse.withValues(alpha: 0.96),
           ),
         ),
         const SizedBox(height: 4),
@@ -72,10 +73,10 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 18),
             decoration: BoxDecoration(
-              color: Color(0xffF4F7FD),
+              color: context.appColors.surfaceElevated.withValues(alpha: 0.96),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Color(0xffF4F7FD),
+                color: context.appColors.textInverse.withValues(alpha: 0.16),
                 width: 1,
               ),
             ),
@@ -101,7 +102,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.textInverse
+                                .withValues(alpha: 0.96),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -113,7 +115,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.58),
                         ),
                       );
                     },
@@ -123,7 +126,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   isExpanded
                       ? Icons.keyboard_arrow_up
                       : Icons.keyboard_arrow_down,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textInverse.withValues(alpha: 0.82),
                 ),
               ],
             ),
@@ -133,12 +136,14 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
           Container(
             margin: EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.appColors.surfacePrimary.withValues(alpha: 0.98),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xffF4F7FD)),
+              border: Border.all(
+                color: context.appColors.textInverse.withValues(alpha: 0.16),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: context.appColors.shadow.withValues(alpha: 0.08),
                   blurRadius: 10,
                   offset: Offset(0, 4),
                 ),
@@ -153,23 +158,41 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     decoration: InputDecoration(
                       hintText:
                           AppLocalizations.of(context)!.translate('search'),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: context.appColors.textMuted,
+                      ),
                       contentPadding:
                           EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+                        borderSide: BorderSide(
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.16),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+                        borderSide: BorderSide(
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.16),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(0xFF1E2E52)),
+                        borderSide: BorderSide(
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
                       ),
-                      fillColor: Colors.white,
+                      hintStyle: TextStyle(color: context.appColors.textMuted),
+                      fillColor: context.appColors.surfaceElevated
+                          .withValues(alpha: 0.96),
                       filled: true,
+                    ),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      color:
+                          context.appColors.textInverse.withValues(alpha: 0.96),
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -192,7 +215,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                               state.message,
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
-                                color: Colors.red,
+                                color: context.appColors.error,
                               ),
                             ),
                           ),
@@ -205,7 +228,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
 
                         return ListView.builder(
                           shrinkWrap: true,
-                          itemCount: filteredManagers.length + 1, 
+                          itemCount: filteredManagers.length + 1,
                           itemBuilder: (context, index) {
                             if (index == 0) {
                               return InkWell(
@@ -218,7 +241,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                   decoration: BoxDecoration(
                                     border: Border(
                                       bottom: BorderSide(
-                                        color: Color(0xFFEEEEEE),
+                                        color: context.appColors.textInverse
+                                            .withValues(alpha: 0.12),
                                         width: 1,
                                       ),
                                     ),
@@ -231,13 +255,18 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                         margin: EdgeInsets.only(right: 12),
                                         decoration: BoxDecoration(
                                           color: allSelected
-                                              ? Color(0xFF4339F2)
-                                              : Colors.white,
-                                          borderRadius: BorderRadius.circular(4),
+                                              ? context
+                                                  .appColors.buttonPrimaryBg
+                                              : context
+                                                  .appColors.surfaceElevated,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                           border: Border.all(
                                             color: allSelected
-                                                ? Color(0xFF4339F2)
-                                                : Color(0xFFCCCCCC),
+                                                ? context
+                                                    .appColors.buttonPrimaryBg
+                                                : context.appColors.textInverse
+                                                    .withValues(alpha: 0.24),
                                             width: 1,
                                           ),
                                         ),
@@ -253,7 +282,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                           style: TextStyle(
                                             fontFamily: 'Gilroy',
                                             fontSize: 14,
-                                            color: Color(0xFF1E2E52),
+                                            color: context.appColors.textInverse
+                                                .withValues(alpha: 0.96),
                                           ),
                                         ),
                                       ),
@@ -285,7 +315,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                 decoration: BoxDecoration(
                                   border: Border(
                                     bottom: BorderSide(
-                                      color: Color(0xFFEEEEEE),
+                                      color: context.appColors.textInverse
+                                          .withValues(alpha: 0.12),
                                       width: 1,
                                     ),
                                   ),
@@ -298,13 +329,15 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                       margin: EdgeInsets.only(right: 12),
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? Color(0xFF4339F2)
-                                            : Colors.white,
+                                            ? context.appColors.buttonPrimaryBg
+                                            : context.appColors.surfaceElevated,
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
                                           color: isSelected
-                                              ? Color(0xFF4339F2)
-                                              : Color(0xFFCCCCCC),
+                                              ? context
+                                                  .appColors.buttonPrimaryBg
+                                              : context.appColors.textInverse
+                                                  .withValues(alpha: 0.24),
                                           width: 1,
                                         ),
                                       ),
@@ -315,11 +348,14 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        '${manager.name} ${manager.lastname ?? ''}' ?? AppLocalizations.of(context)!.translate('no_name'),
+                                        '${manager.name} ${manager.lastname ?? ''}' ??
+                                            AppLocalizations.of(context)!
+                                                .translate('no_name'),
                                         style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 14,
-                                          color: Color(0xFF1E2E52),
+                                          color: context.appColors.textInverse
+                                              .withValues(alpha: 0.96),
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),

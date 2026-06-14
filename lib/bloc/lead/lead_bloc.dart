@@ -452,22 +452,36 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           return;
         }
 
-        // Проверяем кэш
+        // Если кэш есть, показываем его сразу, но НЕ пропускаем сетевой запрос.
         final cachedStatuses = await LeadCache.getLeadStatuses();
         if (cachedStatuses.isNotEmpty) {
-          //print('LeadBloc: Using cached statuses');
-          response = cachedStatuses
+          final cachedResponse = cachedStatuses
               .map((status) => LeadStatus.fromJson(status))
               .toList();
-        } else {
-          //print('LeadBloc: No cache found, loading from API');
-          response = await apiService.getLeadStatuses(
-            reasonForRefusalIds: _currentReasonForRefusalIds,
-          );
-          await LeadCache.cacheLeadStatuses(response);
+
+          _leadCounts.clear();
+          final cachedPersistentCounts =
+              await LeadCache.getPersistentLeadCounts();
+          for (var status in cachedResponse) {
+            final statusIdStr = status.id.toString();
+            _leadCounts[status.id] =
+                cachedPersistentCounts[statusIdStr] ?? status.leadsCount;
+          }
+
+          emit(LeadLoaded(cachedResponse, leadCounts: Map.from(_leadCounts)));
+
+          if (kDebugMode) {
+            debugPrint(
+                '🗂️ LeadBloc: emitted cached lead statuses, continuing with API refresh');
+          }
         }
 
-        // Восстанавливаем или устанавливаем счетчики
+        response = await apiService.getLeadStatuses(
+          reasonForRefusalIds: _currentReasonForRefusalIds,
+        );
+        await LeadCache.cacheLeadStatuses(response);
+
+        // После ответа API полностью обновляем счетчики по свежим данным.
         _leadCounts.clear();
         final allPersistentCounts = await LeadCache.getPersistentLeadCounts();
 
@@ -1166,6 +1180,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         daysWithoutActivity: event.daysWithoutActivity,
         numberOfDaysDeal: event.numberOfDaysDeal,
         directoryValues: event.directoryValues,
+        salesFunnelId: event.salesFunnelId,
       );
 
       if (kDebugMode) {

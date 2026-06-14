@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +36,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: context.appColors.buttonPrimaryBg,
+            checkColor: context.appColors.buttonPrimaryFg,
+            side: BorderSide(color: context.appColors.borderSubtle),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -43,11 +46,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
         ),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color.fromARGB(255, 0, 0, 0),
+            color: context.appColors.textPrimary,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -64,11 +67,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             SnackBar(
               content: Text(
                 AppLocalizations.of(context)!.translate(state.message),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -76,7 +79,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: const Duration(seconds: 3),
@@ -86,7 +89,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       },
       child: Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: context.appColors.borderSubtle),
         ),
         insetPadding: const EdgeInsets.all(16),
         child: SizedBox(
@@ -95,8 +99,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: context.appColors.surfacePrimary,
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -111,12 +115,15 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Colors.black.withOpacity(0.8),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                     IconButton(
-                      icon:
-                          Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                      icon: Icon(
+                        Icons.close,
+                        size: 24,
+                        color: context.appColors.textSecondary,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => Navigator.of(context).pop(),
@@ -194,7 +201,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     margin: const EdgeInsets.only(top: 16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      color: const Color(0xff1E2E52),
+                      color: context.appColors.buttonPrimaryBg,
                     ),
                     child: TextButton(
                       onPressed: () {
@@ -222,11 +229,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               content: Text(
                                 AppLocalizations.of(context)!
                                     .translate('status_created_successfully'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.white,
+                                  color: context.appColors.textInverse,
                                 ),
                               ),
                               behavior: SnackBarBehavior.floating,
@@ -235,7 +242,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              backgroundColor: Colors.green,
+                              backgroundColor: context.appColors.success,
                               elevation: 3,
                               padding: const EdgeInsets.symmetric(
                                   vertical: 12, horizontal: 16),
@@ -258,11 +265,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.translate('add'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: context.appColors.buttonPrimaryFg,
                         ),
                       ),
                     ),
@@ -293,6 +300,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           hintText: hintText ?? '',
           label: label,
           errorText: errorText,
+          backgroundColor: context.appColors.fieldBg,
+          textColor: context.appColors.textPrimary,
+          labelColor: context.appColors.textPrimary,
+          hintColor: context.appColors.textSecondary,
+          borderColor: context.appColors.borderSubtle,
+          focusedBorderColor: context.appColors.buttonPrimaryBg,
           validator: isRequired
               ? (value) => value!.isEmpty
                   ? AppLocalizations.of(context)!.translate('field_required')

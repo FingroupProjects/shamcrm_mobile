@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 /// Layout: [back] | [avatar] | [name + status] | [search | phone | video]
 ///
 /// Each action item sits in its own column with subtle dividers, like Telegram.
-class TelegramChatAppBar extends StatelessWidget implements PreferredSizeWidget {
+class TelegramChatAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   static const double _kOrbSize = 52;
   static const double _kCapsuleRadius = 26;
 
@@ -78,7 +79,7 @@ class TelegramChatAppBar extends StatelessWidget implements PreferredSizeWidget 
                   context: context,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -125,47 +126,30 @@ class TelegramChatAppBar extends StatelessWidget implements PreferredSizeWidget 
                                     hintText: AppLocalizations.of(context)
                                             ?.translate('search') ??
                                         'Поиск',
-                                    hintStyle: context.appTextStyles.bodyMd
-                                        .copyWith(
+                                    hintStyle:
+                                        context.appTextStyles.bodyMd.copyWith(
                                       color: context.appColors.textSecondary
                                           .withValues(alpha: 0.8),
                                     ),
                                     border: InputBorder.none,
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),
                                   ),
                                 )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: context.appTextStyles.bodyLg
-                                          .copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: context.appColors.textPrimary,
-                                        letterSpacing: -0.3,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                              : Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    name,
+                                    style:
+                                        context.appTextStyles.bodyLg.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: context.appColors.textPrimary,
+                                      letterSpacing: -0.3,
                                     ),
-                                    const SizedBox(height: 1),
-                                    Text(
-                                      _getStatusText(context),
-                                      style: context.appTextStyles.caption
-                                          .copyWith(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: context.appColors.textSecondary
-                                            .withValues(alpha: 0.75),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                         ),
                       ],
@@ -196,26 +180,27 @@ class TelegramChatAppBar extends StatelessWidget implements PreferredSizeWidget 
                         onPressed: onSearchToggle,
                       ),
                     ),
-                    if (!isSearching && onPhoneTap != null && !isSupportChat)
-                      ...[
-                        Container(
-                          width: 1,
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          color: context.appColors.borderSubtle
-                              .withValues(alpha: 0.26),
-                        ),
-                        Expanded(
-                          child: IconButton(
-                            splashRadius: 22,
-                            icon: Icon(
-                              Icons.phone_rounded,
-                              size: 21,
-                              color: context.appColors.buttonPrimaryBg,
-                            ),
-                            onPressed: onPhoneTap,
+                    if (!isSearching &&
+                        onPhoneTap != null &&
+                        !isSupportChat) ...[
+                      Container(
+                        width: 1,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        color: context.appColors.borderSubtle
+                            .withValues(alpha: 0.26),
+                      ),
+                      Expanded(
+                        child: IconButton(
+                          splashRadius: 22,
+                          icon: Icon(
+                            Icons.phone_rounded,
+                            size: 21,
+                            color: context.appColors.buttonPrimaryBg,
                           ),
+                          onPressed: onPhoneTap,
                         ),
-                      ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -320,17 +305,5 @@ class TelegramChatAppBar extends StatelessWidget implements PreferredSizeWidget 
         ),
       ),
     );
-  }
-
-  String _getStatusText(BuildContext context) {
-    if (isSupportChat) {
-      return AppLocalizations.of(context)?.translate('support_chat_name') ??
-          'Поддержка';
-    }
-    if (isGroupChat) {
-      final localizations = AppLocalizations.of(context);
-      return localizations?.translate('group') ?? 'Группа';
-    }
-    return AppLocalizations.of(context)?.translate('online') ?? 'в сети';
   }
 }

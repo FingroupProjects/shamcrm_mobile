@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_noti
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
 import 'package:crm_task_manager/models/deal_history_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +26,19 @@ class _HistoryDialogState extends State<HistoryDialog> {
   final Set<int> expandedDealIds = {};
   int _noticeCount = 0;
 
+  Color _primary(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _secondary(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.72);
+  Color _hint(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _border(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.14);
+  Color _surface(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.96);
+  Color _surfaceAlt(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+
   @override
   void initState() {
     super.initState();
@@ -34,8 +48,11 @@ class _HistoryDialogState extends State<HistoryDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: _surface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: _border(context)),
+      ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
         height: MediaQuery.of(context).size.height * 0.8,
@@ -59,15 +76,15 @@ class _HistoryDialogState extends State<HistoryDialog> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('history'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: _primary(context),
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
+          icon: Icon(Icons.close, color: _primary(context)),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
@@ -78,7 +95,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
     return BlocBuilder<HistoryLeadsBloc, HistoryState>(
       builder: (context, state) {
         if (state is NoticeHistoryLoaded) {
-          _noticeCount = state.history.fold(0, (sum, notice) => sum + notice.history.length);
+          _noticeCount = state.history
+              .fold(0, (sum, notice) => sum + notice.history.length);
         }
 
         final localizations = AppLocalizations.of(context)!;
@@ -86,13 +104,14 @@ class _HistoryDialogState extends State<HistoryDialog> {
         final eventsTabTitle = _noticeCount == 1
             ? localizations.translate('history_dialog_event')
             : _noticeCount > 1
-            ? localizations.translate('history_dialog_events')
-            : localizations.translate('history_dialog_events');
+                ? localizations.translate('history_dialog_events')
+                : localizations.translate('history_dialog_events');
 
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
-            borderRadius: BorderRadius.circular(8),
+            color: _surfaceAlt(context),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _border(context)),
           ),
           child: Row(
             children: [
@@ -114,21 +133,29 @@ class _HistoryDialogState extends State<HistoryDialog> {
           setState(() => _selectedTab = index);
           switch (index) {
             case 0:
-              context.read<HistoryLeadsBloc>().add(FetchLeadHistory(widget.leadId));
+              context
+                  .read<HistoryLeadsBloc>()
+                  .add(FetchLeadHistory(widget.leadId));
               break;
             case 1:
-              context.read<HistoryLeadsBloc>().add(FetchNoticeHistory(widget.leadId));
+              context
+                  .read<HistoryLeadsBloc>()
+                  .add(FetchNoticeHistory(widget.leadId));
               break;
             case 2:
-              context.read<HistoryLeadsBloc>().add(FetchDealHistory(widget.leadId));
+              context
+                  .read<HistoryLeadsBloc>()
+                  .add(FetchDealHistory(widget.leadId));
               break;
           }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             title,
@@ -137,7 +164,7 @@ class _HistoryDialogState extends State<HistoryDialog> {
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: isSelected ? Colors.white : const Color(0xff1E2E52),
+              color: isSelected ? _primary(context) : _secondary(context),
             ),
           ),
         ),
@@ -149,15 +176,25 @@ class _HistoryDialogState extends State<HistoryDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
-        borderRadius: BorderRadius.circular(8),
+        color: _surfaceAlt(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border(context)),
       ),
       child: BlocBuilder<HistoryLeadsBloc, HistoryState>(
         builder: (context, state) {
           if (state is HistoryLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return Center(
+              child: CircularProgressIndicator(
+                color: context.appColors.buttonPrimaryBg,
+              ),
+            );
           } else if (state is HistoryError) {
-            return Center(child: Text(state.message));
+            return Center(
+              child: Text(
+                state.message,
+                style: TextStyle(color: _secondary(context)),
+              ),
+            );
           } else if (state is LeadHistoryLoaded) {
             return _buildLeadHistoryContent(state.history);
           } else if (state is NoticeHistoryLoaded) {
@@ -177,20 +214,25 @@ class _HistoryDialogState extends State<HistoryDialog> {
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('no_data_to_display'),
-          style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3)),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: _hint(context),
+          ),
         ),
       );
     }
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360; // Маленькие экраны (меньше 360px)
-    
+
     return SingleChildScrollView(
       child: Column(
         children: history.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
           final isLast = index == history.length - 1;
-          
+
           return Column(
             children: [
               _buildLeadHistoryItem(item, isSmallScreen),
@@ -217,15 +259,15 @@ class _HistoryDialogState extends State<HistoryDialog> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(8),
+          color: _surfaceAlt(context),
+          borderRadius: BorderRadius.circular(16),
           // Добавляем границу только на маленьких экранах
           border: isSmallScreen
               ? Border.all(
-                  color: const Color(0xFFE0E0E0),
+                  color: _border(context),
                   width: 1,
                 )
-              : null,
+              : Border.all(color: _border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,14 +279,22 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 Expanded(
                   child: Text(
                     item.status,
-                    style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: _primary(context)),
                   ),
                 ),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 150),
                   child: Text(
                     '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
-                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                        color: _secondary(context)),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                     textAlign: TextAlign.end,
@@ -252,7 +302,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 ),
               ],
             ),
-            if (item.changes.isNotEmpty) ..._buildChanges(item.changes, _leadFieldNames),
+            if (item.changes.isNotEmpty)
+              ..._buildChanges(item.changes, _leadFieldNames),
           ],
         ),
       ),
@@ -262,7 +313,17 @@ class _HistoryDialogState extends State<HistoryDialog> {
   // MARK: - События
   Widget _buildNoticeHistoryContent(List<NoticeHistory> notices) {
     if (notices.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context)!.translate('no_data_to_display'), style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('no_data_to_display'),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: _hint(context),
+          ),
+        ),
+      );
     }
     return SingleChildScrollView(
       child: Column(
@@ -275,7 +336,9 @@ class _HistoryDialogState extends State<HistoryDialog> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    isExpanded ? expandedNoticeIds.remove(notice.id) : expandedNoticeIds.add(notice.id);
+                    isExpanded
+                        ? expandedNoticeIds.remove(notice.id)
+                        : expandedNoticeIds.add(notice.id);
                   });
                 },
                 child: Padding(
@@ -286,16 +349,23 @@ class _HistoryDialogState extends State<HistoryDialog> {
                       Expanded(
                         child: Text(
                           notice.title,
-                          style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _primary(context),
+                          ),
                         ),
                       ),
-                      Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: const Color(0xff8F9BB3)),
+                      Icon(isExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: _hint(context)),
                     ],
                   ),
                 ),
               ),
-              if (isExpanded) ...notice.history.map((item) => _buildNoticeHistoryItem(item)).toList(),
-              const Divider(color: Color(0xFFE0E0E0), height: 24),
+              if (isExpanded)
+                ...notice.history.map((item) => _buildNoticeHistoryItem(item)),
+              Divider(color: _border(context), height: 24),
             ],
           );
         }).toList(),
@@ -308,7 +378,11 @@ class _HistoryDialogState extends State<HistoryDialog> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: _screenCardBackground(),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border(context)),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -319,14 +393,24 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 Expanded(
                   child: Text(
                     item.status,
-                    style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: _primary(context),
+                    ),
                   ),
                 ),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 150),
                   child: Text(
                     '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
-                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: _secondary(context),
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                     textAlign: TextAlign.end,
@@ -334,7 +418,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 ),
               ],
             ),
-            if (item.changes.isNotEmpty) ..._buildChanges(item.changes, _noticeFieldNames),
+            if (item.changes.isNotEmpty)
+              ..._buildChanges(item.changes, _noticeFieldNames),
           ],
         ),
       ),
@@ -344,7 +429,17 @@ class _HistoryDialogState extends State<HistoryDialog> {
   // MARK: - Сделки
   Widget _buildDealHistoryContent(List<DealHistoryLead> deals) {
     if (deals.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context)!.translate('no_data_to_display'), style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff8F9BB3))));
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)!.translate('no_data_to_display'),
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: _hint(context),
+          ),
+        ),
+      );
     }
     return SingleChildScrollView(
       child: Column(
@@ -357,7 +452,9 @@ class _HistoryDialogState extends State<HistoryDialog> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    isExpanded ? expandedDealIds.remove(deal.id) : expandedDealIds.add(deal.id);
+                    isExpanded
+                        ? expandedDealIds.remove(deal.id)
+                        : expandedDealIds.add(deal.id);
                   });
                 },
                 child: Padding(
@@ -368,16 +465,23 @@ class _HistoryDialogState extends State<HistoryDialog> {
                       Expanded(
                         child: Text(
                           deal.title,
-                          style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: _primary(context),
+                          ),
                         ),
                       ),
-                      Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: const Color(0xff8F9BB3)),
+                      Icon(isExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: _hint(context)),
                     ],
                   ),
                 ),
               ),
-              if (isExpanded) ...deal.history.map((item) => _buildDealHistoryItem(item)).toList(),
-              const Divider(color: Color(0xFFE0E0E0), height: 24),
+              if (isExpanded)
+                ...deal.history.map((item) => _buildDealHistoryItem(item)),
+              Divider(color: _border(context), height: 24),
             ],
           );
         }).toList(),
@@ -390,7 +494,11 @@ class _HistoryDialogState extends State<HistoryDialog> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: _screenCardBackground(),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border(context)),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -401,14 +509,24 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 Expanded(
                   child: Text(
                     item.status,
-                    style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: _primary(context),
+                    ),
                   ),
                 ),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 150),
                   child: Text(
                     '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
-                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xFF1E2E52)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: _secondary(context),
+                    ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                     textAlign: TextAlign.end,
@@ -416,7 +534,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
                 ),
               ],
             ),
-            if (item.changes.isNotEmpty) ..._buildChanges(item.changes, _dealFieldNames),
+            if (item.changes.isNotEmpty)
+              ..._buildChanges(item.changes, _dealFieldNames),
           ],
         ),
       ),
@@ -424,20 +543,26 @@ class _HistoryDialogState extends State<HistoryDialog> {
   }
 
   // MARK: - Универсальные изменения
-  List<Widget> _buildChanges(List<ChangeItem> changesList, Map<String, String> fieldNames) {
+  List<Widget> _buildChanges(
+      List<ChangeItem> changesList, Map<String, String> fieldNames) {
     final List<Widget> widgets = [];
 
     for (final change in changesList) {
-      for (final MapEntry(key: key, value: ChangeValue changeValue) in change.body.entries) {
+      for (final MapEntry(key: key, value: ChangeValue changeValue)
+          in change.body.entries) {
         final prev = changeValue.previousValue ?? '';
         final next = changeValue.newValue ?? '';
         final prevText = prev.isEmpty ? '—' : prev;
         final nextText = next.isEmpty ? '—' : next;
 
-        final field = fieldNames[key] ?? key[0].toUpperCase() + key.substring(1).replaceAll('_', ' ');
+        final field = fieldNames[key] ??
+            key[0].toUpperCase() + key.substring(1).replaceAll('_', ' ');
 
         String format(String text) {
-          if (key == 'date' || key.contains('date') || key == 'from' || key == 'to') {
+          if (key == 'date' ||
+              key.contains('date') ||
+              key == 'from' ||
+              key == 'to') {
             return _formatDateTime(text);
           }
           if (key == 'notifications_sent') {
@@ -451,7 +576,12 @@ class _HistoryDialogState extends State<HistoryDialog> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '$field: ${format(prevText)} → ${format(nextText)}',
-              style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w400, color: Color(0xff8F9BB3)),
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: _hint(context),
+              ),
             ),
           ),
         );
@@ -495,6 +625,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
     'sum': 'Сумма',
     'description': 'Описание',
   };
+
+  Color _screenCardBackground() => _surface(context);
 
   // MARK: - Формат даты
   String _formatDate(DateTime date) {

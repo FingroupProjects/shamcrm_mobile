@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -79,10 +80,11 @@ class _KpiChartState extends State<KpiChart> {
 
   void _showDetails() {
     if (_total == 0) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -101,14 +103,14 @@ class _KpiChartState extends State<KpiChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -120,7 +122,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -129,7 +131,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff10B981),
+                    color: colors.success,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -145,7 +147,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -154,7 +156,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff6366F1),
+                    color: colors.buttonPrimaryBg,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -166,7 +168,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -175,12 +177,12 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xffEF4444),
+                    color: colors.error,
                     fontFamily: 'Golos',
                   ),
                 ),
               ),
-              const Divider(height: 1),
+              Divider(height: 1, color: colors.borderSubtle),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -192,7 +194,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -201,7 +203,7 @@ class _KpiChartState extends State<KpiChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff64748B),
+                    color: colors.textSecondary,
                     fontFamily: 'Golos',
                   ),
                 ),
@@ -237,6 +239,7 @@ class _KpiChartState extends State<KpiChart> {
     Size size,
     List<_KpiSlice> slices,
   ) {
+    final colors = context.appColors;
     if (_touchedIndex < 0 || _touchedIndex >= slices.length) {
       return const SizedBox.shrink();
     }
@@ -290,6 +293,7 @@ class _KpiChartState extends State<KpiChart> {
           size: size,
           painter: _KpiCalloutPainter(
             color: selected.color,
+            ringColor: colors.surfacePrimary,
             anchor: anchor,
             radialOut: radialOut,
             verticalTurn: verticalTurn,
@@ -304,12 +308,12 @@ class _KpiChartState extends State<KpiChart> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: selected.color.withValues(alpha: 0.35)),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xff0F172A).withValues(alpha: 0.08),
+                  color: colors.shadow.withValues(alpha: 0.12),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -334,7 +338,7 @@ class _KpiChartState extends State<KpiChart> {
                     style: TextStyle(
                       fontSize: ResponsiveHelper(context).smallFontSize,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff334155),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -359,6 +363,7 @@ class _KpiChartState extends State<KpiChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final isEmpty = _total == 0;
     final displayTaskData = isEmpty ? _previewTaskData : _taskData;
@@ -377,7 +382,7 @@ class _KpiChartState extends State<KpiChart> {
         _KpiSlice(
           label: analyticsText(context, 'completed', fallback: 'Completed'),
           value: displayCompleted.toDouble(),
-          color: const Color(0xff10B981),
+          color: colors.success,
         ),
       if (_showInProgress)
         _KpiSlice(
@@ -387,32 +392,33 @@ class _KpiChartState extends State<KpiChart> {
             fallback: 'In progress',
           ),
           value: displayInProgress.toDouble(),
-          color: const Color(0xff6366F1),
+          color: colors.buttonPrimaryBg,
         ),
       if (_showOverdue)
         _KpiSlice(
           label: analyticsText(context, 'overdue', fallback: 'Overdue'),
           value: displayOverdue.toDouble(),
-          color: const Color(0xffEF4444),
+          color: colors.error,
         ),
     ];
     final slices = allSlices.where((s) => s.value > 0).toList();
     if (slices.isEmpty && !isEmpty) {
       // All toggled off — show placeholder
-      slices
-          .add(_KpiSlice(label: '', value: 1, color: const Color(0xffE2E8F0)));
+      slices.add(_KpiSlice(label: '', value: 1, color: colors.borderSubtle));
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: colors.shadow.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -442,7 +448,7 @@ class _KpiChartState extends State<KpiChart> {
                   ),
                   child: Icon(
                     Icons.task_alt,
-                    color: Colors.white,
+                    color: colors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -453,7 +459,7 @@ class _KpiChartState extends State<KpiChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -461,10 +467,10 @@ class _KpiChartState extends State<KpiChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: colors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: colors.surfaceElevated,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -484,7 +490,7 @@ class _KpiChartState extends State<KpiChart> {
                 runSpacing: 6,
                 children: [
                   _buildSliceToggle(
-                    color: const Color(0xff10B981),
+                    color: colors.success,
                     label: analyticsText(context, 'completed',
                         fallback: 'Completed'),
                     isActive: _showCompleted,
@@ -494,7 +500,7 @@ class _KpiChartState extends State<KpiChart> {
                     }),
                   ),
                   _buildSliceToggle(
-                    color: const Color(0xff6366F1),
+                    color: colors.buttonPrimaryBg,
                     label: analyticsText(
                       context,
                       'in_progress',
@@ -507,7 +513,7 @@ class _KpiChartState extends State<KpiChart> {
                     }),
                   ),
                   _buildSliceToggle(
-                    color: const Color(0xffEF4444),
+                    color: colors.error,
                     label:
                         analyticsText(context, 'overdue', fallback: 'Overdue'),
                     isActive: _showOverdue,
@@ -531,7 +537,7 @@ class _KpiChartState extends State<KpiChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -541,7 +547,7 @@ class _KpiChartState extends State<KpiChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -630,9 +636,9 @@ class _KpiChartState extends State<KpiChart> {
           if (!_isLoading && _error == null && _total > 0)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: colors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -649,7 +655,7 @@ class _KpiChartState extends State<KpiChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -659,7 +665,7 @@ class _KpiChartState extends State<KpiChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff10B981),
+                          color: colors.success,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -676,7 +682,7 @@ class _KpiChartState extends State<KpiChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -686,7 +692,7 @@ class _KpiChartState extends State<KpiChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -728,7 +734,7 @@ class _KpiChartState extends State<KpiChart> {
               label,
               style: TextStyle(
                 fontSize: responsive.smallFontSize,
-                color: Color(0xff64748B),
+                color: context.appColors.textSecondary,
                 fontFamily: 'Golos',
               ),
             ),
@@ -754,6 +760,7 @@ class _KpiSlice {
 class _KpiCalloutPainter extends CustomPainter {
   const _KpiCalloutPainter({
     required this.color,
+    required this.ringColor,
     required this.anchor,
     required this.radialOut,
     required this.verticalTurn,
@@ -761,6 +768,7 @@ class _KpiCalloutPainter extends CustomPainter {
   });
 
   final Color color;
+  final Color ringColor;
   final Offset anchor;
   final Offset radialOut;
   final Offset verticalTurn;
@@ -788,13 +796,14 @@ class _KpiCalloutPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.6
-        ..color = Colors.white,
+        ..color = ringColor,
     );
   }
 
   @override
   bool shouldRepaint(covariant _KpiCalloutPainter oldDelegate) {
     return oldDelegate.color != color ||
+        oldDelegate.ringColor != ringColor ||
         oldDelegate.anchor != anchor ||
         oldDelegate.radialOut != radialOut ||
         oldDelegate.verticalTurn != verticalTurn ||

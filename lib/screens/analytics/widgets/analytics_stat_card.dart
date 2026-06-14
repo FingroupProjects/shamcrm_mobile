@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class AnalyticsStatCard extends StatelessWidget {
   final String title;
@@ -20,6 +21,7 @@ class AnalyticsStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
@@ -36,14 +38,16 @@ class AnalyticsStatCard extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: const Color(0xffE2E8F0)),
+            border: Border.all(
+              color: colors.borderSubtle.withValues(alpha: 0.32),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: colors.shadow.withValues(alpha: 0.16),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -93,7 +97,7 @@ class AnalyticsStatCard extends StatelessWidget {
                       ),
                       child: Icon(
                         icon,
-                        color: Colors.white,
+                        color: colors.textInverse,
                         size: iconInnerSize,
                       ),
                     ),
@@ -111,7 +115,7 @@ class AnalyticsStatCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: valueFontSize,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xff0F172A),
+                                color: colors.textPrimary,
                                 fontFamily: 'Golos',
                               ),
                             ),
@@ -123,7 +127,7 @@ class AnalyticsStatCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: titleFontSize,
-                              color: const Color(0xff64748B),
+                              color: colors.textSecondary,
                               fontFamily: 'Golos',
                               height: 1.2,
                             ),
@@ -139,9 +143,7 @@ class AnalyticsStatCard extends StatelessWidget {
                               ? Icons.arrow_upward
                               : Icons.arrow_downward,
                           size: changeFontSize + 2,
-                          color: isPositive
-                              ? const Color(0xff10B981)
-                              : const Color(0xffEF4444),
+                          color: isPositive ? colors.success : colors.error,
                         ),
                         const SizedBox(width: 2),
                         Flexible(
@@ -153,9 +155,8 @@ class AnalyticsStatCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: changeFontSize,
                                 fontWeight: FontWeight.w600,
-                                color: isPositive
-                                    ? const Color(0xff10B981)
-                                    : const Color(0xffEF4444),
+                                color:
+                                    isPositive ? colors.success : colors.error,
                                 fontFamily: 'Golos',
                               ),
                             ),

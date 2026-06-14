@@ -87,6 +87,10 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
       fontWeight: FontWeight.w500,
       color: context.appColors.textPrimary,
     );
+    final hintStyle = cityTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
     return FormField<List<CityData>>(
       validator: (value) {
         if (selectedCitiesData.isEmpty) {
@@ -142,6 +146,44 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
                         expandedBorder:
                             Border.all(color: context.appColors.borderSubtle),
                         expandedBorderRadius: BorderRadius.circular(12),
+                        hintStyle: hintStyle,
+                        headerStyle: cityTextStyle,
+                        listItemStyle: cityTextStyle,
+                        listItemDecoration: ListItemDecoration(
+                          selectedColor: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.14),
+                          highlightColor: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.08),
+                          splashColor: Colors.transparent,
+                        ),
+                        searchFieldDecoration: SearchFieldDecoration(
+                          fillColor: context.appColors.fieldBg,
+                          textStyle: cityTextStyle.copyWith(fontSize: 14),
+                          hintStyle: hintStyle,
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: context.appColors.textSecondary,
+                          ),
+                          suffixIcon: (onClear) => IconButton(
+                            onPressed: onClear,
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: context.appColors.textSecondary,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: context.appColors.borderSubtle,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: context.appColors.buttonPrimaryBg,
+                            ),
+                          ),
+                        ),
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
@@ -192,7 +234,7 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
                       },
                       hintBuilder: (context, hint, enabled) => Text(
                         AppLocalizations.of(context)!.translate('select_city'),
-                        style: cityTextStyle.copyWith(fontSize: 14),
+                        style: hintStyle,
                       ),
                       onListChanged: (values) {
                         widget.onSelectCities(values);

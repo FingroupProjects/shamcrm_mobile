@@ -46,6 +46,10 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
       fontWeight: FontWeight.w500,
       color: context.appColors.textPrimary,
     );
+    final hintStyle = channelTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
     return FormField<List<LeadFilterChannelData>>(
       validator: (value) {
         if (selectedChannelsData.isEmpty) {
@@ -109,6 +113,44 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                       expandedBorder:
                           Border.all(color: context.appColors.borderSubtle),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: channelTextStyle,
+                      listItemStyle: channelTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.14),
+                        highlightColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.fieldBg,
+                        textStyle: channelTextStyle.copyWith(fontSize: 14),
+                        hintStyle: hintStyle,
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: context.appColors.textSecondary,
+                        ),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: context.appColors.textSecondary,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.borderSubtle,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       if (channelsList.indexOf(item) == 0) {
@@ -161,7 +203,7 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!
                           .translate('select_channels'),
-                      style: channelTextStyle.copyWith(fontSize: 14),
+                      style: hintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectChannels(values);

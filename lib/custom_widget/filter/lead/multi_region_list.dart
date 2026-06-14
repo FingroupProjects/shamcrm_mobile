@@ -17,7 +17,8 @@ class RegionsMultiSelectWidget extends StatefulWidget {
   });
 
   @override
-  State<RegionsMultiSelectWidget> createState() => _RegionsMultiSelectWidgetState();
+  State<RegionsMultiSelectWidget> createState() =>
+      _RegionsMultiSelectWidgetState();
 }
 
 class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
@@ -28,7 +29,9 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<GetAllRegionBloc>().add(GetAllRegionEv()); // Добавлено: Инициализация загрузки регионов
+    context
+        .read<GetAllRegionBloc>()
+        .add(GetAllRegionEv()); // Добавлено: Инициализация загрузки регионов
   }
 
   // Добавлено: Функция для выделения/снятия выделения всех регионов
@@ -54,14 +57,17 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
     final hintStyle = regionTextStyle.copyWith(
       color: context.appColors.textSecondary,
     );
-    final surfaceColor = context.appColors.surfacePrimary.withValues(alpha: 0.78);
+    final surfaceColor =
+        context.appColors.surfacePrimary.withValues(alpha: 0.78);
     final borderColor = context.appColors.borderSubtle.withValues(alpha: 0.36);
     final overlayColor = context.appColors.surfacePrimary;
 
-    return FormField<List<RegionData>>( // Изменено: Обёрнуто в FormField для валидации
+    return FormField<List<RegionData>>(
+      // Изменено: Обёрнуто в FormField для валидации
       validator: (value) {
         if (selectedRegionsData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -71,14 +77,18 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('region'),
-              style: regionTextStyle.copyWith( // Изменено: Используем regionTextStyle с меньшим весом
+              style: regionTextStyle.copyWith(
+                // Изменено: Используем regionTextStyle с меньшим весом
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8), // Изменено: Увеличен отступ до 8 для соответствия AuthorMultiSelectWidget
+            const SizedBox(
+                height:
+                    8), // Изменено: Увеличен отступ до 8 для соответствия AuthorMultiSelectWidget
             Container(
-              decoration: BoxDecoration( // Добавлено: Стилизация бордера с учетом ошибок
+              decoration: BoxDecoration(
+                // Добавлено: Стилизация бордера с учетом ошибок
                 color: surfaceColor,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
@@ -90,21 +100,26 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                 builder: (context, state) {
                   if (state is GetAllRegionSuccess) {
                     regionsList = state.dataRegion.result ?? [];
-                    if (widget.selectedRegions != null && regionsList.isNotEmpty) {
+                    if (widget.selectedRegions != null &&
+                        regionsList.isNotEmpty) {
                       selectedRegionsData = regionsList
                           .where((region) => widget.selectedRegions!
                               .contains(region.id.toString()))
                           .toList();
-                      allSelected = selectedRegionsData.length == regionsList.length; // Добавлено: Обновление allSelected
+                      allSelected = selectedRegionsData.length ==
+                          regionsList
+                              .length; // Добавлено: Обновление allSelected
                     }
                   }
 
                   return CustomDropdown<RegionData>.multiSelectSearch(
                     items: regionsList,
                     initialItems: selectedRegionsData,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    decoration: CustomDropdownDecoration( // Изменено: Унифицированы стили декорации
+                    decoration: CustomDropdownDecoration(
+                      // Изменено: Унифицированы стили декорации
                       closedFillColor: surfaceColor,
                       expandedFillColor: overlayColor,
                       closedBorder: Border.all(
@@ -121,19 +136,36 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                       headerStyle: regionTextStyle,
                       listItemStyle: regionTextStyle,
                       listItemDecoration: ListItemDecoration(
-                        selectedColor:
-                            context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
-                        highlightColor:
-                            context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        selectedColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.14),
+                        highlightColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.08),
                         splashColor: Colors.transparent,
                       ),
                       searchFieldDecoration: SearchFieldDecoration(
-                        fillColor: context.appColors.backgroundPrimary,
+                        fillColor: context.appColors.fieldBg,
                         textStyle: regionTextStyle,
                         hintStyle: hintStyle,
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: context.appColors.textSecondary,
+                        ),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: context.appColors.textSecondary,
+                          ),
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
                         ),
                       ),
                     ),
@@ -156,7 +188,8 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: context.appColors.buttonPrimaryBg,
+                                            color: context
+                                                .appColors.buttonPrimaryBg,
                                             width: 1),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
@@ -166,7 +199,8 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                                       child: allSelected
                                           ? Icon(
                                               Icons.check,
-                                              color: context.appColors.buttonPrimaryFg,
+                                              color: context
+                                                  .appColors.buttonPrimaryFg,
                                               size: 14,
                                             )
                                           : null,
@@ -174,7 +208,8 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
                                         style: regionTextStyle,
                                       ),
                                     ),
@@ -184,20 +219,24 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                             ),
                             Divider(
                                 height: 20,
-                                color: borderColor), // Добавлено: Разделитель для "Выделить всех"
+                                color:
+                                    borderColor), // Добавлено: Разделитель для "Выделить всех"
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
                       }
-                      return _buildListItem(item, isSelected, onItemSelect); // Изменено: Используем кастомный _buildListItem
+                      return _buildListItem(item, isSelected,
+                          onItemSelect); // Изменено: Используем кастомный _buildListItem
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedRegionsNames = selectedRegionsData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_region')
+                          ? AppLocalizations.of(context)!
+                              .translate('select_region')
                           : selectedRegionsData.map((e) => e.name).join(', ');
                       return Text(
                         selectedRegionsNames,
-                        style: regionTextStyle, // Изменено: Используем regionTextStyle, показываем имена регионов
+                        style:
+                            regionTextStyle, // Изменено: Используем regionTextStyle, показываем имена регионов
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
@@ -210,9 +249,12 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                       widget.onSelectRegions(values);
                       setState(() {
                         selectedRegionsData = values;
-                        allSelected = values.length == regionsList.length; // Добавлено: Обновление allSelected
+                        allSelected = values.length ==
+                            regionsList
+                                .length; // Добавлено: Обновление allSelected
                       });
-                      field.didChange(values); // Добавлено: Обновление состояния FormField
+                      field.didChange(
+                          values); // Добавлено: Обновление состояния FormField
                     },
                   );
                 },
@@ -237,7 +279,8 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
   }
 
   // Добавлено: Кастомный построитель элементов списка для соответствия AuthorMultiSelectWidget
-  Widget _buildListItem(RegionData item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(
+      RegionData item, bool isSelected, Function() onItemSelect) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(

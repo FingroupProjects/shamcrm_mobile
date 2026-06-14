@@ -260,8 +260,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         debugPrint('⚠️ No saved funnel, will use first available');
         return;
       }
-
-      context.read<SalesFunnelBloc>().add(FetchSalesFunnels());
     } catch (e) {
       debugPrint('❌ _initializeSalesFunnel error: $e');
     }
@@ -530,7 +528,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('leadStatus.read');
+    final canReadLeadStatus =
+        await _apiService.hasPermission('leadStatus.read');
+    final canReadLead = await _apiService.hasPermission('lead.read');
+    final canRead = canReadLeadStatus || canReadLead;
     final canCreate = await _apiService.hasPermission('leadStatus.create');
     final canUpdate = await _apiService.hasPermission('leadStatus.update');
     final canDelete = await _apiService.hasPermission('leadStatus.delete');
@@ -1941,12 +1942,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: context.appColors.textInverse.withValues(alpha: 0.92),
+                color: isActive
+                    ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.18)
+                    : context.appColors.surfaceElevated.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isActive
-                      ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.7)
-                      : context.appColors.borderSubtle.withValues(alpha: 0.45),
+                      ? context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.85)
+                      : context.appColors.textInverse.withValues(alpha: 0.22),
                   width: 1,
                 ),
               ),
@@ -1954,8 +1958,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 leadCount.toString(),
                 style: TextStyle(
                   color: isActive
-                      ? context.appColors.textPrimary
-                      : context.appColors.textSecondary,
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.textPrimary,
                   fontSize: 12,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/charts/advertising_roi_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/connected_accounts_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/conversion_chart.dart';
@@ -384,10 +385,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildStatsSkeletonCard() {
+    final colors = context.appColors;
     return ShimmerWave(
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xffE5E7EB),
+          color: colors.surfaceElevated.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(16),
         ),
       ),
@@ -396,11 +398,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   List<Widget> _buildChartWidgets() {
     if (_isLoadingChartSettings || _isLoadingLocalChartPrefs) {
-      return const [
+      return [
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
+          padding: const EdgeInsets.symmetric(vertical: 24),
           child: Center(
-            child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+            child: CircularProgressIndicator(
+              color: context.appColors.buttonPrimaryBg,
+            ),
           ),
         ),
       ];
@@ -418,8 +422,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   _chartSettingsError!,
                   fallback: _chartSettingsError!,
                 ),
-                style: const TextStyle(
-                  color: Color(0xff64748B),
+                style: TextStyle(
+                  color: context.appColors.textSecondary,
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                 ),
@@ -555,8 +559,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             'analytics_no_enabled_charts',
             fallback: 'No charts enabled',
           ),
-          style: const TextStyle(
-            color: Color(0xff64748B),
+          style: TextStyle(
+            color: context.appColors.textSecondary,
             fontSize: 14,
             fontFamily: 'Gilroy',
           ),
@@ -594,7 +598,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -626,7 +630,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         width: 44,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: const Color(0xffCBD5E1),
+                          color: context.appColors.borderSubtle,
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),
@@ -641,7 +645,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Gilroy',
                       ),
                     ),
@@ -654,7 +658,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                       style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xff64748B),
+                        color: context.appColors.textSecondary,
                         fontFamily: 'Gilroy',
                       ),
                     ),
@@ -669,7 +673,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   fallback: 'No charts available',
                                 ),
                                 style: TextStyle(
-                                  color: Color(0xff64748B),
+                                  color: context.appColors.textSecondary,
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                 ),
@@ -691,10 +695,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xffF8FAFC),
+                                      color: context.appColors.surfaceElevated
+                                          .withValues(alpha: 0.96),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: const Color(0xffE2E8F0),
+                                        color: context.appColors.borderSubtle,
                                       ),
                                     ),
                                     child: Row(
@@ -715,19 +720,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                             },
                                             activeThumbColor: Colors.white,
                                             inactiveThumbColor: Colors.white,
-                                            activeTrackColor:
-                                                const Color(0xff4F40EC),
-                                            inactiveTrackColor:
-                                                const Color(0xffD9D9D9),
+                                            activeTrackColor: context
+                                                .appColors.buttonPrimaryBg,
+                                            inactiveTrackColor: context
+                                                .appColors.surfacePrimary,
                                             trackOutlineColor:
                                                 WidgetStateProperty.resolveWith(
                                               (states) {
                                                 if (states.contains(
                                                     WidgetState.selected)) {
-                                                  return const Color(
-                                                      0xff4F40EC);
+                                                  return context.appColors
+                                                      .buttonPrimaryBg;
                                                 }
-                                                return const Color(0xff8E8E93);
+                                                return context
+                                                    .appColors.borderSubtle;
                                               },
                                             ),
                                             materialTapTargetSize:
@@ -739,10 +745,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                         Expanded(
                                           child: Text(
                                             selectAllLabel,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
-                                              color: Color(0xff1E2E52),
+                                              color:
+                                                  context.appColors.textPrimary,
                                               fontFamily: 'Gilroy',
                                             ),
                                           ),
@@ -751,12 +758,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     ),
                                   ),
                                 ),
-                                const Padding(
+                                Padding(
                                   padding: EdgeInsets.fromLTRB(6, 8, 6, 8),
                                   child: Divider(
                                     height: 1,
                                     thickness: 1,
-                                    color: Color(0xffE2E8F0),
+                                    color: context.appColors.borderSubtle,
                                   ),
                                 ),
                                 Expanded(
@@ -780,11 +787,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 10, vertical: 12),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xffF8FAFC),
+                                            color: context
+                                                .appColors.surfaceElevated
+                                                .withValues(alpha: 0.96),
                                             borderRadius:
                                                 BorderRadius.circular(14),
                                             border: Border.all(
-                                              color: const Color(0xffE2E8F0),
+                                              color: context
+                                                  .appColors.borderSubtle,
                                             ),
                                           ),
                                           child: Row(
@@ -805,10 +815,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                                       Colors.white,
                                                   inactiveThumbColor:
                                                       Colors.white,
-                                                  activeTrackColor:
-                                                      const Color(0xff4F40EC),
-                                                  inactiveTrackColor:
-                                                      const Color(0xffD9D9D9),
+                                                  activeTrackColor: context
+                                                      .appColors
+                                                      .buttonPrimaryBg,
+                                                  inactiveTrackColor: context
+                                                      .appColors.surfacePrimary,
                                                   trackOutlineColor:
                                                       WidgetStateProperty
                                                           .resolveWith(
@@ -816,11 +827,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                                       if (states.contains(
                                                           WidgetState
                                                               .selected)) {
-                                                        return const Color(
-                                                            0xff4F40EC);
+                                                        return context.appColors
+                                                            .buttonPrimaryBg;
                                                       }
-                                                      return const Color(
-                                                          0xff8E8E93);
+                                                      return context.appColors
+                                                          .borderSubtle;
                                                     },
                                                   ),
                                                   materialTapTargetSize:
@@ -832,10 +843,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                               Expanded(
                                                 child: Text(
                                                   entry.title,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Color(0xff1E2E52),
+                                                    color: context
+                                                        .appColors.textPrimary,
                                                     fontFamily: 'Gilroy',
                                                   ),
                                                 ),
@@ -850,7 +862,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ],
                             ),
                     ),
-                    const Divider(height: 1, color: Color(0xffE2E8F0)),
+                    Divider(
+                      height: 1,
+                      color: context.appColors.borderSubtle,
+                    ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
@@ -871,8 +886,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.appColors.buttonPrimaryBg,
+                          foregroundColor: context.appColors.buttonPrimaryFg,
                           minimumSize: const Size.fromHeight(46),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -959,8 +974,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final chartSpacing = isTablet ? 20.0 : (isSmallPhone ? 12.0 : 16.0);
 
     return RefreshIndicator(
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: context.appColors.buttonPrimaryBg,
+      backgroundColor: context.appColors.surfacePrimary,
       onRefresh: () => _refreshData(reloadCharts: false),
       child: Builder(
         builder: (context) {
@@ -1072,7 +1087,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     if (!widget.showAppBar) {
       return Container(
-        color: const Color(0xffF8FAFC),
+        color: context.appColors.backgroundPrimary,
         child: _buildAnalyticsBody(context),
       );
     }
@@ -1086,9 +1101,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     final horizontalPadding = isTablet ? 24.0 : (isSmallPhone ? 12.0 : 16.0);
     return Scaffold(
-      backgroundColor: const Color(0xffF8FAFC),
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
@@ -1096,7 +1111,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           style: TextStyle(
             fontSize: isSmallPhone ? 18 : 20,
             fontWeight: FontWeight.w700,
-            color: const Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
             fontFamily: 'Gilroy',
           ),
         ),
@@ -1119,8 +1134,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff1E2E52),
-                foregroundColor: Colors.white,
+                backgroundColor: context.appColors.buttonPrimaryBg,
+                foregroundColor: context.appColors.buttonPrimaryFg,
                 elevation: 0,
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallPhone ? 12 : 16,
@@ -1136,7 +1151,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
-            color: const Color(0xffE2E8F0),
+            color: context.appColors.borderSubtle,
             height: 1,
           ),
         ),

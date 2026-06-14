@@ -44,6 +44,10 @@ class DeleteLeadStatusDialog extends StatelessWidget {
       },
       child: AlertDialog(
         backgroundColor: context.appColors.surfacePrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: context.appColors.borderSubtle),
+        ),
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_lead_status'),
@@ -51,7 +55,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: context.appColors.buttonPrimaryBg,
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -61,7 +65,7 @@ class DeleteLeadStatusDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: context.appColors.buttonPrimaryBg,
+            color: context.appColors.textSecondary,
           ),
         ),
         actions: [
@@ -91,7 +95,8 @@ class DeleteLeadStatusDialog extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            AppLocalizations.of(context)!.translate('remove_cards_first'),
+                            AppLocalizations.of(context)!
+                                .translate('remove_cards_first'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -107,7 +112,8 @@ class DeleteLeadStatusDialog extends StatelessWidget {
                           ),
                           backgroundColor: context.appColors.error,
                           elevation: 3,
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          padding: EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
                           duration: Duration(seconds: 3),
                         ),
                       );

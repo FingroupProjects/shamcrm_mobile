@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -138,10 +139,11 @@ class _SourcesChartState extends State<SourcesChart> {
   void _showDetails() {
     if (_channels.isEmpty) return;
     final total = _channels.fold<int>(0, (sum, item) => sum + item.count);
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -160,14 +162,14 @@ class _SourcesChartState extends State<SourcesChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -196,7 +198,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -205,7 +207,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -232,6 +234,7 @@ class _SourcesChartState extends State<SourcesChart> {
   }
 
   Widget _buildPieCallout(Size size, List<LeadSourceItem> channels) {
+    final colors = context.appColors;
     if (_touchedIndex < 0 || _touchedIndex >= channels.length) {
       return const SizedBox.shrink();
     }
@@ -286,6 +289,7 @@ class _SourcesChartState extends State<SourcesChart> {
           size: size,
           painter: _PieCalloutPainter(
             color: color,
+            ringColor: colors.surfacePrimary,
             anchor: anchor,
             radialOut: radialOut,
             verticalTurn: verticalTurn,
@@ -300,12 +304,12 @@ class _SourcesChartState extends State<SourcesChart> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: color.withValues(alpha: 0.35)),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xff0F172A).withValues(alpha: 0.08),
+                  color: colors.shadow.withValues(alpha: 0.12),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),
@@ -330,7 +334,7 @@ class _SourcesChartState extends State<SourcesChart> {
                     style: TextStyle(
                       fontSize: ResponsiveHelper(context).smallFontSize,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff334155),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -355,6 +359,7 @@ class _SourcesChartState extends State<SourcesChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final isEmpty =
         _channels.isEmpty || _channels.every((item) => item.count == 0);
@@ -362,14 +367,16 @@ class _SourcesChartState extends State<SourcesChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.4),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: colors.shadow.withValues(alpha: 0.16),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -399,7 +406,7 @@ class _SourcesChartState extends State<SourcesChart> {
                   ),
                   child: Icon(
                     Icons.pie_chart_outline,
-                    color: Colors.white,
+                    color: colors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -410,7 +417,7 @@ class _SourcesChartState extends State<SourcesChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: colors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -418,10 +425,10 @@ class _SourcesChartState extends State<SourcesChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: colors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: colors.surfaceElevated,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -469,7 +476,7 @@ class _SourcesChartState extends State<SourcesChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -479,7 +486,7 @@ class _SourcesChartState extends State<SourcesChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -584,9 +591,9 @@ class _SourcesChartState extends State<SourcesChart> {
           if (!_isLoading && _error == null && _channels.isNotEmpty)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: colors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -603,7 +610,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -617,7 +624,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -634,7 +641,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -644,7 +651,7 @@ class _SourcesChartState extends State<SourcesChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -686,7 +693,7 @@ class _SourcesChartState extends State<SourcesChart> {
               label,
               style: TextStyle(
                 fontSize: responsive.smallFontSize,
-                color: Color(0xff64748B),
+                color: context.appColors.textSecondary,
                 fontFamily: 'Golos',
               ),
             ),
@@ -700,6 +707,7 @@ class _SourcesChartState extends State<SourcesChart> {
 class _PieCalloutPainter extends CustomPainter {
   const _PieCalloutPainter({
     required this.color,
+    required this.ringColor,
     required this.anchor,
     required this.radialOut,
     required this.verticalTurn,
@@ -707,6 +715,7 @@ class _PieCalloutPainter extends CustomPainter {
   });
 
   final Color color;
+  final Color ringColor;
   final Offset anchor;
   final Offset radialOut;
   final Offset verticalTurn;
@@ -734,13 +743,14 @@ class _PieCalloutPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.6
-        ..color = Colors.white,
+        ..color = ringColor,
     );
   }
 
   @override
   bool shouldRepaint(covariant _PieCalloutPainter oldDelegate) {
     return oldDelegate.color != color ||
+        oldDelegate.ringColor != ringColor ||
         oldDelegate.anchor != anchor ||
         oldDelegate.radialOut != radialOut ||
         oldDelegate.verticalTurn != verticalTurn ||

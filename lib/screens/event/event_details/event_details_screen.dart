@@ -11,6 +11,10 @@ import 'package:crm_task_manager/bloc/eventByID/event_byId_event.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_state.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
@@ -59,6 +63,43 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool _isDownloading = false; // Флаг загрузки
   Map<int, double> _downloadProgress =
       {}; // Прогресс загрузки для каждого файла
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.72);
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.14);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.98);
+
+  void _showCopiedSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+              'Скопировано',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: context.appColors.textInverse,
+          ),
+        ),
+        backgroundColor: context.appColors.success,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -548,151 +589,147 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     });
   }
 
-Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
-  // Логирование входных параметров
-  //print('Voice Player: recordUrl="$recordUrl", callDuration=$callDuration');
+  Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
+    // Логирование входных параметров
+    //print('Voice Player: recordUrl="$recordUrl", callDuration=$callDuration');
 
-  // Проверка валидности URL
-  if (!Uri.parse(recordUrl!).isAbsolute) {
-    //print('Voice Player: Invalid URL format: $recordUrl');
-    return const Text(
-      'Некорректный URL записи',
-      style: TextStyle(
-        color: Color(0xFFE53935),
-        fontSize: 14,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-
-  // Форматирование длительности
-  String formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
-  }
-
-  return StatefulBuilder(
-    builder: (context, setState) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 2,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () async {
-                try {
-                  if (_isPlaying) {
-                    await _audioPlayer.pause();
-                    setState(() {
-                      _isPlaying = false;
-                    });
-                    //print('Voice Player: Audio paused');
-                  } else {
-                    //print('Voice Player: Attempting to play audio from $recordUrl');
-                    await _audioPlayer.setSourceUrl(recordUrl);
-                    await _audioPlayer.resume();
-                    setState(() {
-                      _isPlaying = true;
-                    });
-                    //print('Voice Player: Audio playing');
-                  }
-                } catch (e) {
-                  //print('Voice Player: Error playing audio: $e');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context)!.translate('audio_playback_error'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.blue,
-                  size: 24,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              formatDuration(_position),
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xff1E2E52),
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Slider(
-                value: _position.inSeconds.toDouble(),
-                min: 0.0,
-                max: _duration.inSeconds > 0
-                    ? _duration.inSeconds.toDouble()
-                    : (callDuration ?? 0).toDouble(),
-                activeColor: Colors.blue,
-                inactiveColor: Colors.grey[300],
-                onChanged: (value) async {
-                  final newPosition = Duration(seconds: value.toInt());
-                  try {
-                    await _audioPlayer.seek(newPosition);
-                    setState(() {
-                      _position = newPosition;
-                    });
-                    //print('Voice Player: Seek to ${formatDuration(newPosition)}');
-                  } catch (e) {
-                    //print('Voice Player: Error seeking audio: $e');
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              formatDuration(Duration(seconds: callDuration ?? 0)),
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xff1E2E52),
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-              ),
-            ),
-          ],
+    // Проверка валидности URL
+    if (!Uri.parse(recordUrl!).isAbsolute) {
+      //print('Voice Player: Invalid URL format: $recordUrl');
+      return const Text(
+        'Некорректный URL записи',
+        style: TextStyle(
+          color: Color(0xFFE53935),
+          fontSize: 14,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w500,
         ),
       );
-    },
-  );
-}
+    }
+
+    // Форматирование длительности
+    String formatDuration(Duration duration) {
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+      final minutes = twoDigits(duration.inMinutes.remainder(60));
+      final seconds = twoDigits(duration.inSeconds.remainder(60));
+      return '$minutes:$seconds';
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _screenFieldBackground(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _screenBorder(context)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    if (_isPlaying) {
+                      await _audioPlayer.pause();
+                      setState(() {
+                        _isPlaying = false;
+                      });
+                      //print('Voice Player: Audio paused');
+                    } else {
+                      //print('Voice Player: Attempting to play audio from $recordUrl');
+                      await _audioPlayer.setSourceUrl(recordUrl);
+                      await _audioPlayer.resume();
+                      setState(() {
+                        _isPlaying = true;
+                      });
+                      //print('Voice Player: Audio playing');
+                    }
+                  } catch (e) {
+                    //print('Voice Player: Error playing audio: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('audio_playback_error'),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            color: context.appColors.textInverse,
+                          ),
+                        ),
+                        backgroundColor: context.appColors.error,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: context.appColors.buttonPrimaryBg,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                formatDuration(_position),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _screenPrimaryText(context),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Slider(
+                  value: _position.inSeconds.toDouble(),
+                  min: 0.0,
+                  max: _duration.inSeconds > 0
+                      ? _duration.inSeconds.toDouble()
+                      : (callDuration ?? 0).toDouble(),
+                  activeColor: context.appColors.buttonPrimaryBg,
+                  inactiveColor:
+                      context.appColors.textInverse.withValues(alpha: 0.18),
+                  onChanged: (value) async {
+                    final newPosition = Duration(seconds: value.toInt());
+                    try {
+                      await _audioPlayer.seek(newPosition);
+                      setState(() {
+                        _position = newPosition;
+                      });
+                      //print('Voice Player: Seek to ${formatDuration(newPosition)}');
+                    } catch (e) {
+                      //print('Voice Player: Error seeking audio: $e');
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                formatDuration(Duration(seconds: callDuration ?? 0)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _screenPrimaryText(context),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Widget _buildFinishButton(Notice notice, {Key? key}) {
     if (notice.isFinished || notice.date == null) {
@@ -704,8 +741,8 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       child: CustomButton(
         buttonText: AppLocalizations.of(context)!.translate('finish_event'),
         onPressed: () => _showFinishDialog(notice.id),
-        buttonColor: const Color(0xff1E2E52),
-        textColor: Colors.white,
+        buttonColor: context.appColors.buttonPrimaryBg,
+        textColor: context.appColors.buttonPrimaryFg,
       ),
     );
   }
@@ -715,9 +752,10 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: _screenSurfaceElevated(context),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _screenBorder(context)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -727,7 +765,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: _screenPrimaryText(context),
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -742,7 +780,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                     content,
                     textAlign: TextAlign.justify,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: _screenSecondaryText(context),
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -755,8 +793,8 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -790,135 +828,169 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
 
   @override
   Widget build(BuildContext context) {
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
     return Scaffold(
+      extendBodyBehindAppBar: false,
       appBar: _buildAppBar(
           context, AppLocalizations.of(context)!.translate('view_event')),
-      backgroundColor: Colors.white,
-      body: BlocListener<NoticeBloc, NoticeState>(
-        listener: (context, state) {
-          if (state is NoticeError) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  backgroundColor: Colors.red,
-                  elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            });
-          }
-        },
-        child: BlocBuilder<NoticeBloc, NoticeState>(
-          builder: (context, state) {
-            if (state is NoticeLoading) {
-              return Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-              );
-            } else if (state is NoticeLoaded) {
-              Notice notice = state.notice;
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ListView(
-                  children: [
-                    _buildDetailsList(notice),
-                    _buildFinishButton(notice, key: keyNoticeFinish),
-                    // Условный рендеринг NoticeHistorySection
-                    if (widget.source != 'Lead')
-                      NoticeHistorySection(
-                        key: keyDealHistory,
-                        leadId: notice.lead!.id,
-                        noteId: notice.id,
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+      body: Stack(
+        children: [
+          const AppBackgroundOverlay(
+            preset: AppBackgroundPreset.aurora,
+          ),
+          BlocListener<NoticeBloc, NoticeState>(
+            listener: (context, state) {
+              if (state is NoticeError) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textInverse,
+                        ),
                       ),
-                  ],
-                ),
-              );
-            } else if (state is NoticeError) {
-              return Center(child: Text(state.message));
-            }
-            return Center(child: Text(''));
-          },
-        ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: context.appColors.error,
+                      elevation: 3,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                });
+              }
+            },
+            child: BlocBuilder<NoticeBloc, NoticeState>(
+              builder: (context, state) {
+                if (state is NoticeLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(color: primaryText),
+                  );
+                } else if (state is NoticeLoaded) {
+                  Notice notice = state.notice;
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                      decoration: BoxDecoration(
+                        color: _screenSurfaceBackground(context),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: subtleBorder),
+                      ),
+                      child: ListView(
+                        children: [
+                          _buildDetailsList(notice),
+                          _buildFinishButton(notice, key: keyNoticeFinish),
+                          if (widget.source != 'Lead')
+                            NoticeHistorySection(
+                              key: keyDealHistory,
+                              leadId: notice.lead!.id,
+                              noteId: notice.id,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else if (state is NoticeError) {
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: TextStyle(
+                        color: primaryText,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final appBarGradient = [
+      _screenFieldBackground(context),
+      _screenSurfaceBackground(context),
+    ];
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+
     return AppBar(
-      backgroundColor: Colors.white,
+      automaticallyImplyLeading: false,
       forceMaterialTransparency: true,
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
       elevation: 0,
-      centerTitle: false,
-      leadingWidth: 40,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
+      scrolledUnderElevation: 0,
+      toolbarHeight: 74,
+      titleSpacing: 16,
+      title: AppBarShell(
+        leading: AppBarShell.capsule(
+          context,
+          width: AppBarShell.orbSize,
+          padding: EdgeInsets.zero,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
           child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: primaryText,
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
           ),
         ),
-      ),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        center: AppBarShell.capsule(
+          context,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                color: primaryText,
+              ),
+            ),
           ),
         ),
-        //в котор
-      ),
-      actions: [
-        if (_canEditNotice || _canDeleteNotice)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_canEditNotice)
-                BlocBuilder<NoticeBloc, NoticeState>(
-                  builder: (context, state) {
-                    if (state is NoticeLoaded) {
-                      return IconButton(
-                        key:
-                            keyNoticeEdit, // Отдельный ключ для кнопки удаления
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
-                        icon: Image.asset(
-                          'assets/icons/edit.png',
-                          width: 24,
-                          height: 24,
-                        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canEditNotice)
+              BlocBuilder<NoticeBloc, NoticeState>(
+                builder: (context, state) {
+                  if (state is! NoticeLoaded) return const SizedBox.shrink();
+                  return SizedBox(
+                    width: AppBarShell.orbSize,
+                    child: AppBarShell.capsule(
+                      context,
+                      width: AppBarShell.orbSize,
+                      padding: EdgeInsets.zero,
+                      gradientColors: appBarGradient,
+                      borderColor: subtleBorder,
+                      child: IconButton(
+                        key: keyNoticeEdit,
                         onPressed: () async {
                           final notice = state.notice;
-                          final dateString = notice.date != null
-                              ? DateFormat('dd/MM/yyyy HH:mm')
-                                  .format(notice.date!)
-                              : null;
                           final shouldUpdate = await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -933,10 +1005,10 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                                   users: notice.users,
                                   author: notice.author,
                                   createdAt: notice.createdAt,
-                                  sendNotification: false, // or true, depending on the logic
+                                  sendNotification: false,
                                   sendSms: notice.sendSms,
-                                  canFinish: false, // or true
-                                  files: notice.files, // Ensure files are passed
+                                  canFinish: false,
+                                  files: notice.files,
                                 ),
                               ),
                             ),
@@ -950,34 +1022,40 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                             context
                                 .read<HistoryLeadsBloc>()
                                 .add(FetchNoticeHistory(notice.lead!.id));
-
                             context.read<CalendarBloc>().add(
-                                FetchCalendarEvents(
+                                  FetchCalendarEvents(
                                     widget.initialDate?.month ??
                                         DateTime.now().month,
                                     widget.initialDate?.year ??
-                                        DateTime.now().year));
+                                        DateTime.now().year,
+                                  ),
+                                );
                           }
                         },
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
-                ),
-              if (_canDeleteNotice)
-                BlocBuilder<NoticeBloc, NoticeState>(
-                  builder: (context, state) {
-                    if (state is NoticeLoaded) {
-                      return IconButton(
-                        key:
-                            keyNoticeDelete, // Отдельный ключ для кнопки удаления
-                        padding: EdgeInsets.only(right: 8),
-                        constraints: BoxConstraints(),
-                        icon: Image.asset(
-                          'assets/icons/delete.png',
-                          width: 24,
-                          height: 24,
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          color: primaryText,
                         ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            if (_canEditNotice && _canDeleteNotice) const SizedBox(width: 10),
+            if (_canDeleteNotice)
+              BlocBuilder<NoticeBloc, NoticeState>(
+                builder: (context, state) {
+                  if (state is! NoticeLoaded) return const SizedBox.shrink();
+                  return SizedBox(
+                    width: AppBarShell.orbSize,
+                    child: AppBarShell.capsule(
+                      context,
+                      width: AppBarShell.orbSize,
+                      padding: EdgeInsets.zero,
+                      gradientColors: appBarGradient,
+                      borderColor: subtleBorder,
+                      child: IconButton(
+                        key: keyNoticeDelete,
                         onPressed: () {
                           showDialog(
                             context: context,
@@ -986,119 +1064,128 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                             ),
                           );
                         },
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
-                ),
-            ],
-          ),
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          color: context.appColors.error,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsList(Notice notice) {
+    late final int leadId = notice.lead!.id;
+    final List<Map<String, dynamic>> details = [
+      {
+        'label': AppLocalizations.of(context)!.translate('title'),
+        'value': notice.title,
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('lead_name'),
+        'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('body'),
+        'value': notice.body,
+      },
+      if (notice.date != null)
+        {
+          'label': AppLocalizations.of(context)!.translate('date_reminder'),
+          'value': notice.date != null
+              ? formatDate(notice.date.toString())
+              : AppLocalizations.of(context)!.translate(''),
+        },
+      {
+        'label': AppLocalizations.of(context)!.translate('assignee'),
+        'value': notice.users
+            .map((user) => '${user.name} ${user.lastname ?? ''}')
+            .join(', '),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': notice.author != null
+            ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
+            : AppLocalizations.of(context)!.translate(''),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('created_at_details'),
+        'value': formatDate(notice.createdAt.toString()),
+      },
+      {
+        'label': AppLocalizations.of(context)!.translate('is_finished'),
+        'value': notice.isFinished
+            ? AppLocalizations.of(context)!.translate('finished')
+            : AppLocalizations.of(context)!.translate('in_progress'),
+      },
+      if (notice.files != null && notice.files!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('files_details'),
+          'value':
+              '${notice.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+        },
+    ];
+
+    // Добавляем информацию о звонке как единый элемент, если она есть
+    if (notice.call != null) {
+      details.add({
+        'label':
+            'call_details', // Специальный ключ для обозначения блока звонка
+        'value':
+            '', // Значение не используется, так как данные берутся из notice.call
+        'call_data': {
+          'caller': notice.call!.caller,
+          'internal_number': notice.call!.internalNumber ??
+              AppLocalizations.of(context)!.translate(''),
+          'call_duration': notice.call!.callDuration != null
+              ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+              : AppLocalizations.of(context)!.translate(''),
+          'call_ringing_duration': notice.call!.callRingingDuration != null
+              ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
+              : AppLocalizations.of(context)!.translate(''),
+          'call_recording':
+              '', // Пустое значение для обработки в _buildDetailItem
+        },
+      });
+    }
+
+    if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
+      details.add({
+        'label': AppLocalizations.of(context)!.translate('conclusions'),
+        'value': notice.conclusion!,
+      });
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: details.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: _buildDetailItem(
+                details[index]['label']!,
+                details[index]['value']!,
+                leadId,
+                notice,
+                index,
+                callData: details[index]['call_data'],
+              ),
+            );
+          },
+        ),
       ],
     );
   }
 
- Widget _buildDetailsList(Notice notice) {
-  late final int leadId = notice.lead!.id;
-  final List<Map<String, dynamic>> details = [
-    {
-      'label': AppLocalizations.of(context)!.translate('title'),
-      'value': notice.title,
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('lead_name'),
-      'value': '${notice.lead!.name} ${notice.lead!.lastname ?? ''}',
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('body'),
-      'value': notice.body,
-    },
-    if (notice.date != null) {
-      'label': AppLocalizations.of(context)!.translate('date_reminder'),
-      'value': notice.date != null
-          ? formatDate(notice.date.toString())
-          : AppLocalizations.of(context)!.translate(''),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('assignee'),
-      'value': notice.users
-          .map((user) => '${user.name} ${user.lastname ?? ''}')
-          .join(', '),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('author_details'),
-      'value': notice.author != null
-          ? '${notice.author!.name} ${notice.author!.lastname ?? ''}'
-          : AppLocalizations.of(context)!.translate(''),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('created_at_details'),
-      'value': formatDate(notice.createdAt.toString()),
-    },
-    {
-      'label': AppLocalizations.of(context)!.translate('is_finished'),
-      'value': notice.isFinished
-          ? AppLocalizations.of(context)!.translate('finished')
-          : AppLocalizations.of(context)!.translate('in_progress'),
-    },
-    if (notice.files != null && notice.files!.isNotEmpty)
-      {
-        'label': AppLocalizations.of(context)!.translate('files_details'),
-        'value':
-            '${notice.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
-      },
-  ];
-
-  // Добавляем информацию о звонке как единый элемент, если она есть
-  if (notice.call != null) {
-    details.add({
-      'label': 'call_details', // Специальный ключ для обозначения блока звонка
-      'value': '', // Значение не используется, так как данные берутся из notice.call
-      'call_data': {
-        'caller': notice.call!.caller,
-        'internal_number': notice.call!.internalNumber ??
-            AppLocalizations.of(context)!.translate(''),
-        'call_duration': notice.call!.callDuration != null
-            ? '${notice.call!.callDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate(''),
-        'call_ringing_duration': notice.call!.callRingingDuration != null
-            ? '${notice.call!.callRingingDuration} ${AppLocalizations.of(context)!.translate('seconds')}'
-            : AppLocalizations.of(context)!.translate(''),
-        'call_recording': '', // Пустое значение для обработки в _buildDetailItem
-      },
-    });
-  }
-
-  if (notice.conclusion != null && notice.conclusion!.isNotEmpty) {
-    details.add({
-      'label': AppLocalizations.of(context)!.translate('conclusions'),
-      'value': notice.conclusion!,
-    });
-  }
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: details.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: _buildDetailItem(
-              details[index]['label']!,
-              details[index]['value']!,
-              leadId,
-              notice,
-              index,
-              callData: details[index]['call_data'],
-            ),
-          );
-        },
-      ),
-    ],
-  );
-}
   void _showUsersDialog(String users) {
     List<String> userList =
         users.split(',').map((user) => user.trim()).toList();
@@ -1107,7 +1194,11 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: _screenSurfaceElevated(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _screenBorder(context)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1116,7 +1207,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                 child: Text(
                   AppLocalizations.of(context)!.translate('assignee_list'),
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: _screenPrimaryText(context),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1135,7 +1226,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(
-                          color: Color(0xff1E2E52),
+                          color: _screenSecondaryText(context),
                           fontSize: 16,
                         ),
                       ),
@@ -1150,8 +1241,8 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -1168,7 +1259,7 @@ Widget _buildVoicePlayer(String? recordUrl, int? callDuration) {
     return '$minutes:$seconds';
   }
 
-Widget _buildDetailItem(
+  Widget _buildDetailItem(
     String label,
     String value,
     int leadId,
@@ -1176,638 +1267,526 @@ Widget _buildDetailItem(
     int index, {
     Map<String, String>? callData,
   }) {
-  return LayoutBuilder(
-    builder: (BuildContext context, BoxConstraints constraints) {
-      if (label == AppLocalizations.of(context)!.translate('assignee') &&
-          value.contains(',')) {
-        label = AppLocalizations.of(context)!.translate('assignees');
-      }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final primaryText = _screenPrimaryText(context);
+        final secondaryText = _screenSecondaryText(context);
+        final hintText = _screenHintText(context);
+        final subtleBorder = _screenBorder(context);
+        final cardBackground = _screenSurfaceElevated(context);
 
-      // Обработка блока звонка
-      if (label == 'call_details' && notice.call != null) {
-        bool isMissed = notice.call!.missed ?? false;
-        bool isIncoming = notice.call!.incoming ?? false;
-        Color statusColor;
-        String statusText;
-
-        if (!isMissed && isIncoming) {
-          statusColor = const Color(0xffE6F4EA);
-          statusText = AppLocalizations.of(context)!.translate('incoming_call');
-        } else if (isMissed && isIncoming) {
-          statusColor = const Color(0xffFEE6E6);
-          statusText = AppLocalizations.of(context)!.translate('missed_call');
-        } else if (!isMissed && !isIncoming) {
-          statusColor = const Color(0xffE6F4EA);
-          statusText = AppLocalizations.of(context)!.translate('outgoing_call');
-        } else {
-          statusColor = const Color(0xffFEE6E6);
-          statusText = AppLocalizations.of(context)!.translate('outgoing_call_unanswered');
+        if (label == AppLocalizations.of(context)!.translate('assignee') &&
+            value.contains(',')) {
+          label = AppLocalizations.of(context)!.translate('assignees');
         }
 
-        // Возвращаем единый Container для всех полей звонка
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xffF5F7FA),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Caller
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xff1E2E52),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.phone,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context)!.translate('lead_deal_card'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      callData!['caller']!,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Internal Number
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xff1E2E52),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context)!.translate('meneger_code'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  Text(
-                    callData!['internal_number']!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Call Duration
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xff1E2E52),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.timer,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context)!.translate('call_duration') + ': ',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  Text(
-                    callData!['call_duration']!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Call Ringing Duration
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xff1E2E52),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.notifications,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context)!.translate('call_ringing_duration') + ': ',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
-                    ),
-                  ),
-                  Text(
-                    callData!['call_ringing_duration']!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Status Bar
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
+        // Обработка блока звонка
+        if (label == 'call_details' && notice.call != null) {
+          bool isMissed = notice.call!.missed ?? false;
+          bool isIncoming = notice.call!.incoming ?? false;
+          Color statusColor;
+          String statusText;
+
+          if (!isMissed && isIncoming) {
+            statusColor = const Color(0xffE6F4EA);
+            statusText =
+                AppLocalizations.of(context)!.translate('incoming_call');
+          } else if (isMissed && isIncoming) {
+            statusColor = const Color(0xffFEE6E6);
+            statusText = AppLocalizations.of(context)!.translate('missed_call');
+          } else if (!isMissed && !isIncoming) {
+            statusColor = const Color(0xffE6F4EA);
+            statusText =
+                AppLocalizations.of(context)!.translate('outgoing_call');
+          } else {
+            statusColor = const Color(0xffFEE6E6);
+            statusText = AppLocalizations.of(context)!
+                .translate('outgoing_call_unanswered');
+          }
+
+          // Возвращаем единый Container для всех полей звонка
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: subtleBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Caller
+                Row(
                   children: [
-                    Icon(
-                      Icons.info,
-                      color: statusColor == const Color(0xffFEE6E6) ? Colors.red : Colors.green,
-                      size: 16,
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.phone,
+                          color: primaryText,
+                          size: 16,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     Text(
-                      statusText,
+                      AppLocalizations.of(context)!.translate('lead_deal_card'),
                       style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: statusColor == const Color(0xffFEE6E6) ? Colors.red : Colors.green,
+                        fontWeight: FontWeight.w400,
+                        color: hintText,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        callData!['caller']!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: primaryText,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              // Call Recording
-              // const SizedBox(height: 12),
-              Text(
-                AppLocalizations.of(context)!.translate('call_recording'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
-                ),
-              ),
-              // const SizedBox(height: 8),
-              (notice.call!.callRecordUrl != null || notice.call!.callRecordPath != null) &&
-                      !notice.call!.missed &&
-                      (notice.call!.callDuration ?? 0) > 0
-                  ? _buildVoicePlayer(
-                      notice.call!.callRecordUrl ?? notice.call!.callRecordPath,
-                      notice.call!.callDuration,
-                    )
-                  : Text(
-                      AppLocalizations.of(context)!.translate('no_recording_available'),
-                      style: const TextStyle(
-                        color: Color(0xFFE53935),
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
+                const SizedBox(height: 12),
+                // Internal Number
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
                       ),
-                    ),
-            ],
-          ),
-        );
-      }
-
-      if (label == AppLocalizations.of(context)!.translate('assignees')) {
-        return GestureDetector(
-          onTap: () => _showUsersDialog(value),
-          onLongPress: () {
-            Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(
-
-              SnackBar(
-
-                content: Text(
-
-                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
-                  style: const TextStyle(
-
-                    fontFamily: 'Gilroy',
-
-                    fontSize: 15,
-
-                    fontWeight: FontWeight.w500,
-
-                    color: Colors.white,
-
-                  ),
-
-                ),
-
-                backgroundColor: Colors.green,
-
-                behavior: SnackBarBehavior.floating,
-
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-                duration: const Duration(seconds: 2),
-
-              ),
-
-            );
-          },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(label),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value.split(',').take(3).join(', ') +
-                      (value.split(',').length > 3
-                          ? ' и еще ${value.split(',').length - 3}...'
-                          : ''),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      if (label == AppLocalizations.of(context)!.translate('lead_name')) {
-        return GestureDetector(
-          onTap: () {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => LeadDetailsScreen(
-                  leadId: leadId.toString(),
-                  leadName: value,
-                  leadStatus: "",
-                  statusId: 1,
-                ),
-              ),
-            );
-          },
-          onLongPress: () {
-            Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(
-
-              SnackBar(
-
-                content: Text(
-
-                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
-                  style: const TextStyle(
-
-                    fontFamily: 'Gilroy',
-
-                    fontSize: 15,
-
-                    fontWeight: FontWeight.w500,
-
-                    color: Colors.white,
-
-                  ),
-
-                ),
-
-                backgroundColor: Colors.green,
-
-                behavior: SnackBarBehavior.floating,
-
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-                duration: const Duration(seconds: 2),
-
-              ),
-
-            );
-          },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(label),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      if (label == AppLocalizations.of(context)!.translate('files_details')) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(height: 8),
-            Container(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: notice.files?.length ?? 0,
-                itemBuilder: (context, index) {
-                  final file = notice.files![index];
-                  final fileExtension =
-                      file.name.split('.').last.toLowerCase();
-
-                  return Padding(
-                    padding: EdgeInsets.only(right: 16),
-                    child: GestureDetector(
-                      onTap: () {
-                        if (!_isDownloading) {
-                          FileUtils.showFile(
-                            context: context,
-                            fileUrl: file.path,
-                            fileId: file.id,
-                            setState: setState,
-                            downloadProgress: _downloadProgress,
-                            isDownloading: _isDownloading,
-                            apiService: _apiService,
-                          );
-                        }
-                      },
-                      child: Container(
-                        width: 100,
-                        child: Column(
-                          children: [
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Image.asset(
-                                  'assets/icons/files/$fileExtension.png',
-                                  width: 60,
-                                  height: 60,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Image.asset(
-                                      'assets/icons/files/file.png',
-                                      width: 60,
-                                      height: 60,
-                                    );
-                                  },
-                                ),
-                                if (_downloadProgress.containsKey(file.id))
-                                  CircularProgressIndicator(
-                                    value: _downloadProgress[file.id],
-                                    strokeWidth: 3,
-                                    backgroundColor:
-                                        Colors.grey.withOpacity(0.3),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Color(0xff1E2E52),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              file.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                          ],
+                      child: Center(
+                        child: Icon(
+                          Icons.person,
+                          color: primaryText,
+                          size: 16,
                         ),
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context)!.translate('meneger_code'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: hintText,
+                      ),
+                    ),
+                    Text(
+                      callData!['internal_number']!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: primaryText,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Call Duration
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.timer,
+                          color: primaryText,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context)!.translate('call_duration') +
+                          ': ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: hintText,
+                      ),
+                    ),
+                    Text(
+                      callData!['call_duration']!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: primaryText,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Call Ringing Duration
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.notifications,
+                          color: primaryText,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context)!
+                              .translate('call_ringing_duration') +
+                          ': ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w400,
+                        color: hintText,
+                      ),
+                    ),
+                    Text(
+                      callData!['call_ringing_duration']!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: primaryText,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Status Bar
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.45)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info,
+                        color: statusColor == const Color(0xffFEE6E6)
+                            ? Colors.red
+                            : Colors.green,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: statusColor == const Color(0xffFEE6E6)
+                              ? Colors.red
+                              : Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Call Recording
+                // const SizedBox(height: 12),
+                Text(
+                  AppLocalizations.of(context)!.translate('call_recording'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w400,
+                    color: hintText,
+                  ),
+                ),
+                // const SizedBox(height: 8),
+                (notice.call!.callRecordUrl != null ||
+                            notice.call!.callRecordPath != null) &&
+                        !notice.call!.missed &&
+                        (notice.call!.callDuration ?? 0) > 0
+                    ? _buildVoicePlayer(
+                        notice.call!.callRecordUrl ??
+                            notice.call!.callRecordPath,
+                        notice.call!.callDuration,
+                      )
+                    : Text(
+                        AppLocalizations.of(context)!
+                            .translate('no_recording_available'),
+                        style: TextStyle(
+                          color: context.appColors.error,
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+              ],
+            ),
+          );
+        }
+
+        if (label == AppLocalizations.of(context)!.translate('assignees')) {
+          return GestureDetector(
+            onTap: () => _showUsersDialog(value),
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              _showCopiedSnackBar();
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value.split(',').take(3).join(', ') +
+                        (value.split(',').length > 3
+                            ? ' и еще ${value.split(',').length - 3}...'
+                            : ''),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: primaryText,
+                      decoration: TextDecoration.underline,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (label == AppLocalizations.of(context)!.translate('lead_name')) {
+          return GestureDetector(
+            onTap: () {
+              navigatorKey.currentState?.push(
+                MaterialPageRoute(
+                  builder: (context) => LeadDetailsScreen(
+                    leadId: leadId.toString(),
+                    leadName: value,
+                    leadStatus: "",
+                    statusId: 1,
+                  ),
+                ),
+              );
+            },
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              _showCopiedSnackBar();
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: primaryText,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (label == AppLocalizations.of(context)!.translate('files_details')) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(height: 8),
+              Container(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: notice.files?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final file = notice.files![index];
+                    final fileExtension =
+                        file.name.split('.').last.toLowerCase();
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDownloading) {
+                            FileUtils.showFile(
+                              context: context,
+                              fileUrl: file.path,
+                              fileId: file.id,
+                              setState: setState,
+                              downloadProgress: _downloadProgress,
+                              isDownloading: _isDownloading,
+                              apiService: _apiService,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 100,
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/files/$fileExtension.png',
+                                    width: 60,
+                                    height: 60,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/files/file.png',
+                                        width: 60,
+                                        height: 60,
+                                      );
+                                    },
+                                  ),
+                                  if (_downloadProgress.containsKey(file.id))
+                                    CircularProgressIndicator(
+                                      value: _downloadProgress[file.id],
+                                      strokeWidth: 3,
+                                      backgroundColor: context
+                                          .appColors.textInverse
+                                          .withValues(alpha: 0.18),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        context.appColors.buttonPrimaryBg,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                file.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  color: secondaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
+            ],
+          );
+        }
+
+        if (label == AppLocalizations.of(context)!.translate('body')) {
+          return GestureDetector(
+            onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              _showCopiedSnackBar();
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: primaryText,
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 7,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (label == AppLocalizations.of(context)!.translate('conclusions')) {
+          return GestureDetector(
+            onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              _showCopiedSnackBar();
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: primaryText,
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabel(label),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildValue(value),
             ),
           ],
         );
-      }
-
-      if (label == AppLocalizations.of(context)!.translate('body')) {
-        return GestureDetector(
-          onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-          onLongPress: () {
-            Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(
-
-              SnackBar(
-
-                content: Text(
-
-                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
-                  style: const TextStyle(
-
-                    fontFamily: 'Gilroy',
-
-                    fontSize: 15,
-
-                    fontWeight: FontWeight.w500,
-
-                    color: Colors.white,
-
-                  ),
-
-                ),
-
-                backgroundColor: Colors.green,
-
-                behavior: SnackBarBehavior.floating,
-
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-                duration: const Duration(seconds: 2),
-
-              ),
-
-            );
-          },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(label),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
-                  ),
-                  maxLines: 7,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      if (label == AppLocalizations.of(context)!.translate('conclusions')) {
-        return GestureDetector(
-          onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
-          onLongPress: () {
-            Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(
-
-              SnackBar(
-
-                content: Text(
-
-                  AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
-                  style: const TextStyle(
-
-                    fontFamily: 'Gilroy',
-
-                    fontSize: 15,
-
-                    fontWeight: FontWeight.w500,
-
-                    color: Colors.white,
-
-                  ),
-
-                ),
-
-                backgroundColor: Colors.green,
-
-                behavior: SnackBarBehavior.floating,
-
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-                duration: const Duration(seconds: 2),
-
-              ),
-
-            );
-          },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel(label),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                    decoration: TextDecoration.underline,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildValue(value),
-          ),
-        ],
-      );
-    },
-  );
-}
+      },
+    );
+  }
 
   Widget _buildLabel(String label) {
     return Text(
@@ -1816,7 +1795,7 @@ Widget _buildDetailItem(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: _screenHintText(context),
       ),
     );
   }
@@ -1825,41 +1804,7 @@ Widget _buildDetailItem(
     return GestureDetector(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
-        ScaffoldMessenger.of(context).showSnackBar(
-
-          SnackBar(
-
-            content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
-              style: const TextStyle(
-
-                fontFamily: 'Gilroy',
-
-                fontSize: 15,
-
-                fontWeight: FontWeight.w500,
-
-                color: Colors.white,
-
-              ),
-
-            ),
-
-            backgroundColor: Colors.green,
-
-            behavior: SnackBarBehavior.floating,
-
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-            duration: const Duration(seconds: 2),
-
-          ),
-
-        );
+        _showCopiedSnackBar();
       },
       child: Text(
         value,
@@ -1867,7 +1812,7 @@ Widget _buildDetailItem(
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
+          color: _screenPrimaryText(context),
         ),
       ),
     );

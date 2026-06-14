@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bloc.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_event.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/notice_subject_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +48,8 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
         filteredList = List.from(subjectList);
       } else {
         filteredList = subjectList
-            .where((item) => item.title.toLowerCase().contains(query.toLowerCase().trim()))
+            .where((item) =>
+                item.title.toLowerCase().contains(query.toLowerCase().trim()))
             .toList();
       }
     });
@@ -68,11 +70,11 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('subject'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textInverse.withValues(alpha: 0.96),
           ),
         ),
         const SizedBox(height: 8),
@@ -98,9 +100,9 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
             padding: const EdgeInsets.only(top: 6, left: 12),
             child: Text(
               AppLocalizations.of(context)!.translate('field_required'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.red,
+                color: context.appColors.error,
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -113,14 +115,16 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: context.appColors.surfaceElevated.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
       ),
     );
   }
 
   Widget _buildTextField() {
-    final borderColor = widget.hasError ? Colors.red : const Color(0xffF4F7FD);
+    final borderColor = widget.hasError
+        ? context.appColors.error
+        : context.appColors.textInverse.withValues(alpha: 0.16);
     final borderWidth = widget.hasError ? 2.0 : 1.0;
 
     return Column(
@@ -128,7 +132,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: context.appColors.surfaceElevated.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: borderColor,
@@ -141,22 +145,25 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                 child: TextField(
                   controller: _textController,
                   focusNode: _focusNode,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color:
+                        context.appColors.textInverse.withValues(alpha: 0.96),
                   ),
                   decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.translate('select_subject'),
-                    hintStyle: const TextStyle(
+                    hintText: AppLocalizations.of(context)!
+                        .translate('select_subject'),
+                    hintStyle: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff99A4BA),
+                      color: context.appColors.textMuted,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                   onChanged: (value) {
                     widget.onSelectSubject(value.trim());
@@ -166,7 +173,8 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
               IconButton(
                 icon: Transform.rotate(
                   angle: 90 * 3.1415926535 / 180,
-                  child: Image.asset('assets/icons/arrow_down.png', width: 12, height: 12),
+                  child: Image.asset('assets/icons/arrow_down.png',
+                      width: 12, height: 12),
                 ),
                 onPressed: () {
                   setState(() {
@@ -180,15 +188,17 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
             ],
           ),
         ),
-
         if (_isDropdownVisible)
           Container(
             margin: const EdgeInsets.only(top: 4),
             constraints: const BoxConstraints(maxHeight: 400),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.appColors.surfacePrimary.withValues(alpha: 0.98),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xffF4F7FD), width: 1),
+              border: Border.all(
+                color: context.appColors.textInverse.withValues(alpha: 0.16),
+                width: 1,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -199,62 +209,82 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                     controller: _searchController,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.translate('search'),
-                      prefixIcon: const Icon(Icons.search),
+                      hintText:
+                          AppLocalizations.of(context)!.translate('search'),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: context.appColors.textMuted,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+                        borderSide: BorderSide(
+                          color: context.appColors.textInverse
+                              .withValues(alpha: 0.16),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+                        borderSide: BorderSide(
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                    ),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      color:
+                          context.appColors.textInverse.withValues(alpha: 0.96),
                     ),
                     onChanged: filterSearchResults,
                   ),
                 ),
                 Expanded(
-                  child: filteredList.isEmpty && _searchController.text.isNotEmpty
-                      ? Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.translate('no_data_to_display'),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: filteredList.length,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              title: Text(
-                                filteredList[index].title,
-                                style: const TextStyle(
-                                  fontSize: 14,
+                  child:
+                      filteredList.isEmpty && _searchController.text.isNotEmpty
+                          ? Center(
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .translate('no_data_to_display'),
+                                style: TextStyle(
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                                  color: context.appColors.textMuted,
                                 ),
                               ),
-                              onTap: () {
-                                setState(() {
-                                  _textController.text = filteredList[index].title;
-                                  _isDropdownVisible = false;
-                                  _searchController.clear();
-                                });
-                                widget.onSelectSubject(filteredList[index].title.trim());
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: filteredList.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  title: Text(
+                                    filteredList[index].title,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Gilroy',
+                                      color: context.appColors.textInverse
+                                          .withValues(alpha: 0.96),
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      _textController.text =
+                                          filteredList[index].title;
+                                      _isDropdownVisible = false;
+                                      _searchController.clear();
+                                    });
+                                    widget.onSelectSubject(
+                                        filteredList[index].title.trim());
+                                  },
+                                );
                               },
-                            );
-                          },
-                        ),
+                            ),
                 ),
               ],
             ),

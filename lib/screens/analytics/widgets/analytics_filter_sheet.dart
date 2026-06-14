@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
@@ -50,6 +51,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final localizations = AppLocalizations.of(context);
     final periodKeys = <String>[
       _allPeriodKey,
@@ -73,8 +75,8 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
         periodIndex >= 0 ? periodLabels[periodIndex] : null;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -89,7 +91,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xffE2E8F0),
+              color: colors.borderSubtle,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -101,22 +103,22 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
               children: [
                 Text(
                   localizations?.translate('analytics_filters') ?? 'Filters',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     fontFamily: 'Golos',
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
-                  color: const Color(0xff64748B),
+                  color: colors.textSecondary,
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: colors.borderSubtle),
           // Filters
           Flexible(
             child: SingleChildScrollView(
@@ -196,9 +198,9 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                   actionPadding + 8 + (safeBottom > 0 ? 4 : 0),
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   border: Border(
-                    top: BorderSide(color: const Color(0xffE2E8F0)),
+                    top: BorderSide(color: colors.borderSubtle),
                   ),
                 ),
                 child: Row(
@@ -218,17 +220,19 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                         },
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          side: const BorderSide(color: Color(0xffE2E8F0)),
+                          side: BorderSide(color: colors.borderSubtle),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(buttonRadius),
                           ),
+                          backgroundColor:
+                              colors.surfaceElevated.withValues(alpha: 0.96),
                         ),
                         child: Text(
                           localizations?.translate('reset') ?? 'Reset',
                           style: TextStyle(
                             fontSize: buttonFontSize,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xff1E2E52),
+                            color: colors.textPrimary,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -252,7 +256,8 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                         },
                         style: ElevatedButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          backgroundColor: const Color(0xff1E2E52),
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(buttonRadius),
                           ),
@@ -263,7 +268,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                           style: TextStyle(
                             fontSize: buttonFontSize,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -286,16 +291,18 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
     required String hint,
     required String? selectedLabel,
   }) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -306,24 +313,58 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
           overlayHeight: 300,
           enabled: true,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor: colors.fieldBg,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
+            hintStyle: textStyles.bodyMd.copyWith(color: colors.textSecondary),
+            headerStyle: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+            listItemStyle:
+                textStyles.bodyMd.copyWith(color: colors.textPrimary),
+            listItemDecoration: ListItemDecoration(
+              selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+              highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+              splashColor: Colors.transparent,
+            ),
+            searchFieldDecoration: SearchFieldDecoration(
+              fillColor: colors.fieldBg,
+              textStyle: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+              hintStyle:
+                  textStyles.bodyMd.copyWith(color: colors.textSecondary),
+              prefixIcon: Icon(
+                Icons.search,
+                color: colors.textSecondary,
+              ),
+              suffixIcon: (onClear) => IconButton(
+                onPressed: onClear,
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: colors.textSecondary,
+                ),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colors.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colors.buttonPrimaryBg),
+              ),
+            ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -333,11 +374,11 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
           headerBuilder: (context, selectedItem, enabled) {
             return Text(
               selectedItem,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -345,11 +386,11 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
           },
           hintBuilder: (context, hintValue, enabled) => Text(
             hint,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textSecondary,
             ),
           ),
           excludeSelected: false,

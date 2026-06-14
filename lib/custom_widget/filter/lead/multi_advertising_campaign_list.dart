@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/advertising_campaign_list/advertising_campaign_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/advertising_campaign_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -26,13 +27,6 @@ class _AdvertisingCampaignMultiSelectWidgetState
   List<AdvertisingCampaignData> selectedCampaignsData = [];
   bool allSelected = false;
 
-  final TextStyle campaignTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -52,6 +46,14 @@ class _AdvertisingCampaignMultiSelectWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final campaignTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = campaignTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
     return FormField<List<AdvertisingCampaignData>>(
       validator: (value) {
         if (selectedCampaignsData.isEmpty) {
@@ -74,11 +76,13 @@ class _AdvertisingCampaignMultiSelectWidgetState
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetAllAdvertisingCampaignBloc,
@@ -107,15 +111,53 @@ class _AdvertisingCampaignMultiSelectWidgetState
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(color: Colors.transparent),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: campaignTextStyle,
+                      listItemStyle: campaignTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.14),
+                        highlightColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.fieldBg,
+                        textStyle: campaignTextStyle.copyWith(fontSize: 14),
+                        hintStyle: hintStyle,
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: context.appColors.textSecondary,
+                        ),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: context.appColors.textSecondary,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.borderSubtle,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       if (campaignsList.indexOf(item) == 0) {
@@ -135,18 +177,19 @@ class _AdvertisingCampaignMultiSelectWidgetState
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                          color: const Color(0xff1E2E52),
+                                          color: context.appColors.textPrimary,
                                           width: 1,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? context.appColors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
-                                          ? const Icon(
+                                          ? Icon(
                                               Icons.check,
-                                              color: Colors.white,
+                                              color:
+                                                  context.appColors.textInverse,
                                               size: 14,
                                             )
                                           : null,
@@ -163,7 +206,10 @@ class _AdvertisingCampaignMultiSelectWidgetState
                                 ),
                               ),
                             ),
-                            const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                            Divider(
+                              height: 20,
+                              color: context.appColors.borderSubtle,
+                            ),
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
@@ -174,7 +220,8 @@ class _AdvertisingCampaignMultiSelectWidgetState
                     headerListBuilder: (context, hint, enabled) {
                       final selectedCampaignNames = selectedCampaignsData
                               .isEmpty
-                          ? 'Выберите рекламную кампанию'
+                          ? AppLocalizations.of(context)!
+                              .translate('select_advertising_campaign')
                           : selectedCampaignsData.map((e) => e.name).join(', ');
                       return Text(
                         selectedCampaignNames,
@@ -184,8 +231,9 @@ class _AdvertisingCampaignMultiSelectWidgetState
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      'Выберите рекламную кампанию',
-                      style: campaignTextStyle.copyWith(fontSize: 14),
+                      AppLocalizations.of(context)!
+                          .translate('select_advertising_campaign'),
+                      style: hintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectCampaigns(values);
@@ -204,10 +252,8 @@ class _AdvertisingCampaignMultiSelectWidgetState
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
@@ -222,6 +268,10 @@ class _AdvertisingCampaignMultiSelectWidgetState
     bool isSelected,
     Function() onItemSelect,
   ) {
+    final campaignTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -233,17 +283,18 @@ class _AdvertisingCampaignMultiSelectWidgetState
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color:
-                    isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                       size: 14,
                     )
                   : null,

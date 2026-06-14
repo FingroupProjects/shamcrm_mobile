@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
@@ -46,6 +47,19 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.82);
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.16);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.84);
 
   @override
   void initState() {
@@ -117,7 +131,8 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
 
   Future<void> _pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null) {
         double totalSize = selectedFiles.fold<double>(
@@ -139,7 +154,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -147,7 +162,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -174,10 +189,10 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.textInverse,
             ),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(
@@ -198,7 +213,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: _screenPrimaryText(context),
           ),
         ),
         SizedBox(height: 16),
@@ -218,7 +233,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                       child: Column(
                         children: [
                           Image.asset(
-                            'assets/icons/files/add.png',
+                            'assets/icons/files/add_for_dark.png',
                             width: 60,
                             height: 60,
                           ),
@@ -229,7 +244,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: _screenPrimaryText(context),
                             ),
                           ),
                         ],
@@ -271,7 +286,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: _screenPrimaryText(context),
                             ),
                           ),
                         ],
@@ -293,7 +308,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                           child: Icon(
                             Icons.close,
                             size: 16,
-                            color: Color(0xff1E2E52),
+                            color: _screenPrimaryText(context),
                           ),
                         ),
                       ),
@@ -321,7 +336,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -329,7 +344,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -344,7 +359,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -352,7 +367,7 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -368,116 +383,138 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('add_note'),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+              decoration: BoxDecoration(
+                color: _screenSurfaceBackground(context),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: _screenBorder(context)),
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('add_note'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: _screenPrimaryText(context),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  SubjectSelectionWidget(
-                    selectedSubject: selectedSubject,
-                    onSelectSubject: (String subject) {
-                      setState(() {
-                        selectedSubject = subject;
-                        if (subject.trim().isNotEmpty) {
-                          isSubjectInvalid = false;
-                        }
-                      });
-                    },
-                    hasError: isSubjectInvalid,
-                  ),
-                  SizedBox(height: 8),
-                  CustomTextField(
-                    controller: bodyController,
-                    hintText: AppLocalizations.of(context)!.translate('enter_text'),
-                    label: AppLocalizations.of(context)!.translate('description_list'),
-                    maxLines: 5,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return AppLocalizations.of(context)!.translate('field_required');
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 8),
-                  CustomTextFieldDate(
-                    controller: dateController,
-                    label: AppLocalizations.of(context)!.translate('reminder'),
-                    withTime: true,
-                  ),
-                  const SizedBox(height: 8),
-                  ManagerMultiSelectWidget(
-                    selectedManagers: selectedManagers,
-                    onSelectManagers: (List<int> managers) {
-                      setState(() {
-                        selectedManagers = managers;
-                        if (widget.managerId != null && !managers.contains(widget.managerId)) {
-                          hasAutoSelectedManager = true;
-                        }
-                      });
-                    },
-                  ),
-                  SizedBox(height: 8),
-                  NoticeSmsTemplateSection(
-                    isVisible: smsNoticeNotificationEnabled,
-                    sendSms: sendSms,
-                    templates: smsTemplates,
-                    selectedTemplate: selectedSmsTemplate,
-                    onToggle: (value) {
-                      setState(() {
-                        sendSms = value;
-                      });
-                    },
-                    onTemplateSelected: _handleTemplateSelected,
-                  ),
-                  SizedBox(height: 8),
-                  _buildFileSelection(), // Добавляем виджет выбора файлов
-                  SizedBox(height: 8),
-                  CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('save'),
-                    onPressed: () {
-                      final bool subjectMissing =
-                          selectedSubject == null || selectedSubject!.trim().isEmpty;
-                      if (subjectMissing) {
+                    const SizedBox(height: 8),
+                    SubjectSelectionWidget(
+                      selectedSubject: selectedSubject,
+                      onSelectSubject: (String subject) {
                         setState(() {
-                          isSubjectInvalid = true;
+                          selectedSubject = subject;
+                          if (subject.trim().isNotEmpty) {
+                            isSubjectInvalid = false;
+                          }
                         });
-                      }
-
-                      final bool formValid = _formKey.currentState!.validate();
-                      if (!formValid || subjectMissing) {
+                      },
+                      hasError: isSubjectInvalid,
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: bodyController,
+                      backgroundColor: _screenFieldBackground(context),
+                      textColor: _screenPrimaryText(context),
+                      labelColor: _screenPrimaryText(context),
+                      hintColor: _screenHintText(context),
+                      borderColor: _screenBorder(context),
+                      focusedBorderColor: context.appColors.buttonPrimaryBg,
+                      hintText:
+                          AppLocalizations.of(context)!.translate('enter_text'),
+                      label: AppLocalizations.of(context)!
+                          .translate('description_list'),
+                      maxLines: 5,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!
+                              .translate('field_required');
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextFieldDate(
+                      controller: dateController,
+                      label:
+                          AppLocalizations.of(context)!.translate('reminder'),
+                      withTime: true,
+                    ),
+                    const SizedBox(height: 8),
+                    ManagerMultiSelectWidget(
+                      selectedManagers: selectedManagers,
+                      onSelectManagers: (List<int> managers) {
+                        setState(() {
+                          selectedManagers = managers;
+                          if (widget.managerId != null &&
+                              !managers.contains(widget.managerId)) {
+                            hasAutoSelectedManager = true;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    NoticeSmsTemplateSection(
+                      isVisible: smsNoticeNotificationEnabled,
+                      sendSms: sendSms,
+                      templates: smsTemplates,
+                      selectedTemplate: selectedSmsTemplate,
+                      onToggle: (value) {
+                        setState(() {
+                          sendSms = value;
+                        });
+                      },
+                      onTemplateSelected: _handleTemplateSelected,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildFileSelection(),
+                    const SizedBox(height: 8),
+                    CustomButton(
+                      buttonText:
+                          AppLocalizations.of(context)!.translate('save'),
+                      onPressed: () {
+                        final bool subjectMissing = selectedSubject == null ||
+                            selectedSubject!.trim().isEmpty;
                         if (subjectMissing) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.of(context)!.translate('select_subject'),
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
+                          setState(() {
+                            isSubjectInvalid = true;
+                          });
+                        }
+
+                        final bool formValid =
+                            _formKey.currentState!.validate();
+                        if (!formValid || subjectMissing) {
+                          if (subjectMissing) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('select_subject'),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: context.appColors.textInverse,
+                                  ),
+                                ),
+                                backgroundColor: context.appColors.error,
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              backgroundColor: Colors.red,
-                              behavior: SnackBarBehavior.floating,
-                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          );
+                            );
+                          }
+                          return;
                         }
-                        return;
-                      }
 
                         final String body = bodyController.text;
                         final String? dateString = dateController.text.isEmpty
@@ -487,22 +524,25 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                         DateTime? date;
                         if (dateString != null && dateString.isNotEmpty) {
                           try {
-                            date = DateFormat('dd/MM/yyyy HH:mm').parse(dateString);
+                            date = DateFormat('dd/MM/yyyy HH:mm')
+                                .parse(dateString);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+                                  AppLocalizations.of(context)!
+                                      .translate('enter_valid_datetime'),
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    color: context.appColors.textInverse,
                                   ),
                                 ),
-                                backgroundColor: Colors.red,
+                                backgroundColor: context.appColors.error,
                                 behavior: SnackBarBehavior.floating,
-                                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -512,23 +552,25 @@ class _CreateNotesDialogState extends State<CreateNotesDialog> {
                           }
                         }
 
-                        context.read<NotesBloc>().add(CreateNotes(
-                          leadId: widget.leadId,
-                          dealId: widget.dealId,
-                          title: selectedSubject!.trim(),
-                          body: body,
-                          date: date,
-                          sendSms: sendSms ? 1 : 0,
-                          users: selectedManagers,
-                          filePaths: selectedFiles, // Передаем файлы
-                          // localizations: AppLocalizations.of(context), // Передаем локализацию
-                        ));
-                    },
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
-                  SizedBox(height: 8),
-                ],
+                        context.read<NotesBloc>().add(
+                              CreateNotes(
+                                leadId: widget.leadId,
+                                dealId: widget.dealId,
+                                title: selectedSubject!.trim(),
+                                body: body,
+                                date: date,
+                                sendSms: sendSms ? 1 : 0,
+                                users: selectedManagers,
+                                filePaths: selectedFiles,
+                              ),
+                            );
+                      },
+                      buttonColor: context.appColors.buttonPrimaryBg,
+                      textColor: context.appColors.buttonPrimaryFg,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
           ),

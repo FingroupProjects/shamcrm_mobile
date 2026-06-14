@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -23,13 +24,6 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
   final ApiService _apiService = ApiService();
   List<RegionData> _states = [];
   bool _isLoading = true;
-
-  final TextStyle _textStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -57,24 +51,37 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final textStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = textStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('oblast'),
-          style: _textStyle.copyWith(fontWeight: FontWeight.w400),
+          style: textStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: context.appColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: context.appColors.borderSubtle),
           ),
           child: _isLoading
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.all(12),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: context.appColors.buttonPrimaryBg,
+                    ),
+                  ),
                 )
               : CustomDropdown<RegionData>.search(
                   items: _states,
@@ -85,12 +92,51 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
                       AppLocalizations.of(context)!.translate('select_oblast'),
                   overlayHeight: 400,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: context.appColors.fieldBg,
+                    expandedFillColor: context.appColors.surfacePrimary,
                     closedBorder: Border.all(color: Colors.transparent),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(color: const Color(0xFFE5E7EB)),
+                    expandedBorder:
+                        Border.all(color: context.appColors.borderSubtle),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    hintStyle: hintStyle,
+                    headerStyle: textStyle,
+                    listItemStyle: textStyle,
+                    listItemDecoration: ListItemDecoration(
+                      selectedColor: context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.14),
+                      highlightColor: context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.08),
+                      splashColor: Colors.transparent,
+                    ),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: context.appColors.fieldBg,
+                      textStyle: textStyle.copyWith(fontSize: 14),
+                      hintStyle: hintStyle,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: context.appColors.textSecondary,
+                      ),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: context.appColors.textSecondary,
+                        ),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: context.appColors.borderSubtle,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
+                      ),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Padding(
@@ -98,7 +144,7 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
                           horizontal: 16, vertical: 10),
                       child: Text(
                         item.name,
-                        style: _textStyle,
+                        style: textStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -107,7 +153,7 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
                   headerBuilder: (context, item, enabled) {
                     return Text(
                       item.name,
-                      style: _textStyle,
+                      style: textStyle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     );
@@ -115,7 +161,7 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
                   hintBuilder: (context, hint, enabled) {
                     return Text(
                       AppLocalizations.of(context)!.translate('select_oblast'),
-                      style: _textStyle.copyWith(fontSize: 14),
+                      style: hintStyle,
                     );
                   },
                   onChanged: widget.onChanged,
