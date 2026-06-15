@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/screens/profile/appearance_settings_screen.dart';
+import 'package:crm_task_manager/screens/profile/appearance_settings_screen.dart' show AppearanceSettingsScreen;
 import 'package:flutter/material.dart';
 
 class AppearanceButtonWidget extends StatelessWidget {
