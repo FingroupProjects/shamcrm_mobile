@@ -10,6 +10,10 @@ import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
+import 'package:crm_task_manager/custom_widget/task_section_app_bar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -300,9 +304,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       _isConfigurationLoaded = false;
     });
     _loadFieldConfiguration();
-    context
-        .read<TaskByIdBloc>()
-        .add(FetchTaskByIdEvent(taskId: taskId));
+    context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: taskId));
     context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
     context.read<CalendarBloc>().add(FetchCalendarEvents(
         widget.initialDate?.month ?? DateTime.now().month,
@@ -866,14 +868,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     };
   }
 
-  AppBar _buildAppBar(BuildContext context, String title) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, String title) {
     // ✅ Получаем адаптивные размеры
     final adaptiveSizes = _getAdaptiveSizes(context);
     final double fontSize = adaptiveSizes['fontSize']!;
     final double iconSize = adaptiveSizes['iconSize']!;
-    final double leadingIconSize = adaptiveSizes['leadingIconSize']!;
-    final double iconPadding = adaptiveSizes['iconPadding']!;
-    final double titleOffset = adaptiveSizes['titleOffset']!;
+    final colors = context.appColors;
 
     // Закомментирован код туториала
     // if (!_isTutorialShown) {
@@ -884,210 +884,170 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     //     });
     //   });
     // }
-    return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
-      elevation: 0,
-      centerTitle: false,
-      leadingWidth: leadingIconSize,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
-          child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: leadingIconSize,
-              height: leadingIconSize,
-            ),
-            onPressed: () => _handleBackNavigation(),
-          ),
-        ),
-      ),
-      title: Transform.translate(
-        offset: Offset(titleOffset, 0),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
+    return TaskSectionAppBar(
+      title: title,
+      onBack: () => _handleBackNavigation(),
       actions: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ✨ Иконка истории
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Icon(
-                Icons.history_outlined,
-                size: iconSize + 2, // Немного больше для истории
-                color: Color(0xff1E2E52),
-              ),
-              onPressed: () {
-                if (currentTask != null) {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) => TaskHistoryDialog(
-                      taskId: currentTask!.id,
-                    ),
-                  );
-                }
-              },
-            ),
-            if (_canCreateTask ||
-                (_hasTaskCreateForMySelfPermission && _isAuthor))
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/copy.png',
-                  width: iconSize,
-                  height: iconSize,
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            Icons.history_outlined,
+            size: iconSize + 2,
+            color: colors.iconPrimary,
+          ),
+          onPressed: () {
+            if (currentTask != null) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => TaskHistoryDialog(
+                  taskId: currentTask!.id,
                 ),
-                onPressed: () async {
-                  final createdAtString = currentTask?.createdAt != null &&
-                          currentTask!.createdAt!.isNotEmpty
-                      ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentTask!.createdAt!))
-                      : null;
-
-                  if (currentTask != null) {
-                    final shouldUpdate = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TaskCopyScreen(
-                          taskId: currentTask!.id,
-                          taskName: currentTask!.name,
-                          priority: currentTask!.priority,
-                          taskStatus:
-                              currentTask!.taskStatus?.taskStatus.toString() ??
-                                  '',
-                          project: currentTask!.project?.id.toString(),
-                          user: currentTask!.user != null &&
-                                  currentTask!.user!.isNotEmpty
-                              ? currentTask!.user!
-                                  .map((user) => user.id)
-                                  .toList()
-                              : null,
-                          statusId: currentTask!.taskStatus?.id ?? 0,
-                          description: currentTask!.description,
-                          startDate: currentTask!.startDate,
-                          endDate: currentTask!.endDate,
-                          createdAt: createdAtString,
-                          taskCustomFields: currentTask!.customFields,
-                          files: currentTask!.files,
-                          directoryValues: currentTask!.directoryValues,
-                        ),
-                      ),
-                    );
-                    if (shouldUpdate == true) {
-                      setState(() {
-                        _statusChangedFromDetails = true;
-                      });
-                      _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
-                      context
-                          .read<TaskByIdBloc>()
-                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
-                      context.read<CalendarBloc>().add(FetchCalendarEvents(
-                          widget.initialDate?.month ?? DateTime.now().month,
-                          widget.initialDate?.year ?? DateTime.now().year));
-                    }
-                  }
-                },
-              ),
-            if (_canEditTask ||
-                (_hasTaskCreateForMySelfPermission && _isAuthor))
-              IconButton(
-                key: keyTaskEdit,
-                padding: EdgeInsets.zero,
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/edit.png',
-                  width: iconSize,
-                  height: iconSize,
-                ),
-                onPressed: () async {
-                  final createdAtString = currentTask?.createdAt != null &&
-                          currentTask!.createdAt!.isNotEmpty
-                      ? DateFormat('dd/MM/yyyy')
-                          .format(DateTime.parse(currentTask!.createdAt!))
-                      : null;
-
-                  if (currentTask != null) {
-                    final shouldUpdate = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TaskEditScreen(
-                          taskId: currentTask!.id,
-                          taskName: currentTask!.name,
-                          priority: currentTask!.priority,
-                          taskStatus:
-                              currentTask!.taskStatus?.taskStatus.toString() ??
-                                  '',
-                          project: currentTask!.project?.id.toString(),
-                          user: currentTask!.user != null &&
-                                  currentTask!.user!.isNotEmpty
-                              ? currentTask!.user!
-                                  .map((user) => user.id)
-                                  .toList()
-                              : null,
-                          statusId: currentTask!.taskStatus?.id ?? 0,
-                          description: currentTask!.description,
-                          startDate: currentTask!.startDate,
-                          endDate: currentTask!.endDate,
-                          createdAt: createdAtString,
-                          taskCustomFields: currentTask!.customFields,
-                          files: currentTask!.files,
-                          directoryValues: currentTask!.directoryValues,
-                        ),
-                      ),
-                    );
-                    if (shouldUpdate == true) {
-                      setState(() {
-                        _statusChangedFromDetails = true;
-                      });
-                      _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
-                      context
-                          .read<TaskByIdBloc>()
-                          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
-                      context.read<CalendarBloc>().add(FetchCalendarEvents(
-                          widget.initialDate?.month ?? DateTime.now().month,
-                          widget.initialDate?.year ?? DateTime.now().year));
-                    }
-                  }
-                },
-              ),
-            if (_canDeleteTask ||
-                (_hasTaskCreateForMySelfPermission && _isAuthor))
-              IconButton(
-                key: keyTaskDelete,
-                padding: EdgeInsets.only(right: iconPadding),
-                constraints: BoxConstraints(),
-                icon: Image.asset(
-                  'assets/icons/delete.png',
-                  width: iconSize,
-                  height: iconSize,
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) =>
-                        DeleteTaskDialog(taskId: currentTask!.id),
-                  );
-                },
-              ),
-          ],
+              );
+            }
+          },
         ),
+        if (_canCreateTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/copy.png',
+              width: iconSize,
+              height: iconSize,
+              color: colors.iconPrimary,
+            ),
+            onPressed: () async {
+              final createdAtString = currentTask?.createdAt != null &&
+                      currentTask!.createdAt!.isNotEmpty
+                  ? DateFormat('dd/MM/yyyy')
+                      .format(DateTime.parse(currentTask!.createdAt!))
+                  : null;
+
+              if (currentTask != null) {
+                final shouldUpdate = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TaskCopyScreen(
+                      taskId: currentTask!.id,
+                      taskName: currentTask!.name,
+                      priority: currentTask!.priority,
+                      taskStatus:
+                          currentTask!.taskStatus?.taskStatus.toString() ?? '',
+                      project: currentTask!.project?.id.toString(),
+                      user: currentTask!.user != null &&
+                              currentTask!.user!.isNotEmpty
+                          ? currentTask!.user!.map((user) => user.id).toList()
+                          : null,
+                      statusId: currentTask!.taskStatus?.id ?? 0,
+                      description: currentTask!.description,
+                      startDate: currentTask!.startDate,
+                      endDate: currentTask!.endDate,
+                      createdAt: createdAtString,
+                      taskCustomFields: currentTask!.customFields,
+                      files: currentTask!.files,
+                      directoryValues: currentTask!.directoryValues,
+                    ),
+                  ),
+                );
+                if (shouldUpdate == true) {
+                  setState(() {
+                    _statusChangedFromDetails = true;
+                  });
+                  _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
+                  context
+                      .read<TaskByIdBloc>()
+                      .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                  context
+                      .read<TaskBloc>()
+                      .add(FetchTaskStatuses(forceRefresh: true));
+                  context.read<CalendarBloc>().add(FetchCalendarEvents(
+                      widget.initialDate?.month ?? DateTime.now().month,
+                      widget.initialDate?.year ?? DateTime.now().year));
+                }
+              }
+            },
+          ),
+        if (_canEditTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+          IconButton(
+            key: keyTaskEdit,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/edit.png',
+              width: iconSize,
+              height: iconSize,
+              color: colors.iconPrimary,
+            ),
+            onPressed: () async {
+              final createdAtString = currentTask?.createdAt != null &&
+                      currentTask!.createdAt!.isNotEmpty
+                  ? DateFormat('dd/MM/yyyy')
+                      .format(DateTime.parse(currentTask!.createdAt!))
+                  : null;
+
+              if (currentTask != null) {
+                final shouldUpdate = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TaskEditScreen(
+                      taskId: currentTask!.id,
+                      taskName: currentTask!.name,
+                      priority: currentTask!.priority,
+                      taskStatus:
+                          currentTask!.taskStatus?.taskStatus.toString() ?? '',
+                      project: currentTask!.project?.id.toString(),
+                      user: currentTask!.user != null &&
+                              currentTask!.user!.isNotEmpty
+                          ? currentTask!.user!.map((user) => user.id).toList()
+                          : null,
+                      statusId: currentTask!.taskStatus?.id ?? 0,
+                      description: currentTask!.description,
+                      startDate: currentTask!.startDate,
+                      endDate: currentTask!.endDate,
+                      createdAt: createdAtString,
+                      taskCustomFields: currentTask!.customFields,
+                      files: currentTask!.files,
+                      directoryValues: currentTask!.directoryValues,
+                    ),
+                  ),
+                );
+                if (shouldUpdate == true) {
+                  setState(() {
+                    _statusChangedFromDetails = true;
+                  });
+                  _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
+                  context
+                      .read<TaskByIdBloc>()
+                      .add(FetchTaskByIdEvent(taskId: currentTask!.id));
+                  context
+                      .read<TaskBloc>()
+                      .add(FetchTaskStatuses(forceRefresh: true));
+                  context.read<CalendarBloc>().add(FetchCalendarEvents(
+                      widget.initialDate?.month ?? DateTime.now().month,
+                      widget.initialDate?.year ?? DateTime.now().year));
+                }
+              }
+            },
+          ),
+        if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
+          IconButton(
+            key: keyTaskDelete,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Image.asset(
+              'assets/icons/delete.png',
+              width: iconSize,
+              height: iconSize,
+              color: colors.error,
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
+              );
+            },
+          ),
       ],
     );
   }
@@ -1166,39 +1126,25 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: value));
           ScaffoldMessenger.of(context).showSnackBar(
-
             SnackBar(
-
               content: Text(
-
-                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                AppLocalizations.of(context)
+                        ?.translate('copied_to_clipboard') ??
+                    'Скопировано',
                 style: const TextStyle(
-
                   fontFamily: 'Gilroy',
-
                   fontSize: 15,
-
                   fontWeight: FontWeight.w500,
-
                   color: Colors.white,
-
                 ),
-
               ),
-
               backgroundColor: Colors.green,
-
               behavior: SnackBarBehavior.floating,
-
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 2),
-
             ),
-
           );
         },
         child: Row(
@@ -1237,39 +1183,25 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: value));
           ScaffoldMessenger.of(context).showSnackBar(
-
             SnackBar(
-
               content: Text(
-
-                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                AppLocalizations.of(context)
+                        ?.translate('copied_to_clipboard') ??
+                    'Скопировано',
                 style: const TextStyle(
-
                   fontFamily: 'Gilroy',
-
                   fontSize: 15,
-
                   fontWeight: FontWeight.w500,
-
                   color: Colors.white,
-
                 ),
-
               ),
-
               backgroundColor: Colors.green,
-
               behavior: SnackBarBehavior.floating,
-
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 2),
-
             ),
-
           );
         },
         child: Row(
@@ -1435,39 +1367,25 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: value));
           ScaffoldMessenger.of(context).showSnackBar(
-
             SnackBar(
-
               content: Text(
-
-                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                AppLocalizations.of(context)
+                        ?.translate('copied_to_clipboard') ??
+                    'Скопировано',
                 style: const TextStyle(
-
                   fontFamily: 'Gilroy',
-
                   fontSize: 15,
-
                   fontWeight: FontWeight.w500,
-
                   color: Colors.white,
-
                 ),
-
               ),
-
               backgroundColor: Colors.green,
-
               behavior: SnackBarBehavior.floating,
-
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 2),
-
             ),
-
           );
         },
         child: Row(
@@ -1611,39 +1529,24 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
               style: const TextStyle(
-
                 fontFamily: 'Gilroy',
-
                 fontSize: 15,
-
                 fontWeight: FontWeight.w500,
-
                 color: Colors.white,
-
               ),
-
             ),
-
             backgroundColor: Colors.green,
-
             behavior: SnackBarBehavior.floating,
-
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
-
           ),
-
         );
       },
       child: Text(
@@ -1762,378 +1665,253 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         },
         child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
           builder: (context, state) {
-          // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
-          // if (state is TaskByIdLoaded) {
-          //   // Обновляем данные без setState
-          //   currentTask = state.task;
-          //   _isAuthor = _currentUserId != null && state.task.author?.id != null && _currentUserId == state.task!.author!.id;
-          //
-          //   final Map<int, String> priorityLevels = {
-          //     1: AppLocalizations.of(context)!.translate('normal'),
-          //     2: AppLocalizations.of(context)!.translate('normal'),
-          //     3: AppLocalizations.of(context)!.translate('urgent'),
-          //   };
-          //
-          //   details = [
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('task_name'),
-          //       'value': state.task!.name ?? ''
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-          //       'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('description_details'),
-          //       'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('assignee'),
-          //       'value': state.task!.user != null && state.task!.user!.isNotEmpty
-          //           ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
-          //           : '',
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('project_details'),
-          //       'value': state.task!.project?.name ?? ''
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('dead_line'),
-          //       'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
-          //           ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
-          //           : ''
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('status_details'),
-          //       'value': state.task!.taskStatus?.taskStatus?.name ?? '',
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('author_details'),
-          //       'value': state.task!.author?.name ?? ''
-          //     },
-          //     {
-          //       'label': AppLocalizations.of(context)!.translate('creation_date_details'),
-          //       'value': formatDate(state.task!.createdAt)
-          //     },
-          //     if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
-          //       {
-          //         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-          //         'value': state.task!.deal!.name!
-          //       },
-          //     if (state.task!.files != null && state.task!.files!.isNotEmpty)
-          //       {
-          //         'label': AppLocalizations.of(context)!.translate('files_details'),
-          //         'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
-          //       },
-          //   ];
-          //
-          //   for (var field in state.task!.taskCustomFields) {
-          //     details.add({'label': '${field.name}:', 'value': field.value});
-          //   }
-          //
-          //   if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
-          //     for (var dirValue in state.task.directoryValues!) {
-          //       final values = dirValue.entry.values; // This is a List
-          //       final fieldValue = values.isNotEmpty ? values.first.value : ''; // take first value safely
-          //
-          //       details.add({
-          //         'label': '${dirValue.entry.directory.name}:',
-          //         'value': fieldValue,
-          //       });
-          //     }
-          //   }
-          //
-          // }
-          if (state is TaskByIdLoaded) {
-            _updateDetails(state.task);
-          } else {
-            currentTask = null;
-            details.clear();
-            _isAuthor = false;
-          }
-
-          if (state is TaskByIdLoading) {
-            return Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-              ),
-            );
-          } else if (state is TaskByIdLoaded) {
-            if (!_isConfigurationLoaded) {
-              return Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                ),
-              );
+            // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
+            // if (state is TaskByIdLoaded) {
+            //   // Обновляем данные без setState
+            //   currentTask = state.task;
+            //   _isAuthor = _currentUserId != null && state.task.author?.id != null && _currentUserId == state.task!.author!.id;
+            //
+            //   final Map<int, String> priorityLevels = {
+            //     1: AppLocalizations.of(context)!.translate('normal'),
+            //     2: AppLocalizations.of(context)!.translate('normal'),
+            //     3: AppLocalizations.of(context)!.translate('urgent'),
+            //   };
+            //
+            //   details = [
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('task_name'),
+            //       'value': state.task!.name ?? ''
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
+            //       'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('description_details'),
+            //       'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('assignee'),
+            //       'value': state.task!.user != null && state.task!.user!.isNotEmpty
+            //           ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
+            //           : '',
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('project_details'),
+            //       'value': state.task!.project?.name ?? ''
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('dead_line'),
+            //       'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
+            //           ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
+            //           : ''
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('status_details'),
+            //       'value': state.task!.taskStatus?.taskStatus?.name ?? '',
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('author_details'),
+            //       'value': state.task!.author?.name ?? ''
+            //     },
+            //     {
+            //       'label': AppLocalizations.of(context)!.translate('creation_date_details'),
+            //       'value': formatDate(state.task!.createdAt)
+            //     },
+            //     if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
+            //       {
+            //         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
+            //         'value': state.task!.deal!.name!
+            //       },
+            //     if (state.task!.files != null && state.task!.files!.isNotEmpty)
+            //       {
+            //         'label': AppLocalizations.of(context)!.translate('files_details'),
+            //         'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
+            //       },
+            //   ];
+            //
+            //   for (var field in state.task!.taskCustomFields) {
+            //     details.add({'label': '${field.name}:', 'value': field.value});
+            //   }
+            //
+            //   if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
+            //     for (var dirValue in state.task.directoryValues!) {
+            //       final values = dirValue.entry.values; // This is a List
+            //       final fieldValue = values.isNotEmpty ? values.first.value : ''; // take first value safely
+            //
+            //       details.add({
+            //         'label': '${dirValue.entry.directory.name}:',
+            //         'value': fieldValue,
+            //       });
+            //     }
+            //   }
+            //
+            // }
+            if (state is TaskByIdLoaded) {
+              _updateDetails(state.task);
+            } else {
+              currentTask = null;
+              details.clear();
+              _isAuthor = false;
             }
-            if (state.task == null) {
-              return Scaffold(
-                body: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .translate('task_data_unavailable'),
-                  ),
-                ),
-              );
-            }
-            TaskById task = state.task!;
 
-            return Scaffold(
-              appBar: _buildAppBar(context,
-                  '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
-              backgroundColor: Colors.white,
-              body: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: ListView(
+            if (state is TaskByIdLoading) {
+              return Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    _buildDetailsList(),
-                    if (task.chat != null || task.isFinished == 0)
-                      Row(
-                        children: [
-                          if (task.chat != null)
-                            Expanded(
-                              key: keyTaskNavigateChat,
-                              flex: task.isFinished == 1 ? 100 : 55,
-                              child: TaskNavigateToChat(
-                                chatId: task.chat!.id,
-                                taskName: widget.taskName,
-                                canSendMessage: task.chat!.canSendMessage,
-                              ),
-                            ),
-                          if (task.isFinished == 0) ...[
-                            if (task.chat != null)
-                              SizedBox(width: 8, height: 60),
-                            Expanded(
-                              key: keyTaskForReview,
-                              flex: task.chat != null ? 45 : 100,
-                              child: ElevatedButton(
-                                onPressed: () => showDialog(
-                                  context: context,
-                                  builder: (dialogContext) => AlertDialog(
-                                    contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 20),
-                                    title: Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('confirm_task_completion'),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w500),
+                    const AppBackgroundOverlay(
+                      preset: AppBackgroundPreset.aurora,
+                    ),
+                    Center(
+                      child: CircularProgressIndicator(
+                        color: context.appColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else if (state is TaskByIdLoaded) {
+              if (!_isConfigurationLoaded) {
+                return Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                      ),
+                      Center(
+                        child: CircularProgressIndicator(
+                          color: context.appColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (state.task == null) {
+                return Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                      ),
+                      Center(
+                        child: Text(
+                          AppLocalizations.of(context)!
+                              .translate('task_data_unavailable'),
+                          style: context.appTextStyles.bodyMd.copyWith(
+                            color: context.appColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              TaskById task = state.task!;
+
+              return Scaffold(
+                appBar: _buildAppBar(context,
+                    '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
+                backgroundColor: Colors.transparent,
+                extendBodyBehindAppBar: true,
+                body: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const AppBackgroundOverlay(
+                      preset: AppBackgroundPreset.aurora,
+                    ),
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          MediaQuery.of(context).padding.top +
+                              kToolbarHeight +
+                              8,
+                          16,
+                          8,
+                        ),
+                        child: ListView(
+                          children: [
+                            _buildDetailsList(),
+                            if (task.chat != null || task.isFinished == 0)
+                              Row(
+                                children: [
+                                  if (task.chat != null)
+                                    Expanded(
+                                      key: keyTaskNavigateChat,
+                                      flex: task.isFinished == 1 ? 100 : 55,
+                                      child: TaskNavigateToChat(
+                                        chatId: task.chat!.id,
+                                        taskName: widget.taskName,
+                                        canSendMessage:
+                                            task.chat!.canSendMessage,
+                                      ),
                                     ),
-                                    content: Container(
-                                      width: double.maxFinite,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(dialogContext),
-                                              style: TextButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                minimumSize: Size(80, 48),
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 16),
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8)),
-                                              ),
-                                              child: Text(
-                                                AppLocalizations.of(context)!
-                                                    .translate('cancel'),
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Gilroy',
-                                                    fontSize: 13,
-                                                    fontWeight:
-                                                        FontWeight.w500),
-                                              ),
+                                  if (task.isFinished == 0) ...[
+                                    if (task.chat != null)
+                                      SizedBox(width: 8, height: 60),
+                                    Expanded(
+                                      key: keyTaskForReview,
+                                      flex: task.chat != null ? 45 : 100,
+                                      child: ElevatedButton(
+                                        onPressed: () => showDialog(
+                                          context: context,
+                                          builder: (dialogContext) =>
+                                              AlertDialog(
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                    horizontal: 24,
+                                                    vertical: 20),
+                                            title: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate(
+                                                      'confirm_task_completion'),
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                  fontFamily: 'Gilroy',
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w500),
                                             ),
-                                          ),
-                                          SizedBox(width: 16),
-                                          Expanded(
-                                            child: StatefulBuilder(
-                                              builder: (context, setState) =>
-                                                  TextButton(
-                                                onPressed: _isLoading
-                                                    ? null
-                                                    : () async {
-                                                        setState(() =>
-                                                            _isLoading = true);
-                                                        final taskId =
-                                                            int.parse(
-                                                                widget.taskId);
-                                                        try {
-                                                          final result =
-                                                              await context
-                                                                  .read<
-                                                                      ApiService>()
-                                                                  .finishTask(
-                                                                      taskId);
+                                            content: Container(
+                                              width: double.maxFinite,
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                    child: TextButton(
+                                                      onPressed: () =>
                                                           Navigator.pop(
-                                                              dialogContext);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                AppLocalizations.of(
-                                                                        context)!
-                                                                    .translate(
-                                                                        result['message'] ??
-                                                                            ''),
-                                                                style: TextStyle(
-                                                                    fontFamily:
-                                                                        'Gilroy',
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w500,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              behavior:
-                                                                  SnackBarBehavior
-                                                                      .floating,
-                                                              margin: EdgeInsets
-                                                                  .symmetric(
-                                                                      horizontal:
-                                                                          16,
-                                                                      vertical:
-                                                                          8),
-                                                              shape: RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              12)),
-                                                              backgroundColor:
-                                                                  result['success'] ==
-                                                                          true
-                                                                      ? Colors
-                                                                          .green
-                                                                      : Colors
-                                                                          .red,
-                                                              elevation: 3,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                      vertical:
-                                                                          12,
-                                                                      horizontal:
-                                                                          16),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          2),
-                                                            ),
-                                                          );
-                                                          if (result[
-                                                                  'success'] ==
-                                                              true) {
-                                                            context.read<CalendarBloc>().add(FetchCalendarEvents(
-                                                                widget.initialDate
-                                                                        ?.month ??
-                                                                    DateTime.now()
-                                                                        .month,
-                                                                widget.initialDate
-                                                                        ?.year ??
-                                                                    DateTime.now()
-                                                                        .year));
-                                                            context
-                                                                .read<
-                                                                    TaskBloc>()
-                                                                .add(
-                                                                    FetchTaskStatuses(forceRefresh: true));
-                                                          }
-                                                        } catch (e) {
-                                                          Navigator.pop(
-                                                              dialogContext);
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            SnackBar(
-                                                              content: Text(
-                                                                AppLocalizations.of(
-                                                                        context)!
-                                                                    .translate(
-                                                                        'error_task_finish'),
-                                                                style: TextStyle(
-                                                                    fontFamily:
-                                                                        'Gilroy',
-                                                                    fontSize:
-                                                                        16,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w500,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                              behavior:
-                                                                  SnackBarBehavior
-                                                                      .floating,
-                                                              margin: EdgeInsets
-                                                                  .symmetric(
-                                                                      horizontal:
-                                                                          16,
-                                                                      vertical:
-                                                                          8),
-                                                              shape: RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              12)),
-                                                              backgroundColor:
-                                                                  Colors.red,
-                                                              elevation: 3,
-                                                              padding: EdgeInsets
-                                                                  .symmetric(
-                                                                      vertical:
-                                                                          12,
-                                                                      horizontal:
-                                                                          16),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          3),
-                                                            ),
-                                                          );
-                                                        } finally {
-                                                          setState(() =>
-                                                              _isLoading =
-                                                                  false);
-                                                        }
-                                                      },
-                                                style: TextButton.styleFrom(
-                                                  backgroundColor:
-                                                      Color(0xff1E2E52),
-                                                  minimumSize: Size(130, 48),
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
-                                                  shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8)),
-                                                ),
-                                                child: _isLoading
-                                                    ? SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                                color: Colors
-                                                                    .white,
-                                                                strokeWidth: 2))
-                                                    : Text(
+                                                              dialogContext),
+                                                      style:
+                                                          TextButton.styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                        minimumSize:
+                                                            Size(80, 48),
+                                                        padding: EdgeInsets
+                                                            .symmetric(
+                                                                horizontal: 16),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8)),
+                                                      ),
+                                                      child: Text(
                                                         AppLocalizations.of(
                                                                 context)!
                                                             .translate(
-                                                                'confirm'),
+                                                                'cancel'),
                                                         style: TextStyle(
                                                             color: Colors.white,
                                                             fontFamily:
@@ -2141,68 +1919,260 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                             fontSize: 13,
                                                             fontWeight:
                                                                 FontWeight
-                                                                    .w500)),
+                                                                    .w500),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: StatefulBuilder(
+                                                      builder:
+                                                          (context, setState) =>
+                                                              TextButton(
+                                                        onPressed: _isLoading
+                                                            ? null
+                                                            : () async {
+                                                                setState(() =>
+                                                                    _isLoading =
+                                                                        true);
+                                                                final taskId = int
+                                                                    .parse(widget
+                                                                        .taskId);
+                                                                try {
+                                                                  final result = await context
+                                                                      .read<
+                                                                          ApiService>()
+                                                                      .finishTask(
+                                                                          taskId);
+                                                                  Navigator.pop(
+                                                                      dialogContext);
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content:
+                                                                          Text(
+                                                                        AppLocalizations.of(context)!.translate(result['message'] ??
+                                                                            ''),
+                                                                        style: TextStyle(
+                                                                            fontFamily:
+                                                                                'Gilroy',
+                                                                            fontSize:
+                                                                                16,
+                                                                            fontWeight:
+                                                                                FontWeight.w500,
+                                                                            color: Colors.white),
+                                                                      ),
+                                                                      behavior:
+                                                                          SnackBarBehavior
+                                                                              .floating,
+                                                                      margin: EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              16,
+                                                                          vertical:
+                                                                              8),
+                                                                      shape: RoundedRectangleBorder(
+                                                                          borderRadius:
+                                                                              BorderRadius.circular(12)),
+                                                                      backgroundColor: result['success'] ==
+                                                                              true
+                                                                          ? Colors
+                                                                              .green
+                                                                          : Colors
+                                                                              .red,
+                                                                      elevation:
+                                                                          3,
+                                                                      padding: EdgeInsets.symmetric(
+                                                                          vertical:
+                                                                              12,
+                                                                          horizontal:
+                                                                              16),
+                                                                      duration: Duration(
+                                                                          seconds:
+                                                                              2),
+                                                                    ),
+                                                                  );
+                                                                  if (result[
+                                                                          'success'] ==
+                                                                      true) {
+                                                                    context.read<CalendarBloc>().add(FetchCalendarEvents(
+                                                                        widget.initialDate?.month ??
+                                                                            DateTime.now()
+                                                                                .month,
+                                                                        widget.initialDate?.year ??
+                                                                            DateTime.now().year));
+                                                                    context
+                                                                        .read<
+                                                                            TaskBloc>()
+                                                                        .add(FetchTaskStatuses(
+                                                                            forceRefresh:
+                                                                                true));
+                                                                  }
+                                                                } catch (e) {
+                                                                  Navigator.pop(
+                                                                      dialogContext);
+                                                                  ScaffoldMessenger.of(
+                                                                          context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content:
+                                                                          Text(
+                                                                        AppLocalizations.of(context)!
+                                                                            .translate('error_task_finish'),
+                                                                        style: TextStyle(
+                                                                            fontFamily:
+                                                                                'Gilroy',
+                                                                            fontSize:
+                                                                                16,
+                                                                            fontWeight:
+                                                                                FontWeight.w500,
+                                                                            color: Colors.white),
+                                                                      ),
+                                                                      behavior:
+                                                                          SnackBarBehavior
+                                                                              .floating,
+                                                                      margin: EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              16,
+                                                                          vertical:
+                                                                              8),
+                                                                      shape: RoundedRectangleBorder(
+                                                                          borderRadius:
+                                                                              BorderRadius.circular(12)),
+                                                                      backgroundColor:
+                                                                          Colors
+                                                                              .red,
+                                                                      elevation:
+                                                                          3,
+                                                                      padding: EdgeInsets.symmetric(
+                                                                          vertical:
+                                                                              12,
+                                                                          horizontal:
+                                                                              16),
+                                                                      duration: Duration(
+                                                                          seconds:
+                                                                              3),
+                                                                    ),
+                                                                  );
+                                                                } finally {
+                                                                  setState(() =>
+                                                                      _isLoading =
+                                                                          false);
+                                                                }
+                                                              },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              Color(0xff1E2E52),
+                                                          minimumSize:
+                                                              Size(130, 48),
+                                                          padding: EdgeInsets
+                                                              .symmetric(
+                                                                  horizontal:
+                                                                      16),
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8)),
+                                                        ),
+                                                        child: _isLoading
+                                                            ? SizedBox(
+                                                                width: 20,
+                                                                height: 20,
+                                                                child: CircularProgressIndicator(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    strokeWidth:
+                                                                        2))
+                                                            : Text(
+                                                                AppLocalizations.of(
+                                                                        context)!
+                                                                    .translate(
+                                                                        'confirm'),
+                                                                style: TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontFamily:
+                                                                        'Gilroy',
+                                                                    fontSize:
+                                                                        13,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
+                                            backgroundColor: Color.fromARGB(
+                                                255, 255, 255, 255),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12)),
                                           ),
-                                        ],
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 12),
+                                          backgroundColor: Color(0xFF1E2E52),
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8)),
+                                        ),
+                                        child: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate('for_review'),
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Gilroy'),
+                                        ),
                                       ),
                                     ),
-                                    backgroundColor:
-                                        Color.fromARGB(255, 255, 255, 255),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                  backgroundColor: Color(0xFF1E2E52),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8)),
-                                ),
-                                child: Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('for_review'),
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Gilroy'),
-                                ),
+                                  ],
+                                ],
                               ),
-                            ),
+                            const SizedBox(height: 16),
+                            ActionHistoryWidgetTask(
+                                taskId: int.parse(widget.taskId),
+                                key: keyTaskHistory),
                           ],
-                        ],
+                        ),
                       ),
-                    const SizedBox(height: 16),
-                    ActionHistoryWidgetTask(
-                        taskId: int.parse(widget.taskId), key: keyTaskHistory),
+                    ),
                   ],
                 ),
-              ),
-            );
-          } else if (state is TaskByIdError) {
+              );
+            } else if (state is TaskByIdError) {
+              return Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const AppBackgroundOverlay(
+                      preset: AppBackgroundPreset.aurora,
+                    ),
+                    Center(
+                      child: Text(
+                        _getTaskErrorMessage(state.message),
+                        style: context.appTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
             return Scaffold(
               body: Center(
-                child: Text(
-                  _getTaskErrorMessage(state.message),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
+                child: Text(''),
               ),
             );
-          }
-          return Scaffold(
-            body: Center(
-              child: Text(''),
-            ),
-          );
           },
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -111,32 +112,39 @@ class _DealCardState extends State<DealCard>
 
   // Метод для получения стиля границы кнопки статуса
   BoxDecoration _getStatusButtonDecoration(bool isActive) {
+    final colors = context.appColors;
     return BoxDecoration(
       border: Border.all(
-        color: isActive ? Color(0xff1E2E52) : Color(0xff99A4BA),
-        width: isActive ? 1.0 : 0.2,
+        color: isActive
+            ? colors.buttonPrimaryBg.withValues(alpha: 0.72)
+            : colors.borderSubtle.withValues(alpha: 0.45),
+        width: isActive ? 1.0 : 0.8,
       ),
       borderRadius: BorderRadius.circular(8),
+      color: isActive
+          ? colors.surfaceAccent.withValues(alpha: 0.18)
+          : colors.surfacePrimary.withValues(alpha: 0.66),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final shouldBlink = _createTaskInDealEnabled && widget.deal.needsAttention;
     Color borderColor;
     if (widget.deal.dealStatus?.isSuccess == true &&
         widget.deal.dealStatus?.isFailure == false &&
         widget.deal.outDated == false) {
-      borderColor = Colors.green;
+      borderColor = colors.success;
     } else if (widget.deal.dealStatus?.isSuccess == false &&
         widget.deal.dealStatus?.isFailure == true) {
-      borderColor = Colors.red;
+      borderColor = colors.error;
     } else if (widget.deal.dealStatus?.isSuccess == false &&
         widget.deal.dealStatus?.isFailure == false &&
         widget.deal.outDated == true) {
-      borderColor = Colors.red;
+      borderColor = colors.error;
     } else {
-      borderColor = Colors.yellow;
+      borderColor = colors.warning;
     }
 
     return GestureDetector(
@@ -184,16 +192,16 @@ class _DealCardState extends State<DealCard>
             decoration: BoxDecoration(
               border: Border.all(
                 color: shouldBlink
-                    ? Colors.red.withValues(alpha: _fadeAnimation.value)
+                    ? colors.error.withValues(alpha: _fadeAnimation.value)
                     : borderColor,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(12),
-              color: const Color(0xffF4F7FD),
+              color: colors.surfacePrimary.withValues(alpha: 0.78),
               boxShadow: shouldBlink
                   ? [
                       BoxShadow(
-                        color: Colors.red.withValues(
+                        color: colors.error.withValues(
                           alpha: _fadeAnimation.value * 0.3,
                         ),
                         blurRadius: 6,
@@ -230,7 +238,7 @@ class _DealCardState extends State<DealCard>
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                           overflow: TextOverflow.ellipsis,
                         ),
                         maxLines: 1,
@@ -242,7 +250,7 @@ class _DealCardState extends State<DealCard>
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                         overflow: TextOverflow.ellipsis,
                       ),
                       maxLines: 1,
@@ -262,7 +270,7 @@ class _DealCardState extends State<DealCard>
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           Flexible(
@@ -333,11 +341,11 @@ class _DealCardState extends State<DealCard>
                                       Flexible(
                                         child: Text(
                                           dropdownValue,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontFamily: 'Gilroy',
                                             fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
+                                            color: colors.textPrimary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
@@ -381,11 +389,11 @@ class _DealCardState extends State<DealCard>
                                     AppLocalizations.of(context)!
                                         .translate('unknow'),
                               )}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
+                                color: colors.textSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -398,16 +406,16 @@ class _DealCardState extends State<DealCard>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Color(0xFFE9EDF5),
+                              color: colors.surfaceAccent.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               '${widget.deal.manager?.name ?? "Система"}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
+                                color: colors.textSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

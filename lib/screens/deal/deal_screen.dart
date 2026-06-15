@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/city_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
@@ -36,7 +37,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -316,14 +316,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       position: position,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                       elevation: 8,
                       items: state.funnels
                           .map((f) => PopupMenuItem<SalesFunnel>(
                                 value: f,
-                                child: Text(f.name,
-                                    style:
-                                        const TextStyle(fontFamily: 'Gilroy')),
+                                child: Text(
+                                  f.name,
+                                  style: const TextStyle(
+                                    fontFamily: 'Gilroy',
+                                  ),
+                                ),
                               ))
                           .toList(),
                     );
@@ -370,17 +373,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.expand_more,
-                            color: Color(0xff1E2E52), size: 24),
+                        Icon(
+                          Icons.expand_more,
+                          color: context.appColors.buttonPrimaryBg,
+                          size: 24,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.buttonPrimaryBg,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -395,11 +401,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.buttonPrimaryBg,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1342,6 +1348,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           shadowColor: Colors.transparent,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  context.appColors.backgroundPrimary.withValues(alpha: 0.36),
+                  context.appColors.backgroundPrimary.withValues(alpha: 0.12),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
           title: CustomAppBar(
             SearchIconKey: keySearchIcon,
             menuIconKey: keyMenuIcon,
@@ -1353,7 +1372,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       fontSize: 20,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   )
                 : _buildTitleWidget(context),
@@ -1525,7 +1544,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       SizedBox(
                         height: MediaQuery.of(context).padding.top +
                             kToolbarHeight +
-                            15,
+                            4,
                       ),
                       if (!_isSearching && _showCustomTabBar)
                         _buildCustomTabBar(),
@@ -1561,11 +1580,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -1573,11 +1592,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           'У выбранного менеджера нет сделок',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -1585,11 +1604,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -1597,8 +1616,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     return RefreshIndicator(
       onRefresh: () => _onRefresh(currentStatusId),
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: context.appColors.buttonPrimaryBg,
+      backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
         itemCount: deals.length,
@@ -1685,8 +1704,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             if (filteredDeals.isEmpty) {
               return RefreshIndicator(
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: context.appColors.buttonPrimaryBg,
+                backgroundColor: context.appColors.surfacePrimary,
                 child: Center(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -1696,11 +1715,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                               .translate('no_manager_in_deal')
                           : AppLocalizations.of(context)!
                               .translate('nothing_found'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: context.appColors.textSecondary,
                       ),
                     ),
                   ),
@@ -1710,8 +1729,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
             return RefreshIndicator(
               onRefresh: () => _onRefresh(currentStatusId),
-              color: const Color(0xff1E2E52),
-              backgroundColor: Colors.white,
+              color: context.appColors.buttonPrimaryBg,
+              backgroundColor: context.appColors.surfacePrimary,
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -1780,27 +1799,68 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCustomTabBar() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      controller: _tabScrollController,
-      child: Row(
-        children: [
-          ...List.generate(_tabTitles.length, (index) {
-            if (_tabKeys.length <= index) {
-              _tabKeys.add(GlobalKey());
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildTabButton(index),
-            );
-          }),
-          if (_canCreateDealStatus)
-            IconButton(
-              icon: Image.asset('assets/icons/tabBar/add_black.png',
-                  width: 24, height: 24),
-              onPressed: _addNewTab,
-            ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
         ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        controller: _tabScrollController,
+        child: Row(
+          children: [
+            ...List.generate(_tabTitles.length, (index) {
+              if (_tabKeys.length <= index) {
+                _tabKeys.add(GlobalKey());
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _buildTabButton(index),
+              );
+            }),
+            if (_canCreateDealStatus)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: _addNewTab,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.appColors.surfacePrimary
+                            .withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: context.appColors.borderSubtle
+                              .withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Image.asset(
+                        'assets/icons/tabBar/add_black.png',
+                        width: 20,
+                        height: 20,
+                        color: context.appColors.iconPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1836,20 +1896,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(8),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       items: [
         if (_canUpdateDealStatus)
           PopupMenuItem(
             value: 'edit',
             child: ListTile(
-              leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+              leading: Icon(Icons.edit, color: context.appColors.iconSecondary),
               title: Text(
                 'Изменить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -1858,14 +1918,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+              leading:
+                  Icon(Icons.delete, color: context.appColors.iconSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ),
             ),
@@ -1913,6 +1974,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
           dealCount = state.dealCounts[statusId] ?? dealCount;
         }
 
+        DealCache.setPersistentDealCount(statusId, dealCount);
         return _buildTabButtonUI(index, isActive, dealCount);
       },
     );
@@ -1920,6 +1982,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   // Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int dealCount) {
+    final title = (_tabTitles[index]['title'] as String?)?.trim() ?? '';
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
@@ -1934,44 +1997,77 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       onLongPress: () {
         _showStatusOptions(context, index);
       },
-      child: Container(
-        // decoration: TaskStyles.tabButtonDecoration(isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        decoration: BoxDecoration(
+          color: isActive
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
+              : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isActive
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.55)
+                : context.appColors.borderSubtle.withValues(alpha: 0.35),
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : const [],
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Text(
-            //   _tabTitles[index]['title'],
-            //   style: TaskStyles.tabTextStyle.copyWith(
-            //     color: isActive
-            //         ? TaskStyles.activeColor
-            //         : TaskStyles.inactiveColor,
-            //   ),
-            // ),
-            Transform.translate(
-              offset: const Offset(12, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isActive
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xff99A4BA),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  dealCount.toString(),
-                  style: TextStyle(
-                    color: isActive ? Colors.black : const Color(0xff99A4BA),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                title.isEmpty ? 'Статус' : title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.textPrimary
+                      : context.appColors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
-            )
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.18)
+                    : context.appColors.surfaceElevated.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.85)
+                      : context.appColors.textInverse.withValues(alpha: 0.22),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                dealCount.toString(),
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.textPrimary,
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -2312,11 +2408,11 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             return Center(
               child: Text(
                 AppLocalizations.of(context)!.translate('no_deal_status'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
+                  color: context.appColors.textSecondary,
                 ),
               ),
             );
@@ -2327,8 +2423,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             children: _tabTitles.map((status) {
               return RefreshIndicator(
                 onRefresh: () => _onRefresh(status['id']),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: context.appColors.buttonPrimaryBg,
+                backgroundColor: context.appColors.surfacePrimary,
                 child: DealColumn(
                   key: ValueKey(
                     'deal_column_${status['id']}_$_dealColumnsVersion',

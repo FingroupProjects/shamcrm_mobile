@@ -1922,7 +1922,35 @@ class ApiService {
 
       // Очищаем дополнительные данные
       SharedPreferences prefs = await SharedPreferences.getInstance();
+      const appearanceKeys = <String>{
+        'app_theme_mode_v1',
+        'app_palette_preset_v1',
+        'app_background_preset_v1',
+        'app_background_image_path_v1',
+        'app_background_asset_path_v1',
+        'app_background_blur_v1',
+        'app_palette_seed_color_v1',
+      };
+      final preservedAppearanceValues = <String, Object?>{
+        for (final key in prefs.getKeys().where(appearanceKeys.contains))
+          key: prefs.get(key),
+      };
       await prefs.clear();
+      for (final entry in preservedAppearanceValues.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (value is String) {
+          await prefs.setString(key, value);
+        } else if (value is bool) {
+          await prefs.setBool(key, value);
+        } else if (value is int) {
+          await prefs.setInt(key, value);
+        } else if (value is double) {
+          await prefs.setDouble(key, value);
+        } else if (value is List<String>) {
+          await prefs.setStringList(key, value);
+        }
+      }
 
       // Перенаправляем на экран авторизации
       final context = navigatorKey.currentContext;

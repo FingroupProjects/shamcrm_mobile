@@ -1,38 +1,85 @@
+import 'dart:math' as math;
+
 import 'package:crm_task_manager/core/theme/palette/app_palette.dart';
-import 'package:crm_task_manager/core/theme/palette/blue_palette.dart';
 import 'package:crm_task_manager/core/theme/palette/dark_palette.dart';
-import 'package:crm_task_manager/core/theme/palette/green_palette.dart';
-import 'package:crm_task_manager/core/theme/palette/light_palette.dart';
 import 'package:flutter/material.dart';
 
 enum AppPalettePreset {
-  sham,
-  ocean,
-  forest,
+  custom,
+  monochrome,
+  analogous,
+  complementary,
+  triadic,
+  tetradic,
   sunset,
 }
 
 extension AppPalettePresetX on AppPalettePreset {
   String get storageKey => switch (this) {
-        AppPalettePreset.sham => 'sham',
-        AppPalettePreset.ocean => 'ocean',
-        AppPalettePreset.forest => 'forest',
+        AppPalettePreset.custom => 'custom',
+        AppPalettePreset.monochrome => 'monochrome',
+        AppPalettePreset.analogous => 'analogous',
+        AppPalettePreset.complementary => 'complementary',
+        AppPalettePreset.triadic => 'triadic',
+        AppPalettePreset.tetradic => 'tetradic',
         AppPalettePreset.sunset => 'sunset',
       };
 
   String get title => switch (this) {
-        AppPalettePreset.sham => 'ShamCRM',
-        AppPalettePreset.ocean => 'Ocean',
-        AppPalettePreset.forest => 'Forest',
+        AppPalettePreset.custom => 'Custom wheel',
+        AppPalettePreset.monochrome => 'Monochrome',
+        AppPalettePreset.analogous => 'Analogous',
+        AppPalettePreset.complementary => 'Complementary',
+        AppPalettePreset.triadic => 'Triadic',
+        AppPalettePreset.tetradic => 'Tetradic',
         AppPalettePreset.sunset => 'Sunset',
       };
 
-  AppPalette get lightPalette => switch (this) {
-        AppPalettePreset.sham => LightPalette.value,
-        AppPalettePreset.ocean => BluePalette.value,
-        AppPalettePreset.forest => GreenPalette.value,
-        AppPalettePreset.sunset => _sunsetLightPalette,
+  String get subtitle => switch (this) {
+        AppPalettePreset.custom => 'Любой цвет с цветового круга',
+        AppPalettePreset.monochrome => 'Спокойная схема в одном цвете',
+        AppPalettePreset.analogous => 'Мягкий переход соседних оттенков',
+        AppPalettePreset.complementary => 'Контрастная пара на круге',
+        AppPalettePreset.triadic => 'Три равномерных цвета',
+        AppPalettePreset.tetradic => 'Четыре выразительных акцента',
+        AppPalettePreset.sunset => 'Теплая авторская схема',
       };
+
+  AppPalette get lightPalette {
+    return switch (this) {
+      AppPalettePreset.custom => _buildPalette(
+          seed: const Color(0xFF0EA5E9),
+          accentHueShift: 0.08,
+          infoHueShift: 0.55,
+        ),
+      AppPalettePreset.monochrome => _buildPalette(
+          seed: const Color(0xFF334155),
+          accentHueShift: 0.02,
+          infoHueShift: 0.04,
+        ),
+      AppPalettePreset.analogous => _buildPalette(
+          seed: const Color(0xFF0EA5E9),
+          accentHueShift: 0.08,
+          infoHueShift: 0.12,
+        ),
+      AppPalettePreset.complementary => _buildPalette(
+          seed: const Color(0xFF7C3AED),
+          accentHueShift: 0.5,
+          infoHueShift: 0.52,
+        ),
+      AppPalettePreset.triadic => _buildPalette(
+          seed: const Color(0xFF16A34A),
+          accentHueShift: 0.33,
+          infoHueShift: 0.66,
+        ),
+      AppPalettePreset.tetradic => _buildPalette(
+          seed: const Color(0xFFEA580C),
+          accentHueShift: 0.25,
+          infoHueShift: 0.5,
+        ),
+      AppPalettePreset.sunset => _sunsetLightPalette,
+    };
+  }
 
   AppPalette get darkPalette {
     final palette = lightPalette;
@@ -61,9 +108,72 @@ extension AppPalettePresetX on AppPalettePreset {
   static AppPalettePreset fromStorageKey(String? value) {
     return AppPalettePreset.values.firstWhere(
       (preset) => preset.storageKey == value,
-      orElse: () => AppPalettePreset.sham,
+      orElse: () => AppPalettePreset.custom,
     );
   }
+}
+
+AppPalette _buildPalette({
+  required Color seed,
+  required double accentHueShift,
+  required double infoHueShift,
+}) {
+  final hsl = HSLColor.fromColor(seed);
+  Color shifted(double amount, {double saturationBoost = 0.0}) {
+    final hue = (hsl.hue + amount * 360) % 360;
+    final saturation = (hsl.saturation + saturationBoost).clamp(0.45, 0.95);
+    final lightness = hsl.lightness.clamp(0.26, 0.72);
+    return HSLColor.fromAHSL(1, hue, saturation, lightness).toColor();
+  }
+
+  final primary500 = shifted(0, saturationBoost: 0.12);
+  final accent500 = shifted(accentHueShift, saturationBoost: 0.08);
+  final info500 = shifted(infoHueShift, saturationBoost: 0.02);
+  final success500 = shifted(0.28, saturationBoost: -0.02);
+  final warning500 = shifted(0.12, saturationBoost: 0.06);
+  final danger500 = shifted(0.56, saturationBoost: 0.08);
+
+  return AppPalette(
+    primary500: primary500,
+    primary700: _darken(primary500, 0.22),
+    accent500: accent500,
+    neutral0: const Color(0xFFFFFCFA),
+    neutral50: _tint(primary500, 0.96),
+    neutral100: _tint(primary500, 0.9),
+    neutral200: _tint(primary500, 0.82),
+    neutral300: _tint(primary500, 0.7),
+    neutral400: _tint(primary500, 0.55),
+    neutral500: _tint(primary500, 0.42),
+    neutral600: _shade(primary500, 0.24),
+    neutral700: _shade(primary500, 0.36),
+    neutral800: _shade(primary500, 0.48),
+    neutral900: _shade(primary500, 0.62),
+    success500: success500,
+    warning500: warning500,
+    danger500: danger500,
+    info500: info500,
+  );
+}
+
+Color _darken(Color color, double amount) {
+  final hsl = HSLColor.fromColor(color);
+  return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
+}
+
+Color _shade(Color color, double amount) {
+  final hsl = HSLColor.fromColor(color);
+  return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
+}
+
+Color _tint(Color color, double amount) {
+  final hsl = HSLColor.fromColor(color);
+  final mix = amount.clamp(0.0, 1.0);
+  return HSLColor.fromAHSL(
+    1,
+    hsl.hue,
+    math.min(hsl.saturation + 0.04, 1.0),
+    mix,
+  ).toColor();
 }
 
 const AppPalette _sunsetLightPalette = AppPalette(

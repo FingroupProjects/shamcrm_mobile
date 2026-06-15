@@ -10,12 +10,16 @@ import 'package:provider/provider.dart';
 class AppBackgroundOverlay extends StatelessWidget {
   final AppBackgroundPreset preset;
   final String? imagePath;
+  final String? assetPath;
+  final double blurSigma;
   final bool followActiveTheme;
 
   const AppBackgroundOverlay({
     super.key,
     required this.preset,
     this.imagePath,
+    this.assetPath,
+    this.blurSigma = 54,
     this.followActiveTheme = true,
   });
 
@@ -25,6 +29,8 @@ class AppBackgroundOverlay extends StatelessWidget {
         followActiveTheme ? context.watch<AppThemeController>() : null;
     final resolvedPreset = themeController?.backgroundPreset ?? preset;
     final resolvedImagePath = themeController?.backgroundImagePath ?? imagePath;
+    final resolvedAssetPath = themeController?.backgroundAssetPath ?? assetPath;
+    final resolvedBlurSigma = themeController?.backgroundBlurSigma ?? blurSigma;
 
     if (resolvedPreset == AppBackgroundPreset.none) {
       return const SizedBox.shrink();
@@ -41,10 +47,22 @@ class AppBackgroundOverlay extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.file(
-                  file,
-                  fit: BoxFit.cover,
-                ),
+                if (resolvedBlurSigma > 0)
+                  ImageFiltered(
+                    imageFilter: ImageFilter.blur(
+                      sigmaX: resolvedBlurSigma,
+                      sigmaY: resolvedBlurSigma,
+                    ),
+                    child: Image.file(
+                      file,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                else
+                  Image.file(
+                    file,
+                    fit: BoxFit.cover,
+                  ),
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -66,6 +84,52 @@ class AppBackgroundOverlay extends StatelessWidget {
           ),
         );
       }
+    }
+
+    if (resolvedPreset == AppBackgroundPreset.custom &&
+        resolvedAssetPath != null &&
+        resolvedAssetPath.isNotEmpty) {
+      return IgnorePointer(
+        child: Opacity(
+          opacity: resolvedPreset.opacity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (resolvedBlurSigma > 0)
+                ImageFiltered(
+                  imageFilter: ImageFilter.blur(
+                    sigmaX: resolvedBlurSigma,
+                    sigmaY: resolvedBlurSigma,
+                  ),
+                  child: Image.asset(
+                    resolvedAssetPath,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Image.asset(
+                  resolvedAssetPath,
+                  fit: BoxFit.cover,
+                ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.appColors.backgroundPrimary
+                          .withValues(alpha: 0.16),
+                      context.appColors.surfacePrimary.withValues(alpha: 0.08),
+                      context.appColors.backgroundSecondary
+                          .withValues(alpha: 0.2),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return IgnorePointer(

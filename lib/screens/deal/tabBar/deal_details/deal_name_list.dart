@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_event.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_lists_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -74,6 +75,8 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
   }
 
   Future<void> _openDealNamePicker() async {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final searchController = TextEditingController();
     List<DealNameData> items = List<DealNameData>.from(dealNameList);
     bool isLoading = false;
@@ -81,7 +84,7 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -126,7 +129,7 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                           width: 44,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: const Color(0xffD7DCE9),
+                            color: colors.borderPrimary,
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
@@ -134,11 +137,9 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                       const SizedBox(height: 16),
                       Text(
                         AppLocalizations.of(context)!.translate('deal_name'),
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: textStyles.titleMd.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -148,22 +149,25 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                         decoration: InputDecoration(
                           hintText:
                               AppLocalizations.of(context)!.translate('search'),
-                          prefixIcon: const Icon(Icons.search,
-                              color: Color(0xff99A4BA)),
+                          prefixIcon:
+                              Icon(Icons.search, color: colors.textSecondary),
                           filled: true,
-                          fillColor: const Color(0xffF4F7FD),
+                          fillColor: colors.fieldBackground,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
+                        style: textStyles.bodyLg.copyWith(
+                          color: colors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Expanded(
                         child: isLoading
-                            ? const Center(
+                            ? Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
+                                  color: colors.buttonPrimaryBg,
                                 ),
                               )
                             : items.isEmpty
@@ -171,11 +175,8 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                                     child: Text(
                                       AppLocalizations.of(context)!
                                           .translate('no_data_to_display'),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff99A4BA),
+                                      style: textStyles.bodyMd.copyWith(
+                                        color: colors.textSecondary,
                                       ),
                                     ),
                                   )
@@ -188,7 +189,7 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                                       final isSelected =
                                           item.title == _textController.text;
                                       return Material(
-                                        color: const Color(0xffF4F7FD),
+                                        color: colors.fieldBackground,
                                         borderRadius: BorderRadius.circular(12),
                                         child: ListTile(
                                           shape: RoundedRectangleBorder(
@@ -197,17 +198,15 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                                           ),
                                           title: Text(
                                             item.title,
-                                            style: const TextStyle(
-                                              fontSize: 14,
+                                            style: textStyles.bodyMd.copyWith(
                                               fontWeight: FontWeight.w500,
-                                              fontFamily: 'Gilroy',
-                                              color: Color(0xff1E2E52),
+                                              color: colors.textPrimary,
                                             ),
                                           ),
                                           trailing: isSelected
-                                              ? const Icon(
+                                              ? Icon(
                                                   Icons.check,
-                                                  color: Color(0xff1E2E52),
+                                                  color: colors.buttonPrimaryBg,
                                                 )
                                               : null,
                                           onTap: () {
@@ -240,11 +239,9 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('deal_name'),
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -296,23 +293,19 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                   onChanged: (value) {
                     widget.onSelectDealName(value);
                   },
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!
                         .translate('select_deal_name'),
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff99A4BA),
+                      color: context.appColors.textSecondary,
                     ),
                     filled: true,
-                    fillColor: const Color(0xffF4F7FD),
+                    fillColor: context.appColors.fieldBackground,
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 12,
                       horizontal: 12,
@@ -334,15 +327,15 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                       borderSide: BorderSide(
                         color: widget.hasError
                             ? Colors.red
-                            : const Color(0xff1E2E52),
+                            : context.appColors.buttonPrimaryBg,
                         width: 1.5,
                       ),
                     ),
                     suffixIcon: IconButton(
                       onPressed: _openDealNamePicker,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.iconPrimary,
                       ),
                     ),
                   ),

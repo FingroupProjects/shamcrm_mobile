@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -172,11 +173,9 @@ class _ManagerForLeadState extends State<ManagerForLead> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.translate('manager'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -190,27 +189,64 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: context.appColors.fieldBackground,
+                    expandedFillColor: context.appColors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                      color: widget.hasError
+                          ? context.appColors.error
+                          : context.appColors.fieldBorder,
                       width: 1.5,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: widget.hasError ? Colors.red : Color(0xffF4F7FD),
+                      color: widget.hasError
+                          ? context.appColors.error
+                          : context.appColors.fieldBorder,
                       width: 1.5,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: context.appColors.fieldBackground,
+                      hintStyle: context.appTextStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: context.appColors.textSecondary,
+                      ),
+                      textStyle: context.appTextStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: context.appColors.textPrimary,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: context.appColors.textSecondary,
+                      ),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: context.appColors.textSecondary,
+                        ),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: context.appColors.fieldBorder,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: context.appColors.buttonPrimaryBg,
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       '${item.name} ${item.lastname ?? ''}'.trim(),
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textPrimary,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -222,11 +258,9 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                       return Text(
                         AppLocalizations.of(context)!
                             .translate('select_manager'),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: context.appTextStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textSecondary,
                         ),
                       );
                     }
@@ -234,21 +268,17 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                     return Text(
                       '${selectedItem.name} ${selectedItem.lastname ?? ''}'
                           .trim(),
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_manager'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textSecondary,
                     ),
                   ),
                   excludeSelected: false,

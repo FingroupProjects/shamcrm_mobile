@@ -14,6 +14,10 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/custom_widget/task_section_app_bar.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
@@ -74,6 +78,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
   List<FieldConfiguration>?
       originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.16);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+  Color _screenFooterBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.94);
 
   // Конфигурация полей с сервера
   List<FieldConfiguration> fieldConfigurations = [];
@@ -402,22 +415,36 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildSumField() {
+    final colors = context.appColors;
     return CustomTextField(
       controller: sumController,
       hintText: AppLocalizations.of(context)!.translate('enter_summ'),
       label: AppLocalizations.of(context)!.translate('summ'),
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]'))],
+      backgroundColor: colors.fieldBackground,
+      borderColor: colors.fieldBorder,
+      focusedBorderColor: colors.buttonPrimaryBg,
+      textColor: colors.textPrimary,
+      hintColor: colors.textSecondary,
+      labelColor: colors.textPrimary,
     );
   }
 
   Widget _buildDescriptionField() {
+    final colors = context.appColors;
     return CustomTextField(
       controller: descriptionController,
       hintText: AppLocalizations.of(context)!.translate('enter_description'),
       label: AppLocalizations.of(context)!.translate('description_list'),
       maxLines: 5,
       keyboardType: TextInputType.multiline,
+      backgroundColor: colors.fieldBackground,
+      borderColor: colors.fieldBorder,
+      focusedBorderColor: colors.buttonPrimaryBg,
+      textColor: colors.textPrimary,
+      hintColor: colors.textSecondary,
+      labelColor: colors.textPrimary,
     );
   }
 
@@ -602,6 +629,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   void _showAddFieldMenu() {
+    final colors = context.appColors;
     final RenderBox? renderBox =
         _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
@@ -619,7 +647,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -631,7 +659,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -655,7 +683,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: colors.surfacePrimary,
       items: menuItems,
     ).then((value) {
       if (value == 'manual') {
@@ -716,15 +744,20 @@ class _DealAddScreenState extends State<DealAddScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
+            final colors = context.appColors;
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: colors.borderPrimary),
+              ),
               title: Text(
                 AppLocalizations.of(context)!.translate('warning'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               content: Text(
@@ -734,7 +767,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textSecondary,
                 ),
               ),
               actions: [
@@ -746,8 +779,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
+                        buttonColor: colors.buttonSecondaryBg,
+                        textColor: colors.buttonSecondaryFg,
                       ),
                     ),
                     SizedBox(width: 8),
@@ -756,8 +789,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         buttonText: AppLocalizations.of(context)!
                             .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
-                        buttonColor: Colors.red,
-                        textColor: Colors.white,
+                        buttonColor: colors.error,
+                        textColor: colors.buttonPrimaryFg,
                       ),
                     ),
                   ],
@@ -770,6 +803,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildSettingsMode() {
+    final colors = context.appColors;
     final sortedFields = [...fieldConfigurations]
       ..sort((a, b) => a.position.compareTo(b.position));
 
@@ -792,7 +826,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     scale: scale,
                     child: Material(
                       elevation: elevation,
-                      shadowColor: Colors.black.withOpacity(0.3),
+                      shadowColor: colors.shadowColor.withOpacity(0.28),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                       child: child,
@@ -854,8 +888,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   child: CustomButton(
                     buttonText:
                         AppLocalizations.of(context)!.translate('add_field'),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonSecondaryBg,
+                    textColor: colors.buttonSecondaryFg,
                     onPressed: _showAddFieldMenu,
                   ),
                 );
@@ -877,15 +911,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary.withOpacity(0.94),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Color(0xffE5E9F2),
+                    color: colors.borderPrimary,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: colors.shadowColor.withOpacity(0.12),
                       blurRadius: 4,
                       offset: Offset(0, 2),
                     ),
@@ -896,7 +930,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   children: [
                     Icon(
                       Icons.drag_handle,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                       size: 24,
                     ),
                     const SizedBox(width: 16),
@@ -910,7 +944,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -922,7 +956,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w400,
-                                  color: Color(0xff99A4BA),
+                                  color: colors.textSecondary,
                                 ),
                               ),
                             ],
@@ -978,12 +1012,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                       height: 24,
                                       decoration: BoxDecoration(
                                         color: config.isActive
-                                            ? Color(0xff4759FF)
-                                            : Colors.white,
+                                            ? colors.buttonPrimaryBg
+                                            : colors.fieldBackground,
                                         border: Border.all(
                                           color: config.isActive
-                                              ? Color(0xff4759FF)
-                                              : Color(0xffCCD5E0),
+                                              ? colors.buttonPrimaryBg
+                                              : colors.borderPrimary,
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -994,7 +1028,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                         child: Icon(
                                           Icons.check_rounded,
                                           size: 16,
-                                          color: Colors.white,
+                                          color: colors.buttonPrimaryFg,
                                         ),
                                       ),
                                     ),
@@ -1007,8 +1041,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         color: config.isActive
-                                            ? Color(0xff1E2E52)
-                                            : Color(0xff6B7A99),
+                                            ? colors.textPrimary
+                                            : colors.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -1027,10 +1061,13 @@ class _DealAddScreenState extends State<DealAddScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfaceElevated.withOpacity(0.96),
+            border: Border(
+              top: BorderSide(color: colors.borderPrimary),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: colors.shadowColor.withOpacity(0.08),
                 blurRadius: 4,
                 offset: Offset(0, -2),
               ),
@@ -1040,7 +1077,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
               ? Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Color(0xff4759FF).withOpacity(0.7),
+                    color: colors.buttonPrimaryBg.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -1052,15 +1089,16 @@ class _DealAddScreenState extends State<DealAddScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.buttonPrimaryFg,
+                            ),
                           ),
                         ),
                         SizedBox(width: 12),
                         Text(
                           AppLocalizations.of(context)!.translate('saving'),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
@@ -1072,8 +1110,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 )
               : CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: Color(0xff4759FF),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                   onPressed: () async {
                     setState(() {
                       isSavingFieldOrder = true;
@@ -1235,6 +1273,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildFileSelection() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1244,7 +1283,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         SizedBox(height: 16),
@@ -1262,10 +1301,27 @@ class _DealAddScreenState extends State<DealAddScreen> {
                     onTap: _pickFile,
                     child: Container(
                       width: 100,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png',
-                              width: 60, height: 60),
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: colors.fieldBackground.withOpacity(0.92),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: colors.borderPrimary),
+                            ),
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/icons/files/add_for_dark.png',
+                              width: 60,
+                              height: 60,
+                            ),
+                          ),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1273,7 +1329,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -1306,7 +1362,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -1326,7 +1382,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colors.surfacePrimary,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -1336,8 +1392,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close,
-                              size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(
+                            Icons.close,
+                            size: 16,
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ),
                     ),
@@ -1398,44 +1457,23 @@ class _DealAddScreenState extends State<DealAddScreen> {
   @override
   Widget build(BuildContext context) {
     //print('DealAddScreen: Building with selectedLead: $selectedLead, selectedManager: $selectedManager');
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+    final footerSurface = _screenFooterBackground(context);
+    final fieldBackground = _screenFieldBackground(context);
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Transform.translate(
-          offset: const Offset(-10, 0),
-          child: Text(
-            AppLocalizations.of(context)!.translate('new_deal'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
-        centerTitle: false,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Transform.translate(
-            offset: const Offset(0, -2),
-            child: IconButton(
-              icon: Image.asset('assets/icons/arrow-left.png',
-                  width: 24, height: 24),
-              onPressed: () {
-                Navigator.pop(context, widget.statusId);
-                context.read<DealBloc>().add(FetchDealStatuses());
-              },
-            ),
-          ),
-        ),
-        leadingWidth: 40,
-        // Добавляем кнопку обновления и настройки
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: TaskSectionAppBar(
+        title: AppLocalizations.of(context)!.translate('new_deal'),
+        onBack: () {
+          Navigator.pop(context, widget.statusId);
+          context.read<DealBloc>().add(FetchDealStatuses());
+        },
         actions: [
           IconButton(
-            icon: Icon(
-              isSettingsMode ? Icons.close : Icons.settings,
-              color: Color(0xff1E2E52),
-            ),
+            icon: Icon(isSettingsMode ? Icons.close : Icons.settings),
+            color: context.appColors.iconPrimary,
             onPressed: () async {
               if (isSettingsMode) {
                 // Выходим из режима настроек
@@ -1550,233 +1588,271 @@ class _DealAddScreenState extends State<DealAddScreen> {
           //   tooltip: 'Обновить структуру полей',
           // ),
         ],
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
-      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
-          listener: (context, configState) {
-        if (kDebugMode) {
-          print(
-              'DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-        }
-
-        if (configState is FieldConfigurationLoaded) {
-          if (kDebugMode) {
-            print(
-                'DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
-          }
-          setState(() {
-            fieldConfigurations = configState.fields;
-            isConfigurationLoaded = true;
-          });
-        } else if (configState is FieldConfigurationError) {
-          if (kDebugMode) {
-            print('DealAddScreen: Configuration error: ${configState.message}');
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Ошибка загрузки конфигурации: ${configState.message}',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
             ),
-          );
-        }
-      }, builder: (context, configState) {
-        if (kDebugMode) {
-          print(
-              'DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
-        }
-
-        if (configState is FieldConfigurationLoading) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
-            ),
-          );
-        }
-
-        if (!isConfigurationLoaded) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-                SizedBox(height: 16),
-                Text('Загрузка конфигурации...'),
-              ],
-            ),
-          );
-        }
-
-        if (isSettingsMode) {
-          return _buildSettingsMode();
-        }
-
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (context) => MainFieldBloc()),
-          ],
-          child: BlocListener<DealBloc, DealState>(
-            listener: (context, state) {
-              if (state is DealError) {
-                showCustomSnackBar(
-                  context: context,
-                  message:
-                      AppLocalizations.of(context)!.translate(state.message),
-                  isSuccess: false,
-                );
-              } else if (state is DealSuccess) {
-                showCustomSnackBar(
-                  context: context,
-                  message:
-                      AppLocalizations.of(context)!.translate(state.message),
-                  isSuccess: true,
-                );
-                if (context.mounted) {
-                  Navigator.pop(context, widget.statusId);
-                  context.read<DealBloc>().add(FetchDealStatuses());
-                }
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 84),
+            child:
+                BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+                    listener: (context, configState) {
+              if (kDebugMode) {
+                print(
+                    'DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
               }
-            },
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        FocusScope.of(context).unfocus();
-                      },
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ...(() {
-                              final configured = _buildConfiguredFieldWidgets();
-                              if (configured.isNotEmpty) {
-                                return configured;
-                              }
-                              return _buildDefaultDealWidgets();
-                            })(),
 
-                            // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
-                            ...customFields.where((field) {
-                              // Исключаем поля, которые уже есть в серверной конфигурации
-                              return !fieldConfigurations.any((config) =>
-                                  (config.isCustomField &&
-                                      config.fieldName == field.fieldName) ||
-                                  (config.isDirectory &&
-                                      config.directoryId == field.directoryId));
-                            }).map((field) {
-                              return Column(
-                                children: [
-                                  field.isDirectoryField &&
-                                          field.directoryId != null
-                                      ? MainFieldDropdownWidget(
-                                          directoryId: field.directoryId!,
-                                          directoryName: field.fieldName,
-                                          selectedField: null,
-                                          onSelectField:
-                                              (MainField selectedField) {
-                                            setState(() {
-                                              final idx =
-                                                  customFields.indexOf(field);
-                                              customFields[idx] =
-                                                  field.copyWith(
-                                                entryId: selectedField.id,
-                                                controller:
-                                                    TextEditingController(
-                                                        text: selectedField
-                                                            .value),
-                                              );
-                                            });
-                                          },
-                                          controller: field.controller,
-                                          onSelectEntryId: (int entryId) {
-                                            setState(() {
-                                              final idx =
-                                                  customFields.indexOf(field);
-                                              customFields[idx] =
-                                                  field.copyWith(
-                                                entryId: entryId,
-                                              );
-                                            });
-                                          })
-                                      : CustomFieldWidget(
-                                          fieldName: field.fieldName,
-                                          valueController: field.controller,
-                                          type: field.type,
-                                          isDirectory: false,
-                                        ),
-                                  const SizedBox(height: 16),
-                                ],
-                              );
-                            }).toList(),
-
-                            // Файлы (всегда показываем)
-                            _buildFileSelection(),
-                            const SizedBox(height: 16),
-                          ],
-                        ),
+              if (configState is FieldConfigurationLoaded) {
+                if (kDebugMode) {
+                  print(
+                      'DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
+                }
+                setState(() {
+                  fieldConfigurations = configState.fields;
+                  isConfigurationLoaded = true;
+                });
+              } else if (configState is FieldConfigurationError) {
+                if (kDebugMode) {
+                  print(
+                      'DealAddScreen: Configuration error: ${configState.message}');
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Ошибка загрузки конфигурации: ${configState.message}',
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
                       ),
                     ),
+                    backgroundColor: Colors.red,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    child: Row(
+                );
+              }
+            }, builder: (context, configState) {
+              if (kDebugMode) {
+                print(
+                    'DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+              }
+
+              if (configState is FieldConfigurationLoading) {
+                return Center(
+                  child: CircularProgressIndicator(
+                    color: context.appColors.buttonPrimaryBg,
+                  ),
+                );
+              }
+
+              if (!isConfigurationLoaded) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: context.appColors.buttonPrimaryBg,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Загрузка конфигурации...',
+                        style: TextStyle(
+                          color: context.appColors.textPrimary,
+                          fontFamily: 'Gilroy',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (isSettingsMode) {
+                return _buildSettingsMode();
+              }
+
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (context) => MainFieldBloc()),
+                ],
+                child: BlocListener<DealBloc, DealState>(
+                  listener: (context, state) {
+                    if (state is DealError) {
+                      showCustomSnackBar(
+                        context: context,
+                        message: AppLocalizations.of(context)!
+                            .translate(state.message),
+                        isSuccess: false,
+                      );
+                    } else if (state is DealSuccess) {
+                      showCustomSnackBar(
+                        context: context,
+                        message: AppLocalizations.of(context)!
+                            .translate(state.message),
+                        isSuccess: true,
+                      );
+                      if (context.mounted) {
+                        Navigator.pop(context, widget.statusId);
+                        context.read<DealBloc>().add(FetchDealStatuses());
+                      }
+                    }
+                  },
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                       children: [
                         Expanded(
-                          child: CustomButton(
-                            buttonText: AppLocalizations.of(context)!
-                                .translate('cancel'),
-                            buttonColor: Color(0xffF4F7FD),
-                            textColor: Colors.black,
-                            onPressed: () {
-                              //print('DealAddScreen: Cancel button pressed');
-                              Navigator.pop(context, widget.statusId);
+                          child: GestureDetector(
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
                             },
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ...(() {
+                                    final configured =
+                                        _buildConfiguredFieldWidgets();
+                                    if (configured.isNotEmpty) {
+                                      return configured;
+                                    }
+                                    return _buildDefaultDealWidgets();
+                                  })(),
+
+                                  // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
+                                  ...customFields.where((field) {
+                                    // Исключаем поля, которые уже есть в серверной конфигурации
+                                    return !fieldConfigurations.any((config) =>
+                                        (config.isCustomField &&
+                                            config.fieldName ==
+                                                field.fieldName) ||
+                                        (config.isDirectory &&
+                                            config.directoryId ==
+                                                field.directoryId));
+                                  }).map((field) {
+                                    return Column(
+                                      children: [
+                                        field.isDirectoryField &&
+                                                field.directoryId != null
+                                            ? MainFieldDropdownWidget(
+                                                directoryId: field.directoryId!,
+                                                directoryName: field.fieldName,
+                                                selectedField: null,
+                                                onSelectField:
+                                                    (MainField selectedField) {
+                                                  setState(() {
+                                                    final idx = customFields
+                                                        .indexOf(field);
+                                                    customFields[idx] =
+                                                        field.copyWith(
+                                                      entryId: selectedField.id,
+                                                      controller:
+                                                          TextEditingController(
+                                                              text:
+                                                                  selectedField
+                                                                      .value),
+                                                    );
+                                                  });
+                                                },
+                                                controller: field.controller,
+                                                onSelectEntryId: (int entryId) {
+                                                  setState(() {
+                                                    final idx = customFields
+                                                        .indexOf(field);
+                                                    customFields[idx] =
+                                                        field.copyWith(
+                                                      entryId: entryId,
+                                                    );
+                                                  });
+                                                })
+                                            : CustomFieldWidget(
+                                                fieldName: field.fieldName,
+                                                valueController:
+                                                    field.controller,
+                                                type: field.type,
+                                                isDirectory: false,
+                                              ),
+                                        const SizedBox(height: 16),
+                                      ],
+                                    );
+                                  }).toList(),
+
+                                  // Файлы (всегда показываем)
+                                  _buildFileSelection(),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: BlocBuilder<DealBloc, DealState>(
-                            builder: (context, state) {
-                              //print('DealAddScreen: DealBloc builder state: $state');
-                              if (state is DealLoading) {
-                                return Center(
-                                    child: CircularProgressIndicator(
-                                        color: Color(0xff1E2E52)));
-                              } else {
-                                return CustomButton(
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: footerSurface,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: subtleBorder,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: CustomButton(
                                   buttonText: AppLocalizations.of(context)!
-                                      .translate('add'),
-                                  buttonColor: Color(0xff4759FF),
-                                  textColor: Colors.white,
-                                  onPressed: _submitForm,
-                                );
-                              }
-                            },
+                                      .translate('cancel'),
+                                  buttonColor: fieldBackground,
+                                  textColor: primaryText,
+                                  onPressed: () {
+                                    //print('DealAddScreen: Cancel button pressed');
+                                    Navigator.pop(context, widget.statusId);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: BlocBuilder<DealBloc, DealState>(
+                                  builder: (context, state) {
+                                    //print('DealAddScreen: DealBloc builder state: $state');
+                                    if (state is DealLoading) {
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          color:
+                                              context.appColors.buttonPrimaryBg,
+                                        ),
+                                      );
+                                    } else {
+                                      return CustomButton(
+                                        buttonText:
+                                            AppLocalizations.of(context)!
+                                                .translate('add'),
+                                        buttonColor:
+                                            context.appColors.buttonPrimaryBg,
+                                        textColor:
+                                            context.appColors.buttonPrimaryFg,
+                                        onPressed: _submitForm,
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            }),
           ),
-        );
-      }),
+        ],
+      ),
     );
   }
 

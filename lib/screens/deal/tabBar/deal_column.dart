@@ -247,7 +247,7 @@ class _DealColumnState extends State<DealColumn> {
       targets: currentTargets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
       textStyleSkip: TextStyle(
-        color: Colors.white,
+        color: context.appColors.textInverse,
         fontFamily: 'Gilroy',
         fontSize: 20,
         fontWeight: FontWeight.w600,
@@ -258,7 +258,7 @@ class _DealColumnState extends State<DealColumn> {
           Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
         ],
       ),
-      colorShadow: Color(0xff1E2E52),
+      colorShadow: context.appColors.buttonPrimaryBg,
       onSkip: () {
         prefs.setBool('isTutorialShownDealColumn', true);
         setState(() {
@@ -384,7 +384,7 @@ class _DealColumnState extends State<DealColumn> {
             }
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: DealCard(
                 key: index == 0 ? keyDealCard : null,
                 dropdownKey: index == 0 ? keyDropdown : null,
@@ -438,11 +438,11 @@ class _DealColumnState extends State<DealColumn> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: BlocBuilder<DealBloc, DealState>(
+ @override
+Widget build(BuildContext context) {
+  return Stack(
+    children: [
+      BlocBuilder<DealBloc, DealState>(
         builder: (context, state) {
           if (state is DealLoading) {
             return const Center(
@@ -470,35 +470,50 @@ class _DealColumnState extends State<DealColumn> {
               },
             );
           } else if (state is DealError) {
-            // Обработка ошибок...
             return const SizedBox();
           }
           return const SizedBox();
         },
       ),
-      floatingActionButton: _canCreateDeal
-          ? FloatingActionButton(
-              key: keyFloatingActionButton,
-              onPressed: () {
-                if (mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          DealAddScreen(statusId: widget.statusId),
-                    ),
-                  ).then((_) {
-                    _dealBloc.add(FetchDeals(
-                      widget.statusId,
-                      salesFunnelId: widget.salesFunnelId,
-                    ));
-                  });
-                }
-              },
-              backgroundColor: Color(0xff1E2E52),
-              child: Icon(Icons.add, color: Colors.white),
-            )
-          : null,
-    );
-  }
+      if (_canCreateDeal)
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            key: keyFloatingActionButton,
+            onPressed: () {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        DealAddScreen(statusId: widget.statusId),
+                  ),
+                ).then((_) {
+                  _dealBloc.add(FetchDeals(
+                    widget.statusId,
+                    salesFunnelId: widget.salesFunnelId,
+                  ));
+                });
+              }
+            },
+            backgroundColor: context.appColors.buttonPrimaryBg,
+            foregroundColor: context.appColors.buttonPrimaryFg,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: context.appColors.borderPrimary.withOpacity(0.45),
+              ),
+            ),
+            child: Icon(
+              Icons.add_rounded,
+              size: 30,
+              color: context.appColors.buttonPrimaryFg,
+            ),
+          ),
+        ),
+    ],
+  );
+}
 }

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class _LeadWithManagerState extends State<LeadWithManager> {
         Text(
           lead.name,
           style: TextStyle(
-            color: const Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
             fontSize: nameFontSize,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -55,7 +56,7 @@ class _LeadWithManagerState extends State<LeadWithManager> {
             child: Text(
               lead.phone!.trim(),
               style: TextStyle(
-                color: const Color(0xff99A4BA),
+                color: context.appColors.textSecondary,
                 fontSize: phoneFontSize,
                 fontWeight: FontWeight.w400,
                 fontFamily: 'Gilroy',
@@ -123,7 +124,8 @@ class _LeadWithManagerState extends State<LeadWithManager> {
     return CustomDropdownPaginatedResponse<LeadData>(
       items: items,
       hasMore: (pagination?.currentPage ?? page) <
-          (pagination?.totalPages ?? (items.length >= _pageSize ? page + 1 : page)),
+          (pagination?.totalPages ??
+              (items.length >= _pageSize ? page + 1 : page)),
     );
   }
 
@@ -135,11 +137,9 @@ class _LeadWithManagerState extends State<LeadWithManager> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('lead'),
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -167,14 +167,53 @@ class _LeadWithManagerState extends State<LeadWithManager> {
               overlayHeight: 400,
               enabled: true,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder:
-                    Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedFillColor: context.appColors.fieldBackground,
+                expandedFillColor: context.appColors.surfacePrimary,
+                closedBorder: Border.all(
+                  color: context.appColors.fieldBorder,
+                  width: 1,
+                ),
                 closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder:
-                    Border.all(color: const Color(0xffF4F7FD), width: 1),
+                expandedBorder: Border.all(
+                  color: context.appColors.fieldBorder,
+                  width: 1,
+                ),
                 expandedBorderRadius: BorderRadius.circular(12),
+                searchFieldDecoration: SearchFieldDecoration(
+                  fillColor: context.appColors.fieldBackground,
+                  hintStyle: context.appTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textSecondary,
+                  ),
+                  textStyle: context.appTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textPrimary,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: context.appColors.textSecondary,
+                  ),
+                  suffixIcon: (onClear) => IconButton(
+                    onPressed: onClear,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: context.appColors.textSecondary,
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: context.appColors.fieldBorder,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: context.appColors.buttonPrimaryBg,
+                      width: 1.2,
+                    ),
+                  ),
+                ),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return _buildLeadInfo(item);
@@ -183,11 +222,9 @@ class _LeadWithManagerState extends State<LeadWithManager> {
                 if (state is GetAllLeadLoading) {
                   return Text(
                     AppLocalizations.of(context)!.translate('select_leads'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textSecondary,
                     ),
                   );
                 }
@@ -198,11 +235,9 @@ class _LeadWithManagerState extends State<LeadWithManager> {
               },
               hintBuilder: (context, hint, enabled) => Text(
                 AppLocalizations.of(context)!.translate('select_lead'),
-                style: const TextStyle(
-                  fontSize: 14,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textSecondary,
                 ),
               ),
               excludeSelected: false,

@@ -588,9 +588,20 @@ class TaskColumnState extends State<TaskColumn> {
                   }
                 });
               },
-              backgroundColor: colors.textPrimary,
-              child: Image.asset('assets/icons/tabBar/add.png',
-                  width: 24, height: 24),
+              backgroundColor: colors.buttonPrimaryBg,
+              foregroundColor: colors.buttonPrimaryFg,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: colors.borderPrimary.withOpacity(0.45),
+                ),
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 30,
+                color: colors.buttonPrimaryFg,
+              ),
             )
           : null,
     );
