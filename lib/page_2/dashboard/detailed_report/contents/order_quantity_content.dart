@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import '../../../../../models/page_2/dashboard/order_quantity_content.dart';
 import '../../../../../bloc/page_2_BLOC/dashboard/order_quantity/sales_dashboard_order_quantity_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
@@ -19,8 +20,10 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
         Expanded(
           child: data.isNotEmpty
               ? ListView.separated(
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   itemCount: data.length,
                   itemBuilder: (context, index) {
                     final chartData = data[index];
@@ -37,35 +40,33 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.shopping_cart_outlined,
               size: 64,
-              color: Color(0xff99A4BA),
+              color: colors.textSecondary,
             ),
             const SizedBox(height: 16),
             Text(
               localizations.translate('no_order_quantity_data'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 18,
+              style: textStyles.titleMd.copyWith(
                 fontWeight: FontWeight.w600,
-                color: const Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               localizations.translate('order_list_empty'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                color: const Color(0xff99A4BA),
+              style: textStyles.bodyMd.copyWith(
+                color: colors.textSecondary,
               ),
             ),
           ],
@@ -76,21 +77,21 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+          CircularProgressIndicator(
+            color: colors.buttonPrimaryBg,
           ),
           const SizedBox(height: 16),
           Text(
             localizations.translate('loading_data'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: const Color(0xff64748B),
+            style: textStyles.bodyLg.copyWith(
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -100,7 +101,9 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -108,59 +111,57 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xffFEF2F2),
+            color: colors.surfacePrimary.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xffFECACA),
+              color: colors.error,
               width: 1,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
               const SizedBox(height: 16),
               Text(
                 localizations.translate('error_loading_dialog'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: const Color(0xff64748B),
+                style: textStyles.bodyMd.copyWith(
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardOrderQuantityBloc>().add(const LoadOrderQuantityReport());
+                  context
+                      .read<SalesDashboardOrderQuantityBloc>()
+                      .add(const LoadOrderQuantityReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.textInverse,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   localizations.translate('retry'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
+                  style: textStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -174,7 +175,8 @@ class _OrderQuantityContentState extends State<OrderQuantityContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardOrderQuantityBloc, SalesDashboardOrderQuantityState>(
+    return BlocBuilder<SalesDashboardOrderQuantityBloc,
+        SalesDashboardOrderQuantityState>(
       builder: (context, state) {
         if (state is SalesDashboardOrderQuantityLoading) {
           return _buildLoadingState();

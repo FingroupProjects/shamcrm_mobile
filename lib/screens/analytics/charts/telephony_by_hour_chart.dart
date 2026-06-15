@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -130,49 +131,49 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
       confirmText: 'OK',
       builder: (context, child) {
         final base = Theme.of(context);
-        const accent = Color(0xff1E2E52);
+        final colors = context.appColors;
         return Theme(
           data: base.copyWith(
-            dialogTheme: const DialogThemeData(
-              backgroundColor: Colors.white,
+            dialogTheme: DialogThemeData(
+              backgroundColor: colors.surfacePrimary,
             ),
             colorScheme: base.colorScheme.copyWith(
-              primary: accent,
-              onPrimary: Colors.white,
-              onSurface: accent,
-              surface: Colors.white,
+              primary: colors.buttonPrimaryBg,
+              onPrimary: colors.buttonPrimaryFg,
+              onSurface: colors.textPrimary,
+              surface: colors.surfacePrimary,
             ),
             textTheme: base.textTheme.apply(
-              bodyColor: accent,
-              displayColor: accent,
+              bodyColor: colors.textPrimary,
+              displayColor: colors.textPrimary,
               fontFamily: 'Gilroy',
             ),
-            datePickerTheme: const DatePickerThemeData(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
-              headerBackgroundColor: Colors.white,
-              headerForegroundColor: accent,
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: colors.surfacePrimary,
+              headerBackgroundColor: colors.surfacePrimary,
+              headerForegroundColor: colors.textPrimary,
               weekdayStyle: TextStyle(
-                color: accent,
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
               ),
               dayStyle: TextStyle(
-                color: accent,
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
               ),
               yearStyle: TextStyle(
-                color: accent,
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
               ),
               cancelButtonStyle: ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(accent),
+                foregroundColor: WidgetStatePropertyAll(colors.textPrimary),
                 textStyle: WidgetStatePropertyAll(
                   TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600),
                 ),
               ),
               confirmButtonStyle: ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(accent),
+                foregroundColor: WidgetStatePropertyAll(colors.textPrimary),
                 textStyle: WidgetStatePropertyAll(
                   TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700),
                 ),
@@ -193,10 +194,11 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
   void _showDetails() {
     final items = _data?.chart ?? [];
     if (items.isEmpty) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -215,7 +217,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -225,11 +227,11 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: colors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -238,7 +240,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: colors.borderSubtle),
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return ListTile(
@@ -248,7 +251,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -256,7 +259,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         '${analyticsText(context, 'incoming', fallback: 'Incoming')}: ${item.incoming}, ${analyticsText(context, 'outgoing', fallback: 'Outgoing')}: ${item.outgoing}, ${analyticsText(context, 'missed', fallback: 'Missed')}: ${item.missed}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -265,7 +268,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0EA5E9),
+                          color: colors.info,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -332,6 +335,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final items = _data?.chart ?? [];
     final isEmpty = items.isEmpty ||
@@ -360,16 +364,10 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.4)),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,7 +397,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                       ),
                       child: Icon(
                         Icons.schedule,
-                        color: Colors.white,
+                        color: colors.textInverse,
                         size: 20,
                       ),
                     ),
@@ -412,7 +410,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         style: TextStyle(
                           fontSize: responsive.titleFontSize,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -421,9 +419,9 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                     IconButton(
                       onPressed: _showDetails,
                       icon: Icon(Icons.crop_free,
-                          color: Color(0xff64748B), size: 22),
+                          color: colors.iconSecondary, size: 22),
                       style: IconButton.styleFrom(
-                        backgroundColor: Color(0xffF1F5F9),
+                        backgroundColor: colors.surfaceElevated,
                         minimumSize: Size(40, 40),
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
@@ -445,9 +443,9 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xffF1F5F9),
+                        color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xffE2E8F0)),
+                        border: Border.all(color: colors.borderSubtle),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -455,7 +453,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                           Icon(
                             Icons.calendar_month_outlined,
                             size: 16,
-                            color: Color(0xff64748B),
+                            color: colors.iconSecondary,
                           ),
                           SizedBox(width: 6),
                           Text(
@@ -463,7 +461,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                             style: TextStyle(
                               fontSize: isCompact ? 12 : 13,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xff334155),
+                              color: colors.textPrimary,
                               fontFamily: 'Golos',
                             ),
                           ),
@@ -487,8 +485,8 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                             _error!,
                             fallback: _error!,
                           ),
-                          style: const TextStyle(
-                            color: Color(0xffEF4444),
+                          style: TextStyle(
+                            color: colors.error,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -507,9 +505,9 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                               barTouchData: BarTouchData(
                                 enabled: true,
                                 touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) => Colors.white,
-                                  tooltipBorder: const BorderSide(
-                                    color: Color(0xffE2E8F0),
+                                  getTooltipColor: (_) => colors.surfacePrimary,
+                                  tooltipBorder: BorderSide(
+                                    color: colors.borderSubtle,
                                   ),
                                   tooltipRoundedRadius: 12,
                                   tooltipPadding: const EdgeInsets.symmetric(
@@ -530,7 +528,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                     return BarTooltipItem(
                                       '${item.hour}\n',
                                       TextStyle(
-                                        color: const Color(0xff0F172A),
+                                        color: colors.textPrimary,
                                         fontWeight: FontWeight.w700,
                                         fontSize: responsive.smallFontSize,
                                         fontFamily: 'Golos',
@@ -570,7 +568,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                           text:
                                               '${analyticsText(context, 'total', fallback: 'Total')}: ${item.total}',
                                           style: TextStyle(
-                                            color: const Color(0xff0F172A),
+                                            color: colors.textPrimary,
                                             fontWeight: FontWeight.w700,
                                             fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
@@ -585,7 +583,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                 show: true,
                                 drawVerticalLine: false,
                                 getDrawingHorizontalLine: (value) => FlLine(
-                                  color: const Color(0xffE2E8F0),
+                                  color: colors.borderSubtle,
                                   strokeWidth: 1,
                                 ),
                               ),
@@ -600,7 +598,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                     ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
-                                      color: Color(0xff94A3B8),
+                                      color: colors.textMuted,
                                       fontFamily: 'Golos',
                                     ),
                                   ),
@@ -613,7 +611,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                         value.toInt().toString(),
                                         style: TextStyle(
                                           fontSize: responsive.xSmallFontSize,
-                                          color: Color(0xff64748B),
+                                          color: colors.textSecondary,
                                           fontFamily: 'Golos',
                                         ),
                                       );
@@ -638,7 +636,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                                           displayItems[index].hour,
                                           style: TextStyle(
                                             fontSize: responsive.xSmallFontSize,
-                                            color: Color(0xff64748B),
+                                            color: colors.textSecondary,
                                             fontFamily: 'Golos',
                                           ),
                                         ),
@@ -713,7 +711,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
                     style: TextStyle(
                       fontSize: responsive.smallFontSize,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff64748B),
+                      color: colors.textSecondary,
                       fontFamily: 'Golos',
                     ),
                   );
@@ -763,7 +761,8 @@ class _LegendToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = enabled ? color : const Color(0xffCBD5E1);
+    final baseColor =
+        enabled ? color : context.appColors.borderSubtle.withValues(alpha: 0.9);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -780,8 +779,9 @@ class _LegendToggle extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: ResponsiveHelper(context).smallFontSize,
-              color:
-                  enabled ? const Color(0xff64748B) : const Color(0xff94A3B8),
+              color: enabled
+                  ? context.appColors.textSecondary
+                  : context.appColors.textMuted,
               fontFamily: 'Golos',
             ),
           ),

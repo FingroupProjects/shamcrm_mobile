@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -109,76 +110,83 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.82,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      _title,
-                      style: TextStyle(
-                        fontSize: ResponsiveHelper(context).titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        color: _primaryTextColor,
-                        fontFamily: 'Golos',
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _title,
+                          style: TextStyle(
+                            fontSize: ResponsiveHelper(context).titleFontSize,
+                            fontWeight: FontWeight.w700,
+                            color: _primaryTextColor,
+                            fontFamily: 'Golos',
+                          ),
+                        ),
                       ),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _loadData();
+                        },
+                        icon: Icon(Icons.refresh,
+                            color: context.appColors.iconSecondary),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(Icons.close,
+                            color: context.appColors.iconSecondary),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: ResponsiveHelper(context).smallSpacing),
+                  Expanded(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _projects.length,
+                      separatorBuilder: (_, __) => Divider(
+                          height: 1, color: context.appColors.borderSubtle),
+                      itemBuilder: (context, index) {
+                        final item = _projects[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            item.projectName,
+                            style: TextStyle(
+                              fontSize: ResponsiveHelper(context).bodyFontSize,
+                              fontWeight: FontWeight.w600,
+                              color: _primaryTextColor,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          trailing: Text(
+                            item.totalTasks.toString(),
+                            style: TextStyle(
+                              fontSize: ResponsiveHelper(context).smallFontSize,
+                              fontWeight: FontWeight.w600,
+                              color: context.appColors.error,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _loadData();
-                    },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
                   ),
                 ],
               ),
-              SizedBox(height: ResponsiveHelper(context).smallSpacing),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: _projects.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final item = _projects[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        item.projectName,
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).bodyFontSize,
-                          fontWeight: FontWeight.w600,
-                          color: _primaryTextColor,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      trailing: Text(
-                        item.totalTasks.toString(),
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).smallFontSize,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xffEF4444),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -217,7 +225,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
         barRods: [
           BarChartRodData(
             toY: barTotal <= 0 ? 0.001 : barTotal,
-            color: stackItems.isEmpty ? const Color(0xffEF4444) : null,
+            color: stackItems.isEmpty ? context.appColors.error : null,
             width: 12,
             borderRadius: BorderRadius.circular(6),
             rodStackItems: stackItems,
@@ -234,25 +242,25 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
     if (name.contains('готов') ||
         name.contains('успеш') ||
         name.contains('success')) {
-      return const Color(0xff10B981);
+      return context.appColors.success;
     }
     if (name.contains('просроч') ||
         name.contains('отклон') ||
         name.contains('failed') ||
         name.contains('cancel') ||
         name.contains('error')) {
-      return const Color(0xffEF4444);
+      return context.appColors.error;
     }
     if (name.contains('процес') ||
         name.contains('в работе') ||
         name.contains('progress')) {
-      return const Color(0xff8B5CF6);
+      return context.appColors.info;
     }
     if (name.contains('ожида') ||
         name.contains('проверк') ||
         name.contains('pending') ||
         name.contains('review')) {
-      return const Color(0xff6366F1);
+      return context.appColors.buttonPrimaryBg;
     }
 
     final parsed = _tryParseHexColor(status.color);
@@ -299,16 +307,10 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff334155).withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +337,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                   ),
                   child: Icon(
                     Icons.assignment_outlined,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -346,7 +348,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: _primaryTextColor,
+                      color: context.appColors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -354,10 +356,10 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: context.appColors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: context.appColors.backgroundSecondary,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -380,8 +382,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                             _error!,
                             fallback: _error!,
                           ),
-                          style: const TextStyle(
-                            color: Color(0xffEF4444),
+                          style: TextStyle(
+                            color: context.appColors.error,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -399,9 +401,10 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                 barTouchData: BarTouchData(
                                   enabled: true,
                                   touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (_) => Colors.white,
-                                    tooltipBorder: const BorderSide(
-                                      color: Color(0xffE2E8F0),
+                                    getTooltipColor: (_) =>
+                                        context.appColors.surfacePrimary,
+                                    tooltipBorder: BorderSide(
+                                      color: context.appColors.borderSubtle,
                                     ),
                                     tooltipRoundedRadius: 12,
                                     tooltipPadding: const EdgeInsets.symmetric(
@@ -428,7 +431,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                           text:
                                               '${analyticsText(context, 'total_tasks', fallback: 'Total tasks')}: ${item.totalTasks}',
                                           style: TextStyle(
-                                            color: const Color(0xffEF4444),
+                                            color: context.appColors.error,
                                             fontWeight: FontWeight.w700,
                                             fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
@@ -481,7 +484,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                   show: true,
                                   drawVerticalLine: false,
                                   getDrawingHorizontalLine: (value) => FlLine(
-                                    color: const Color(0xffE2E8F0),
+                                    color: context.appColors.borderSubtle,
                                     strokeWidth: 1,
                                   ),
                                 ),
@@ -496,7 +499,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                       ),
                                       style: TextStyle(
                                         fontSize: responsive.xSmallFontSize,
-                                        color: Color(0xff94A3B8),
+                                        color: context.appColors.textMuted,
                                         fontFamily: 'Golos',
                                       ),
                                     ),
@@ -514,7 +517,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                             style: TextStyle(
                                               fontSize:
                                                   responsive.xSmallFontSize,
-                                              color: Color(0xff64748B),
+                                              color: context
+                                                  .appColors.textSecondary,
                                               fontFamily: 'Golos',
                                             ),
                                           ),
@@ -543,7 +547,8 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
                                               style: TextStyle(
                                                 fontSize:
                                                     responsive.xSmallFontSize,
-                                                color: Color(0xff64748B),
+                                                color: context
+                                                    .appColors.textSecondary,
                                                 fontFamily: 'Golos',
                                               ),
                                               maxLines: 1,

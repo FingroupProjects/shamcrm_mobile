@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -123,11 +124,12 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   void _showDropdown() {
     final allChannels = _data?.channels ?? [];
     if (allChannels.isEmpty) return;
+    final colors = context.appColors;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -155,7 +157,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -174,14 +176,14 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                               fallback: 'Reset',
                             ),
                             style: TextStyle(
-                              color: Color(0xffEF4444),
+                              color: colors.error,
                               fontFamily: 'Golos',
                             ),
                           ),
                         ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.close, color: Color(0xff64748B)),
+                        icon: Icon(Icons.close, color: colors.iconSecondary),
                       ),
                     ],
                   ),
@@ -198,7 +200,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           selected: isSelected,
-                          selectedTileColor: Color(0xffF1F5F9),
+                          selectedTileColor:
+                              colors.surfaceElevated.withValues(alpha: 0.92),
                           leading: _channelIcon(ch.channelType),
                           title: Text(
                             ch.displayName,
@@ -207,7 +210,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: Color(0xff0F172A),
+                              color: colors.textPrimary,
                               fontFamily: 'Golos',
                             ),
                             maxLines: 1,
@@ -218,13 +221,13 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                             style: TextStyle(
                               fontSize:
                                   ResponsiveHelper(context).xSmallFontSize,
-                              color: Color(0xff64748B),
+                              color: colors.textSecondary,
                               fontFamily: 'Golos',
                             ),
                           ),
                           trailing: isSelected
                               ? Icon(Icons.check_circle,
-                                  color: Color(0xff10B981), size: 20)
+                                  color: colors.success, size: 20)
                               : null,
                           onTap: () {
                             Navigator.pop(context);
@@ -277,10 +280,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
 
   void _showDetails() {
     if (_accounts.isEmpty) return;
+    final colors = context.appColors;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -299,7 +303,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -309,11 +313,11 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: colors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -322,7 +326,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: _accounts.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: colors.borderSubtle),
                   itemBuilder: (context, index) {
                     final item = _accounts[index];
                     return ListTile(
@@ -332,7 +337,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -340,7 +345,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         '${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.answered} / ${analyticsText(context, 'unanswered', fallback: 'Unanswered')}: ${item.unanswered}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -349,7 +354,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff25D366),
+                          color: colors.success,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -372,11 +377,13 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   double _maxBarValue(List<ConnectedAccount> items) {
     double maxVal = 0;
     for (final item in items) {
-      if (_showTotalChats)
+      if (_showTotalChats) {
         maxVal = math.max(maxVal, item.totalChats.toDouble());
+      }
       if (_showAnswered) maxVal = math.max(maxVal, item.answered.toDouble());
-      if (_showSuccessful)
+      if (_showSuccessful) {
         maxVal = math.max(maxVal, item.successfulLeads.toDouble());
+      }
     }
     return maxVal <= 0 ? 1 : maxVal;
   }
@@ -468,6 +475,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
     final isEmpty =
         _accounts.isEmpty || _accounts.every((a) => a.totalChats == 0);
@@ -489,16 +497,10 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.4)),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +531,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                       ),
                       child: Icon(
                         Icons.account_tree,
-                        color: Colors.white,
+                        color: colors.textInverse,
                         size: ResponsiveHelper(context).smallIconSize,
                       ),
                     ),
@@ -542,7 +544,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         style: TextStyle(
                           fontSize: responsive.titleFontSize,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -551,10 +553,10 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                     IconButton(
                       onPressed: _showDetails,
                       icon: Icon(Icons.crop_free,
-                          color: Color(0xff64748B),
+                          color: colors.iconSecondary,
                           size: ResponsiveHelper(context).smallIconSize),
                       style: IconButton.styleFrom(
-                        backgroundColor: Color(0xffF1F5F9),
+                        backgroundColor: colors.surfaceElevated,
                         minimumSize: Size(36, 36),
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
@@ -624,9 +626,9 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xffF1F5F9),
+                        color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xffE2E8F0)),
+                        border: Border.all(color: colors.borderSubtle),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -634,7 +636,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                           Icon(
                             Icons.filter_list,
                             size: 16,
-                            color: Color(0xff64748B),
+                            color: colors.iconSecondary,
                           ),
                           SizedBox(width: 6),
                           Text(
@@ -642,7 +644,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                             style: TextStyle(
                               fontSize: responsive.smallFontSize,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xff334155),
+                              color: colors.textPrimary,
                               fontFamily: 'Golos',
                             ),
                           ),
@@ -671,7 +673,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: colors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -681,7 +683,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -714,9 +716,9 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                               barTouchData: BarTouchData(
                                 enabled: true,
                                 touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) => Colors.white,
-                                  tooltipBorder: const BorderSide(
-                                    color: Color(0xffE2E8F0),
+                                  getTooltipColor: (_) => colors.surfacePrimary,
+                                  tooltipBorder: BorderSide(
+                                    color: colors.borderSubtle,
                                   ),
                                   tooltipRoundedRadius: 10,
                                   tooltipPadding: const EdgeInsets.symmetric(
@@ -734,7 +736,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                     return BarTooltipItem(
                                       '${item.displayName}\n',
                                       TextStyle(
-                                        color: const Color(0xff0F172A),
+                                        color: colors.textPrimary,
                                         fontWeight: FontWeight.w700,
                                         fontSize: responsive.xSmallFontSize,
                                         fontFamily: 'Golos',
@@ -774,7 +776,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                           text:
                                               '${analyticsText(context, 'analytics_cold_leads', fallback: 'Cold leads')}: ${item.coldLeads}',
                                           style: TextStyle(
-                                            color: const Color(0xff64748B),
+                                            color: colors.textSecondary,
                                             fontWeight: FontWeight.w600,
                                             fontSize: responsive.xSmallFontSize,
                                             fontFamily: 'Golos',
@@ -789,7 +791,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                 show: true,
                                 drawVerticalLine: false,
                                 getDrawingHorizontalLine: (value) => FlLine(
-                                  color: const Color(0xffE2E8F0),
+                                  color: colors.borderSubtle,
                                   strokeWidth: 1,
                                 ),
                               ),
@@ -804,7 +806,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                     ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
-                                      color: Color(0xff94A3B8),
+                                      color: colors.textMuted,
                                       fontFamily: 'Golos',
                                     ),
                                   ),
@@ -819,7 +821,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                         value.toInt().toString(),
                                         style: TextStyle(
                                           fontSize: responsive.xSmallFontSize,
-                                          color: Color(0xff64748B),
+                                          color: colors.textSecondary,
                                           fontFamily: 'Golos',
                                         ),
                                       );
@@ -846,7 +848,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
                                             style: TextStyle(
                                               fontSize:
                                                   responsive.xSmallFontSize,
-                                              color: Color(0xff64748B),
+                                              color: colors.textSecondary,
                                               fontFamily: 'Golos',
                                             ),
                                             maxLines: 1,
@@ -873,9 +875,9 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
           if (!_isLoading && _error == null && _data != null)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: colors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -930,7 +932,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
           label,
           style: TextStyle(
             fontSize: responsive.xSmallFontSize,
-            color: Color(0xff64748B),
+            color: context.appColors.textSecondary,
             fontFamily: 'Golos',
           ),
         ),
@@ -940,7 +942,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
           style: TextStyle(
             fontSize: responsive.largeFontSize,
             fontWeight: FontWeight.w700,
-            color: color ?? Color(0xff0F172A),
+            color: color ?? context.appColors.textPrimary,
             fontFamily: 'Golos',
           ),
         ),

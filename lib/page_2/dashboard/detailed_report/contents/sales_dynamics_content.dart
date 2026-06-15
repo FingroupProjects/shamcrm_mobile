@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import '../../../../../models/page_2/dashboard/sales_model.dart';
 import '../../../../../bloc/page_2_BLOC/dashboard/sales_dynamics/sales_dashboard_sales_dynamics_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
@@ -19,8 +20,10 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
         Expanded(
           child: data.isNotEmpty
               ? ListView.separated(
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   itemCount: data.length,
                   itemBuilder: (context, index) {
                     final monthData = data[index];
@@ -37,36 +40,32 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.bar_chart_outlined,
               size: 64,
-              color: Color(0xff99A4BA),
+              color: colors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
               localizations.translate('no_sales_dynamics_data'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 18,
+              style: textStyles.titleMd.copyWith(
                 fontWeight: FontWeight.w600,
-                color: const Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               localizations.translate('monthly_data_list_empty'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                color: const Color(0xff99A4BA),
-              ),
+              style: textStyles.bodySm.copyWith(color: colors.textSecondary),
             ),
           ],
         ),
@@ -76,22 +75,20 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+          CircularProgressIndicator(
+            color: colors.textPrimary,
           ),
           const SizedBox(height: 16),
           Text(
             localizations.translate('loading_data'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: const Color(0xff64748B),
-            ),
+            style: textStyles.bodyMd.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
@@ -100,7 +97,9 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -108,51 +107,48 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xffFEF2F2),
+            color: colors.surfacePrimary.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xffFECACA),
+              color: colors.error.withValues(alpha: 0.34),
               width: 1,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
               const SizedBox(height: 16),
               Text(
                 localizations.translate('error_loading_dialog'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: const Color(0xff64748B),
-                ),
+                style: textStyles.bodySm.copyWith(color: colors.textSecondary),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardSalesDynamicsBloc>().add(const LoadSalesDynamicsReport());
+                  context
+                      .read<SalesDashboardSalesDynamicsBloc>()
+                      .add(const LoadSalesDynamicsReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -174,7 +170,8 @@ class _SalesDynamicsContentState extends State<SalesDynamicsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardSalesDynamicsBloc, SalesDashboardSalesDynamicsState>(
+    return BlocBuilder<SalesDashboardSalesDynamicsBloc,
+        SalesDashboardSalesDynamicsState>(
       builder: (context, state) {
         if (state is SalesDashboardSalesDynamicsLoading) {
           return _buildLoadingState();

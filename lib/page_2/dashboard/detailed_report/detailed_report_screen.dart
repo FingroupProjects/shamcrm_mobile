@@ -4,6 +4,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/manufacture_goods/sales_dashboard_manufacture_goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/manufacture_materials/sales_dashboard_manufacture_materials_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/order_quantity/sales_dashboard_order_quantity_bloc.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/cash_balance_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/reconciliation_act_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/goods_movement_content.dart';
@@ -13,7 +17,7 @@ import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/profi
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/expense_structure_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/manufacture_goods_content.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/manufacture_materials_content.dart';
-// import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/order_quantity_content.dart'; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/order_quantity_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
@@ -26,7 +30,6 @@ import '../../../bloc/page_2_BLOC/dashboard/net_profit/sales_dashboard_net_profi
 import '../../../bloc/page_2_BLOC/dashboard/profitability/sales_dashboard_profitability_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/expense_structure/sales_dashboard_expense_structure_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/salary_report/sales_dashboard_salary_report_bloc.dart';
-// import '../../../bloc/page_2_BLOC/dashboard/order_quantity/sales_dashboard_order_quantity_bloc.dart'; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
 import '../../../custom_widget/custom_app_bar_reports.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
@@ -37,27 +40,28 @@ import 'contents/salary_report_content.dart';
 import 'contents/top_selling_goods_content.dart';
 
 class TaskStyles {
-  static const Color activeColor = Color(0xff1E2E52);
-  static const Color inactiveColor = Color(0xff99A4BA);
-
   static const TextStyle tabTextStyle = TextStyle(
     fontSize: 14,
     fontFamily: 'Gilroy',
     fontWeight: FontWeight.w500,
   );
 
-  static BoxDecoration tabButtonDecoration(bool isActive) {
+  static BoxDecoration tabButtonDecoration(
+      BuildContext context, bool isActive) {
+    final colors = context.appColors;
     return BoxDecoration(
-      color: isActive ? const Color(0xff1E2E52) : Colors.white,
+      color: isActive
+          ? colors.buttonPrimaryBg
+          : colors.surfacePrimary.withValues(alpha: 0.92),
       borderRadius: BorderRadius.circular(20),
       border: Border.all(
-        color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+        color: isActive ? colors.buttonPrimaryBg : colors.borderSubtle,
         width: 1,
       ),
       boxShadow: isActive
           ? [
               BoxShadow(
-                color: const Color(0xff1E2E52).withOpacity(0.1),
+                color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -93,6 +97,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     {'id': 7, 'titleKey': 'tab_net_profit'},
     {'id': 8, 'titleKey': 'tab_profitability_sales'},
     {'id': 9, 'titleKey': 'tab_expense_structure'},
+    {'id': 10, 'titleKey': 'order_quantity'},
   ];
   static const List<Map<String, dynamic>> _manufactureTabTitles = [
     {'id': 13, 'titleKey': 'tab_manufacture_goods'},
@@ -125,7 +130,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   late SalesDashboardSalaryReportBloc _salaryReportBloc;
   late SalesDashboardManufactureGoodsBloc _manufactureGoodsBloc;
   late SalesDashboardManufactureMaterialsBloc _manufactureMaterialsBloc;
-  // late SalesDashboardOrderQuantityBloc _orderQuantityBloc; // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
+  late SalesDashboardOrderQuantityBloc _orderQuantityBloc;
   late SalesDashboardReconciliationActBloc _reconciliationActBloc;
   late SalesDashboardGoodsMovementBloc _goodsMovementBloc;
   bool _hasManufacture = false;
@@ -158,7 +163,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
       );
     _manufactureGoodsBloc = SalesDashboardManufactureGoodsBloc();
     _manufactureMaterialsBloc = SalesDashboardManufactureMaterialsBloc();
-    // _orderQuantityBloc = SalesDashboardOrderQuantityBloc()..add(LoadOrderQuantityReport()); // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
+    _orderQuantityBloc = SalesDashboardOrderQuantityBloc()
+      ..add(LoadOrderQuantityReport());
     _reconciliationActBloc = SalesDashboardReconciliationActBloc();
     _goodsMovementBloc = SalesDashboardGoodsMovementBloc()
       ..add(LoadGoodsMovementReport());
@@ -192,7 +198,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     _salaryReportBloc.close();
     _manufactureGoodsBloc.close();
     _manufactureMaterialsBloc.close();
-    // _orderQuantityBloc.close(); // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
+    _orderQuantityBloc.close();
     _reconciliationActBloc.close();
     _goodsMovementBloc.close();
 
@@ -265,10 +271,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     } else if (id == 14) {
       _manufactureMaterialsBloc
           .add(LoadManufactureMaterialsReport(filter: filter, search: search));
+    } else if (id == 10) {
+      _orderQuantityBloc
+          .add(LoadOrderQuantityReport(filter: filter, search: search));
     }
-    // else if (id == 10) {
-    //   _orderQuantityBloc.add(LoadOrderQuantityReport(filter: filter, search: search));
-    // } // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
   }
 
   void _handleFilterSelected(Map<String, dynamic> selectedFilters) {
@@ -387,21 +393,25 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
               value: _manufactureGoodsBloc),
           BlocProvider<SalesDashboardManufactureMaterialsBloc>.value(
               value: _manufactureMaterialsBloc),
-          // BlocProvider<SalesDashboardOrderQuantityBloc>.value(value: _orderQuantityBloc), // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
+          BlocProvider<SalesDashboardOrderQuantityBloc>.value(
+              value: _orderQuantityBloc),
           BlocProvider<SalesDashboardReconciliationActBloc>.value(
               value: _reconciliationActBloc),
           BlocProvider<SalesDashboardGoodsMovementBloc>.value(
               value: _goodsMovementBloc),
         ],
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.backgroundPrimary,
           appBar: AppBar(
             forceMaterialTransparency: true,
             elevation: 0,
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
             leading: !isClickAvatarIcon
                 ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: context.appColors.iconPrimary,
+                    ),
                     onPressed: () {
                       Navigator.of(context).pop(true);
                     },
@@ -436,12 +446,21 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
           ),
           body: isClickAvatarIcon
               ? ProfileScreen()
-              : Column(
+              : Stack(
                   children: [
-                    const SizedBox(height: 15),
-                    _buildCustomTabBar(),
-                    Expanded(
-                      child: _buildTabBarView(),
+                    const Positioned.fill(
+                      child: AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                      ),
+                    ),
+                    Column(
+                      children: [
+                        const SizedBox(height: 15),
+                        _buildCustomTabBar(),
+                        Expanded(
+                          child: _buildTabBarView(),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -475,12 +494,14 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
         _tabController.animateTo(index);
       },
       child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
+        decoration: TaskStyles.tabButtonDecoration(context, isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Text(
           localizations.translate(_tabTitles[index]['titleKey']),
           style: TaskStyles.tabTextStyle.copyWith(
-            color: isActive ? Colors.white : TaskStyles.inactiveColor,
+            color: isActive
+                ? context.appColors.textInverse
+                : context.appColors.textSecondary,
           ),
         ),
       ),
@@ -541,11 +562,9 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
       return const ManufactureGoodsContent();
     } else if (id == 14) {
       return const ManufactureMaterialsContent();
-    }
-    // else if (id == 10) {
-    //   return OrderQuantityContent();
-    // } // ЗАКОММЕНТИРОВАНО: Вкладка "Количество заказов" отключена
-    else {
+    } else if (id == 10) {
+      return const OrderQuantityContent();
+    } else {
       return Container();
     }
   }

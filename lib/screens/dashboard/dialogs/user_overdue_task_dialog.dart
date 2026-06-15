@@ -1,20 +1,25 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/full_text_dialog.dart';
+import 'package:crm_task_manager/models/overdue_task_response.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/models/overdue_task_response.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:intl/intl.dart';
-import '../../../../screens/profile/languages/app_localizations.dart';
+
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_bloc.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_event.dart';
 import '../../../bloc/dashboard/charts/user_task/user_overdue_task_state.dart';
-import '../../task/task_details/task_details_screen.dart';
-import '../../../custom_widget/full_text_dialog.dart';
 
 void showUserOverdueTasksDialog(
-    BuildContext context, int userId, String userName) {
+  BuildContext context,
+  int userId,
+  String userName,
+) {
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: context.appColors.overlay.withValues(alpha: 0.68),
     builder: (BuildContext dialogContext) {
       return BlocProvider(
         create: (context) => UserOverdueTaskBloc(
@@ -87,72 +92,60 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
   }
 
   Widget _buildTasksList(List<OverdueTask> tasks) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header info
         BlocBuilder<UserOverdueTaskBloc, UserOverdueTaskState>(
           builder: (context, state) {
-            // Get total from the loaded state
-            final total = state is UserOverdueTaskLoaded ? (state.data.result?.total?.toInt() ?? 0) : 0;
+            final total = state is UserOverdueTaskLoaded
+                ? (state.data.result?.total?.toInt() ?? 0)
+                : 0;
 
             return Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xffF1F5F9),
+                color: colors.surfaceElevated.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xffCBD5E1),
-                  width: 1,
-                ),
+                border: Border.all(color: colors.borderSubtle),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.userName,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
+                    style: textStyles.bodyLg.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
-
-                  if (total > 1)
-                    ...[
-                      const SizedBox(height: 8),
-                      Text(
-                      // '${AppLocalizations.of(context)!.translate('total_overdue_tasks')}: $total',
+                  if (total > 1) ...[
+                    const SizedBox(height: 8),
+                    Text(
                       'Просроченных задач: $total',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
+                      style: textStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
-                    ),]
+                    ),
+                  ],
                 ],
               ),
             );
           },
         ),
-
         const SizedBox(height: 16),
-
-        // Tasks list or empty state
         if (tasks.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xffF8FAFC),
+              color: colors.surfaceElevated.withValues(alpha: 0.86),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xffE2E8F0),
-                width: 1,
-              ),
+              border: Border.all(color: colors.borderSubtle),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -161,42 +154,36 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                 Icon(
                   Icons.task_alt,
                   size: 48,
-                  color: Colors.grey[400],
+                  color: colors.textSecondary,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   AppLocalizations.of(context)!.translate('no_overdue_tasks'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
+                  style: textStyles.bodyLg.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   AppLocalizations.of(context)!.translate('all_tasks_on_time'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    color: Color(0xff64748B),
+                  style: textStyles.bodyMd.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
             ),
           )
         else
-          ...tasks.map((task) => _buildTaskCard(task)),
-
-        // Loading more indicator
+          ...tasks.map(_buildTaskCard),
         if (_isLoadingMore)
-          const Padding(
-            padding: EdgeInsets.all(16.0),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Center(
               child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
+                color: colors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -210,17 +197,16 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: const BoxDecoration(
-        color: Colors.red,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+      decoration: BoxDecoration(
+        color: context.appColors.error.withValues(alpha: 0.16),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        border: Border.all(color: context.appColors.error),
       ),
       child: Text(
         '$overdue',
-        style: const TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 12,
+        style: context.appTextStyles.bodySm.copyWith(
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: context.appColors.error,
         ),
       ),
     );
@@ -236,7 +222,7 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
               taskId: (task.id ?? 0).toString(),
               taskName: task.name ?? '',
               taskStatus: task.taskStatus?.name ?? '',
-              customFields: [],
+              customFields: const [],
             ),
           ),
         );
@@ -245,240 +231,150 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.appColors.surfacePrimary.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xffE2E8F0), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: context.appColors.borderSubtle),
+          boxShadow: context.appShadows.card,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === ЗАГОЛОВОК С OVERDUE ===
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xffF8FAFC),
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceElevated.withValues(alpha: 0.9),
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                 ),
                 border: Border(
-                  left: BorderSide(width: 4, color: Color(0xff1E2E52)),
+                  left: BorderSide(
+                    width: 4,
+                    color: context.appColors.buttonPrimaryBg,
+                  ),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // === СТРОКА 1: "Задача №1" ===
                   if (task.taskNumber != null)
                     Text(
                       '${AppLocalizations.of(context)!.translate('task')} №${task.taskNumber}',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 13,
+                      style: context.appTextStyles.bodySm.copyWith(
                         fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                        color: context.appColors.textSecondary,
                       ),
                     ),
-
-                const SizedBox(height: 4),
-
-                // Название + Просрочка
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        task.name ??
-                            AppLocalizations.of(context)!
-                                .translate('unknown_dialog'),
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          task.name ??
+                              AppLocalizations.of(context)!
+                                  .translate('unknown_dialog'),
+                          style: context.appTextStyles.bodyLg.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildOverdueBadge(task),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // === СПИСОК ДЕТАЛЕЙ ===
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Проект
-                if (task.project != null) ...[
-                  _buildDetailRow(
-                    icon: Icons.folder_outlined,
-                    label: AppLocalizations.of(context)!.translate('project_label'),
-                    value: task.project!.name ??
-                        AppLocalizations.of(context)!.translate('unknown_dialog'),
-                    onTap: () {
-                      showFullTextDialog(
-                        AppLocalizations.of(context)!.translate('project_label'),
-                        task.project!.name ??
-                            AppLocalizations.of(context)!.translate('unknown_dialog'),
-                        context,
-                      );
-                    },
+                      const SizedBox(width: 8),
+                      _buildOverdueBadge(task),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildDivider(),
-                  const SizedBox(height: 12),
                 ],
-
-                // Автор
-                if (task.author != null) ...[
-                  _buildDetailRow(
-                    icon: Icons.person_outline,
-                    label: AppLocalizations.of(context)!.translate('author_label'),
-                    value: task.author!.name ??
-                        AppLocalizations.of(context)!.translate('unknown_dialog'),
-                    onTap: () {
-                      showFullTextDialog(
-                        AppLocalizations.of(context)!.translate('author_label'),
-                        task.author!.name ??
-                            AppLocalizations.of(context)!.translate('unknown_dialog'),
-                        context,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildDivider(),
-                  const SizedBox(height: 12),
-                ],
-
-                // Даты (От - До в одной строке)
-                Row(
-                  children: [
-                    // Дата "От"
-                    Expanded(
-                      child: _buildDetailRow(
-                        icon: Icons.calendar_today_outlined,
-                        label: AppLocalizations.of(context)!.translate('from_label'),
-                        value: DateFormatter.toDDMMYYYY(task.from),
-                        compact: true,
-                      ),
-                    ),
-
-                    const SizedBox(width: 16),
-
-                    // Дата "До"
-                    Expanded(
-                      child: _buildDetailRow(
-                        icon: Icons.event_outlined,
-                        label: AppLocalizations.of(context)!.translate('to_label'),
-                        value: DateFormatter.toDDMMYYYY(task.to),
-                        compact: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-// === ВСПОМОГАТЕЛЬНЫЙ ВИДЖЕТ ДЛЯ СТРОКИ ДЕТАЛИ ===
-Widget _buildDetailRow({
-  required IconData icon,
-  required String label,
-  required String value,
-  VoidCallback? onTap,
-  bool compact = false,
-}) {
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Иконка
-      Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: const Color(0xffF1F5F9),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: const Color(0xff64748B),
-        ),
-      ),
-
-      const SizedBox(width: 10),
-
-      // Текст
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Color(0xff64748B),
               ),
             ),
-            const SizedBox(height: 2),
-            GestureDetector(
-              onTap: onTap,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: compact ? 13 : 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xff1E2E52),
-                  decoration: onTap != null ? TextDecoration.underline : null,
-                  decorationColor: onTap != null ? const Color(0xff1E2E52) : null,
-                ),
-                maxLines: compact ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  if (task.project != null) ...[
+                    _buildDetailRow(
+                      context: context,
+                      icon: Icons.folder_outlined,
+                      label: AppLocalizations.of(context)!
+                          .translate('project_label'),
+                      value: task.project!.name ??
+                          AppLocalizations.of(context)!
+                              .translate('unknown_dialog'),
+                      onTap: () {
+                        showFullTextDialog(
+                          AppLocalizations.of(context)!
+                              .translate('project_label'),
+                          task.project!.name ??
+                              AppLocalizations.of(context)!
+                                  .translate('unknown_dialog'),
+                          context,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDivider(context),
+                    const SizedBox(height: 12),
+                  ],
+                  if (task.author != null) ...[
+                    _buildDetailRow(
+                      context: context,
+                      icon: Icons.person_outline,
+                      label: AppLocalizations.of(context)!
+                          .translate('author_label'),
+                      value: task.author!.name ??
+                          AppLocalizations.of(context)!
+                              .translate('unknown_dialog'),
+                      onTap: () {
+                        showFullTextDialog(
+                          AppLocalizations.of(context)!
+                              .translate('author_label'),
+                          task.author!.name ??
+                              AppLocalizations.of(context)!
+                                  .translate('unknown_dialog'),
+                          context,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDivider(context),
+                    const SizedBox(height: 12),
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildDetailRow(
+                          context: context,
+                          icon: Icons.calendar_today_outlined,
+                          label: AppLocalizations.of(context)!
+                              .translate('from_label'),
+                          value: DateFormatter.toDDMMYYYY(task.from),
+                          compact: true,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildDetailRow(
+                          context: context,
+                          icon: Icons.event_outlined,
+                          label: AppLocalizations.of(context)!
+                              .translate('to_label'),
+                          value: DateFormatter.toDDMMYYYY(task.to),
+                          compact: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-    ],
-  );
-}
-
-// === РАЗДЕЛИТЕЛЬ ===
-Widget _buildDivider() {
-  return Container(
-    height: 1,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          const Color(0xffE2E8F0).withOpacity(0),
-          const Color(0xffE2E8F0),
-          const Color(0xffE2E8F0).withOpacity(0),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -491,7 +387,6 @@ Widget _buildDivider() {
             if (_currentPage == 1) {
               _allTasks = newTasks;
             } else {
-              // Avoid duplicates when paginating
               final existingIds = _allTasks.map((t) => t.id).toSet();
               final uniqueNewTasks =
                   newTasks.where((t) => !existingIds.contains(t.id)).toList();
@@ -518,31 +413,21 @@ Widget _buildDivider() {
               maxWidth: 420,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.appColors.surfacePrimary.withValues(alpha: 0.98),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xff1E2E52).withOpacity(0.15),
-                  spreadRadius: 0,
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: context.appColors.borderSubtle),
+              boxShadow: context.appShadows.card,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceElevated
+                        .withValues(alpha: 0.98),
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
@@ -552,12 +437,13 @@ Widget _buildDivider() {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.assignment_late_outlined,
-                          color: Colors.white,
+                          color: context.appColors.buttonPrimaryBg,
                           size: 20,
                         ),
                       ),
@@ -566,11 +452,9 @@ Widget _buildDivider() {
                         child: Text(
                           AppLocalizations.of(context)!
                               .translate('overdue_tasks_title'),
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 18,
+                          style: context.appTextStyles.titleMd.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: context.appColors.textPrimary,
                             letterSpacing: 0.3,
                           ),
                           maxLines: 2,
@@ -580,25 +464,21 @@ Widget _buildDivider() {
                     ],
                   ),
                 ),
-
-                // Body
                 Flexible(
                   child: state is UserOverdueTaskLoading && _currentPage == 1
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
+                              CircularProgressIndicator(
+                                color: context.appColors.buttonPrimaryBg,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 AppLocalizations.of(context)!
                                     .translate('loading_data_dialog'),
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 16,
-                                  color: Color(0xff64748B),
+                                style: context.appTextStyles.bodyLg.copyWith(
+                                  color: context.appColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -611,30 +491,28 @@ Widget _buildDivider() {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.error_outline,
                                       size: 48,
-                                      color: Color(0xffEF4444),
+                                      color: context.appColors.error,
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
                                       AppLocalizations.of(context)!
                                           .translate('error_loading_dialog'),
-                                      style: const TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 18,
+                                      style: context.appTextStyles.titleMd
+                                          .copyWith(
                                         fontWeight: FontWeight.w600,
-                                        color: Color(0xff1E2E52),
+                                        color: context.appColors.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       state.message,
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 14,
-                                        color: Color(0xff64748B),
+                                      style:
+                                          context.appTextStyles.bodyMd.copyWith(
+                                        color: context.appColors.textSecondary,
                                       ),
                                     ),
                                     const SizedBox(height: 16),
@@ -647,16 +525,20 @@ Widget _buildDivider() {
                                         });
                                         context.read<UserOverdueTaskBloc>().add(
                                               LoadUserOverdueTaskData(
-                                                  id: widget.userId),
+                                                id: widget.userId,
+                                              ),
                                             );
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            const Color(0xff1E2E52),
-                                        foregroundColor: Colors.white,
+                                            context.appColors.buttonPrimaryBg,
+                                        foregroundColor:
+                                            context.appColors.textInverse,
                                         elevation: 0,
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 24, vertical: 12),
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -665,8 +547,8 @@ Widget _buildDivider() {
                                       child: Text(
                                         AppLocalizations.of(context)!
                                             .translate('retry_dialog'),
-                                        style: const TextStyle(
-                                          fontFamily: 'Gilroy',
+                                        style: context.appTextStyles.bodyMd
+                                            .copyWith(
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -681,17 +563,13 @@ Widget _buildDivider() {
                               child: _buildTasksList(_allTasks),
                             ),
                 ),
-
-                // Footer
                 Container(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff1E2E52),
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.appColors.buttonPrimaryBg,
+                      foregroundColor: context.appColors.textInverse,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -700,10 +578,8 @@ Widget _buildDivider() {
                     ),
                     child: Text(
                       AppLocalizations.of(context)!.translate('close_button'),
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
+                      style: context.appTextStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 16,
                       ),
                     ),
                   ),
@@ -717,6 +593,80 @@ Widget _buildDivider() {
   }
 }
 
+Widget _buildDetailRow({
+  required BuildContext context,
+  required IconData icon,
+  required String label,
+  required String value,
+  VoidCallback? onTap,
+  bool compact = false,
+}) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: context.appColors.fieldBg,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: context.appColors.textSecondary,
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: context.appTextStyles.bodySm.copyWith(
+                fontWeight: FontWeight.w500,
+                color: context.appColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            GestureDetector(
+              onTap: onTap,
+              child: Text(
+                value,
+                style: context.appTextStyles.bodyMd.copyWith(
+                  fontSize: compact ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.appColors.textPrimary,
+                  decoration: onTap != null ? TextDecoration.underline : null,
+                  decorationColor:
+                      onTap != null ? context.appColors.textPrimary : null,
+                ),
+                maxLines: compact ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildDivider(BuildContext context) {
+  return Container(
+    height: 1,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          context.appColors.borderSubtle.withValues(alpha: 0),
+          context.appColors.borderSubtle,
+          context.appColors.borderSubtle.withValues(alpha: 0),
+        ],
+      ),
+    ),
+  );
+}
+
 class DateFormatter {
   static String toDDMMYYYY(String? date) {
     if (date == null || date.isEmpty) return '-';
@@ -726,7 +676,7 @@ class DateFormatter {
       final parsedDate = inputFormat.parse(date);
       return outputFormat.format(parsedDate);
     } catch (e) {
-      return date; // fallback
+      return date;
     }
   }
 }

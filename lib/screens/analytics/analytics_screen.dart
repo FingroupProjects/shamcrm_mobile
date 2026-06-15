@@ -986,7 +986,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.all(horizontalPadding),
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              widget.showStatistics ? 0 : horizontalPadding,
+              horizontalPadding,
+              horizontalPadding,
+            ),
             cacheExtent: viewportHeight * 1.2,
             itemCount: (showStatsSection ? 1 : 0) + chartWidgets.length,
             itemBuilder: (context, index) {
@@ -1064,7 +1069,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         );
                       },
                     ),
-                    SizedBox(height: chartSpacing * 1.5),
+                    SizedBox(height: chartSpacing * 0.75),
                   ],
                 );
               }
@@ -1086,10 +1091,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     if (!widget.showAppBar) {
-      return Container(
-        color: context.appColors.backgroundPrimary,
-        child: _buildAnalyticsBody(context),
-      );
+      return _buildAnalyticsBody(context);
     }
 
     final localizations = AppLocalizations.of(context);

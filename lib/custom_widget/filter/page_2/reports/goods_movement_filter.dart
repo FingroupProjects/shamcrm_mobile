@@ -178,8 +178,11 @@ class _GoodsMovementFilterScreenState extends State<GoodsMovementFilterScreen> {
               primary: this.context.appColors.buttonPrimaryBg,
               onPrimary: this.context.appColors.buttonPrimaryFg,
               onSurface: this.context.appColors.textPrimary,
-              secondary:
-                  this.context.appColors.buttonSecondaryBg.withValues(alpha: 0.1),
+              secondary: this
+                  .context
+                  .appColors
+                  .buttonSecondaryBg
+                  .withValues(alpha: 0.1),
               surface: this.context.appColors.surfacePrimary,
             ),
             textButtonTheme: TextButtonThemeData(
@@ -496,13 +499,21 @@ class _GoodsMovementFilterScreenState extends State<GoodsMovementFilterScreen> {
                   children: [
                     CustomTextField(
                       controller: _amountFromController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       hintText: AppLocalizations.of(context)!
                               .translate('enter_minimum_amount') ??
                           'Введите минимальную сумму',
-                      label:
-                          AppLocalizations.of(context)!.translate('amount_from') ??
-                              'Сумма от',
+                      label: AppLocalizations.of(context)!
+                              .translate('amount_from') ??
+                          'Сумма от',
+                      backgroundColor: context.appColors.fieldBg,
+                      borderColor: context.appColors.fieldBorder,
+                      focusedBorderColor: context.appColors.borderPrimary,
+                      labelColor: context.appColors.textPrimary,
+                      hintColor: context.appColors.fieldHint,
+                      textColor: context.appColors.textPrimary,
                     ),
                   ],
                 ),
@@ -515,13 +526,21 @@ class _GoodsMovementFilterScreenState extends State<GoodsMovementFilterScreen> {
                   children: [
                     CustomTextField(
                       controller: _amountToController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       hintText: AppLocalizations.of(context)!
                               .translate('enter_maximum_amount') ??
                           'Введите максимальную сумму',
-                      label:
-                          AppLocalizations.of(context)!.translate('amount_to') ??
-                              'Сумма до',
+                      label: AppLocalizations.of(context)!
+                              .translate('amount_to') ??
+                          'Сумма до',
+                      backgroundColor: context.appColors.fieldBg,
+                      borderColor: context.appColors.fieldBorder,
+                      focusedBorderColor: context.appColors.borderPrimary,
+                      labelColor: context.appColors.textPrimary,
+                      hintColor: context.appColors.fieldHint,
+                      textColor: context.appColors.textPrimary,
                     ),
                   ],
                 ),

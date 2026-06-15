@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 import '../../../../models/page_2/dashboard/top_selling_model.dart';
@@ -61,13 +62,21 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
 
   Widget _periodButton(TopSellingTimePeriod period) {
     final isSelected = selectedPeriod == period;
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () => onPeriodChanged(period),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3935E7) : Colors.grey[200],
+          color: isSelected
+              ? colors.buttonPrimaryBg
+              : colors.surfaceElevated.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? colors.buttonPrimaryBg
+                : colors.borderSubtle.withValues(alpha: 0.8),
+          ),
         ),
         child: Text(
           getPeriodText(context, period),
@@ -75,7 +84,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
             fontFamily: 'Gilroy',
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : Colors.black54,
+            color: isSelected ? colors.textInverse : colors.textSecondary,
           ),
         ),
       ),
@@ -104,8 +113,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
               fontFamily: 'Gilroy',
               fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: Colors.black54,
-            ),
+            ).copyWith(color: context.appColors.textSecondary),
           ),
         ),
       ),
@@ -125,6 +133,14 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           BarChartRodData(
             toY: productsData[i].totalQuantity.toDouble(),
             color: const Color(0xFF3935E7),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                context.appColors.buttonPrimaryBg,
+                context.appColors.buttonPrimaryBg.withValues(alpha: 0.72),
+              ],
+            ),
             width: _barWidth,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(6),
@@ -221,8 +237,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                     fontFamily: 'Gilroy',
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black54,
-                  ),
+                  ).copyWith(color: context.appColors.textSecondary),
                 ),
               ),
             ),
@@ -239,7 +254,7 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           horizontalInterval: interval,
           checkToShowHorizontalLine: (v) => v % interval == 0,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: context.appColors.borderSubtle.withValues(alpha: 0.38),
             strokeWidth: 1,
           ),
         ),
@@ -268,6 +283,14 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
                 BarChartRodData(
                   toY: mockData[i].toDouble(),
                   color: Colors.grey[300],
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      context.appColors.borderSubtle.withValues(alpha: 0.9),
+                      context.appColors.borderSubtle.withValues(alpha: 0.45),
+                    ],
+                  ),
                   width: _barWidth,
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(6)),
@@ -282,11 +305,9 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
         ),
         Text(
           l.translate('no_data_to_display'),
-          style: const TextStyle(
-            fontSize: 15,
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black54,
+            color: context.appColors.textSecondary,
           ),
         ),
       ],
@@ -297,30 +318,25 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final productsData = _getDataForSelectedPeriod();
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l.translate('top_selling_products'),
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 18,
+            style: textStyles.titleMd.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -356,11 +372,9 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
               },
               child: Text(
                 l.translate('more_details'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
             ),

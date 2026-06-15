@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_content_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -14,13 +15,16 @@ class NetProfitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE9EDF5),
+        color: colors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -31,21 +35,17 @@ class NetProfitCard extends StatelessWidget {
               children: [
                 Text(
                   monthData.monthName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
+                  style: textStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w400,
-                    color: Color(0xff1E2E52),
+                    color: colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${localizations.translate('profit')}${parseNumberToString(monthData.netProfit)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
+                  style: textStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ],

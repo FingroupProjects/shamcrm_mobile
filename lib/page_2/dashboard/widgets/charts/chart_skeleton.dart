@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 /// Skeleton loader for charts while data is loading.
 /// Uses the same shimmer wave animation as CRM analytics charts.
@@ -15,18 +16,15 @@ class ChartSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -36,10 +34,9 @@ class ChartSkeleton extends StatelessWidget {
             if (title.isNotEmpty)
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: textStyles.bodyLg.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             if (title.isNotEmpty) const SizedBox(height: 16),
@@ -86,6 +83,7 @@ class _Bar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Expanded(
       child: Align(
         alignment: Alignment.bottomCenter,
@@ -94,7 +92,7 @@ class _Bar extends StatelessWidget {
           child: Container(
             width: 18,
             decoration: BoxDecoration(
-              color: const Color(0xffE5E7EB),
+              color: colors.borderSubtle.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(8),
             ),
           ),
@@ -119,11 +117,12 @@ class SimpleSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xff1E2E52).withValues(alpha: 0.1),
+        color: colors.borderSubtle.withValues(alpha: 0.18),
         borderRadius: borderRadius ?? BorderRadius.circular(8),
       ),
     );

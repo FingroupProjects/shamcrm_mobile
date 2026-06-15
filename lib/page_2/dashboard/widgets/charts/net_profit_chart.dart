@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/net_profit_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -8,7 +9,6 @@ import 'dart:math';
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
-import 'download_popup_menu.dart';
 
 class NetProfitChart extends StatefulWidget {
   const NetProfitChart(this.netProfitData, {super.key});
@@ -31,7 +31,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
   AllNetProfitData? _getCurrentPeriodData() {
     try {
       return widget.netProfitData.firstWhere(
-            (data) => data.period == selectedPeriod,
+        (data) => data.period == selectedPeriod,
       );
     } catch (e) {
       return null;
@@ -43,7 +43,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
       setState(() {
         selectedPeriod = period;
       });
-      
+
       // Вызываем перезагрузку данных через Bloc
       context.read<SalesDashboardBloc>().add(ReloadNetProfitData(period));
     }
@@ -86,9 +86,23 @@ class _NetProfitChartState extends State<NetProfitChart> {
 
   Widget _buildMockChart(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     // Mock data for empty state visualization (12 months)
-    final List<double> mockData = [150, 50, 200, 100, 30, 250, 180, 120, 20, 300, 220, 280];
+    final List<double> mockData = [
+      150,
+      50,
+      200,
+      100,
+      30,
+      250,
+      180,
+      120,
+      20,
+      300,
+      220,
+      280
+    ];
     final List<String> mockMonthNames = [
       localizations.translate('january'),
       localizations.translate('february'),
@@ -103,7 +117,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
       localizations.translate('november'),
       localizations.translate('december'),
     ];
-    
+
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -133,11 +147,11 @@ class _NetProfitChartState extends State<NetProfitChart> {
                           child: Text(
                             mockMonthNames[value.toInt()],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black54,
+                              color: colors.textSecondary,
                             ),
                           ),
                         ),
@@ -152,11 +166,11 @@ class _NetProfitChartState extends State<NetProfitChart> {
                     getTitlesWidget: (value, meta) {
                       return Text(
                         _formatAxisValue(value),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black54,
+                          color: colors.textSecondary,
                         ),
                       );
                     },
@@ -178,7 +192,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
                 horizontalInterval: 50,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: colors.borderSubtle.withValues(alpha: 0.38),
                     strokeWidth: 1,
                   );
                 },
@@ -198,8 +212,12 @@ class _NetProfitChartState extends State<NetProfitChart> {
                         borderRadius: BorderRadius.only(
                           topLeft: const Radius.circular(8),
                           topRight: const Radius.circular(8),
-                          bottomLeft: value < 0 ? const Radius.circular(8) : Radius.zero,
-                          bottomRight: value < 0 ? const Radius.circular(8) : Radius.zero,
+                          bottomLeft: value < 0
+                              ? const Radius.circular(8)
+                              : Radius.zero,
+                          bottomRight: value < 0
+                              ? const Radius.circular(8)
+                              : Radius.zero,
                         ),
                       ),
                     ],
@@ -211,11 +229,11 @@ class _NetProfitChartState extends State<NetProfitChart> {
         ),
         Text(
           localizations.translate('no_data_to_display'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: "Gilroy",
             fontWeight: FontWeight.w500,
-            color: Colors.black54,
+            color: colors.textSecondary,
           ),
         ),
       ],
@@ -227,19 +245,16 @@ class _NetProfitChartState extends State<NetProfitChart> {
     final localizations = AppLocalizations.of(context)!;
     final currentData = _getCurrentPeriodData();
     final months = currentData?.data.result.months ?? [];
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,11 +264,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
             children: [
               Text(
                 localizations.translate('net_profit'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: colors.textPrimary,
                 ),
               ),
               // Transform.translate(
@@ -270,191 +283,195 @@ class _NetProfitChartState extends State<NetProfitChart> {
               // ),
             ],
           ),
-
           const SizedBox(height: 16),
-
           Row(
             children: [
               Flexible(child: _buildPeriodDropdown()),
               const SizedBox(width: 12),
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: colors.surfaceElevated.withValues(alpha: 0.72),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.borderSubtle),
                   ),
                   child: Text(
                     localizations.translate('compare'),
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: Colors.black54,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
           SizedBox(
             height: 300,
-            child: months.isEmpty || months.every((m) => _parseNetProfit(m.netProfit) == 0)
+            child: months.isEmpty ||
+                    months.every((m) => _parseNetProfit(m.netProfit) == 0)
                 ? _buildMockChart(context)
                 : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: _calculateMaxY(months),
-                  minY: _calculateMinY(months),
-                  groupsSpace: 20,
-                  backgroundColor: Colors.transparent,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      tooltipMargin: 8,
-                      fitInsideVertically: true,
-                      fitInsideHorizontally: true,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          '${months[groupIndex].monthName}\n',
-                          const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: _formatValue(rod.toY),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= months.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Transform.rotate(
-                              angle: -0.5,
-                              child: Text(
-                                months[value.toInt()].monthName,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
+                    padding: const EdgeInsets.only(right: 16, top: 16),
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: _calculateMaxY(months),
+                        minY: _calculateMinY(months),
+                        groupsSpace: 20,
+                        backgroundColor: Colors.transparent,
+                        barTouchData: BarTouchData(
+                          enabled: true,
+                          touchTooltipData: BarTouchTooltipData(
+                            tooltipRoundedRadius: 8,
+                            tooltipPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            tooltipMargin: 8,
+                            fitInsideVertically: true,
+                            fitInsideHorizontally: true,
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              return BarTooltipItem(
+                                '${months[groupIndex].monthName}\n',
+                                const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
+                                  color: Colors.white,
                                 ),
-                              ),
-                            ),
-                          );
-                        },
-                        reservedSize: 50,
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            _formatAxisValue(value),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          );
-                        },
-                        reservedSize: 50,
-                        interval: _calculateInterval(months),
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawHorizontalLine: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: _calculateInterval(months),
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: List.generate(
-                    months.length,
-                        (index) {
-                      final value = _parseNetProfit(months[index].netProfit);
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: value,
-                            color: value >= 0 ? const Color(0xFF4CAF50) : const Color(0xFFFF5252),
-                            width: 16,
-                            borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(8),
-                              topRight: const Radius.circular(8),
-                              bottomLeft: value < 0 ? const Radius.circular(8) : Radius.zero,
-                              bottomRight: value < 0 ? const Radius.circular(8) : Radius.zero,
+                                children: [
+                                  TextSpan(
+                                    text: _formatValue(rod.toY),
+                                    style: const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                if (value < 0 || value >= months.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Transform.rotate(
+                                    angle: -0.5,
+                                    child: Text(
+                                      months[value.toInt()].monthName,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              reservedSize: 50,
                             ),
                           ),
-                        ],
-                      );
-                    },
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  _formatAxisValue(value),
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.textSecondary,
+                                  ),
+                                );
+                              },
+                              reservedSize: 50,
+                              interval: _calculateInterval(months),
+                            ),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        gridData: FlGridData(
+                          show: true,
+                          drawHorizontalLine: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: _calculateInterval(months),
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color:
+                                  colors.borderSubtle.withValues(alpha: 0.38),
+                              strokeWidth: 1,
+                            );
+                          },
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(
+                          months.length,
+                          (index) {
+                            final value =
+                                _parseNetProfit(months[index].netProfit);
+                            return BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: value,
+                                  color: value >= 0
+                                      ? const Color(0xFF4CAF50)
+                                      : const Color(0xFFFF5252),
+                                  width: 16,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(8),
+                                    topRight: const Radius.circular(8),
+                                    bottomLeft: value < 0
+                                        ? const Radius.circular(8)
+                                        : Radius.zero,
+                                    bottomRight: value < 0
+                                        ? const Radius.circular(8)
+                                        : Radius.zero,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
           ),
-
           const SizedBox(height: 16),
-
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 7)));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) =>
+                        DetailedReportScreen(currentTabIndex: 7)));
               },
               child: Text(
                 localizations.translate('more_details'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -501,24 +518,24 @@ class _NetProfitChartState extends State<NetProfitChart> {
     final values = months.map((m) => _parseNetProfit(m.netProfit)).toList();
     final minValue = values.reduce((a, b) => a < b ? a : b);
     final maxValue = values.reduce((a, b) => a > b ? a : b);
-    
+
     // Рассчитываем диапазон (от минимума до максимума)
     final range = (maxValue - minValue).abs();
-    
+
     if (range == 0) return 20;
-    
+
     // Целевое количество делений - 5
     const targetDivisions = 5;
-    
+
     // Рассчитываем "сырой" интервал
     double rawInterval = range / targetDivisions;
-    
+
     // Находим порядок величины (степень 10)
     double magnitude = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
-    
+
     // Нормализуем интервал к "красивым" числам: 1, 2, 5, 10, 20, 50, 100...
     double normalizedInterval = rawInterval / magnitude;
-    
+
     double niceInterval;
     if (normalizedInterval <= 1) {
       niceInterval = 1;
@@ -529,7 +546,7 @@ class _NetProfitChartState extends State<NetProfitChart> {
     } else {
       niceInterval = 10;
     }
-    
+
     return niceInterval * magnitude;
   }
 
@@ -538,10 +555,10 @@ class _NetProfitChartState extends State<NetProfitChart> {
   // ============================================
   String _formatValue(double value) {
     if (value == 0) return '0';
-    
+
     final absValue = value.abs();
     final sign = value < 0 ? '-' : '';
-    
+
     if (absValue >= 1000000000) {
       // Миллиарды
       return '$sign${(absValue / 1000000000).toStringAsFixed(2)}млрд';
@@ -554,9 +571,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
     } else if (absValue >= 1000) {
       // Для малых тысяч можем показать полное число с разделителем
       final formatted = absValue.toInt().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (Match m) => '${m[1]} ',
-      );
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]} ',
+          );
       return '$sign$formatted';
     } else {
       return value.toStringAsFixed(0);
@@ -565,10 +582,10 @@ class _NetProfitChartState extends State<NetProfitChart> {
 
   String _formatAxisValue(double value) {
     if (value == 0) return '0';
-    
+
     final absValue = value.abs();
     final sign = value < 0 ? '-' : '';
-    
+
     if (absValue >= 1000000000) {
       // Миллиарды
       return '$sign${(absValue / 1000000000).toStringAsFixed(absValue % 1000000000 == 0 ? 0 : 1)}млрд';
@@ -584,14 +601,19 @@ class _NetProfitChartState extends State<NetProfitChart> {
   }
 
   Widget _buildPeriodDropdown() {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return CustomDropdown<NetProfitPeriod>(
       decoration: CustomDropdownDecoration(
-        closedBorder: Border.all(color: Colors.grey[300]!),
-        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorder: Border.all(color: colors.borderSubtle),
+        expandedBorder: Border.all(color: colors.borderSubtle),
         closedBorderRadius: BorderRadius.circular(8),
         expandedBorderRadius: BorderRadius.circular(8),
-        closedFillColor: Colors.white,
-        expandedFillColor: Colors.white,
+        closedFillColor: colors.surfaceElevated.withValues(alpha: 0.72),
+        expandedFillColor: colors.surfacePrimary,
+        hintStyle: textStyles.bodySm.copyWith(color: colors.textSecondary),
+        headerStyle: textStyles.bodySm.copyWith(color: colors.textPrimary),
+        listItemStyle: textStyles.bodySm.copyWith(color: colors.textPrimary),
       ),
       items: NetProfitPeriod.values,
       initialItem: selectedPeriod,
@@ -604,11 +626,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
         final localizations = AppLocalizations.of(context)!;
         return Text(
           getPeriodText(selectedItem, localizations),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 12,
+          style: textStyles.bodySm.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: colors.textPrimary,
           ),
         );
       },
@@ -616,11 +636,9 @@ class _NetProfitChartState extends State<NetProfitChart> {
         final localizations = AppLocalizations.of(context)!;
         return Text(
           getPeriodText(item, localizations),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 12,
+          style: textStyles.bodySm.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: colors.textPrimary,
           ),
         );
       },

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/models/telephony_events_model.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -141,93 +142,101 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
   void _showDetails() {
     final items = _data?.chart ?? const <TelephonyEventDay>[];
     if (items.isEmpty) return;
+    final colors = context.appColors;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.82,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      _title,
-                      style: TextStyle(
-                        fontSize: ResponsiveHelper(context).titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
-                        fontFamily: 'Golos',
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _title,
+                          style: TextStyle(
+                            fontSize: ResponsiveHelper(context).titleFontSize,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                            fontFamily: 'Golos',
+                          ),
+                        ),
                       ),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _loadData();
+                        },
+                        icon: Icon(Icons.refresh, color: colors.iconSecondary),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(Icons.close, color: colors.iconSecondary),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(height: 1, color: colors.borderSubtle),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        final shortDay = analyticsWeekdayShort(context, index);
+                        final dayLabel = shortDay.isNotEmpty
+                            ? shortDay
+                            : analyticsDayLabel(context, item.day);
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            dayLabel,
+                            style: TextStyle(
+                              fontSize:
+                                  ResponsiveHelper(context).subtitleFontSize,
+                              fontWeight: FontWeight.w600,
+                              color: colors.textPrimary,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${analyticsText(context, 'incoming', fallback: 'Incoming')}: ${item.incoming}, ${analyticsText(context, 'outgoing', fallback: 'Outgoing')}: ${item.outgoing}, ${analyticsText(context, 'missed', fallback: 'Missed')}: ${item.missed}',
+                            style: TextStyle(
+                              fontSize:
+                                  ResponsiveHelper(context).captionFontSize,
+                              color: _labelColor,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                          trailing: Text(
+                            '${item.noticesCreated}/${item.noticesFinished}',
+                            style: TextStyle(
+                              fontSize: ResponsiveHelper(context).bodyFontSize,
+                              fontWeight: FontWeight.w700,
+                              color: _createdColor,
+                              fontFamily: 'Golos',
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _loadData();
-                    },
-                    icon: Icon(Icons.refresh, color: _labelColor),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: _labelColor),
                   ),
                 ],
               ),
-              SizedBox(height: 12),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final shortDay = analyticsWeekdayShort(context, index);
-                    final dayLabel = shortDay.isNotEmpty
-                        ? shortDay
-                        : analyticsDayLabel(context, item.day);
-
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        dayLabel,
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).subtitleFontSize,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${analyticsText(context, 'incoming', fallback: 'Incoming')}: ${item.incoming}, ${analyticsText(context, 'outgoing', fallback: 'Outgoing')}: ${item.outgoing}, ${analyticsText(context, 'missed', fallback: 'Missed')}: ${item.missed}',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).captionFontSize,
-                          color: _labelColor,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      trailing: Text(
-                        '${item.noticesCreated}/${item.noticesFinished}',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).bodyFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: _createdColor,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -455,6 +464,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final items = _data?.chart ?? const <TelephonyEventDay>[];
     final isEmpty = items.isEmpty ||
         items.every((e) =>
@@ -489,16 +499,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
 
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xffF8FAFC),
+            color: colors.surfacePrimary.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(isCompact ? 18 : 20),
-            border: Border.all(color: const Color(0xffE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xff0F172A).withValues(alpha: 0.05),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            border:
+                Border.all(color: colors.borderSubtle.withValues(alpha: 0.4)),
+            boxShadow: context.appShadows.card,
           ),
           child: Padding(
             padding: EdgeInsets.all(headerPadding),
@@ -512,11 +517,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       width: headerIconSize,
                       height: headerIconSize,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(7),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.10),
+                            color: colors.shadow.withValues(alpha: 0.10),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -524,7 +529,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                       ),
                       child: Icon(
                         Icons.call,
-                        color: Colors.black,
+                        color: colors.iconPrimary,
                         size: isVeryCompact ? 13 : (isCompact ? 14 : 16),
                       ),
                     ),
@@ -538,7 +543,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                           fontSize: titleSize,
                           height: 1.12,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -551,11 +556,11 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                           onPressed: _showDetails,
                           icon: Icon(
                             Icons.crop_free,
-                            color: Color(0xff64748B),
+                            color: colors.iconSecondary,
                             size: 22,
                           ),
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xffF1F5F9),
+                            backgroundColor: colors.surfaceElevated,
                             minimumSize: Size(
                               isVeryCompact ? 36 : 40,
                               isVeryCompact ? 36 : 40,
@@ -645,9 +650,8 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                   fallback: _error!,
                                 ),
                                 style: const TextStyle(
-                                  color: _missedColor,
                                   fontFamily: 'Golos',
-                                ),
+                                ).copyWith(color: colors.error),
                               ),
                             )
                           : ChartEmptyOverlay(
@@ -673,7 +677,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                 .toDouble(),
                                             getDrawingHorizontalLine: (_) =>
                                                 FlLine(
-                                              color: const Color(0xffD5DEE8),
+                                              color: colors.borderSubtle,
                                               strokeWidth: 1,
                                             ),
                                           ),
@@ -713,7 +717,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                             touchTooltipData:
                                                 BarTouchTooltipData(
                                               getTooltipColor: (_) =>
-                                                  const Color(0xffF8FAFC),
+                                                  colors.surfacePrimary,
                                               tooltipRoundedRadius: 12,
                                               tooltipPadding:
                                                   const EdgeInsets.symmetric(
@@ -844,15 +848,15 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                             vertical: 10,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xffF8FAFC),
+                                            color: colors.surfacePrimary,
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                             border: Border.all(
-                                              color: const Color(0xffE2E8F0),
+                                              color: colors.borderSubtle,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: const Color(0xff0F172A)
+                                                color: colors.shadow
                                                     .withValues(alpha: 0.08),
                                                 blurRadius: 10,
                                                 offset: const Offset(0, 4),
@@ -885,9 +889,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                                                   Text(
                                                     day,
                                                     style: TextStyle(
-                                                      color: const Color(
-                                                        0xff0F172A,
-                                                      ),
+                                                      color: colors.textPrimary,
                                                       fontWeight:
                                                           FontWeight.w700,
                                                       fontSize:
@@ -968,7 +970,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                             ),
                 ),
                 const SizedBox(height: 8),
-                const Divider(color: Color(0xffD5DEE8), height: 1),
+                Divider(color: colors.borderSubtle, height: 1),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -995,7 +997,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
                           Text(
                             '$totalCalls',
                             style: TextStyle(
-                              color: const Color(0xff0F172A),
+                              color: colors.textPrimary,
                               fontSize: numberFontSize,
                               height: 0.92,
                               fontWeight: FontWeight.w700,

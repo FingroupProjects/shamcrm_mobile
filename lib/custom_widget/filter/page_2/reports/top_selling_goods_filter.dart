@@ -33,10 +33,12 @@ class TopSellingGoodsFilterScreen extends StatefulWidget {
   });
 
   @override
-  State<TopSellingGoodsFilterScreen> createState() => _TopSellingGoodsFilterScreenState();
+  State<TopSellingGoodsFilterScreen> createState() =>
+      _TopSellingGoodsFilterScreenState();
 }
 
-class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScreen> {
+class _TopSellingGoodsFilterScreenState
+    extends State<TopSellingGoodsFilterScreen> {
   DateTime? dateFrom;
   DateTime? dateTo;
   final TextEditingController _sumFromController = TextEditingController();
@@ -66,12 +68,17 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
     setState(() {
       final fromMillis = prefs.getInt('top_selling_date_from');
       final toMillis = prefs.getInt('top_selling_date_to');
-      if (fromMillis != null) dateFrom = DateTime.fromMillisecondsSinceEpoch(fromMillis);
-      if (toMillis != null) dateTo = DateTime.fromMillisecondsSinceEpoch(toMillis);
-      _sumFromController.text = prefs.getString('top_selling_sum_from') ?? widget.sumFrom ?? '';
-      _sumToController.text = prefs.getString('top_selling_sum_to') ?? widget.sumTo ?? '';
+      if (fromMillis != null)
+        dateFrom = DateTime.fromMillisecondsSinceEpoch(fromMillis);
+      if (toMillis != null)
+        dateTo = DateTime.fromMillisecondsSinceEpoch(toMillis);
+      _sumFromController.text =
+          prefs.getString('top_selling_sum_from') ?? widget.sumFrom ?? '';
+      _sumToController.text =
+          prefs.getString('top_selling_sum_to') ?? widget.sumTo ?? '';
 
-      selectedCategoryId = prefs.getString('top_selling_category_id') ?? widget.categoryId;
+      selectedCategoryId =
+          prefs.getString('top_selling_category_id') ?? widget.categoryId;
       selectedGoodId = prefs.getString('top_selling_good_id') ?? widget.goodId;
     });
   }
@@ -79,7 +86,8 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
   Future<void> _saveFilterState() async {
     final prefs = await SharedPreferences.getInstance();
     if (dateFrom != null) {
-      await prefs.setInt('top_selling_date_from', dateFrom!.millisecondsSinceEpoch);
+      await prefs.setInt(
+          'top_selling_date_from', dateFrom!.millisecondsSinceEpoch);
     } else {
       await prefs.remove('top_selling_date_from');
     }
@@ -124,7 +132,9 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange: dateFrom != null && dateTo != null ? DateTimeRange(start: dateFrom!, end: dateTo!) : null,
+      initialDateRange: dateFrom != null && dateTo != null
+          ? DateTimeRange(start: dateFrom!, end: dateTo!)
+          : null,
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -133,8 +143,11 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
               primary: this.context.appColors.buttonPrimaryBg,
               onPrimary: this.context.appColors.buttonPrimaryFg,
               onSurface: this.context.appColors.textPrimary,
-              secondary:
-                  this.context.appColors.buttonSecondaryBg.withValues(alpha: 0.1),
+              secondary: this
+                  .context
+                  .appColors
+                  .buttonSecondaryBg
+                  .withValues(alpha: 0.1),
               surface: this.context.appColors.surfacePrimary,
             ),
             textButtonTheme: TextButtonThemeData(
@@ -177,21 +190,26 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
       // Set from date to 00:00:00 and to date to 23:59:59
       DateTime? fromDateWithTime = dateFrom;
       DateTime? toDateWithTime = dateTo;
-      
+
       if (fromDateWithTime != null) {
-        fromDateWithTime = DateTime(fromDateWithTime.year, fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
+        fromDateWithTime = DateTime(fromDateWithTime.year,
+            fromDateWithTime.month, fromDateWithTime.day, 0, 0, 0);
       }
       if (toDateWithTime != null) {
-        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month, toDateWithTime.day, 23, 59, 59);
+        toDateWithTime = DateTime(toDateWithTime.year, toDateWithTime.month,
+            toDateWithTime.day, 23, 59, 59);
       }
-      
+
       final filters = {
         'sum_from': _parseSum(_sumFromController.text),
         'sum_to': _parseSum(_sumToController.text),
         'date_from': fromDateWithTime,
         'date_to': toDateWithTime,
-        'category_id': selectedCategoryId != null ? int.tryParse(selectedCategoryId!) : null,
-        'good_id': selectedGoodId != null ? int.tryParse(selectedGoodId!) : null,
+        'category_id': selectedCategoryId != null
+            ? int.tryParse(selectedCategoryId!)
+            : null,
+        'good_id':
+            selectedGoodId != null ? int.tryParse(selectedGoodId!) : null,
       };
       widget.onSelectedDataFilter?.call(filters);
     }
@@ -236,8 +254,7 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           backgroundColor:
               context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           side:
               BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
         );
@@ -318,7 +335,9 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                               Text(
                                 dateFrom != null && dateTo != null
                                     ? "${dateFrom!.day.toString().padLeft(2, '0')}.${dateFrom!.month.toString().padLeft(2, '0')}.${dateFrom!.year} - ${dateTo!.day.toString().padLeft(2, '0')}.${dateTo!.month.toString().padLeft(2, '0')}.${dateTo!.year}"
-                                    : AppLocalizations.of(context)!.translate('select_date_range') ?? 'Выберите период',
+                                    : AppLocalizations.of(context)!
+                                            .translate('select_date_range') ??
+                                        'Выберите период',
                                 style: context.appTextStyles.bodyMd.copyWith(
                                   color: dateFrom != null && dateTo != null
                                       ? context.appColors.textPrimary
@@ -336,7 +355,6 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                       padding: EdgeInsets.zero,
                     ),
                     const SizedBox(height: 8),
-
                     buildFilterCard(
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,7 +362,6 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     buildFilterCard(
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,39 +369,53 @@ class _TopSellingGoodsFilterScreenState extends State<TopSellingGoodsFilterScree
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     buildFilterCard(
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CustomTextField(
                             controller: _sumFromController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             hintText: AppLocalizations.of(context)!
                                     .translate('enter_minimum_amount') ??
                                 'Введите минимальную сумму',
                             label: AppLocalizations.of(context)!
                                     .translate('amount_from') ??
                                 'Сумма от',
+                            backgroundColor: context.appColors.fieldBg,
+                            borderColor: context.appColors.fieldBorder,
+                            focusedBorderColor: context.appColors.borderPrimary,
+                            labelColor: context.appColors.textPrimary,
+                            hintColor: context.appColors.fieldHint,
+                            textColor: context.appColors.textPrimary,
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     buildFilterCard(
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CustomTextField(
                             controller: _sumToController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             hintText: AppLocalizations.of(context)!
                                     .translate('enter_maximum_amount') ??
                                 'Введите максимальную сумму',
                             label: AppLocalizations.of(context)!
                                     .translate('amount_to') ??
                                 'Сумма до',
+                            backgroundColor: context.appColors.fieldBg,
+                            borderColor: context.appColors.fieldBorder,
+                            focusedBorderColor: context.appColors.borderPrimary,
+                            labelColor: context.appColors.textPrimary,
+                            hintColor: context.appColors.fieldHint,
+                            textColor: context.appColors.textPrimary,
                           ),
                         ],
                       ),

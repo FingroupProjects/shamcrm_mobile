@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/expense_structure.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -7,10 +8,10 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
-import 'download_popup_menu.dart';
 
 class ExpenseStructureChart extends StatefulWidget {
-  const ExpenseStructureChart(this.expenseStructureData, {Key? key}) : super(key: key);
+  const ExpenseStructureChart(this.expenseStructureData, {Key? key})
+      : super(key: key);
 
   final List<AllExpensesData> expenseStructureData;
 
@@ -18,7 +19,8 @@ class ExpenseStructureChart extends StatefulWidget {
   State<ExpenseStructureChart> createState() => _ExpenseStructureChartState();
 }
 
-class _ExpenseStructureChartState extends State<ExpenseStructureChart> with SingleTickerProviderStateMixin {
+class _ExpenseStructureChartState extends State<ExpenseStructureChart>
+    with SingleTickerProviderStateMixin {
   ExpensePeriodEnum selectedPeriod = ExpensePeriodEnum.year;
   bool isDownloading = false;
   int touchedIndex = -1;
@@ -45,7 +47,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
   AllExpensesData? _getCurrentPeriodData() {
     try {
       return widget.expenseStructureData.firstWhere(
-            (data) => data.period == selectedPeriod,
+        (data) => data.period == selectedPeriod,
       );
     } catch (e) {
       return null;
@@ -62,9 +64,11 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
         selectedPeriod = period;
         touchedIndex = -1;
       });
-      
+
       // Вызываем перезагрузку данных через Bloc
-      context.read<SalesDashboardBloc>().add(ReloadExpenseStructureData(period));
+      context
+          .read<SalesDashboardBloc>()
+          .add(ReloadExpenseStructureData(period));
     }
   }
 
@@ -103,14 +107,19 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
   // }
 
   Widget _buildPeriodDropdown() {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return CustomDropdown<ExpensePeriodEnum>(
       decoration: CustomDropdownDecoration(
-        closedBorder: Border.all(color: Colors.grey[300]!),
-        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorder: Border.all(color: colors.borderSubtle),
+        expandedBorder: Border.all(color: colors.borderSubtle),
         closedBorderRadius: BorderRadius.circular(8),
         expandedBorderRadius: BorderRadius.circular(8),
-        closedFillColor: Colors.white,
-        expandedFillColor: Colors.white,
+        closedFillColor: colors.surfaceElevated.withValues(alpha: 0.72),
+        expandedFillColor: colors.surfacePrimary,
+        hintStyle: textStyles.bodySm.copyWith(color: colors.textSecondary),
+        headerStyle: textStyles.bodySm.copyWith(color: colors.textPrimary),
+        listItemStyle: textStyles.bodyMd.copyWith(color: colors.textPrimary),
       ),
       items: ExpensePeriodEnum.values,
       initialItem: selectedPeriod,
@@ -122,38 +131,35 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
       headerBuilder: (context, selectedItem, enabled) {
         return Text(
           getPeriodText(context, selectedItem),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 12,
+          style: textStyles.bodySm.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: colors.textPrimary,
           ),
         );
       },
       listItemBuilder: (context, item, isSelected, onItemSelect) {
         return Text(
           getPeriodText(context, item),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 14,
+          style: textStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: colors.textPrimary,
           ),
         );
       },
     );
   }
 
-  Widget _buildChart(AppLocalizations localizations, List<ExpenseItem> expenseStructure) {
+  Widget _buildChart(
+      AppLocalizations localizations, List<ExpenseItem> expenseStructure) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     if (expenseStructure.isEmpty) {
       return Center(
         child: Text(
           localizations.translate('no_data_to_display'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: "Gilroy",
+          style: textStyles.bodyLg.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black54,
+            color: colors.textSecondary,
           ),
         ),
       );
@@ -173,11 +179,9 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
           child: Center(
             child: Text(
               localizations.translate('no_data'),
-              style: const TextStyle(
-                fontSize: 14,
-                fontFamily: "Gilroy",
+              style: textStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Colors.black54,
+                color: colors.textSecondary,
               ),
             ),
           ),
@@ -194,11 +198,14 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
           pieTouchData: PieTouchData(
             touchCallback: (FlTouchEvent event, pieTouchResponse) {
               setState(() {
-                if (!event.isInterestedForInteractions || pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
+                if (!event.isInterestedForInteractions ||
+                    pieTouchResponse == null ||
+                    pieTouchResponse.touchedSection == null) {
                   touchedIndex = -1;
                   return;
                 }
-                touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                touchedIndex =
+                    pieTouchResponse.touchedSection!.touchedSectionIndex;
               });
             },
           ),
@@ -210,14 +217,15 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     );
   }
 
-  List<PieChartSectionData> _showingSections(List<ExpenseItem> expenseStructure) {
+  List<PieChartSectionData> _showingSections(
+      List<ExpenseItem> expenseStructure) {
     return List.generate(expenseStructure.length, (i) {
       final isTouched = i == touchedIndex;
       final opacity = isTouched ? 0.8 : 1.0;
       final radius = isTouched ? 20.0 : 15.0;
 
       return PieChartSectionData(
-        color: _getColorForIndex(i).withOpacity(opacity),
+        color: _getColorForIndex(i).withValues(alpha: opacity),
         value: expenseStructure[i].percentage.toDouble(),
         title: isTouched ? '${expenseStructure[i].percentage}%' : '',
         radius: radius,
@@ -277,19 +285,16 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
     final localizations = AppLocalizations.of(context)!;
     final currentData = _getCurrentPeriodData();
     final expenseStructure = currentData?.data.result.expenseStructure ?? [];
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,11 +304,9 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
             children: [
               Text(
                 localizations.translate('expense_structure'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: colors.textPrimary,
                 ),
               ),
               // Transform.translate(
@@ -330,18 +333,18 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
               const SizedBox(width: 12),
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: colors.surfaceElevated.withValues(alpha: 0.72),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.borderSubtle),
                   ),
                   child: Text(
                     localizations.translate('compare'),
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: Colors.black54,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ),
@@ -354,35 +357,33 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
           // Chart and Legend
           expenseStructure.isEmpty
               ? SizedBox(
-            height: 200,
-            child: Center(
-              child: Text(
-                localizations.translate('no_data_to_display'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              ),
-            ),
-          )
+                  height: 200,
+                  child: Center(
+                    child: Text(
+                      localizations.translate('no_data_to_display'),
+                      style: textStyles.bodyLg.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                )
               : Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Chart
-              Expanded(
-                flex: 1,
-                child: _buildChart(localizations, expenseStructure),
-              ),
-              const SizedBox(width: 24),
-              // Legend
-              Expanded(
-                flex: 1,
-                child: _buildLegend(expenseStructure),
-              ),
-            ],
-          ),
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Chart
+                    Expanded(
+                      flex: 1,
+                      child: _buildChart(localizations, expenseStructure),
+                    ),
+                    const SizedBox(width: 24),
+                    // Legend
+                    Expanded(
+                      flex: 1,
+                      child: _buildLegend(expenseStructure),
+                    ),
+                  ],
+                ),
 
           const SizedBox(height: 16),
 
@@ -391,15 +392,15 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart> with Sing
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 9)));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) =>
+                        DetailedReportScreen(currentTabIndex: 9)));
               },
               child: Text(
                 localizations.translate('more_details'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
             ),

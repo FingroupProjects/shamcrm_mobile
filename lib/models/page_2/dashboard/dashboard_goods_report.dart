@@ -6,8 +6,12 @@ class ResultDashboardGoodsReport {
 
   factory ResultDashboardGoodsReport.fromJson(Map<String, dynamic> json) {
     return ResultDashboardGoodsReport(
-      data: (json['data'] as List?)?.map((i) => DashboardGoods.fromJson(i)).toList() ?? [],
-      pagination: Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
+      data: ((json['data'] as List?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(DashboardGoods.fromJson)
+          .toList(),
+      pagination:
+          Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
     );
   }
 }
@@ -61,8 +65,11 @@ class DashboardGoods {
       goodVariantId: (json['good_variant_id'] as num?)?.toInt(),
       name: json['name'] as String? ?? '',
       category: json['category'] as String? ?? '',
-      totalQuantity: json['total_quantity'] as String? ?? '0',
-      storages: (json['storages'] as List?)?.map((i) => Storage.fromJson(i)).toList() ?? [],
+      totalQuantity: json['total_quantity']?.toString() ?? '0',
+      storages: ((json['storages'] as List?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(Storage.fromJson)
+          .toList(),
     );
   }
 }
@@ -82,7 +89,7 @@ class Storage {
     return Storage(
       id: (json['id'] as num?)?.toInt() ?? 0,
       name: json['name'] as String? ?? '',
-      quantity: json['quantity'] as String? ?? '0',
+      quantity: json['quantity']?.toString() ?? '0',
     );
   }
 }

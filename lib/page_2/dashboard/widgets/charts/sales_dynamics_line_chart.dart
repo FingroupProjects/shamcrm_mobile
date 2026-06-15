@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/sales_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -8,7 +9,6 @@ import 'dart:math';
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
-import 'download_popup_menu.dart';
 
 class SalesData {
   final String period;
@@ -90,13 +90,14 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         selectedPeriod = period;
         salesData = _getDataForPeriod(period);
       });
-      
+
       // Вызываем перезагрузку данных через Bloc
       context.read<SalesDashboardBloc>().add(ReloadSalesDynamicsData(period));
     }
   }
 
-  String getPeriodText(SalesDynamicsTimePeriod period, AppLocalizations localizations) {
+  String getPeriodText(
+      SalesDynamicsTimePeriod period, AppLocalizations localizations) {
     switch (period) {
       case SalesDynamicsTimePeriod.year:
         return localizations.translate('current_year_lowercase');
@@ -109,19 +110,16 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final isLoading = widget.allSalesDynamicsData.isEmpty;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,11 +129,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
             children: [
               Text(
                 localizations.translate('sales_dynamics'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: colors.textPrimary,
                 ),
               ),
               // Transform.translate(
@@ -153,18 +149,18 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
               const SizedBox(width: 12),
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: colors.surfaceElevated.withValues(alpha: 0.72),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.borderSubtle),
                   ),
                   child: Text(
                     localizations.translate('compare'),
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: Colors.black54,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ),
@@ -179,182 +175,191 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
             height: 300,
             child: isLoading
                 ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF3935E7),
-              ),
-            )
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF3935E7),
+                    ),
+                  )
                 : salesData.isEmpty
-                ? Center(
-              child: Text(
-                localizations.translate('no_data_to_display'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              ),
-            )
-                : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
-              child: LineChart(
-                LineChartData(
-                  backgroundColor: Colors.transparent,
-                  gridData: FlGridData(
-                    show: true,
-                    drawHorizontalLine: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: _calculateInterval(),
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          if (value < 0 || value >= salesData.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Transform.rotate(
-                              angle: -0.5,
-                              child: Text(
-                                salesData[value.toInt()].period,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
+                    ? Center(
+                        child: Text(
+                          localizations.translate('no_data_to_display'),
+                          style: textStyles.bodyLg.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.only(right: 16, top: 16),
+                        child: LineChart(
+                          LineChartData(
+                            backgroundColor: Colors.transparent,
+                            gridData: FlGridData(
+                              show: true,
+                              drawHorizontalLine: true,
+                              drawVerticalLine: false,
+                              horizontalInterval: _calculateInterval(),
+                              getDrawingHorizontalLine: (value) {
+                                return FlLine(
+                                  color: colors.borderSubtle
+                                      .withValues(alpha: 0.38),
+                                  strokeWidth: 1,
+                                );
+                              },
+                            ),
+                            titlesData: FlTitlesData(
+                              show: true,
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    if (value < 0 ||
+                                        value >= salesData.length) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Transform.rotate(
+                                        angle: -0.5,
+                                        child: Text(
+                                          salesData[value.toInt()].period,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontFamily: 'Gilroy',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ).copyWith(
+                                              color: colors.textSecondary),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  reservedSize: 50,
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                        reservedSize: 50,
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            _formatAxisValue(value),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          );
-                        },
-                        reservedSize: 50,
-                        interval: _calculateInterval(),
-                      ),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  borderData: FlBorderData(
-                    show: false,
-                  ),
-                  minX: 0,
-                  maxX: (salesData.length - 1).toDouble(),
-                  minY: 0,
-                  maxY: _calculateMaxY(),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: List.generate(
-                        salesData.length,
-                            (index) => FlSpot(
-                          index.toDouble(),
-                          salesData[index].value,
-                        ),
-                      ),
-                      isCurved: true,
-                      curveSmoothness: 0.3,
-                      color: const Color(0xFF00E676),
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: 4,
-                            color: const Color(0xFF00E676),
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          );
-                        },
-                      ),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            const Color(0xFF00E676).withOpacity(0.3),
-                            const Color(0xFF00E676).withOpacity(0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    touchTooltipData: LineTouchTooltipData(
-                      tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      tooltipMargin: 8,
-                      fitInsideVertically: true,
-                      fitInsideHorizontally: true,
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((touchedSpot) {
-                          final index = touchedSpot.x.toInt();
-                          if (index >= 0 && index < salesData.length) {
-                            return LineTooltipItem(
-                              '${salesData[index].period}\n',
-                              const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    return Text(
+                                      _formatAxisValue(value),
+                                      style: const TextStyle(
+                                        fontFamily: 'Gilroy',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ).copyWith(color: colors.textSecondary),
+                                    );
+                                  },
+                                  reservedSize: 50,
+                                  interval: _calculateInterval(),
+                                ),
                               ),
-                              children: [
-                                TextSpan(
-                                  text: _formatValue(touchedSpot.y),
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                              rightTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              topTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                            ),
+                            borderData: FlBorderData(
+                              show: false,
+                            ),
+                            minX: 0,
+                            maxX: (salesData.length - 1).toDouble(),
+                            minY: 0,
+                            maxY: _calculateMaxY(),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: List.generate(
+                                  salesData.length,
+                                  (index) => FlSpot(
+                                    index.toDouble(),
+                                    salesData[index].value,
                                   ),
                                 ),
-                              ],
-                            );
-                          }
-                          return null;
-                        }).toList();
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
+                                isCurved: true,
+                                curveSmoothness: 0.3,
+                                color: const Color(0xFF00E676),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF00E676),
+                                    Color(0xFF00C853)
+                                  ],
+                                ),
+                                barWidth: 3,
+                                isStrokeCapRound: true,
+                                dotData: FlDotData(
+                                  show: true,
+                                  getDotPainter:
+                                      (spot, percent, barData, index) {
+                                    return FlDotCirclePainter(
+                                      radius: 4,
+                                      color: colors.buttonPrimaryBg,
+                                      strokeWidth: 2,
+                                      strokeColor: colors.surfacePrimary,
+                                    );
+                                  },
+                                ),
+                                belowBarData: BarAreaData(
+                                  show: true,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      colors.buttonPrimaryBg
+                                          .withValues(alpha: 0.28),
+                                      colors.buttonPrimaryBg
+                                          .withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            lineTouchData: LineTouchData(
+                              enabled: true,
+                              touchTooltipData: LineTouchTooltipData(
+                                tooltipRoundedRadius: 8,
+                                tooltipPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                tooltipMargin: 8,
+                                fitInsideVertically: true,
+                                fitInsideHorizontally: true,
+                                getTooltipItems: (touchedSpots) {
+                                  return touchedSpots.map((touchedSpot) {
+                                    final index = touchedSpot.x.toInt();
+                                    if (index >= 0 &&
+                                        index < salesData.length) {
+                                      return LineTooltipItem(
+                                        '${salesData[index].period}\n',
+                                        const TextStyle(
+                                          fontFamily: 'Gilroy',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                        children: [
+                                          TextSpan(
+                                            text: _formatValue(touchedSpot.y),
+                                            style: const TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return null;
+                                  }).toList();
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
           ),
           const SizedBox(height: 16),
 
@@ -363,15 +368,15 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 6)));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) =>
+                        DetailedReportScreen(currentTabIndex: 6)));
               },
               child: Text(
                 localizations.translate('more_details'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -383,7 +388,8 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
 
   double _calculateMaxY() {
     if (salesData.isEmpty) return 100;
-    final maxValue = salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final maxValue =
+        salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     if (maxValue == 0) return 100;
     return maxValue * 1.2;
   }
@@ -393,22 +399,22 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   // ============================================
   double _calculateInterval() {
     final maxY = _calculateMaxY();
-    
+
     if (maxY == 0) return 20;
-    
+
     // Целевое количество делений - 5
     // (это даст нам 6 линий включая 0)
     const targetDivisions = 5;
-    
+
     // Рассчитываем "сырой" интервал
     double rawInterval = maxY / targetDivisions;
-    
+
     // Находим порядок величины (степень 10)
     double magnitude = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
-    
+
     // Нормализуем интервал к "красивым" числам: 1, 2, 5, 10, 20, 50, 100...
     double normalizedInterval = rawInterval / magnitude;
-    
+
     double niceInterval;
     if (normalizedInterval <= 1) {
       niceInterval = 1;
@@ -419,7 +425,7 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     } else {
       niceInterval = 10;
     }
-    
+
     return niceInterval * magnitude;
   }
 
@@ -428,9 +434,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   // ============================================
   String _formatAxisValue(double value) {
     if (value == 0) return '0';
-    
+
     final absValue = value.abs();
-    
+
     if (absValue >= 1000000000) {
       // Миллиарды
       return '${(value / 1000000000).toStringAsFixed(value % 1000000000 == 0 ? 0 : 1)}млрд';
@@ -450,9 +456,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   // ============================================
   String _formatValue(double value) {
     if (value == 0) return '0';
-    
+
     final absValue = value.abs();
-    
+
     if (absValue >= 1000000000) {
       // Миллиарды
       return '${(value / 1000000000).toStringAsFixed(2)}млрд';
@@ -465,23 +471,28 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     } else if (absValue >= 1000) {
       // Для малых тысяч можем показать полное число с разделителем
       return value.toInt().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (Match m) => '${m[1]} ',
-      );
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]} ',
+          );
     } else {
       return value.toStringAsFixed(0);
     }
   }
 
   Widget _buildPeriodDropdown() {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return CustomDropdown<SalesDynamicsTimePeriod>(
       decoration: CustomDropdownDecoration(
-        closedBorder: Border.all(color: Colors.grey[300]!),
-        expandedBorder: Border.all(color: Colors.grey[300]!),
+        closedBorder: Border.all(color: colors.borderSubtle),
+        expandedBorder: Border.all(color: colors.borderSubtle),
         closedBorderRadius: BorderRadius.circular(8),
         expandedBorderRadius: BorderRadius.circular(8),
-        closedFillColor: Colors.white,
-        expandedFillColor: Colors.white,
+        closedFillColor: colors.surfaceElevated.withValues(alpha: 0.72),
+        expandedFillColor: colors.surfacePrimary,
+        hintStyle: textStyles.bodySm.copyWith(color: colors.textSecondary),
+        headerStyle: textStyles.bodySm.copyWith(color: colors.textPrimary),
+        listItemStyle: textStyles.bodySm.copyWith(color: colors.textPrimary),
       ),
       items: SalesDynamicsTimePeriod.values,
       initialItem: selectedPeriod,
@@ -494,11 +505,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         final localizations = AppLocalizations.of(context)!;
         return Text(
           getPeriodText(selectedItem, localizations),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 12,
+          style: textStyles.bodySm.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: colors.textPrimary,
           ),
         );
       },
@@ -506,11 +515,9 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         final localizations = AppLocalizations.of(context)!;
         return Text(
           getPeriodText(item, localizations),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 12,
+          style: textStyles.bodySm.copyWith(
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: colors.textPrimary,
           ),
         );
       },

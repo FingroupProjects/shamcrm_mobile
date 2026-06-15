@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
 
 class GoodsMovementCard extends StatelessWidget {
@@ -19,6 +20,9 @@ class GoodsMovementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return GestureDetector(
       onTap: () => onClick(variant),
       onLongPress: () => onLongPress(variant),
@@ -26,19 +30,15 @@ class GoodsMovementCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected
+              ? colors.surfaceElevated.withValues(alpha: 0.98)
+              : colors.surfacePrimary.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xff1E2E52) : const Color(0xffE2E8F0),
+            color: isSelected ? colors.borderPrimary : colors.borderSubtle,
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: context.appShadows.card,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -46,11 +46,9 @@ class GoodsMovementCard extends StatelessWidget {
             Expanded(
               child: Text(
                 variant.fullName ?? variant.good?.name ?? 'Неизвестный товар',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontFamily: 'Gilroy',
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -60,7 +58,7 @@ class GoodsMovementCard extends StatelessWidget {
               const SizedBox(width: 12),
               Icon(
                 isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                color: const Color(0xff1E2E52),
+                color: colors.textPrimary,
                 size: 24,
               ),
             ],
@@ -70,4 +68,3 @@ class GoodsMovementCard extends StatelessWidget {
     );
   }
 }
-

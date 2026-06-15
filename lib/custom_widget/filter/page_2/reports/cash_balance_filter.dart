@@ -301,20 +301,34 @@ class _CashBalanceFilterScreenState extends State<CashBalanceFilterScreen> {
                     _buildFilterCard(
                       child: CustomTextField(
                         controller: _amountFromController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         hintText:
                             localizations.translate('enter_minimum_amount'),
                         label: localizations.translate('amount_from'),
+                        backgroundColor: context.appColors.fieldBg,
+                        borderColor: context.appColors.fieldBorder,
+                        focusedBorderColor: context.appColors.borderPrimary,
+                        labelColor: context.appColors.textPrimary,
+                        hintColor: context.appColors.fieldHint,
+                        textColor: context.appColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     _buildFilterCard(
                       child: CustomTextField(
                         controller: _amountToController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         hintText:
                             localizations.translate('enter_maximum_amount'),
                         label: localizations.translate('amount_to'),
+                        backgroundColor: context.appColors.fieldBg,
+                        borderColor: context.appColors.fieldBorder,
+                        focusedBorderColor: context.appColors.borderPrimary,
+                        labelColor: context.appColors.textPrimary,
+                        hintColor: context.appColors.fieldHint,
+                        textColor: context.appColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),

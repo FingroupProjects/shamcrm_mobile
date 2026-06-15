@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 import '../../../../models/page_2/good_variants_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_bloc.dart';
@@ -39,8 +40,8 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
       if (state is SalesDashboardGoodsMovementLoaded && !state.hasReachedMax) {
         setState(() => _isLoadingMore = true);
         context.read<SalesDashboardGoodsMovementBloc>().add(
-          LoadGoodsMovementReport(page: state.currentPage + 1),
-        );
+              LoadGoodsMovementReport(page: state.currentPage + 1),
+            );
       }
     }
   }
@@ -53,20 +54,26 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
   }
 
   Future<void> _onRefresh() async {
-    context.read<SalesDashboardGoodsMovementBloc>().add(RefreshGoodsMovementReport());
+    context
+        .read<SalesDashboardGoodsMovementBloc>()
+        .add(RefreshGoodsMovementReport());
     // Wait for the bloc to emit a new state
     await context.read<SalesDashboardGoodsMovementBloc>().stream.firstWhere(
-      (state) => 
-        state is! SalesDashboardGoodsMovementLoading || 
-        state is SalesDashboardGoodsMovementLoaded || 
-        state is SalesDashboardGoodsMovementError,
-    );
+          (state) =>
+              state is! SalesDashboardGoodsMovementLoading ||
+              state is SalesDashboardGoodsMovementLoaded ||
+              state is SalesDashboardGoodsMovementError,
+        );
   }
 
-  Widget _buildVariantsList(List<GoodVariantItem> variants, bool hasReachedMax) {
+  Widget _buildVariantsList(
+      List<GoodVariantItem> variants, bool hasReachedMax) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
-      color: const Color(0xff1E2E52),
+      color: colors.textPrimary,
       child: ListView.separated(
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -82,16 +89,15 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
+                          CircularProgressIndicator(
+                            color: colors.textPrimary,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            AppLocalizations.of(context)!.translate('loading_more'),
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 13,
-                              color: Color(0xff64748B),
+                            AppLocalizations.of(context)!
+                                .translate('loading_more'),
+                            style: textStyles.bodySm.copyWith(
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -109,7 +115,8 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
             },
             onLongPress: (variant) {
               // Handle long press if needed in the future
-              debugPrint('Long pressed on: ${variant.fullName ?? variant.good?.name}');
+              debugPrint(
+                  'Long pressed on: ${variant.fullName ?? variant.good?.name}');
             },
           );
         },
@@ -119,7 +126,9 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -134,33 +143,29 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xffF8FAFC),
+                      color: colors.surfacePrimary.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(50),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.inventory_2_outlined,
                       size: 64,
-                      color: Color(0xff99A4BA),
+                      color: colors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     localizations.translate('no_data_to_display'),
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 18,
+                    style: textStyles.titleMd.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     localizations.translate('goods_movement_empty_hint'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      color: Color(0xff64748B),
+                    style: textStyles.bodySm.copyWith(
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
@@ -174,23 +179,23 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+          CircularProgressIndicator(
+            color: colors.textPrimary,
             strokeWidth: 3,
           ),
           const SizedBox(height: 24),
           Text(
             localizations.translate('loading_data'),
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
+            style: textStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
-              color: Color(0xff64748B),
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -200,7 +205,9 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -215,10 +222,10 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xffFEF2F2),
+                    color: colors.surfacePrimary.withValues(alpha: 0.96),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xffFECACA),
+                      color: colors.error.withValues(alpha: 0.34),
                       width: 1,
                     ),
                   ),
@@ -228,41 +235,37 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xffFEE2E2),
+                          color: colors.error.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(50),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.error_outline,
                           size: 48,
-                          color: Color(0xffEF4444),
+                          color: colors.error,
                         ),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         localizations.translate('error_loading_dialog'),
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 18,
+                        style: textStyles.titleMd.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         message,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 14,
-                          color: Color(0xff64748B),
+                        style: textStyles.bodySm.copyWith(
+                          color: colors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () {
                           context.read<SalesDashboardGoodsMovementBloc>().add(
-                            LoadGoodsMovementReport(),
-                          );
+                                LoadGoodsMovementReport(),
+                              );
                         },
                         icon: const Icon(Icons.refresh, size: 20),
                         label: Text(
@@ -274,10 +277,11 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -296,7 +300,7 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -319,7 +323,9 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
             ),
           ],
         ),
-        backgroundColor: isError ? const Color(0xffEF4444) : const Color(0xff1E2E52),
+        backgroundColor: isError
+            ? context.appColors.error
+            : context.appColors.buttonPrimaryBg,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
@@ -332,7 +338,8 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<SalesDashboardGoodsMovementBloc, SalesDashboardGoodsMovementState>(
+    return BlocConsumer<SalesDashboardGoodsMovementBloc,
+        SalesDashboardGoodsMovementState>(
       listener: (context, state) {
         // Reset loading more flag
         if (state is SalesDashboardGoodsMovementLoaded) {
@@ -367,4 +374,3 @@ class _GoodsMovementContentState extends State<GoodsMovementContent> {
     );
   }
 }
-

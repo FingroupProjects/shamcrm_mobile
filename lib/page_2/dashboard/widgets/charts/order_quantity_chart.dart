@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/dashboard/order_dashboard_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
-import 'download_popup_menu.dart';
 
 // Removed hardcoded strings - now using localization
 
@@ -53,7 +53,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
   AllOrdersData? _getCurrentPeriodData() {
     try {
       return widget.orderDashboardData.firstWhere(
-            (data) => data.period == selectedPeriod,
+        (data) => data.period == selectedPeriod,
       );
     } catch (e) {
       return null;
@@ -73,7 +73,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         _lineVisibility.clear();
         _initializeLineVisibility();
       });
-      
+
       // Вызываем перезагрузку данных через Bloc
       context.read<SalesDashboardBloc>().add(ReloadOrderQuantityData(period));
     }
@@ -93,13 +93,21 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
 
   Widget buildPeriodButton(OrderTimePeriod period) {
     final isSelected = selectedPeriod == period;
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () => onPeriodChanged(period),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF3935E7) : Colors.grey[200],
+          color: isSelected
+              ? colors.buttonPrimaryBg
+              : colors.surfaceElevated.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? colors.buttonPrimaryBg
+                : colors.borderSubtle.withValues(alpha: 0.8),
+          ),
         ),
         child: Text(
           getPeriodText(context, period),
@@ -107,7 +115,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             fontFamily: 'Gilroy',
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : Colors.black54,
+            color: isSelected ? colors.textInverse : colors.textSecondary,
           ),
         ),
       ),
@@ -149,6 +157,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
   }
 
   LineChartData _buildChartData(List<OrderChartData> chartData) {
+    final colors = context.appColors;
     // Determine maxX based on data points
     double maxX = 0;
     for (var data in chartData) {
@@ -163,7 +172,8 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
       OrderChartData data = entry.value;
 
       if (!(_lineVisibility[data.name] ?? true)) {
-        return LineChartBarData(spots: [], show: false, dotData: const FlDotData(show: false));
+        return LineChartBarData(
+            spots: [], show: false, dotData: const FlDotData(show: false));
       }
 
       List<FlSpot> spots = data.data.asMap().entries.map((entry) {
@@ -184,7 +194,8 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         dotData: FlDotData(
           show: true,
           getDotPainter: (spot, percent, barData, index) {
-            bool isSelected = lineIndex == selectedLineIndex && index == selectedIndex;
+            bool isSelected =
+                lineIndex == selectedLineIndex && index == selectedIndex;
             return FlDotCirclePainter(
               radius: isSelected ? 6 : 4,
               color: isSelected ? Colors.black87 : lineColor,
@@ -224,7 +235,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         horizontalInterval: horizontalInterval,
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: Colors.grey.withOpacity(0.2),
+            color: colors.borderSubtle.withValues(alpha: 0.38),
             strokeWidth: 1,
           );
         },
@@ -239,17 +250,18 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             getTitlesWidget: (value, meta) {
               return Text(
                 value.toInt().toString(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black54,
+                  color: colors.textSecondary,
                 ),
               );
             },
           ),
         ),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -267,11 +279,11 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                     angle: -0.5,
                     child: Text(
                       label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black54,
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -301,7 +313,8 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         },
         touchTooltipData: LineTouchTooltipData(
           tooltipRoundedRadius: 8,
-          tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          tooltipPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           tooltipMargin: 8,
           fitInsideHorizontally: true,
           fitInsideVertically: true,
@@ -363,7 +376,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             children: [
               Icon(
                 Icons.circle,
-                color: lineColor.withOpacity(isVisible ? 1.0 : 0.3),
+                color: lineColor.withValues(alpha: isVisible ? 1.0 : 0.3),
                 size: 16,
               ),
               const SizedBox(width: 6),
@@ -373,7 +386,8 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black.withOpacity(isVisible ? 1.0 : 0.3),
+                  color: context.appColors.textPrimary
+                      .withValues(alpha: isVisible ? 1.0 : 0.3),
                 ),
               ),
             ],
@@ -388,19 +402,16 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     final localizations = AppLocalizations.of(context)!;
     final currentData = _getCurrentPeriodData();
     final chartData = currentData?.data.chartData ?? [];
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,11 +421,9 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             children: [
               Text(
                 localizations.translate('order_quantity'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: colors.textPrimary,
                 ),
               ),
               // Transform.translate(
@@ -459,20 +468,18 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             height: 300,
             child: chartData.isEmpty
                 ? Center(
-              child: Text(
-                localizations.translate('no_data_to_display'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "Gilroy",
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black54,
-                ),
-              ),
-            )
+                    child: Text(
+                      localizations.translate('no_data_to_display'),
+                      style: textStyles.bodyLg.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  )
                 : Padding(
-              padding: const EdgeInsets.only(right: 16, top: 16),
-              child: LineChart(_buildChartData(chartData)),
-            ),
+                    padding: const EdgeInsets.only(right: 16, top: 16),
+                    child: LineChart(_buildChartData(chartData)),
+                  ),
           ),
 
           const SizedBox(height: 16),
@@ -482,15 +489,15 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
             child: GestureDetector(
               onTap: () {
                 debugPrint("Подробнее pressed");
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => DetailedReportScreen(currentTabIndex: 10)));
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) =>
+                        DetailedReportScreen(currentTabIndex: 10)));
               },
               child: Text(
                 localizations.translate('more_details'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
             ),

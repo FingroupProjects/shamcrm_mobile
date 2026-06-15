@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -102,7 +103,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -121,7 +122,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -131,11 +132,13 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh,
+                        color: context.appColors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close,
+                        color: context.appColors.iconSecondary),
                   ),
                 ],
               ),
@@ -144,7 +147,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: context.appColors.borderSubtle),
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return ListTile(
@@ -154,7 +158,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -162,7 +166,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                         '${analyticsText(context, 'analytics_received', fallback: 'Received')}: ${item.receivedMessages}, ${analyticsText(context, 'analytics_answered', fallback: 'Answered')}: ${item.sentMessages}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -171,7 +175,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xffEF4444),
+                          color: context.appColors.error,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -268,16 +272,10 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,7 +302,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                   ),
                   child: Icon(
                     Icons.mark_chat_read,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -315,7 +313,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: context.appColors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -323,10 +321,10 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: context.appColors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: context.appColors.backgroundSecondary,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -349,8 +347,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                             _error!,
                             fallback: _error!,
                           ),
-                          style: const TextStyle(
-                            color: Color(0xffEF4444),
+                          style: TextStyle(
+                            color: context.appColors.error,
                             fontFamily: 'Golos',
                           ),
                         ),
@@ -366,9 +364,10 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                               barTouchData: BarTouchData(
                                 enabled: true,
                                 touchTooltipData: BarTouchTooltipData(
-                                  getTooltipColor: (_) => Colors.white,
-                                  tooltipBorder: const BorderSide(
-                                    color: Color(0xffE2E8F0),
+                                  getTooltipColor: (_) =>
+                                      context.appColors.surfacePrimary,
+                                  tooltipBorder: BorderSide(
+                                    color: context.appColors.borderSubtle,
                                   ),
                                   tooltipRoundedRadius: 10,
                                   tooltipPadding: const EdgeInsets.symmetric(
@@ -386,7 +385,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                     return BarTooltipItem(
                                       '${_displayChannelName(item.channelName)}\n',
                                       TextStyle(
-                                        color: const Color(0xff0F172A),
+                                        color: context.appColors.textPrimary,
                                         fontWeight: FontWeight.w700,
                                         fontSize: responsive.smallFontSize,
                                         fontFamily: 'Golos',
@@ -431,7 +430,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                 show: true,
                                 drawVerticalLine: false,
                                 getDrawingHorizontalLine: (value) => FlLine(
-                                  color: const Color(0xffE2E8F0),
+                                  color: context.appColors.borderSubtle,
                                   strokeWidth: 1,
                                 ),
                               ),
@@ -446,7 +445,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                     ),
                                     style: TextStyle(
                                       fontSize: responsive.xSmallFontSize,
-                                      color: Color(0xff94A3B8),
+                                      color: context.appColors.textMuted,
                                       fontFamily: 'Golos',
                                     ),
                                   ),
@@ -459,7 +458,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                         value.toInt().toString(),
                                         style: TextStyle(
                                           fontSize: responsive.xSmallFontSize,
-                                          color: Color(0xff64748B),
+                                          color:
+                                              context.appColors.textSecondary,
                                           fontFamily: 'Golos',
                                         ),
                                       );
@@ -491,7 +491,8 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
                                             style: TextStyle(
                                               fontSize:
                                                   responsive.xSmallFontSize,
-                                              color: Color(0xff64748B),
+                                              color: context
+                                                  .appColors.textSecondary,
                                               fontFamily: 'Golos',
                                             ),
                                             maxLines: 1,
@@ -582,7 +583,7 @@ class _LegendToggleDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final dotColor = enabled ? color : const Color(0xffCBD5E1);
     final textColor =
-        enabled ? const Color(0xff64748B) : const Color(0xff94A3B8);
+        enabled ? context.appColors.textSecondary : context.appColors.textMuted;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),

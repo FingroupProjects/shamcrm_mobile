@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -138,7 +139,7 @@ class _LeadConversionStatusesChartState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -157,7 +158,7 @@ class _LeadConversionStatusesChartState
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -167,11 +168,11 @@ class _LeadConversionStatusesChartState
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: context.appColors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: context.appColors.iconSecondary),
                   ),
                 ],
               ),
@@ -180,7 +181,8 @@ class _LeadConversionStatusesChartState
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: context.appColors.borderSubtle),
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return ListTile(
@@ -190,7 +192,7 @@ class _LeadConversionStatusesChartState
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -198,7 +200,7 @@ class _LeadConversionStatusesChartState
                         '${analyticsText(context, 'leads', fallback: 'Leads')}: ${item.totalLeads}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -207,7 +209,7 @@ class _LeadConversionStatusesChartState
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff8B5CF6),
+                          color: context.appColors.info,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -253,16 +255,10 @@ class _LeadConversionStatusesChartState
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,7 +285,7 @@ class _LeadConversionStatusesChartState
                   ),
                   child: Icon(
                     Icons.trending_up,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -300,7 +296,7 @@ class _LeadConversionStatusesChartState
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: context.appColors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -308,10 +304,10 @@ class _LeadConversionStatusesChartState
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: context.appColors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: context.appColors.backgroundSecondary,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -442,9 +438,10 @@ class _LeadConversionStatusesChartState
                                 barTouchData: BarTouchData(
                                   enabled: true,
                                   touchTooltipData: BarTouchTooltipData(
-                                    getTooltipColor: (_) => Colors.white,
-                                    tooltipBorder: const BorderSide(
-                                      color: Color(0xffE2E8F0),
+                                    getTooltipColor: (_) =>
+                                        context.appColors.surfacePrimary,
+                                    tooltipBorder: BorderSide(
+                                      color: context.appColors.borderSubtle,
                                     ),
                                     tooltipRoundedRadius: 10,
                                     tooltipPadding: const EdgeInsets.symmetric(
@@ -461,7 +458,7 @@ class _LeadConversionStatusesChartState
                                       return BarTooltipItem(
                                         '${_localizedStatusName(item.statusName)}\n${item.totalLeads} (${item.conversionRate})',
                                         TextStyle(
-                                          color: Color(0xff0F172A),
+                                          color: context.appColors.textPrimary,
                                           fontWeight: FontWeight.w700,
                                           fontSize: responsive.smallFontSize,
                                           fontFamily: 'Golos',
@@ -489,7 +486,7 @@ class _LeadConversionStatusesChartState
                 style: TextStyle(
                   fontSize: responsive.smallFontSize,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff64748B),
+                  color: context.appColors.textSecondary,
                   fontFamily: 'Golos',
                 ),
               ),

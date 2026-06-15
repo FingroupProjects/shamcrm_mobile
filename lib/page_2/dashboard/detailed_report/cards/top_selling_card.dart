@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -22,6 +23,8 @@ class TopSellingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return GestureDetector(
       onTap: () => onClick(product),
@@ -29,9 +32,15 @@ class TopSellingCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected
+              ? colors.surfaceElevated.withValues(alpha: 0.98)
+              : colors.surfacePrimary.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(
+            color: isSelected ? colors.borderPrimary : colors.borderSubtle,
+            width: isSelected ? 1.4 : 1,
+          ),
+          boxShadow: context.appShadows.card,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -41,42 +50,34 @@ class TopSellingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название'}: ${product.name}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
+                    '${AppLocalizations.of(context)!.translate('title_without_dots')}: ${product.name}',
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('category') ?? 'Категория'}: ${product.category}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
+                    '${localizations.translate('category')}: ${product.category}',
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('total_quantity') ?? 'Количество'}: ${product.totalQuantity}',
-                     style: const TextStyle(
-                      fontSize: 15,
-                      fontFamily: 'Gilroy',
+                    '${localizations.translate('total_quantity')}: ${product.totalQuantity}',
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('total_amount') ?? 'Общая сумма'}: ${parseNumberToString(product.totalAmount)}',
-                     style: const TextStyle(
-                      fontSize: 15,
-                      fontFamily: 'Gilroy',
+                    '${localizations.translate('total_amount')}: ${parseNumberToString(product.totalAmount)}',
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
@@ -86,8 +87,10 @@ class TopSellingCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: colors.textPrimary,
                   size: 24,
                 ),
               ),

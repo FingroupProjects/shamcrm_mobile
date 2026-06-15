@@ -29,6 +29,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_skeleton.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_creditors_info.dart';
@@ -736,7 +737,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             )
                           : RefreshIndicator(
                               color: const Color(0xff1E2E52),
-                              backgroundColor: Colors.white,
+                              backgroundColor: context.appColors.surfacePrimary,
                               onRefresh: _onRefresh,
                               child: SingleChildScrollView(
                                 controller: _scrollController,
@@ -752,7 +753,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 if (isLoading)
                   Container(
-                    color: Colors.white,
+                    color: context.appColors.overlay.withValues(alpha: 0.16),
                     child: const Center(
                       child: PlayStoreImageLoading(
                         size: 80.0,
@@ -1117,15 +1118,17 @@ class DashboardSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: colors.surfacePrimary.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.36)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colors.shadow.withValues(alpha: 0.14),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1166,6 +1169,7 @@ class DashboardSwitcher extends StatelessWidget {
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -1173,12 +1177,19 @@ class DashboardSwitcher extends StatelessWidget {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xff1E2E52) : Colors.transparent,
+          color: isActive
+              ? colors.buttonPrimaryBg
+              : colors.surfaceElevated.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? colors.buttonPrimaryBg
+                : colors.borderSubtle.withValues(alpha: 0.22),
+          ),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: const Color(0xff1E2E52).withOpacity(0.3),
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1190,14 +1201,14 @@ class DashboardSwitcher extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isActive ? Colors.white : Colors.grey[600],
+              color: isActive ? colors.buttonPrimaryFg : colors.iconSecondary,
               size: 20,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? Colors.white : Colors.grey[600],
+                color: isActive ? colors.buttonPrimaryFg : colors.textSecondary,
                 fontSize: 16,
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w500,
                 fontFamily: 'Gilroy',

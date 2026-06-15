@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/order_quantity_content.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -14,13 +15,16 @@ class OrderQuantityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE9EDF5),
+        color: colors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -31,22 +35,18 @@ class OrderQuantityCard extends StatelessWidget {
               children: [
                 Text(
                   '${localizations.translate('status')}: ${chartData.name}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
+                  style: textStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w400,
-                    color: Color(0xff1E2E52),
+                    color: colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${localizations.translate('quantity')}: ${parseNumberToString(chartData.amount)}',
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
+                  style: textStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
                 ),
               ],
             ),

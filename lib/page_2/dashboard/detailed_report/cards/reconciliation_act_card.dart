@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -27,7 +28,8 @@ class ReconciliationActCard extends StatelessWidget {
     return DateFormat('dd.MM.yyyy HH:mm', 'ru_RU').format(date);
   }
 
-  String _getMovementTypeText(String? movementType, AppLocalizations localizations) {
+  String _getMovementTypeText(
+      String? movementType, AppLocalizations localizations) {
     switch (movementType?.toLowerCase()) {
       case 'income':
         return localizations.translate('income');
@@ -41,6 +43,8 @@ class ReconciliationActCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return GestureDetector(
       onTap: () => onClick(reconciliationItem),
@@ -48,9 +52,15 @@ class ReconciliationActCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected
+              ? colors.surfaceElevated.withValues(alpha: 0.98)
+              : colors.surfacePrimary.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(
+            color: isSelected ? colors.borderPrimary : colors.borderSubtle,
+            width: isSelected ? 1.4 : 1,
+          ),
+          boxShadow: context.appShadows.card,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -62,11 +72,9 @@ class ReconciliationActCard extends StatelessWidget {
                   // Тип движения
                   Text(
                     '${localizations.translate('document_type')}: ${_getMovementTypeText(reconciliationItem.movementType, localizations)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -75,11 +83,9 @@ class ReconciliationActCard extends StatelessWidget {
                   if (reconciliationItem.counterparty != null) ...[
                     Text(
                       '${localizations.translate('counterparty')}: ${reconciliationItem.counterparty!.name ?? localizations.translate('not_specified')}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
+                      style: textStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -90,21 +96,18 @@ class ReconciliationActCard extends StatelessWidget {
                     children: [
                       Text(
                         '${localizations.translate('sum')}:',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        parseNumberToString(reconciliationItem.sum, nullValue: ''),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
+                        parseNumberToString(reconciliationItem.sum,
+                            nullValue: ''),
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -117,21 +120,18 @@ class ReconciliationActCard extends StatelessWidget {
                       children: [
                         Text(
                           '${localizations.translate('sale_sum')}:',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
+                          style: textStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          parseNumberToString(reconciliationItem.saleSum, nullValue: ''),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
+                          parseNumberToString(reconciliationItem.saleSum,
+                              nullValue: ''),
+                          style: textStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                       ],
@@ -145,21 +145,17 @@ class ReconciliationActCard extends StatelessWidget {
                     children: [
                       Text(
                         '${localizations.translate('date')}:',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         _formatDate(reconciliationItem.date, localizations),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ],
@@ -171,8 +167,10 @@ class ReconciliationActCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: const Color(0xff1E2E52),
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: colors.textPrimary,
                   size: 24,
                 ),
               ),

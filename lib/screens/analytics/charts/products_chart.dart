@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/top_selling_products_model.dart';
@@ -113,7 +114,7 @@ class _ProductsChartState extends State<ProductsChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -132,7 +133,7 @@ class _ProductsChartState extends State<ProductsChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).bodyFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                       maxLines: 2,
@@ -140,7 +141,8 @@ class _ProductsChartState extends State<ProductsChart> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close,
+                        color: context.appColors.iconSecondary),
                   ),
                 ],
               ),
@@ -159,7 +161,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -167,7 +169,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         '${analyticsText(context, 'analytics_sold', fallback: 'Sold')}: ${item.totalSold} • ${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successful}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -178,7 +180,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xffF97316),
+                          color: context.appColors.warning,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -219,16 +221,10 @@ class _ProductsChartState extends State<ProductsChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,7 +252,7 @@ class _ProductsChartState extends State<ProductsChart> {
                   ),
                   child: Icon(
                     Icons.inventory_2_outlined,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -269,7 +265,7 @@ class _ProductsChartState extends State<ProductsChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: context.appColors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -278,10 +274,10 @@ class _ProductsChartState extends State<ProductsChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: context.appColors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: context.appColors.backgroundSecondary,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -313,7 +309,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: context.appColors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -350,9 +346,11 @@ class _ProductsChartState extends State<ProductsChart> {
                                   barTouchData: BarTouchData(
                                     enabled: true,
                                     touchTooltipData: BarTouchTooltipData(
-                                      getTooltipColor: (group) => Colors.white,
-                                      tooltipBorder: const BorderSide(
-                                          color: Color(0xffE2E8F0)),
+                                      getTooltipColor: (group) =>
+                                          context.appColors.surfacePrimary,
+                                      tooltipBorder: BorderSide(
+                                        color: context.appColors.borderSubtle,
+                                      ),
                                       tooltipRoundedRadius: 10,
                                       tooltipPadding:
                                           const EdgeInsets.symmetric(
@@ -373,7 +371,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                         return BarTooltipItem(
                                           '${item.name}\n',
                                           TextStyle(
-                                            color: const Color(0xff0F172A),
+                                            color:
+                                                context.appColors.textPrimary,
                                             fontWeight: FontWeight.w700,
                                             fontSize: responsive.smallFontSize,
                                             fontFamily: 'Golos',
@@ -383,7 +382,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   '${analyticsText(context, 'analytics_sold', fallback: 'Sold')}: ${item.totalSold}\n',
                                               style: TextStyle(
-                                                color: const Color(0xffF97316),
+                                                color:
+                                                    context.appColors.warning,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -394,7 +394,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   '${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successful}\n',
                                               style: TextStyle(
-                                                color: const Color(0xff10B981),
+                                                color:
+                                                    context.appColors.success,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -405,7 +406,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   '${analyticsText(context, 'cancelled', fallback: 'Cancelled')}: ${item.cancelled}\n',
                                               style: TextStyle(
-                                                color: const Color(0xffEF4444),
+                                                color: context.appColors.error,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -416,7 +417,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                               text:
                                                   '${analyticsText(context, 'analytics_revenue', fallback: 'Revenue')}: $revenueText',
                                               style: TextStyle(
-                                                color: const Color(0xff64748B),
+                                                color: context
+                                                    .appColors.textSecondary,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize:
                                                     responsive.smallFontSize,
@@ -447,7 +449,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                                   _shortName(
                                                       displayItems[index].name),
                                                   style: TextStyle(
-                                                    color: Color(0xff64748B),
+                                                    color: context.appColors
+                                                        .textSecondary,
                                                     fontSize: responsive
                                                         .xSmallFontSize,
                                                     fontFamily: 'Golos',
@@ -469,7 +472,7 @@ class _ProductsChartState extends State<ProductsChart> {
                                         ),
                                         style: TextStyle(
                                           fontSize: responsive.smallFontSize,
-                                          color: Color(0xff94A3B8),
+                                          color: context.appColors.textMuted,
                                           fontFamily: 'Golos',
                                         ),
                                       ),
@@ -485,7 +488,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                               child: Text(
                                                 value.toInt().toString(),
                                                 style: TextStyle(
-                                                  color: Color(0xff64748B),
+                                                  color: context
+                                                      .appColors.textSecondary,
                                                   fontSize:
                                                       responsive.smallFontSize,
                                                   fontFamily: 'Golos',
@@ -510,8 +514,8 @@ class _ProductsChartState extends State<ProductsChart> {
                                         ? 1
                                         : (maxSold / 5).ceilToDouble(),
                                     getDrawingHorizontalLine: (value) {
-                                      return const FlLine(
-                                        color: Color(0xffE2E8F0),
+                                      return FlLine(
+                                        color: context.appColors.borderSubtle,
                                         strokeWidth: 1,
                                       );
                                     },
@@ -534,9 +538,9 @@ class _ProductsChartState extends State<ProductsChart> {
           if (!_isLoading && _error == null)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: context.appColors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -553,7 +557,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -567,7 +571,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -584,7 +588,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -594,7 +598,7 @@ class _ProductsChartState extends State<ProductsChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/salary_report/sales_dashboard_salary_report_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/salary_report_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -74,6 +75,8 @@ class _SalaryReportContentState extends State<SalaryReportContent>
 
   Future<void> _showYearPickerDialog() async {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final initialYear = _displayYear;
     int startYear = initialYear - (initialYear % 10);
 
@@ -86,8 +89,8 @@ class _SalaryReportContentState extends State<SalaryReportContent>
             final years = List<int>.generate(10, (index) => startYear + index);
 
             return Dialog(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: colors.surfacePrimary,
               insetPadding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               shape: RoundedRectangleBorder(
@@ -96,15 +99,9 @@ class _SalaryReportContentState extends State<SalaryReportContent>
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0x1A1E2E52),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
+                  boxShadow: context.appShadows.floating,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -123,11 +120,9 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                           child: Text(
                             '$startYear - ${startYear + 9}',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 20,
+                            style: textStyles.titleLg.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ),
@@ -146,11 +141,9 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                       alignment: Alignment.centerLeft,
                       child: Text(
                         localizations.translate('select_year'),
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 14,
+                        style: textStyles.bodySm.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -179,25 +172,23 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                             duration: const Duration(milliseconds: 180),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xff1E2E52)
-                                  : const Color(0xffF4F7FD),
+                                  ? colors.buttonPrimaryBg
+                                  : colors.surfaceElevated,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: isSelected
-                                    ? const Color(0xff1E2E52)
-                                    : const Color(0xffE2E8F0),
+                                    ? colors.buttonPrimaryBg
+                                    : colors.borderSubtle,
                               ),
                             ),
                             alignment: Alignment.center,
                             child: Text(
                               year.toString(),
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
+                              style: textStyles.bodyMd.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xff1E2E52),
+                                    ? colors.buttonPrimaryFg
+                                    : colors.textPrimary,
                               ),
                             ),
                           ),
@@ -215,15 +206,18 @@ class _SalaryReportContentState extends State<SalaryReportContent>
   }
 
   Widget _buildHeader(AppLocalizations localizations) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xffF6F8FC),
+          color: colors.surfacePrimary.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: const Color(0xffE2E8F0),
+            color: colors.borderSubtle,
           ),
         ),
         child: Row(
@@ -234,11 +228,9 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                 children: [
                   Text(
                     localizations.translate('salary_debt'),
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 18,
+                    style: textStyles.titleMd.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   // const SizedBox(height: 6),
@@ -262,32 +254,30 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xffD8E1F0)),
+                  border: Border.all(color: colors.borderSubtle),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_outlined,
                       size: 18,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     const SizedBox(width: 10),
                     Text(
                       _displayYear.toString(),
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 15,
+                      style: textStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xff64748B),
+                      color: colors.textSecondary,
                     ),
                   ],
                 ),
@@ -300,19 +290,18 @@ class _SalaryReportContentState extends State<SalaryReportContent>
   }
 
   Widget _buildLoadingState(AppLocalizations localizations) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: Color(0xff1E2E52)),
+          CircularProgressIndicator(color: colors.textPrimary),
           const SizedBox(height: 16),
           Text(
             localizations.translate('loading_data'),
-            style: const TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: Color(0xff64748B),
-            ),
+            style: textStyles.bodyMd.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
@@ -320,6 +309,9 @@ class _SalaryReportContentState extends State<SalaryReportContent>
   }
 
   Widget _buildErrorState(AppLocalizations localizations, String message) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -327,37 +319,31 @@ class _SalaryReportContentState extends State<SalaryReportContent>
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xffFEF2F2),
+            color: colors.surfacePrimary.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xffFECACA)),
+            border: Border.all(color: colors.error.withValues(alpha: 0.34)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 44,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
               const SizedBox(height: 14),
               Text(
                 localizations.translate('error_loading_dialog'),
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: Color(0xff64748B),
-                ),
+                style: textStyles.bodySm.copyWith(color: colors.textSecondary),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -369,8 +355,8 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                       );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -394,36 +380,33 @@ class _SalaryReportContentState extends State<SalaryReportContent>
   }
 
   Widget _buildEmptyState(AppLocalizations localizations) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.account_balance_wallet_outlined,
               size: 64,
-              color: Color(0xff99A4BA),
+              color: colors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
               localizations.translate('no_salary_debts'),
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 18,
+              style: textStyles.titleMd.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               localizations.translate('salary_debt_empty_hint'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                color: Color(0xff99A4BA),
-              ),
+              style: textStyles.bodySm.copyWith(color: colors.textSecondary),
             ),
           ],
         ),
@@ -437,23 +420,27 @@ class _SalaryReportContentState extends State<SalaryReportContent>
     required double value,
     required Color color,
   }) {
+    final themeColors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
+          color: themeColors.surfaceElevated.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: color.withValues(alpha: 0.26),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 12,
+              style: textStyles.bodySm.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Color(0xff64748B),
+                color: themeColors.textSecondary,
               ),
             ),
             const SizedBox(height: 6),
@@ -476,16 +463,20 @@ class _SalaryReportContentState extends State<SalaryReportContent>
     AppLocalizations localizations,
     SalaryMonthReport month,
   ) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final isDebt = month.remaining > 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xffF8FAFD),
+        color: colors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDebt ? const Color(0xffFDE1E1) : const Color(0xffE2E8F0),
+          color: isDebt
+              ? colors.error.withValues(alpha: 0.24)
+              : colors.borderSubtle,
         ),
       ),
       child: Column(
@@ -498,30 +489,24 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: isDebt
-                      ? const Color(0xffFFF1F2)
-                      : const Color(0xffEEF6F0),
+                      ? colors.error.withValues(alpha: 0.12)
+                      : colors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   _monthLabel(localizations, month.month),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 13,
+                  style: textStyles.bodySm.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: isDebt
-                        ? const Color(0xffE53935)
-                        : const Color(0xff2E7D32),
+                    color: isDebt ? colors.error : colors.success,
                   ),
                 ),
               ),
               const Spacer(),
               Text(
                 month.month,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 12,
+                style: textStyles.caption.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff94A3B8),
+                  color: colors.textMuted,
                 ),
               ),
             ],
@@ -533,23 +518,22 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                 localizations,
                 label: localizations.translate('accrued'),
                 value: month.accrued,
-                color: const Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
               const SizedBox(width: 10),
               _buildMonthMetric(
                 localizations,
                 label: localizations.translate('paid'),
                 value: month.paid,
-                color: const Color(0xff2E7D32),
+                color: colors.success,
               ),
               const SizedBox(width: 10),
               _buildMonthMetric(
                 localizations,
                 label: localizations.translate('remaining'),
                 value: month.remaining,
-                color: month.remaining > 0
-                    ? const Color(0xffE53935)
-                    : const Color(0xff64748B),
+                color:
+                    month.remaining > 0 ? colors.error : colors.textSecondary,
               ),
             ],
           ),
@@ -562,6 +546,8 @@ class _SalaryReportContentState extends State<SalaryReportContent>
     AppLocalizations localizations,
     SalaryEmployeeReport employee,
   ) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final isExpanded = _expandedEmployeeIds.contains(employee.employeeId);
     final currentMonth = _currentMonthReport(employee);
     final currentRemaining = currentMonth?.remaining ?? 0;
@@ -586,20 +572,12 @@ class _SalaryReportContentState extends State<SalaryReportContent>
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isExpanded
-                  ? const Color(0xffC7D6EC)
-                  : const Color(0xffE8EEF7),
+              color: isExpanded ? colors.borderPrimary : colors.borderSubtle,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x141E2E52),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: context.appShadows.card,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,20 +587,18 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                   Container(
                     width: 44,
                     height: 44,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xffE9EDF5),
+                      color: colors.surfaceElevated,
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       employee.employeeName.isNotEmpty
                           ? employee.employeeName.trim()[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 18,
+                      style: textStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -633,21 +609,17 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                       children: [
                         Text(
                           employee.employeeName,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
+                          style: textStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${localizations.translate('current_month')}: $previewMonth',
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 13,
+                          style: textStyles.bodySm.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff64748B),
+                            color: colors.textSecondary,
                           ),
                         ),
                       ],
@@ -658,20 +630,23 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: currentRemaining > 0
-                          ? const Color(0xffFFF1F2)
-                          : const Color(0xffEEF6F0),
+                          ? colors.error.withValues(alpha: 0.12)
+                          : colors.success.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: currentRemaining > 0
+                            ? colors.error.withValues(alpha: 0.2)
+                            : colors.success.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
                           localizations.translate('remaining'),
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 11,
+                          style: textStyles.caption.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff64748B),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -682,8 +657,8 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: currentRemaining > 0
-                                ? const Color(0xffE53935)
-                                : const Color(0xff2E7D32),
+                                ? colors.error
+                                : colors.success,
                           ),
                         ),
                       ],
@@ -696,8 +671,9 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xffF7F9FD),
+                  color: colors.surfaceElevated.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colors.borderSubtle),
                 ),
                 child: Row(
                   children: [
@@ -705,18 +681,16 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                       isExpanded
                           ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
-                      color: const Color(0xff64748B),
+                      color: colors.textSecondary,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       isExpanded
                           ? localizations.translate('hide_months')
                           : localizations.translate('show_all_months'),
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 13,
+                      style: textStyles.bodySm.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ],
@@ -792,6 +766,8 @@ class _YearPickerNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -799,12 +775,13 @@ class _YearPickerNavButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: const Color(0xffF4F7FD),
+          color: colors.surfaceElevated,
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.borderSubtle),
         ),
         child: Icon(
           icon,
-          color: const Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
     );

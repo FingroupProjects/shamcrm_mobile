@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
@@ -64,7 +65,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -83,7 +84,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -93,11 +94,13 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh,
+                        color: context.appColors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close,
+                        color: context.appColors.iconSecondary),
                   ),
                 ],
               ),
@@ -106,7 +109,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: _channels.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: context.appColors.borderSubtle),
                   itemBuilder: (context, index) {
                     final channel = _channels[index];
                     final percent =
@@ -126,7 +130,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -135,7 +139,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -169,13 +173,13 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
       return [
         PieChartSectionData(
           value: 1,
-          color: const Color(0xffE2E8F0),
+          color: context.appColors.borderSubtle,
           title: 'Нет данных',
           radius: 40,
           titleStyle: TextStyle(
             fontSize: ResponsiveHelper(context).smallFontSize,
             fontWeight: FontWeight.w600,
-            color: Color(0xff64748B),
+            color: context.appColors.textSecondary,
             fontFamily: 'Golos',
           ),
         ),
@@ -193,7 +197,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
         titleStyle: TextStyle(
           fontSize: ResponsiveHelper(context).xSmallFontSize,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: context.appColors.textInverse,
           fontFamily: 'Golos',
         ),
       );
@@ -208,16 +212,10 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +242,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                   ),
                   child: Icon(
                     Icons.hub,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -255,7 +253,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: context.appColors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),

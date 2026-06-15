@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -100,7 +101,7 @@ class _GoalsChartState extends State<GoalsChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -119,14 +120,15 @@ class _GoalsChartState extends State<GoalsChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close,
+                        color: context.appColors.iconSecondary),
                   ),
                 ],
               ),
@@ -146,7 +148,7 @@ class _GoalsChartState extends State<GoalsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                           decoration: TextDecoration.underline,
                         ),
@@ -196,16 +198,10 @@ class _GoalsChartState extends State<GoalsChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +229,7 @@ class _GoalsChartState extends State<GoalsChart> {
                   ),
                   child: Icon(
                     Icons.flag_outlined,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                     size: ResponsiveHelper(context).smallIconSize,
                   ),
                 ),
@@ -244,7 +240,7 @@ class _GoalsChartState extends State<GoalsChart> {
                     style: TextStyle(
                       fontSize: responsive.titleFontSize,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xff0F172A),
+                      color: context.appColors.textPrimary,
                       fontFamily: 'Golos',
                     ),
                   ),
@@ -252,10 +248,10 @@ class _GoalsChartState extends State<GoalsChart> {
                 IconButton(
                   onPressed: _showDetails,
                   icon: Icon(Icons.crop_free,
-                      color: Color(0xff64748B),
+                      color: context.appColors.iconSecondary,
                       size: ResponsiveHelper(context).smallIconSize),
                   style: IconButton.styleFrom(
-                    backgroundColor: Color(0xffF1F5F9),
+                    backgroundColor: context.appColors.backgroundSecondary,
                     minimumSize: Size(36, 36),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -277,7 +273,7 @@ class _GoalsChartState extends State<GoalsChart> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.error_outline,
-                                size: 48, color: Color(0xffEF4444)),
+                                size: 48, color: context.appColors.error),
                             SizedBox(
                                 height: ResponsiveHelper(context).smallSpacing),
                             Text(
@@ -287,7 +283,7 @@ class _GoalsChartState extends State<GoalsChart> {
                                 fallback: _error!,
                               ),
                               style: TextStyle(
-                                color: Color(0xff64748B),
+                                color: context.appColors.textSecondary,
                                 fontSize: responsive.bodyFontSize,
                                 fontFamily: 'Golos',
                               ),
@@ -334,9 +330,9 @@ class _GoalsChartState extends State<GoalsChart> {
           if (!_isLoading && _error == null && _goals.isNotEmpty)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: context.appColors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -353,7 +349,7 @@ class _GoalsChartState extends State<GoalsChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -363,7 +359,7 @@ class _GoalsChartState extends State<GoalsChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff10B981),
+                          color: context.appColors.success,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -380,7 +376,7 @@ class _GoalsChartState extends State<GoalsChart> {
                         ),
                         style: TextStyle(
                           fontSize: responsive.smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -390,7 +386,7 @@ class _GoalsChartState extends State<GoalsChart> {
                         style: TextStyle(
                           fontSize: responsive.largeFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xffEF4444),
+                          color: context.appColors.error,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -422,7 +418,7 @@ class _GoalsChartState extends State<GoalsChart> {
                   style: TextStyle(
                     fontSize: ResponsiveHelper(context).bodyFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff0F172A),
+                    color: context.appColors.textPrimary,
                     fontFamily: 'Golos',
                     decoration: TextDecoration.underline,
                   ),
@@ -446,7 +442,7 @@ class _GoalsChartState extends State<GoalsChart> {
             Container(
               height: 12,
               decoration: BoxDecoration(
-                color: const Color(0xffF1F5F9),
+                color: context.appColors.backgroundSecondary,
                 borderRadius: BorderRadius.circular(6),
               ),
             ),

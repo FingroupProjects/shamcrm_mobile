@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -28,13 +29,6 @@ class _SalesFunnelMultiSelectWidgetState
   List<SalesFunnel> selectedFunnelsData = [];
   bool allSelected = false;
 
-  final TextStyle funnelTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -55,10 +49,21 @@ class _SalesFunnelMultiSelectWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final funnelTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = funnelTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+    final borderColor = context.appColors.borderSubtle;
+
     return FormField<List<SalesFunnel>>(
       validator: (value) {
         if (selectedFunnelsData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -76,11 +81,13 @@ class _SalesFunnelMultiSelectWidgetState
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
@@ -90,8 +97,8 @@ class _SalesFunnelMultiSelectWidgetState
                     if (widget.selectedFunnels != null &&
                         funnelsList.isNotEmpty) {
                       selectedFunnelsData = funnelsList
-                          .where((funnel) =>
-                              widget.selectedFunnels!.contains(funnel.id.toString()))
+                          .where((funnel) => widget.selectedFunnels!
+                              .contains(funnel.id.toString()))
                           .toList();
                       allSelected =
                           selectedFunnelsData.length == funnelsList.length;
@@ -105,18 +112,43 @@ class _SalesFunnelMultiSelectWidgetState
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: funnelTextStyle,
+                      listItemStyle: funnelTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.14),
+                        highlightColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.backgroundPrimary,
+                        textStyle: funnelTextStyle,
+                        hintStyle: hintStyle,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       if (funnelsList.indexOf(item) == 0) {
@@ -136,12 +168,12 @@ class _SalesFunnelMultiSelectWidgetState
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                          color: const Color(0xff1E2E52),
+                                          color: context.appColors.textPrimary,
                                           width: 1,
                                         ),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? context.appColors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
@@ -155,7 +187,8 @@ class _SalesFunnelMultiSelectWidgetState
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
                                         style: funnelTextStyle,
                                       ),
                                     ),
@@ -165,7 +198,7 @@ class _SalesFunnelMultiSelectWidgetState
                             ),
                             Divider(
                               height: 20,
-                              color: const Color(0xFFE5E7EB),
+                              color: context.appColors.borderSubtle,
                             ),
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
@@ -175,7 +208,8 @@ class _SalesFunnelMultiSelectWidgetState
                     },
                     headerListBuilder: (context, hint, enabled) {
                       final selectedNames = selectedFunnelsData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_sales_funnel')
+                          ? AppLocalizations.of(context)!
+                              .translate('select_sales_funnel')
                           : selectedFunnelsData.map((e) => e.name).join(', ');
                       return Text(
                         selectedNames,
@@ -185,8 +219,9 @@ class _SalesFunnelMultiSelectWidgetState
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_sales_funnel'),
-                      style: funnelTextStyle.copyWith(fontSize: 14),
+                      AppLocalizations.of(context)!
+                          .translate('select_sales_funnel'),
+                      style: hintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectFunnels(values);
@@ -202,13 +237,11 @@ class _SalesFunnelMultiSelectWidgetState
             ),
             if (field.hasError)
               Padding(
-                padding: const EdgeInsets.only(top: 4, left: 0),
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
@@ -223,6 +256,11 @@ class _SalesFunnelMultiSelectWidgetState
     bool isSelected,
     Function() onItemSelect,
   ) {
+    final funnelTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -234,11 +272,13 @@ class _SalesFunnelMultiSelectWidgetState
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(

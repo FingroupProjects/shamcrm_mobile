@@ -336,11 +336,21 @@ class _OrdersQuantityFilterScreenState
                           children: [
                             CustomTextField(
                               controller: _sumFromController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
                               hintText: AppLocalizations.of(context)!
                                   .translate('enter_minimum_amount'),
                               label: AppLocalizations.of(context)!
                                   .translate('amount_from'),
+                              backgroundColor: context.appColors.fieldBg,
+                              borderColor: context.appColors.fieldBorder,
+                              focusedBorderColor:
+                                  context.appColors.borderPrimary,
+                              labelColor: context.appColors.textPrimary,
+                              hintColor: context.appColors.fieldHint,
+                              textColor: context.appColors.textPrimary,
                             ),
                           ],
                         ),
@@ -357,11 +367,21 @@ class _OrdersQuantityFilterScreenState
                           children: [
                             CustomTextField(
                               controller: _sumToController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
                               hintText: AppLocalizations.of(context)!
                                   .translate('enter_maximum_amount'),
                               label: AppLocalizations.of(context)!
                                   .translate('amount_to'),
+                              backgroundColor: context.appColors.fieldBg,
+                              borderColor: context.appColors.fieldBorder,
+                              focusedBorderColor:
+                                  context.appColors.borderPrimary,
+                              labelColor: context.appColors.textPrimary,
+                              hintColor: context.appColors.fieldHint,
+                              textColor: context.appColors.textPrimary,
                             ),
                           ],
                         ),

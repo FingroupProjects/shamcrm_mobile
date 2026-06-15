@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -159,12 +160,13 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
         final responsive = ResponsiveHelper(ctx);
+        final colors = ctx.appColors;
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -179,7 +181,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                       style: TextStyle(
                         fontSize: responsive.titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xff0F172A),
+                        color: colors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -189,11 +191,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                       Navigator.of(ctx).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh, color: colors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(ctx).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close, color: colors.iconSecondary),
                   ),
                 ],
               ),
@@ -202,7 +204,8 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: _campaigns.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: colors.borderSubtle),
                   itemBuilder: (ctx2, index) {
                     final item = _campaigns[index];
                     final r = ResponsiveHelper(ctx2);
@@ -213,7 +216,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         style: TextStyle(
                           fontSize: r.bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -221,7 +224,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         '${analyticsText(context, 'leads', fallback: 'Leads')}: ${item.totalLeads}  ${analyticsText(context, 'clients', fallback: 'Clients')}: ${item.clients}  ${analyticsText(context, 'analytics_cold', fallback: 'Cold')}: ${item.cold}',
                         style: TextStyle(
                           fontSize: r.smallFontSize,
-                          color: _labelColor,
+                          color: colors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -230,9 +233,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         style: TextStyle(
                           fontSize: r.smallFontSize,
                           fontWeight: FontWeight.w600,
-                          color: item.roi >= 0
-                              ? const Color(0xff10B981)
-                              : const Color(0xffEF4444),
+                          color: item.roi >= 0 ? colors.success : colors.error,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -356,6 +357,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenW = constraints.maxWidth;
@@ -395,16 +397,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(containerRadius),
-            border: Border.all(color: const Color(0xffE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border:
+                Border.all(color: colors.borderSubtle.withValues(alpha: 0.4)),
+            boxShadow: context.appShadows.card,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,7 +430,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                       ),
                       child: Icon(
                         Icons.trending_up,
-                        color: Colors.white,
+                        color: colors.textInverse,
                         size: headerIconSize * 0.55,
                       ),
                     ),
@@ -444,7 +441,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         style: TextStyle(
                           fontSize: titleSize,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xff0F172A),
+                          color: colors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -452,9 +449,10 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                     IconButton(
                       onPressed: _showDetails,
                       icon: Icon(Icons.crop_free,
-                          color: _labelColor, size: isCompact ? 18 : 22),
+                          color: colors.iconSecondary,
+                          size: isCompact ? 18 : 22),
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xffF1F5F9),
+                        backgroundColor: colors.surfaceElevated,
                         minimumSize:
                             Size(isCompact ? 36 : 44, isCompact ? 36 : 44),
                         padding: EdgeInsets.zero,
@@ -481,7 +479,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                       ),
                       style: TextStyle(
                         fontSize: axisLabelSize,
-                        color: _labelColor,
+                        color: colors.textSecondary,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Golos',
                       ),
@@ -514,8 +512,8 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                 _error!,
                                 fallback: _error!,
                               ),
-                              style: const TextStyle(
-                                color: Color(0xffEF4444),
+                              style: TextStyle(
+                                color: colors.error,
                                 fontFamily: 'Golos',
                               ),
                             ),
@@ -537,9 +535,10 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                       barTouchData: BarTouchData(
                                         enabled: true,
                                         touchTooltipData: BarTouchTooltipData(
-                                          getTooltipColor: (_) => Colors.white,
-                                          tooltipBorder: const BorderSide(
-                                            color: Color(0xffE2E8F0),
+                                          getTooltipColor: (_) =>
+                                              colors.surfacePrimary,
+                                          tooltipBorder: BorderSide(
+                                            color: colors.borderSubtle,
                                           ),
                                           tooltipRoundedRadius: 10,
                                           tooltipPadding:
@@ -560,7 +559,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                               TextStyle(
                                                 fontSize: axisLabelSize,
                                                 fontWeight: FontWeight.w700,
-                                                color: const Color(0xff0F172A),
+                                                color: colors.textPrimary,
                                                 fontFamily: 'Golos',
                                               ),
                                               children: [
@@ -613,7 +612,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                         show: true,
                                         drawVerticalLine: false,
                                         getDrawingHorizontalLine: (_) => FlLine(
-                                          color: const Color(0xffE2E8F0),
+                                          color: colors.borderSubtle,
                                           strokeWidth: 1,
                                         ),
                                       ),
@@ -628,7 +627,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                                 value.toInt().toString(),
                                                 style: TextStyle(
                                                   fontSize: axisLabelSize,
-                                                  color: _labelColor,
+                                                  color: colors.textSecondary,
                                                   fontFamily: 'Golos',
                                                 ),
                                               );
@@ -682,7 +681,8 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                                                         labelMaxLen),
                                                     style: TextStyle(
                                                       fontSize: axisLabelSize,
-                                                      color: _labelColor,
+                                                      color:
+                                                          colors.textSecondary,
                                                       fontFamily: 'Golos',
                                                     ),
                                                     maxLines: 1,
@@ -822,9 +822,9 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                     headerPad,
                     headerPad,
                   ),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(
-                      top: BorderSide(color: Color(0xffE2E8F0)),
+                      top: BorderSide(color: colors.borderSubtle),
                     ),
                   ),
                   child: Row(
@@ -838,6 +838,11 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         value: _data!.summary.totalSpent.toStringAsFixed(0),
                         labelSize: statLabelSize,
                         valueSize: statValueSize,
+                        secondaryText:
+                            'ROI ${_data!.summary.roi.toStringAsFixed(0)}%',
+                        secondaryColor: _data!.summary.roi >= 0
+                            ? colors.success
+                            : colors.error,
                       ),
                       _StatCell(
                         label: analyticsText(
@@ -854,15 +859,6 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
                         value: _data!.summary.cpl.toStringAsFixed(0),
                         labelSize: statLabelSize,
                         valueSize: statValueSize,
-                      ),
-                      _StatCell(
-                        label: 'ROI',
-                        value: '+ ${_data!.summary.roi.toStringAsFixed(0)} %',
-                        labelSize: statLabelSize,
-                        valueSize: statValueSize,
-                        valueColor: _data!.summary.roi >= 0
-                            ? const Color(0xff10B981)
-                            : const Color(0xffEF4444),
                       ),
                     ],
                   ),
@@ -886,6 +882,8 @@ class _StatCell extends StatelessWidget {
     required this.labelSize,
     required this.valueSize,
     this.valueColor,
+    this.secondaryText,
+    this.secondaryColor,
   });
 
   final String label;
@@ -893,6 +891,8 @@ class _StatCell extends StatelessWidget {
   final double labelSize;
   final double valueSize;
   final Color? valueColor;
+  final String? secondaryText;
+  final Color? secondaryColor;
 
   @override
   Widget build(BuildContext context) {
@@ -904,7 +904,7 @@ class _StatCell extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: labelSize,
-              color: const Color(0xff64748B),
+              color: context.appColors.textSecondary,
               fontFamily: 'Golos',
             ),
           ),
@@ -916,11 +916,26 @@ class _StatCell extends StatelessWidget {
               style: TextStyle(
                 fontSize: valueSize,
                 fontWeight: FontWeight.w700,
-                color: valueColor ?? const Color(0xff0F172A),
+                color: valueColor ?? context.appColors.textPrimary,
                 fontFamily: 'Golos',
               ),
             ),
           ),
+          if (secondaryText != null) ...[
+            const SizedBox(height: 3),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                secondaryText!,
+                style: TextStyle(
+                  fontSize: labelSize,
+                  fontWeight: FontWeight.w700,
+                  color: secondaryColor ?? context.appColors.textSecondary,
+                  fontFamily: 'Golos',
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

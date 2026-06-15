@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 import '../../../../models/page_2/dashboard/debtors_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
@@ -70,6 +71,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
   }
 
   Widget _buildDebtorsList(DebtorsResponse data) {
+    final colors = context.appColors;
+
     return data.result?.debtors.isNotEmpty == true
         ? ListView.separated(
             separatorBuilder: (context, index) => SizedBox(height: 12),
@@ -79,11 +82,11 @@ class _DebtorsContentState extends State<DebtorsContent> {
             itemCount: data.result!.debtors.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index >= data.result!.debtors.length) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                 );
@@ -104,6 +107,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Center(
       child: Padding(
@@ -114,26 +119,20 @@ class _DebtorsContentState extends State<DebtorsContent> {
             Icon(
               Icons.account_balance_outlined,
               size: 64,
-              color: Color(0xff99A4BA),
+              color: colors.textMuted,
             ),
             SizedBox(height: 16),
             Text(
               localizations.translate('no_debtor_debt'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 18,
+              style: textStyles.titleMd.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             SizedBox(height: 8),
             Text(
               localizations.translate('all_client_debts_paid'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                color: Color(0xff99A4BA),
-              ),
+              style: textStyles.bodySm.copyWith(color: colors.textSecondary),
             ),
           ],
         ),
@@ -143,22 +142,20 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
           SizedBox(height: 16),
           Text(
             localizations.translate('loading_data'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: Color(0xff64748B),
-            ),
+            style: textStyles.bodyMd.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
@@ -167,6 +164,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return Center(
       child: Padding(
@@ -175,10 +174,10 @@ class _DebtorsContentState extends State<DebtorsContent> {
           width: double.infinity,
           padding: EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Color(0xffFEF2F2),
+            color: colors.surfacePrimary.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffFECACA),
+              color: colors.error.withValues(alpha: 0.34),
               width: 1,
             ),
           ),
@@ -188,27 +187,21 @@ class _DebtorsContentState extends State<DebtorsContent> {
               Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
               SizedBox(height: 16),
               Text(
                 localizations.translate('error_loading_dialog'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: Color(0xff64748B),
-                ),
+                style: textStyles.bodySm.copyWith(color: colors.textSecondary),
               ),
               SizedBox(height: 16),
               ElevatedButton(
@@ -218,8 +211,8 @@ class _DebtorsContentState extends State<DebtorsContent> {
                       .add(const LoadDebtorsReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(

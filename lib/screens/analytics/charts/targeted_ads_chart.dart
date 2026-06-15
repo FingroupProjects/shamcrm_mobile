@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -144,7 +145,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -172,7 +173,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).titleFontSize,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -191,14 +192,15 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                               fallback: 'Reset',
                             ),
                             style: TextStyle(
-                              color: Color(0xffEF4444),
+                              color: context.appColors.error,
                               fontFamily: 'Golos',
                             ),
                           ),
                         ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.close, color: Color(0xff64748B)),
+                        icon: Icon(Icons.close,
+                            color: context.appColors.iconSecondary),
                       ),
                     ],
                   ),
@@ -215,7 +217,8 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           selected: isSelected,
-                          selectedTileColor: Color(0xffF1F5F9),
+                          selectedTileColor:
+                              context.appColors.backgroundSecondary,
                           leading: _adSourceIcon(camp.adSource),
                           title: Text(
                             camp.campaignName,
@@ -224,7 +227,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: Color(0xff0F172A),
+                              color: context.appColors.textPrimary,
                               fontFamily: 'Golos',
                             ),
                             maxLines: 2,
@@ -235,13 +238,13 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             style: TextStyle(
                               fontSize:
                                   ResponsiveHelper(context).xSmallFontSize,
-                              color: Color(0xff64748B),
+                              color: context.appColors.textSecondary,
                               fontFamily: 'Golos',
                             ),
                           ),
                           trailing: isSelected
                               ? Icon(Icons.check_circle,
-                                  color: Color(0xff10B981), size: 20)
+                                  color: context.appColors.success, size: 20)
                               : null,
                           onTap: () {
                             Navigator.pop(context);
@@ -267,7 +270,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
       'facebook' => (Icons.thumb_up, Color(0xff1877F2)),
       'google' => (Icons.search, Color(0xff4285F4)),
       'tiktok' => (Icons.music_note, Color(0xff000000)),
-      _ => (Icons.campaign, Color(0xff64748B)),
+      _ => (Icons.campaign, context.appColors.iconSecondary),
     };
     return Icon(icon, color: color, size: 22);
   }
@@ -277,7 +280,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -296,7 +299,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                       style: TextStyle(
                         fontSize: ResponsiveHelper(context).titleFontSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff0F172A),
+                        color: context.appColors.textPrimary,
                         fontFamily: 'Golos',
                       ),
                     ),
@@ -306,11 +309,13 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                       Navigator.of(context).pop();
                       _loadData();
                     },
-                    icon: Icon(Icons.refresh, color: Color(0xff64748B)),
+                    icon: Icon(Icons.refresh,
+                        color: context.appColors.iconSecondary),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: Color(0xff64748B)),
+                    icon: Icon(Icons.close,
+                        color: context.appColors.iconSecondary),
                   ),
                 ],
               ),
@@ -329,7 +334,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                         maxLines: 2,
@@ -339,7 +344,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         '${analyticsText(context, 'analytics_reach', fallback: 'Reach')}: ${item.totalReaches}, ${analyticsText(context, 'successful', fallback: 'Successful')}: ${item.successful}',
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: Color(0xff64748B),
+                          color: context.appColors.textSecondary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -348,7 +353,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).smallFontSize,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xffE1306C),
+                          color: context.appColors.warning,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -372,11 +377,15 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
     double maxVal = 0;
     for (final item in items) {
       if (_showReaches) maxVal = math.max(maxVal, item.totalReaches.toDouble());
-      if (_showSuccessful)
+      if (_showSuccessful) {
         maxVal = math.max(maxVal, item.successful.toDouble());
-      if (_showCold) maxVal = math.max(maxVal, item.cold.toDouble());
-      if (_showInProgress)
+      }
+      if (_showCold) {
+        maxVal = math.max(maxVal, item.cold.toDouble());
+      }
+      if (_showInProgress) {
         maxVal = math.max(maxVal, item.inProgress.toDouble());
+      }
     }
     return maxVal <= 0 ? 1 : maxVal;
   }
@@ -497,16 +506,10 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(color: const Color(0xffE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: context.appColors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,7 +540,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                       ),
                       child: Icon(
                         Icons.campaign,
-                        color: Colors.white,
+                        color: context.appColors.textInverse,
                         size: ResponsiveHelper(context).smallIconSize,
                       ),
                     ),
@@ -550,7 +553,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         style: TextStyle(
                           fontSize: responsive.titleFontSize,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xff0F172A),
+                          color: context.appColors.textPrimary,
                           fontFamily: 'Golos',
                         ),
                       ),
@@ -559,10 +562,10 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                     IconButton(
                       onPressed: _showDetails,
                       icon: Icon(Icons.crop_free,
-                          color: Color(0xff64748B),
+                          color: context.appColors.iconSecondary,
                           size: ResponsiveHelper(context).smallIconSize),
                       style: IconButton.styleFrom(
-                        backgroundColor: Color(0xffF1F5F9),
+                        backgroundColor: context.appColors.backgroundSecondary,
                         minimumSize: Size(36, 36),
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
@@ -642,9 +645,10 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xffF1F5F9),
+                        color: context.appColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xffE2E8F0)),
+                        border:
+                            Border.all(color: context.appColors.borderSubtle),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -652,7 +656,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                           Icon(
                             Icons.filter_list,
                             size: 16,
-                            color: Color(0xff64748B),
+                            color: context.appColors.textSecondary,
                           ),
                           SizedBox(width: 6),
                           Text(
@@ -660,7 +664,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                             style: TextStyle(
                               fontSize: responsive.smallFontSize,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xff334155),
+                              color: context.appColors.textPrimary,
                               fontFamily: 'Golos',
                             ),
                           ),
@@ -668,7 +672,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
                           Icon(
                             Icons.keyboard_arrow_down,
                             size: 16,
-                            color: Color(0xff64748B),
+                            color: context.appColors.textSecondary,
                           ),
                         ],
                       ),
@@ -900,9 +904,9 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
           if (!_isLoading && _error == null && _data != null)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xffE2E8F0)),
+                  top: BorderSide(color: context.appColors.borderSubtle),
                 ),
               ),
               child: Row(
@@ -953,7 +957,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
           label,
           style: TextStyle(
             fontSize: responsive.xSmallFontSize,
-            color: Color(0xff64748B),
+            color: context.appColors.textSecondary,
             fontFamily: 'Golos',
           ),
         ),
@@ -963,7 +967,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
           style: TextStyle(
             fontSize: responsive.largeFontSize,
             fontWeight: FontWeight.w700,
-            color: color ?? Color(0xff0F172A),
+            color: color ?? context.appColors.textPrimary,
             fontFamily: 'Golos',
           ),
         ),

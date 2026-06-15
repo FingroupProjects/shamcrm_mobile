@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/top_selling_card.dart';
@@ -44,20 +45,22 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
         Expanded(
           child: data.isNotEmpty
               ? ListView.separated(
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final product = data[index];
-              return TopSellingCard(
-                product: product,
-                onClick: _onProductTap,
-                onLongPress: _onProductLongPress,
-                isSelectionMode: isSelectionMode,
-                isSelected: selectedTopSellingGoods.contains(product.id),
-              );
-            },
-          )
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  itemCount: data.length,
+                  itemBuilder: (context, index) {
+                    final product = data[index];
+                    return TopSellingCard(
+                      product: product,
+                      onClick: _onProductTap,
+                      onLongPress: _onProductLongPress,
+                      isSelectionMode: isSelectionMode,
+                      isSelected: selectedTopSellingGoods.contains(product.id),
+                    );
+                  },
+                )
               : _buildEmptyState(),
         ),
       ],
@@ -66,36 +69,32 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.shopping_cart_outlined,
               size: 64,
-              color: Color(0xff99A4BA),
+              color: colors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
               localizations.translate('no_sales_data'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 18,
+              style: textStyles.titleMd.copyWith(
                 fontWeight: FontWeight.w600,
-                color: const Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               localizations.translate('top_selling_products_list_empty'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                color: const Color(0xff99A4BA),
-              ),
+              style: textStyles.bodySm.copyWith(color: colors.textSecondary),
             ),
           ],
         ),
@@ -105,22 +104,20 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+          CircularProgressIndicator(
+            color: colors.textPrimary,
           ),
           const SizedBox(height: 16),
           Text(
             localizations.translate('loading_data'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: const Color(0xff64748B),
-            ),
+            style: textStyles.bodyMd.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
@@ -129,7 +126,9 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -137,51 +136,48 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xffFEF2F2),
+            color: colors.surfacePrimary.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xffFECACA),
+              color: colors.error.withValues(alpha: 0.34),
               width: 1,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
               const SizedBox(height: 16),
               Text(
                 localizations.translate('error_loading_dialog'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: const Color(0xff64748B),
-                ),
+                style: textStyles.bodySm.copyWith(color: colors.textSecondary),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardTopSellingGoodsBloc>().add(const LoadTopSellingGoodsReport());
+                  context
+                      .read<SalesDashboardTopSellingGoodsBloc>()
+                      .add(const LoadTopSellingGoodsReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -203,7 +199,8 @@ class _TopSellingGoodsContentState extends State<TopSellingGoodsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardTopSellingGoodsBloc, SalesDashboardTopSellingGoodsState>(
+    return BlocBuilder<SalesDashboardTopSellingGoodsBloc,
+        SalesDashboardTopSellingGoodsState>(
       builder: (context, state) {
         if (state is SalesDashboardTopSellingGoodsLoading) {
           return _buildLoadingState();

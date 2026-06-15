@@ -785,13 +785,23 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                           children: [
                             CustomTextField(
                               controller: _amountFromController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
                               hintText: AppLocalizations.of(context)!
                                       .translate('enter_minimum_amount') ??
                                   'Введите минимальную сумму',
                               label: AppLocalizations.of(context)!
                                       .translate('amount_from') ??
                                   'Сумма от',
+                              backgroundColor: context.appColors.fieldBg,
+                              borderColor: context.appColors.fieldBorder,
+                              focusedBorderColor:
+                                  context.appColors.borderPrimary,
+                              labelColor: context.appColors.textPrimary,
+                              hintColor: context.appColors.fieldHint,
+                              textColor: context.appColors.textPrimary,
                             ),
                           ],
                         ),
@@ -807,13 +817,23 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                           children: [
                             CustomTextField(
                               controller: _amountToController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
                               hintText: AppLocalizations.of(context)!
                                       .translate('enter_maximum_amount') ??
                                   'Введите максимальную сумму',
                               label: AppLocalizations.of(context)!
                                       .translate('amount_to') ??
                                   'Сумма до',
+                              backgroundColor: context.appColors.fieldBg,
+                              borderColor: context.appColors.fieldBorder,
+                              focusedBorderColor:
+                                  context.appColors.borderPrimary,
+                              labelColor: context.appColors.textPrimary,
+                              hintColor: context.appColors.fieldHint,
+                              textColor: context.appColors.textPrimary,
                             ),
                           ],
                         ),
