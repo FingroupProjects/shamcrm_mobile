@@ -4,6 +4,7 @@ import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -134,9 +135,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           SnackBar(
             content: Text(
               'Ошибка загрузки статусов',
-              style: statusTextStyle.copyWith(color: Colors.white),
+              style: statusTextStyle.copyWith(color: context.appColors.textInverse),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
           ),
         );
       }
@@ -241,7 +242,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   @override
   Widget build(BuildContext context) {
     final bool showError = widget.hasError;
-    final Color borderColor = showError ? Colors.red : const Color(0xFFF4F7FD);
+    final Color borderColor =
+        showError ? context.appColors.error : context.appColors.borderSubtle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +255,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         const SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: context.appColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
@@ -270,7 +272,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
             child: Text(
               AppLocalizations.of(context)!.translate('field_required'),
               style: const TextStyle(
-                color: Colors.red,
+                color: context.appColors.error,
                 fontSize: 12,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
@@ -290,14 +292,18 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       enabled: !isLoadingStatuses,
       decoration: CustomDropdownDecoration(
         closedFillColor: const Color(0xffF4F7FD),
-        expandedFillColor: Colors.white,
+        expandedFillColor: context.appColors.surfacePrimary,
         closedBorder: Border.all(
-          color: widget.hasError ? Colors.red : const Color(0xffF4F7FD),
+          color: widget.hasError
+              ? context.appColors.error
+              : context.appColors.borderSubtle,
           width: 1,
         ),
         closedBorderRadius: BorderRadius.circular(12),
         expandedBorder: Border.all(
-          color: widget.hasError ? Colors.red : const Color(0xffF4F7FD),
+          color: widget.hasError
+              ? context.appColors.error
+              : context.appColors.borderSubtle,
           width: 1,
         ),
         expandedBorderRadius: BorderRadius.circular(12),
@@ -316,7 +322,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg),
               ),
             ),
           );
@@ -334,7 +341,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg),
               ),
             ),
           );
@@ -351,7 +359,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               padding: EdgeInsets.all(20.0),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg),
               ),
             ),
           );
@@ -401,7 +410,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       enabled: !isLoadingStatuses,
       decoration: CustomDropdownDecoration(
         closedFillColor: const Color(0xffF4F7FD),
-        expandedFillColor: Colors.white,
+        expandedFillColor: context.appColors.surfacePrimary,
         closedBorder: Border.all(
           color: Colors.transparent,
           width: 1,
@@ -431,18 +440,18 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                         height: 18,
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: const Color(0xff1E2E52),
+                            color: context.appColors.textPrimary,
                             width: 1,
                           ),
                           borderRadius: BorderRadius.circular(4),
                           color: allSelected
-                              ? const Color(0xff1E2E52)
+                              ? context.appColors.buttonPrimaryBg
                               : Colors.transparent,
                         ),
                         child: allSelected
                             ? const Icon(
                                 Icons.check,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                                 size: 14,
                               )
                             : null,
@@ -473,7 +482,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg),
               ),
             ),
           );
@@ -502,7 +512,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg),
               ),
             ),
           );
@@ -519,7 +530,8 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               padding: EdgeInsets.all(20.0),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    context.appColors.buttonPrimaryBg),
               ),
             ),
           );
@@ -586,17 +598,17 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
                 color:
-                    isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                    isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
                       Icons.check,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                       size: 14,
                     )
                   : null,

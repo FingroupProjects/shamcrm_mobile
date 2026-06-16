@@ -1048,21 +1048,21 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             ),
           ),
           child: _isCreatingDealNotice
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Text(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.appColors.textInverse,
+                ),
+              )
+              : Text(
                   'Добавить',
                   style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
         ),
@@ -1398,15 +1398,15 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                         ),
                       ),
                       child: isFinishing
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 14,
                               height: 14,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               'Сделано',
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
@@ -1433,7 +1433,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Введите комментарий'),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
@@ -1471,7 +1471,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Не удалось завершить задачу'),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
@@ -1511,7 +1511,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Не найден lead_id для сделки'),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
@@ -1552,11 +1552,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   ? 'Комментарий создан'
                   : 'Задача создана')
               : '${result['message'] ?? 'Ошибка'}',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: context.appColors.textInverse,
           ),
         ),
         backgroundColor:
@@ -1610,7 +1610,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     final bodyController = TextEditingController();
     final submitted = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -1737,7 +1737,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                                   disabledBackgroundColor:
                                       const Color(0xff1E2E52)
                                           .withValues(alpha: 0.45),
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: context.appColors.textInverse,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -1785,7 +1785,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
     final submitted = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -1917,7 +1917,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                             backgroundColor: const Color(0xff1E2E52),
                             disabledBackgroundColor:
                                 const Color(0xff1E2E52).withValues(alpha: 0.45),
-                            foregroundColor: Colors.white,
+                            foregroundColor: context.appColors.textInverse,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -1965,14 +1965,15 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           success
               ? (isComment ? 'Комментарий обновлен' : 'Задача обновлена')
               : '${result['message'] ?? 'Ошибка'}',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: context.appColors.textInverse,
           ),
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor:
+            success ? context.appColors.success : context.appColors.error,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1987,7 +1988,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
         backgroundColor: context.appColors.surfacePrimary,
         title: const Text(
           'Удалить',
@@ -2010,7 +2010,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
+            child: Text(
               'Отмена',
               style: TextStyle(
                 fontFamily: 'Gilroy',
@@ -2022,13 +2022,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: Text(
               'Удалить',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.red,
+                color: context.appColors.error,
               ),
             ),
           ),
@@ -2042,17 +2042,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       await _apiService.deleteNotice(note.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Запись удалена',
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.textInverse,
             ),
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: context.appColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -2060,17 +2060,17 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Не удалось удалить запись',
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.textInverse,
             ),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -2377,14 +2377,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                     AppLocalizations.of(context)
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: context.appColors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.appColors.success,
                   behavior: SnackBarBehavior.floating,
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2445,14 +2445,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                     AppLocalizations.of(context)
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.appColors.success,
                   behavior: SnackBarBehavior.floating,
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2544,7 +2544,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                                       value: _downloadProgress[file.id],
                                       strokeWidth: 3,
                                       backgroundColor:
-                                          Colors.grey.withOpacity(0.3),
+                                          Colors.grey.withValues(alpha: 0.3),
                                       valueColor: AlwaysStoppedAnimation<Color>(
                                         context.appColors.buttonPrimaryBg,
                                       ),
@@ -2595,14 +2595,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                     AppLocalizations.of(context)
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.appColors.success,
                   behavior: SnackBarBehavior.floating,
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2663,14 +2663,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                     AppLocalizations.of(context)
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.appColors.success,
                   behavior: SnackBarBehavior.floating,
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2739,14 +2739,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             content: Text(
               AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
                   'Скопировано',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: context.appColors.textInverse,
               ),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: context.appColors.success,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape:

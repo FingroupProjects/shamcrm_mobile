@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // ✅ ДОБАВИТЬ ИМПОРТ
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class CreateStatusDialog extends StatefulWidget {
   CreateStatusDialog({Key? key}) : super(key: key);
@@ -107,7 +108,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -140,7 +141,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -148,7 +149,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -164,7 +165,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -172,7 +173,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -191,7 +192,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.appColors.textInverse,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -208,7 +209,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Colors.black.withOpacity(0.8),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                     IconButton(
@@ -351,7 +352,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             child: Text(
                               _dayErrorMessage!,
                               style: TextStyle(
-                                color: Colors.red,
+                                color: context.appColors.error,
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w400,
@@ -405,13 +406,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1E2E52),
+                                backgroundColor: context.appColors.buttonPrimaryBg,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8)),
                               ),
                               child: Text(
                                 localizations.translate('deal_number'),
-                                style: TextStyle(color: Colors.white),
+                                style:
+                                    TextStyle(color: context.appColors.textInverse),
                               ),
                             ),
                             ElevatedButton(
@@ -425,13 +427,14 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1E2E52),
+                                backgroundColor: context.appColors.buttonPrimaryBg,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8)),
                               ),
                               child: Text(
                                 localizations.translate('sum'),
-                                style: TextStyle(color: Colors.white),
+                                style:
+                                    TextStyle(color: context.appColors.textInverse),
                               ),
                             ),
                           ],
@@ -508,7 +511,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         margin: const EdgeInsets.only(top: 16),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          color: const Color(0xff1E2E52),
+                          color: context.appColors.buttonPrimaryBg,
                         ),
                         child: TextButton(
                           onPressed: () {
@@ -586,7 +589,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: context.appColors.textInverse,
                             ),
                           ),
                         ),

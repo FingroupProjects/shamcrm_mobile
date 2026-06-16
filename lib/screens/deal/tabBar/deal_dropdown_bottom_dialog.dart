@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +32,7 @@ Future<void> showDealStatusBottomSheet(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -39,7 +40,7 @@ Future<void> showDealStatusBottomSheet(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),
@@ -92,7 +93,7 @@ Future<void> showDealStatusBottomSheet(
   if (context.mounted) {
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -109,7 +110,7 @@ Future<void> showDealStatusBottomSheet(
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 7),
                     decoration: BoxDecoration(
-                      color: Color(0xfffDFE3EC),
+                      color: context.appColors.borderSubtle,
                       borderRadius: BorderRadius.circular(1200),
                     ),
                   ),
@@ -172,14 +173,14 @@ Future<void> showDealStatusBottomSheet(
                   isLoading
                       ? Center(
                           child: CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.textPrimary,
                           ),
                         )
                       : CustomButton(
                           buttonText:
                               AppLocalizations.of(context)!.translate('save'),
-                          buttonColor: Color(0xfff4F40EC),
-                          textColor: Colors.white,
+                          buttonColor: context.appColors.buttonPrimaryBg,
+                          textColor: context.appColors.textInverse,
                           onPressed: selectedStatusIds.isEmpty
                               ? null
                               : () async {
@@ -239,7 +240,7 @@ Future<void> showDealStatusBottomSheet(
                                             fontFamily: 'Gilroy',
                                             fontSize: 16,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white,
+                                            color: context.appColors.textInverse,
                                           ),
                                         ),
                                         behavior: SnackBarBehavior.floating,
@@ -249,7 +250,7 @@ Future<void> showDealStatusBottomSheet(
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: context.appColors.success,
                                         elevation: 3,
                                         padding: EdgeInsets.symmetric(
                                             vertical: 12, horizontal: 16),
@@ -281,7 +282,7 @@ Future<void> showDealStatusBottomSheet(
                                               fontFamily: 'Gilroy',
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
-                                              color: Colors.white,
+                                              color: context.appColors.textInverse,
                                             ),
                                           ),
                                           behavior: SnackBarBehavior.floating,
@@ -291,7 +292,7 @@ Future<void> showDealStatusBottomSheet(
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                           ),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: context.appColors.error,
                                           elevation: 3,
                                           padding: EdgeInsets.symmetric(
                                               vertical: 12, horizontal: 16),
@@ -309,7 +310,7 @@ Future<void> showDealStatusBottomSheet(
                                               fontFamily: 'Gilroy',
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
-                                              color: Colors.white,
+                                              color: context.appColors.textInverse,
                                             ),
                                           ),
                                           behavior: SnackBarBehavior.floating,
@@ -319,7 +320,7 @@ Future<void> showDealStatusBottomSheet(
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                           ),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: context.appColors.error,
                                           elevation: 3,
                                           padding: EdgeInsets.symmetric(
                                               vertical: 12, horizontal: 16),
