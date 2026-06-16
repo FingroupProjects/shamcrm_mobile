@@ -1,8 +1,7 @@
 // lib/screens/deal/tabBar/deal_details/dropdown_history.dart
 
-import 'dart:convert';
 import 'package:crm_task_manager/models/lead_history_model.dart';
-import 'package:crm_task_manager/models/notice_history_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -42,19 +41,21 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.buttonPrimaryFg,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                backgroundColor: context.appColors.error,
                 elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -65,7 +66,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
           'История действий',
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
-          () => setState(() => isActionHistoryExpanded = !isActionHistoryExpanded),
+          () => setState(
+              () => isActionHistoryExpanded = !isActionHistoryExpanded),
         );
       },
     );
@@ -83,8 +85,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       child: Container(
         padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(8),
+          color: context.appColors.surfacePrimary,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: context.appColors.borderSubtle.withValues(alpha: 0.4),
+          ),
+          boxShadow: context.appShadows.card,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,17 +120,18 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.bodyLg.copyWith(
             fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            fontWeight: FontWeight.w700,
+            color: context.appColors.textPrimary,
           ),
         ),
-        Image.asset(
-          'assets/icons/tabBar/dropdown.png',
-          width: 16,
-          height: 16,
+        Icon(
+          isActionHistoryExpanded
+              ? Icons.keyboard_arrow_up_rounded
+              : Icons.keyboard_arrow_down_rounded,
+          size: 20,
+          color: context.appColors.iconPrimary,
         ),
       ],
     );
@@ -156,11 +163,10 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     d,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodyMd.copyWith(
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff1E2E52),
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textSecondary,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -179,11 +185,10 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Expanded(
           child: Text(
             status,
-            style: const TextStyle(
-              fontSize: 14,
+            style: context.appTextStyles.bodyMd.copyWith(
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              fontWeight: FontWeight.w700,
+              color: context.appColors.textPrimary,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -193,11 +198,10 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
         Expanded(
           child: Text(
             userAndDate,
-            style: const TextStyle(
-              fontSize: 14,
+            style: context.appTextStyles.bodyMd.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textMuted,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -232,7 +236,9 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
           final field = _formatFieldName(key);
 
           // ✅ Для дат используем dd.MM.yyyy (кроме created_at и updated_at)
-          if (key == 'start_date' || key == 'end_date' || key == 'status_update_date') {
+          if (key == 'start_date' ||
+              key == 'end_date' ||
+              key == 'status_update_date') {
             final prevDate = _formatDate(prev, withTime: false);
             final nextDate = _formatDate(next, withTime: false);
             lines.add('$field: $prevDate → $nextDate');
@@ -274,9 +280,9 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
     if (dateStr == null || dateStr.isEmpty) return '—';
     final date = DateTime.tryParse(dateStr);
     if (date == null) return dateStr;
-    
+
     // ✅ Единый формат: dd.MM.yyyy или dd.MM.yyyy HH:mm
-    return withTime 
+    return withTime
         ? DateFormat('dd.MM.yyyy HH:mm').format(date)
         : DateFormat('dd.MM.yyyy').format(date);
   }

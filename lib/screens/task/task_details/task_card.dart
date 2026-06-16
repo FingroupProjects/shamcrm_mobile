@@ -170,20 +170,20 @@ class TaskCardState extends State<TaskCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 2,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.surfaceAccent.withValues(alpha: 0.55),
-                      colors.buttonPrimaryBg.withValues(alpha: 0.9),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              // Container(
+              //   height: 2,
+              //   width: double.infinity,
+              //   decoration: BoxDecoration(
+              //     borderRadius: BorderRadius.circular(999),
+              //     gradient: LinearGradient(
+              //       colors: [
+              //         colors.surfaceAccent.withValues(alpha: 0.55),
+              //         colors.buttonPrimaryBg.withValues(alpha: 0.9),
+              //       ],
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

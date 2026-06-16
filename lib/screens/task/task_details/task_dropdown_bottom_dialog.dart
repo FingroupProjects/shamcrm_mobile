@@ -24,15 +24,16 @@ void DropdownBottomSheet(
     context: context,
     backgroundColor: context.appColors.surfacePrimary,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (BuildContext context) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
           return Container(
             height: 700,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: 100,
@@ -43,6 +44,45 @@ void DropdownBottomSheet(
                     borderRadius: BorderRadius.circular(1200),
                   ),
                 ),
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.sync_alt_rounded,
+                        size: 18,
+                        color: context.appColors.buttonPrimaryBg,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Выполнение',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: context.appColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Выберите новый статус задачи',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
                 Expanded(
                   child: FutureBuilder<List<TaskStatus>>(
                     future: ApiService().getTaskStatuses(),

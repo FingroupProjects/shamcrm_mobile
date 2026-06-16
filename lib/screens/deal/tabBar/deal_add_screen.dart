@@ -14,7 +14,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/custom_widget/task_section_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -79,18 +79,30 @@ class _DealAddScreenState extends State<DealAddScreen> {
       originalFieldConfigurations; // Для отслеживания изменений
   final GlobalKey _addFieldButtonKey = GlobalKey();
 
-  Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
-  Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.16);
-  Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
-  Color _screenFooterBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.94);
-
   // Конфигурация полей с сервера
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
+
+  // ─── Цветовые хелперы (как в LeadAddScreen) ────────────────────────────────
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.82);
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.16);
+  Color _screenFocusBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.3);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+  Color _screenFooterBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.94);
+  // ────────────────────────────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -415,36 +427,34 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildSumField() {
-    final colors = context.appColors;
     return CustomTextField(
       controller: sumController,
       hintText: AppLocalizations.of(context)!.translate('enter_summ'),
       label: AppLocalizations.of(context)!.translate('summ'),
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]'))],
-      backgroundColor: colors.fieldBackground,
-      borderColor: colors.fieldBorder,
-      focusedBorderColor: colors.buttonPrimaryBg,
-      textColor: colors.textPrimary,
-      hintColor: colors.textSecondary,
-      labelColor: colors.textPrimary,
+      backgroundColor: _screenFieldBackground(context),
+      borderColor: _screenBorder(context),
+      focusedBorderColor: _screenFocusBorder(context),
+      textColor: _screenPrimaryText(context),
+      hintColor: _screenHintText(context),
+      labelColor: _screenPrimaryText(context),
     );
   }
 
   Widget _buildDescriptionField() {
-    final colors = context.appColors;
     return CustomTextField(
       controller: descriptionController,
       hintText: AppLocalizations.of(context)!.translate('enter_description'),
       label: AppLocalizations.of(context)!.translate('description_list'),
       maxLines: 5,
       keyboardType: TextInputType.multiline,
-      backgroundColor: colors.fieldBackground,
-      borderColor: colors.fieldBorder,
-      focusedBorderColor: colors.buttonPrimaryBg,
-      textColor: colors.textPrimary,
-      hintColor: colors.textSecondary,
-      labelColor: colors.textPrimary,
+      backgroundColor: _screenFieldBackground(context),
+      borderColor: _screenBorder(context),
+      focusedBorderColor: _screenFocusBorder(context),
+      textColor: _screenPrimaryText(context),
+      hintColor: _screenHintText(context),
+      labelColor: _screenPrimaryText(context),
     );
   }
 
@@ -1273,7 +1283,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
   }
 
   Widget _buildFileSelection() {
-    final colors = context.appColors;
+    final fileTextColor = _screenPrimaryText(context);
+    final fileBorderColor = _screenBorder(context);
+    final fileCardColor = _screenFieldBackground(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1283,7 +1296,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: colors.textPrimary,
+            color: fileTextColor,
           ),
         ),
         SizedBox(height: 16),
@@ -1311,9 +1324,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             width: 72,
                             height: 72,
                             decoration: BoxDecoration(
-                              color: colors.fieldBackground.withOpacity(0.92),
+                              color: fileCardColor,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: colors.borderPrimary),
+                              border: Border.all(color: fileBorderColor),
                             ),
                             alignment: Alignment.center,
                             child: Image.asset(
@@ -1329,7 +1342,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: colors.textSecondary,
+                              color: fileTextColor,
                             ),
                           ),
                         ],
@@ -1351,7 +1364,6 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
                           buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
@@ -1362,7 +1374,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: colors.textPrimary,
+                              color: fileTextColor,
                             ),
                           ),
                         ],
@@ -1382,11 +1394,12 @@ class _DealAddScreenState extends State<DealAddScreen> {
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
+                            color: context.appColors.surfacePrimary,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: context.appColors.shadow
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
@@ -1395,7 +1408,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                           child: Icon(
                             Icons.close,
                             size: 16,
-                            color: colors.textPrimary,
+                            color: fileTextColor,
                           ),
                         ),
                       ),
@@ -1456,402 +1469,509 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    //print('DealAddScreen: Building with selectedLead: $selectedLead, selectedManager: $selectedManager');
+    final baseTheme = Theme.of(context);
+    final baseColors = context.appColors;
+    final baseTextStyles = context.appTextStyles;
+    final baseShadows = context.appShadows;
+    final screenTheme = baseTheme.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        baseColors.copyWith(
+          surfacePrimary: _screenSurfaceBackground(context),
+          surfaceElevated: _screenSurfaceElevated(context),
+          textPrimary: _screenPrimaryText(context),
+          textSecondary: _screenSecondaryText(context),
+          textMuted: _screenHintText(context),
+          textInverse: _screenPrimaryText(context),
+          iconPrimary: _screenPrimaryText(context),
+          iconSecondary: _screenSecondaryText(context),
+          borderPrimary: _screenBorder(context),
+          borderSubtle: _screenBorder(context),
+          buttonSecondaryBg: _screenFieldBackground(context),
+          buttonSecondaryFg: _screenPrimaryText(context),
+          fieldBg: _screenFieldBackground(context),
+          fieldBorder: _screenBorder(context),
+          fieldHint: _screenHintText(context),
+          overlay: baseColors.overlay,
+        ),
+        baseTextStyles.copyWith(
+          titleLg: baseTextStyles.titleLg
+              .copyWith(color: _screenPrimaryText(context)),
+          titleMd: baseTextStyles.titleMd
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyLg: baseTextStyles.bodyLg
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyMd: baseTextStyles.bodyMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          bodySm: baseTextStyles.bodySm.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          labelLg: baseTextStyles.labelLg
+              .copyWith(color: _screenPrimaryText(context)),
+          labelMd: baseTextStyles.labelMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          caption: baseTextStyles.caption
+              .copyWith(color: _screenHintText(context)),
+        ),
+        baseShadows,
+      ],
+    );
+
+    final appBarGradient = [
+      _screenSurfaceElevated(context),
+      _screenFieldBackground(context),
+    ];
     final primaryText = _screenPrimaryText(context);
     final subtleBorder = _screenBorder(context);
+    final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
-    final fieldBackground = _screenFieldBackground(context);
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: TaskSectionAppBar(
-        title: AppLocalizations.of(context)!.translate('new_deal'),
-        onBack: () {
-          Navigator.pop(context, widget.statusId);
-          context.read<DealBloc>().add(FetchDealStatuses());
-        },
-        actions: [
-          IconButton(
-            icon: Icon(isSettingsMode ? Icons.close : Icons.settings),
-            color: context.appColors.iconPrimary,
-            onPressed: () async {
-              if (isSettingsMode) {
-                // Выходим из режима настроек
-                if (_hasFieldChanges()) {
-                  // Есть несохраненные изменения - показываем диалог
-                  final shouldExit = await _showExitSettingsDialog();
-                  if (!shouldExit) return;
 
-                  // Восстанавливаем позиции, но сохраняем новые добавленные поля
-                  if (originalFieldConfigurations != null) {
-                    setState(() {
-                      // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
-                      final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!
-                            .any((original) => original.id == current.id);
-                      }).toList();
+    return Theme(
+      data: screenTheme,
+      child: Scaffold(
+        backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+        extendBodyBehindAppBar: !isSettingsMode,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          forceMaterialTransparency: true,
+          backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: context.appColors.overlay.withValues(alpha: 0),
+          shadowColor: context.appColors.overlay.withValues(alpha: 0),
+          toolbarHeight: 74,
+          titleSpacing: 16,
+          title: AppBarShell(
+            leading: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: IconButton(
+                onPressed: () {
+                  Navigator.pop(context, widget.statusId);
+                  context.read<DealBloc>().add(FetchDealStatuses());
+                },
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: primaryText,
+                ),
+              ),
+            ),
+            center: AppBarShell.capsule(
+              context,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('new_deal'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    color: primaryText,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ),
+            trailing: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: IconButton(
+                icon: Icon(
+                  isSettingsMode
+                      ? Icons.close_rounded
+                      : Icons.settings_rounded,
+                  color: primaryText,
+                  size: 20,
+                ),
+                onPressed: () async {
+                  if (isSettingsMode) {
+                    if (_hasFieldChanges()) {
+                      final shouldExit = await _showExitSettingsDialog();
+                      if (!shouldExit) return;
 
-                      // Восстанавливаем оригинальную конфигурацию
-                      fieldConfigurations = [...originalFieldConfigurations!];
+                      if (originalFieldConfigurations != null) {
+                        setState(() {
+                          final newFields =
+                              fieldConfigurations.where((current) {
+                            return !originalFieldConfigurations!
+                                .any((original) => original.id == current.id);
+                          }).toList();
 
-                      // Добавляем новые поля в конец списка
-                      if (newFields.isNotEmpty) {
-                        int maxPosition = fieldConfigurations.isEmpty
-                            ? 0
-                            : fieldConfigurations
-                                .map((e) => e.position)
-                                .reduce((a, b) => a > b ? a : b);
-                        for (int i = 0; i < newFields.length; i++) {
-                          fieldConfigurations.add(FieldConfiguration(
-                            id: newFields[i].id,
-                            tableName: newFields[i].tableName,
-                            fieldName: newFields[i].fieldName,
-                            position: maxPosition + i + 1,
-                            required: false, // Всегда false в UI
-                            isActive: newFields[i].isActive,
-                            isCustomField: newFields[i].isCustomField,
-                            createdAt: newFields[i].createdAt,
-                            updatedAt: newFields[i].updatedAt,
-                            customFieldId: newFields[i].customFieldId,
-                            directoryId: newFields[i].directoryId,
-                            type: newFields[i].type,
-                            isDirectory: newFields[i].isDirectory,
-                            showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i]
-                                .originalRequired, // Сохраняем оригинальное значение
-                          ));
-                        }
+                          fieldConfigurations = [
+                            ...originalFieldConfigurations!
+                          ];
+
+                          if (newFields.isNotEmpty) {
+                            int maxPosition = fieldConfigurations.isEmpty
+                                ? 0
+                                : fieldConfigurations
+                                    .map((e) => e.position)
+                                    .reduce((a, b) => a > b ? a : b);
+                            for (int i = 0; i < newFields.length; i++) {
+                              fieldConfigurations.add(FieldConfiguration(
+                                id: newFields[i].id,
+                                tableName: newFields[i].tableName,
+                                fieldName: newFields[i].fieldName,
+                                position: maxPosition + i + 1,
+                                required: false,
+                                isActive: newFields[i].isActive,
+                                isCustomField: newFields[i].isCustomField,
+                                createdAt: newFields[i].createdAt,
+                                updatedAt: newFields[i].updatedAt,
+                                customFieldId: newFields[i].customFieldId,
+                                directoryId: newFields[i].directoryId,
+                                type: newFields[i].type,
+                                isDirectory: newFields[i].isDirectory,
+                                showOnTable: newFields[i].showOnTable,
+                                originalRequired:
+                                    newFields[i].originalRequired,
+                              ));
+                            }
+                          }
+
+                          originalFieldConfigurations = null;
+                          isSettingsMode = false;
+                        });
                       }
-
-                      originalFieldConfigurations = null;
-                      isSettingsMode = false;
+                    } else {
+                      setState(() {
+                        originalFieldConfigurations = null;
+                        isSettingsMode = false;
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      originalFieldConfigurations =
+                          fieldConfigurations.map((config) {
+                        return FieldConfiguration(
+                          id: config.id,
+                          tableName: config.tableName,
+                          fieldName: config.fieldName,
+                          position: config.position,
+                          required: false,
+                          isActive: config.isActive,
+                          isCustomField: config.isCustomField,
+                          createdAt: config.createdAt,
+                          updatedAt: config.updatedAt,
+                          customFieldId: config.customFieldId,
+                          directoryId: config.directoryId,
+                          type: config.type,
+                          isDirectory: config.isDirectory,
+                          showOnTable: config.showOnTable,
+                          originalRequired: config.originalRequired,
+                        );
+                      }).toList();
+                      isSettingsMode = true;
                     });
                   }
-                } else {
-                  // Нет изменений - просто выходим
-                  setState(() {
-                    originalFieldConfigurations = null;
-                    isSettingsMode = false;
-                  });
-                }
-              } else {
-                // Входим в режим настроек - сохраняем снимок конфигурации
-                setState(() {
-                  originalFieldConfigurations =
-                      fieldConfigurations.map((config) {
-                    return FieldConfiguration(
-                      id: config.id,
-                      tableName: config.tableName,
-                      fieldName: config.fieldName,
-                      position: config.position,
-                      required: false, // Всегда false в UI
-                      isActive: config.isActive,
-                      isCustomField: config.isCustomField,
-                      createdAt: config.createdAt,
-                      updatedAt: config.updatedAt,
-                      customFieldId: config.customFieldId,
-                      directoryId: config.directoryId,
-                      type: config.type,
-                      isDirectory: config.isDirectory,
-                      showOnTable: config.showOnTable,
-                      originalRequired: config
-                          .originalRequired, // Сохраняем оригинальное значение
-                    );
-                  }).toList();
-                  isSettingsMode = true;
-                });
-              }
-            },
-            tooltip: isSettingsMode
-                ? AppLocalizations.of(context)!.translate('close')
-                : AppLocalizations.of(context)!.translate('appbar_settings'),
-          ),
-          // IconButton(
-          //   icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
-          //   onPressed: () async {
-          //     // Очищаем кэш и загружаем заново
-          //     await _apiService.clearFieldConfigurationCache();
-          //     await _apiService.loadAndCacheAllFieldConfigurations();
-          //
-          //     // Перезагружаем конфигурацию
-          //     context.read<FieldConfigurationBloc>().add(
-          //         FetchFieldConfiguration('deals')
-          //     );
-          //
-          //     ScaffoldMessenger.of(context).showSnackBar(
-          //       SnackBar(
-          //         content: Text('Конфигурация обновлена'),
-          //         backgroundColor: Colors.green,
-          //       ),
-          //     );
-          //   },
-          //   tooltip: 'Обновить структуру полей',
-          // ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          const Positioned.fill(
-            child: AppBackgroundOverlay(
-              preset: AppBackgroundPreset.aurora,
+                },
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 84),
-            child:
-                BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
-                    listener: (context, configState) {
-              if (kDebugMode) {
-                print(
-                    'DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
-              }
-
-              if (configState is FieldConfigurationLoaded) {
+          centerTitle: false,
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+            BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+              listener: (context, configState) {
                 if (kDebugMode) {
                   print(
-                      'DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
+                      'DealAddScreen: FieldConfigurationBloc state changed: ${configState.runtimeType}');
                 }
-                setState(() {
-                  fieldConfigurations = configState.fields;
-                  isConfigurationLoaded = true;
-                });
-              } else if (configState is FieldConfigurationError) {
-                if (kDebugMode) {
-                  print(
-                      'DealAddScreen: Configuration error: ${configState.message}');
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Ошибка загрузки конфигурации: ${configState.message}',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }, builder: (context, configState) {
-              if (kDebugMode) {
-                print(
-                    'DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
-              }
 
-              if (configState is FieldConfigurationLoading) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    color: context.appColors.buttonPrimaryBg,
-                  ),
-                );
-              }
-
-              if (!isConfigurationLoaded) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Загрузка конфигурации...',
+                if (configState is FieldConfigurationLoaded) {
+                  if (kDebugMode) {
+                    print(
+                        'DealAddScreen: Configuration loaded with ${configState.fields.length} fields');
+                  }
+                  setState(() {
+                    fieldConfigurations = configState.fields;
+                    isConfigurationLoaded = true;
+                  });
+                } else if (configState is FieldConfigurationError) {
+                  if (kDebugMode) {
+                    print(
+                        'DealAddScreen: Configuration error: ${configState.message}');
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Ошибка загрузки конфигурации: ${configState.message}',
                         style: TextStyle(
-                          color: context.appColors.textPrimary,
                           fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: primaryText,
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }
+                      backgroundColor: context.appColors.error,
+                    ),
+                  );
+                }
+              },
+              builder: (context, configState) {
+                if (kDebugMode) {
+                  print(
+                      'DealAddScreen: Building with state: ${configState.runtimeType}, isLoaded: $isConfigurationLoaded');
+                }
 
-              if (isSettingsMode) {
-                return _buildSettingsMode();
-              }
+                if (configState is FieldConfigurationLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(color: primaryText),
+                  );
+                }
 
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider(create: (context) => MainFieldBloc()),
-                ],
-                child: BlocListener<DealBloc, DealState>(
-                  listener: (context, state) {
-                    if (state is DealError) {
-                      showCustomSnackBar(
-                        context: context,
-                        message: AppLocalizations.of(context)!
-                            .translate(state.message),
-                        isSuccess: false,
-                      );
-                    } else if (state is DealSuccess) {
-                      showCustomSnackBar(
-                        context: context,
-                        message: AppLocalizations.of(context)!
-                            .translate(state.message),
-                        isSuccess: true,
-                      );
-                      if (context.mounted) {
-                        Navigator.pop(context, widget.statusId);
-                        context.read<DealBloc>().add(FetchDealStatuses());
-                      }
-                    }
-                  },
-                  child: Form(
-                    key: _formKey,
+                if (!isConfigurationLoaded) {
+                  return Center(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              FocusScope.of(context).unfocus();
-                            },
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ...(() {
-                                    final configured =
-                                        _buildConfiguredFieldWidgets();
-                                    if (configured.isNotEmpty) {
-                                      return configured;
-                                    }
-                                    return _buildDefaultDealWidgets();
-                                  })(),
-
-                                  // ТОЛЬКО пользовательские поля (те, которые добавлены через кнопку "Добавить поле")
-                                  ...customFields.where((field) {
-                                    // Исключаем поля, которые уже есть в серверной конфигурации
-                                    return !fieldConfigurations.any((config) =>
-                                        (config.isCustomField &&
-                                            config.fieldName ==
-                                                field.fieldName) ||
-                                        (config.isDirectory &&
-                                            config.directoryId ==
-                                                field.directoryId));
-                                  }).map((field) {
-                                    return Column(
-                                      children: [
-                                        field.isDirectoryField &&
-                                                field.directoryId != null
-                                            ? MainFieldDropdownWidget(
-                                                directoryId: field.directoryId!,
-                                                directoryName: field.fieldName,
-                                                selectedField: null,
-                                                onSelectField:
-                                                    (MainField selectedField) {
-                                                  setState(() {
-                                                    final idx = customFields
-                                                        .indexOf(field);
-                                                    customFields[idx] =
-                                                        field.copyWith(
-                                                      entryId: selectedField.id,
-                                                      controller:
-                                                          TextEditingController(
-                                                              text:
-                                                                  selectedField
-                                                                      .value),
-                                                    );
-                                                  });
-                                                },
-                                                controller: field.controller,
-                                                onSelectEntryId: (int entryId) {
-                                                  setState(() {
-                                                    final idx = customFields
-                                                        .indexOf(field);
-                                                    customFields[idx] =
-                                                        field.copyWith(
-                                                      entryId: entryId,
-                                                    );
-                                                  });
-                                                })
-                                            : CustomFieldWidget(
-                                                fieldName: field.fieldName,
-                                                valueController:
-                                                    field.controller,
-                                                type: field.type,
-                                                isDirectory: false,
-                                              ),
-                                        const SizedBox(height: 16),
-                                      ],
-                                    );
-                                  }).toList(),
-
-                                  // Файлы (всегда показываем)
-                                  _buildFileSelection(),
-                                  const SizedBox(height: 16),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: footerSurface,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: subtleBorder,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: CustomButton(
-                                  buttonText: AppLocalizations.of(context)!
-                                      .translate('cancel'),
-                                  buttonColor: fieldBackground,
-                                  textColor: primaryText,
-                                  onPressed: () {
-                                    //print('DealAddScreen: Cancel button pressed');
-                                    Navigator.pop(context, widget.statusId);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: BlocBuilder<DealBloc, DealState>(
-                                  builder: (context, state) {
-                                    //print('DealAddScreen: DealBloc builder state: $state');
-                                    if (state is DealLoading) {
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          color:
-                                              context.appColors.buttonPrimaryBg,
-                                        ),
-                                      );
-                                    } else {
-                                      return CustomButton(
-                                        buttonText:
-                                            AppLocalizations.of(context)!
-                                                .translate('add'),
-                                        buttonColor:
-                                            context.appColors.buttonPrimaryBg,
-                                        textColor:
-                                            context.appColors.buttonPrimaryFg,
-                                        onPressed: _submitForm,
-                                      );
-                                    }
-                                  },
-                                ),
-                              ),
-                            ],
+                        CircularProgressIndicator(color: primaryText),
+                        SizedBox(height: 16),
+                        Text(
+                          'Загрузка конфигурации...',
+                          style: TextStyle(
+                            color: primaryText,
+                            fontFamily: 'Gilroy',
                           ),
                         ),
                       ],
                     ),
+                  );
+                }
+
+                if (isSettingsMode) {
+                  return _buildSettingsMode();
+                }
+
+                return MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (context) => MainFieldBloc()),
+                  ],
+                  child: BlocListener<DealBloc, DealState>(
+                    listener: (context, state) {
+                      if (state is DealError) {
+                        showCustomSnackBar(
+                          context: context,
+                          message: AppLocalizations.of(context)!
+                              .translate(state.message),
+                          isSuccess: false,
+                        );
+                      } else if (state is DealSuccess) {
+                        showCustomSnackBar(
+                          context: context,
+                          message: AppLocalizations.of(context)!
+                              .translate(state.message),
+                          isSuccess: true,
+                        );
+                        if (context.mounted) {
+                          Navigator.pop(context, widget.statusId);
+                          context.read<DealBloc>().add(FetchDealStatuses());
+                        }
+                      }
+                    },
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).padding.top + 10,
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                FocusScope.of(context).unfocus();
+                              },
+                              child: SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      18, 18, 18, 22),
+                                  decoration: BoxDecoration(
+                                    color: formSurface,
+                                    borderRadius: BorderRadius.circular(30),
+                                    border:
+                                        Border.all(color: subtleBorder),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.appColors.shadow
+                                            .withValues(alpha: 0.14),
+                                        blurRadius: 28,
+                                        offset: const Offset(0, 14),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ...(() {
+                                        final configured =
+                                            _buildConfiguredFieldWidgets();
+                                        if (configured.isNotEmpty) {
+                                          return configured;
+                                        }
+                                        return _buildDefaultDealWidgets();
+                                      })(),
+
+                                      // Пользовательские поля вне конфигурации
+                                      ...customFields.where((field) {
+                                        return !fieldConfigurations
+                                            .any((config) =>
+                                                (config.isCustomField &&
+                                                    config.fieldName ==
+                                                        field.fieldName) ||
+                                                (config.isDirectory &&
+                                                    config.directoryId ==
+                                                        field.directoryId));
+                                      }).map((field) {
+                                        return Column(
+                                          children: [
+                                            field.isDirectoryField &&
+                                                    field.directoryId != null
+                                                ? MainFieldDropdownWidget(
+                                                    directoryId:
+                                                        field.directoryId!,
+                                                    directoryName:
+                                                        field.fieldName,
+                                                    selectedField: null,
+                                                    onSelectField: (MainField
+                                                        selectedField) {
+                                                      setState(() {
+                                                        final idx =
+                                                            customFields
+                                                                .indexOf(
+                                                                    field);
+                                                        customFields[idx] =
+                                                            field.copyWith(
+                                                          entryId:
+                                                              selectedField.id,
+                                                          controller:
+                                                              TextEditingController(
+                                                                  text:
+                                                                      selectedField
+                                                                          .value),
+                                                        );
+                                                      });
+                                                    },
+                                                    controller:
+                                                        field.controller,
+                                                    onSelectEntryId:
+                                                        (int entryId) {
+                                                      setState(() {
+                                                        final idx =
+                                                            customFields
+                                                                .indexOf(
+                                                                    field);
+                                                        customFields[idx] =
+                                                            field.copyWith(
+                                                          entryId: entryId,
+                                                        );
+                                                      });
+                                                    },
+                                                  )
+                                                : CustomFieldWidget(
+                                                    fieldName: field.fieldName,
+                                                    valueController:
+                                                        field.controller,
+                                                    type: field.type,
+                                                    isDirectory: false,
+                                                  ),
+                                            const SizedBox(height: 16),
+                                          ],
+                                        );
+                                      }).toList(),
+
+                                      // Файлы
+                                      _buildFileSelection(),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            margin:
+                                const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: footerSurface,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: subtleBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CustomButton(
+                                    buttonText:
+                                        AppLocalizations.of(context)!
+                                            .translate('cancel'),
+                                    buttonColor:
+                                        _screenFieldBackground(context),
+                                    textColor: primaryText,
+                                    onPressed: () {
+                                      Navigator.pop(
+                                          context, widget.statusId);
+                                      context
+                                          .read<DealBloc>()
+                                          .add(FetchDealStatuses());
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: BlocBuilder<DealBloc, DealState>(
+                                    builder: (context, state) {
+                                      if (state is DealLoading) {
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            color: primaryText,
+                                          ),
+                                        );
+                                      } else {
+                                        return CustomButton(
+                                          buttonText:
+                                              AppLocalizations.of(context)!
+                                                  .translate('add'),
+                                          buttonColor: context
+                                              .appColors.buttonPrimaryBg,
+                                          textColor: context
+                                              .appColors.buttonPrimaryFg,
+                                          onPressed: _submitForm,
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              );
-            }),
-          ),
-        ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

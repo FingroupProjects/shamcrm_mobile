@@ -18,7 +18,7 @@ class CustomTextField extends StatefulWidget {
   final Function(String)? onChanged;
   final String? errorText;
   final bool hasError;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final Color? labelColor;
   final Color? hintColor;
   final Color? textColor;
@@ -27,7 +27,7 @@ class CustomTextField extends StatefulWidget {
   final bool? enabled;
   final bool showEditButton;
   final VoidCallback? onEditPressed;
-  final TextAlign textAlign; // ← Добавим для гибкости
+  final TextAlign textAlign;
 
   const CustomTextField({
     super.key,
@@ -46,7 +46,7 @@ class CustomTextField extends StatefulWidget {
     this.errorText,
     this.enabled,
     this.hasError = false,
-    this.backgroundColor = const Color(0xffF4F7FD),
+    this.backgroundColor,
     this.labelColor,
     this.hintColor,
     this.textColor,
@@ -54,7 +54,7 @@ class CustomTextField extends StatefulWidget {
     this.focusedBorderColor,
     this.showEditButton = false,
     this.onEditPressed,
-    this.textAlign = TextAlign.start, // ← Добавили
+    this.textAlign = TextAlign.start,
   });
 
   @override
@@ -63,20 +63,17 @@ class CustomTextField extends StatefulWidget {
 
 class _CustomTextFieldState extends State<CustomTextField> {
   bool _isPasswordVisible = false;
-  final FocusNode _focusNode = FocusNode(); // ← Добавили
-  OverlayEntry? _overlayEntry; // ← Для тулбара iOS
+  final FocusNode _focusNode = FocusNode();
+  OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
     super.initState();
-
-    // ← Добавили: отслеживаем фокус для показа тулбара на iOS
     if (Platform.isIOS) {
       _focusNode.addListener(_handleFocusChange);
     }
   }
 
-  // ← Новый метод: обработка изменения фокуса
   void _handleFocusChange() {
     if (_focusNode.hasFocus) {
       _showKeyboardToolbar();
@@ -85,9 +82,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     }
   }
 
-  // ← Новый метод: показать тулбар над клавиатурой
   void _showKeyboardToolbar() {
-    // Небольшая задержка, чтобы клавиатура успела появиться
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted || _overlayEntry != null) return;
 
@@ -104,21 +99,19 @@ class _CustomTextFieldState extends State<CustomTextField> {
     });
   }
 
-  // ← Новый метод: удалить тулбар
   void _removeKeyboardToolbar() {
     _overlayEntry?.remove();
     _overlayEntry = null;
   }
 
-  // ← Новый метод: виджет тулбара
   Widget _buildKeyboardToolbar() {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFD1D5DB).withValues(alpha: 0.95),
-        border: const Border(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.95),
+        border: Border(
           top: BorderSide(
-            color: Color(0xFF9CA3AF),
+            color: context.appColors.borderSubtle,
             width: 0.5,
           ),
         ),
@@ -127,16 +120,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
-            onPressed: () {
-              _focusNode.unfocus(); // Закрываем клавиатуру
-            },
-            child: const Text(
+            onPressed: () => _focusNode.unfocus(),
+            child: Text(
               'Готово',
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: Color(0xff4759FF),
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -148,7 +139,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   void dispose() {
-    _removeKeyboardToolbar(); // ← Очищаем overlay
+    _removeKeyboardToolbar();
     if (Platform.isIOS) {
       _focusNode.removeListener(_handleFocusChange);
     }
@@ -177,7 +168,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         const SizedBox(height: 4),
         TextFormField(
           controller: widget.controller,
-          focusNode: _focusNode, // ← Добавили наш FocusNode
+          focusNode: _focusNode,
           obscureText: widget.isPassword && !_isPasswordVisible,
           enabled: widget.showEditButton ? true : widget.enabled,
           readOnly: widget.showEditButton ? true : widget.readOnly,
@@ -186,7 +177,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           maxLines: widget.maxLines,
           validator: widget.validator,
           onChanged: widget.onChanged,
-          textAlign: widget.textAlign, // ← Используем новый параметр
+          textAlign: widget.textAlign,
           style: TextStyle(
             fontFamily: 'Gilroy',
             color: widget.textColor ?? colors.textPrimary,
@@ -202,7 +193,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: widget.backgroundColor,
+            fillColor: widget.backgroundColor ?? colors.fieldBg,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             prefixIcon: widget.prefixIcon,
@@ -229,7 +220,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     ? colors.error
                     : (widget.focusedBorderColor ??
                         widget.borderColor ??
-                        Colors.transparent),
+                        colors.buttonPrimaryBg.withValues(alpha: 0.6)),
                 width: 1.2,
               ),
             ),
@@ -238,7 +229,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide(
                 color: hasError
                     ? colors.error
-                    : (widget.borderColor ?? Colors.grey.shade300),
+                    : (widget.borderColor ?? colors.borderSubtle),
               ),
             ),
             errorBorder: OutlineInputBorder(
@@ -266,7 +257,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       return IconButton(
         icon: Icon(
           Icons.edit,
-          color: Color(0xff4F40EC),
+          color: context.appColors.buttonPrimaryBg,
           size: 20,
         ),
         onPressed: widget.onEditPressed,
@@ -280,13 +271,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
               : 'assets/icons/Profile/eye_close.png',
           width: 24,
           height: 24,
-          color: const Color(0xff99A4BA),
+          color: context.appColors.textSecondary,
         ),
-        onPressed: () {
-          setState(() {
-            _isPasswordVisible = !_isPasswordVisible;
-          });
-        },
+        onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
       );
     } else {
       return widget.suffixIcon;

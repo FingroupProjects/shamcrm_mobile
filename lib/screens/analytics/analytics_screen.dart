@@ -35,12 +35,14 @@ class AnalyticsScreen extends StatefulWidget {
     this.filterTrigger = 0,
     this.chartSettingsTrigger = 0,
     this.showStatistics = true,
+    this.showInitialLoader = true,
   }) : super(key: key);
 
   final bool showAppBar;
   final int filterTrigger;
   final int chartSettingsTrigger;
   final bool showStatistics;
+  final bool showInitialLoader;
 
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
@@ -398,6 +400,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   List<Widget> _buildChartWidgets() {
     if (_isLoadingChartSettings || _isLoadingLocalChartPrefs) {
+      if (!widget.showInitialLoader) {
+        return const <Widget>[];
+      }
       return [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),

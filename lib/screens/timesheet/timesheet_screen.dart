@@ -1,9 +1,9 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/timesheet_models.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_detail_screen.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -47,9 +47,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
         _error = null;
       });
     } else {
-      setState(() {
-        _isLoadingMore = true;
-      });
+      setState(() => _isLoadingMore = true);
     }
 
     try {
@@ -81,62 +79,58 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
         _scrollController.position.maxScrollExtent - 240) {
       return;
     }
-    if (_isLoading || _isLoadingMore || _page > _lastPage) return;
+    if (_isLoading || _isLoadingMore || _page > _lastPage) {
+      return;
+    }
     _loadTimesheet(reset: false);
   }
 
   void _onUsersSelected(List<UserData> users) {
     setState(() {
-      _selectedUserIds = users.map((user) => user.id.toString()).toList();
+      _selectedUserIds = users.map((u) => u.id.toString()).toList();
     });
   }
 
-  Future<void> _applyFilter() async {
-    await _loadTimesheet(reset: true);
-  }
+  Future<void> _applyFilter() => _loadTimesheet(reset: true);
 
   Future<void> _resetFilter() async {
-    setState(() {
-      _selectedUserIds = const [];
-    });
+    setState(() => _selectedUserIds = const []);
     await _loadTimesheet(reset: true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.backgroundPrimary,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        foregroundColor: AppColors.primaryBlue,
-        title: const Text(
+        surfaceTintColor: context.appColors.backgroundPrimary,
+        foregroundColor: context.appColors.textPrimary,
+        title: Text(
           'Табель',
-          style: TextStyle(
+          style: context.appTextStyles.titleLg.copyWith(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w700,
             fontSize: 24,
-            color: AppColors.primaryBlue,
+            color: context.appColors.textPrimary,
           ),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: IconButton(
-              onPressed: () {
-                setState(() {
-                  _showFilter = !_showFilter;
-                });
-              },
+              onPressed: () => setState(() => _showFilter = !_showFilter),
               style: IconButton.styleFrom(
                 backgroundColor: _showFilter
-                    ? const Color(0xFF4F46E5)
-                    : const Color(0xFFF1F5FE),
+                    ? context.appColors.buttonPrimaryBg
+                    : context.appColors.buttonPrimaryBg.withValues(alpha: 0.10),
               ),
               icon: Icon(
                 _showFilter ? Icons.close_rounded : Icons.filter_alt_outlined,
-                color: _showFilter ? Colors.white : AppColors.primaryBlue,
+                color: _showFilter
+                    ? context.appColors.textInverse
+                    : context.appColors.textPrimary,
               ),
             ),
           ),
@@ -160,6 +154,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
           ),
           Expanded(
             child: RefreshIndicator(
+              color: context.appColors.buttonPrimaryBg,
               onRefresh: () => _loadTimesheet(reset: true),
               child: _buildBody(),
             ),
@@ -175,19 +170,22 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.appColors.borderSubtle,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Фильтр по пользователям',
-            style: TextStyle(
+            style: context.appTextStyles.bodyLg.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               fontSize: 16,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -196,7 +194,6 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
             customLabelText: 'Пользователи',
             isRequired: false,
             hasError: false,
-            backgroundColor: Colors.white,
             onSelectUsers: _onUsersSelected,
           ),
           const SizedBox(height: 16),
@@ -207,18 +204,21 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                   onPressed: _selectedUserIds.isEmpty ? null : _resetFilter,
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    side: const BorderSide(color: Color(0xff1E2E52), width: .2),
+                    side: BorderSide(
+                      color: context.appColors.borderSubtle,
+                      width: 1,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Сбросить',
-                    style: TextStyle(
+                    style: context.appTextStyles.bodyLg.copyWith(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
-                      color: AppColors.primaryBlue,
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                 ),
@@ -229,19 +229,20 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                   onPressed: _applyFilter,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    backgroundColor: const Color(0xff1E2E52),
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.appColors.buttonPrimaryBg,
+                    foregroundColor: context.appColors.textInverse,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Показать',
-                    style: TextStyle(
+                    style: context.appTextStyles.bodyLg.copyWith(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
+                      color: context.appColors.textInverse,
                     ),
                   ),
                 ),
@@ -263,7 +264,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
           height: 108,
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: context.appColors.surfacePrimary,
             borderRadius: BorderRadius.circular(16),
           ),
         ),
@@ -279,17 +280,17 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
           Icon(
             Icons.badge_outlined,
             size: 54,
-            color: Colors.grey.shade400,
+            color: context.appColors.textSecondary,
           ),
           const SizedBox(height: 14),
           Text(
             _error!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: context.appTextStyles.titleMd.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               fontSize: 18,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
         ],
@@ -300,22 +301,22 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
-        children: const [
-          SizedBox(height: 80),
+        children: [
+          const SizedBox(height: 80),
           Icon(
             Icons.event_note_rounded,
             size: 54,
-            color: Color(0xFFB7C1D1),
+            color: context.appColors.textSecondary,
           ),
-          SizedBox(height: 14),
+          const SizedBox(height: 14),
           Text(
             'Сотрудники не найдены',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: context.appTextStyles.titleMd.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               fontSize: 18,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
         ],
@@ -329,12 +330,15 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
       itemCount: _entries.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= _entries.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: CircularProgressIndicator()),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: context.appColors.buttonPrimaryBg,
+              ),
+            ),
           );
         }
-
         final entry = _entries[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
@@ -345,27 +349,27 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
   }
 }
 
+// ─────────────────────────────────────────────
+// Card
+// ─────────────────────────────────────────────
+
 class _TimesheetListCard extends StatelessWidget {
   final TimesheetEntry entry;
 
-  const _TimesheetListCard({
-    required this.entry,
-  });
+  const _TimesheetListCard({required this.entry});
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xffF4F7FD),
+      color: context.appColors.surfacePrimary,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => TimesheetDetailScreen(entry: entry),
-            ),
-          );
-        },
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TimesheetDetailScreen(entry: entry),
+          ),
+        ),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -378,21 +382,16 @@ class _TimesheetListCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.user.fullName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                            color: AppColors.primaryBlue,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      entry.user.fullName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.appTextStyles.titleMd.copyWith(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: context.appColors.textPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -430,21 +429,22 @@ class _TimesheetListCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+// Compact info cell
+// ─────────────────────────────────────────────
+
 class _CompactInfo extends StatelessWidget {
   final String label;
   final String value;
 
-  const _CompactInfo({
-    required this.label,
-    required this.value,
-  });
+  const _CompactInfo({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.backgroundPrimary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -452,11 +452,11 @@ class _CompactInfo extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: context.appTextStyles.bodySm.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 12,
-              color: Color(0xFF7B8798),
+              color: context.appColors.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -464,11 +464,11 @@ class _CompactInfo extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: context.appTextStyles.bodyMd.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               fontSize: 14,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
         ],
@@ -477,26 +477,30 @@ class _CompactInfo extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────
+// Status chip
+// ─────────────────────────────────────────────
+
 class _ListStatusChip extends StatelessWidget {
   final TimesheetEntry entry;
 
-  const _ListStatusChip({
-    required this.entry,
-  });
+  const _ListStatusChip({required this.entry});
 
   @override
   Widget build(BuildContext context) {
     final isNotStarted = !entry.hasStarted;
+
     final background = entry.isActive
         ? const Color(0xFFE0F7EA)
         : isNotStarted
-            ? const Color(0xFFF1F3F7)
-            : const Color(0xFFE9F0FF);
+            ? context.appColors.surfacePrimary
+            : context.appColors.buttonPrimaryBg.withValues(alpha: 0.12);
+
     final foreground = entry.isActive
         ? const Color(0xFF1E9E5A)
         : isNotStarted
-            ? const Color(0xFF657389)
-            : const Color(0xFF3755C5);
+            ? context.appColors.textSecondary
+            : context.appColors.buttonPrimaryBg;
 
     return Container(
       constraints: const BoxConstraints(minWidth: 102),

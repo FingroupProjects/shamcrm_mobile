@@ -2,6 +2,10 @@ import 'dart:io';
 
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
@@ -119,6 +123,27 @@ class _DealEditScreenState extends State<DealEditScreen> {
   bool _askReasonForRefusal = false;
   DealStatus? _selectedDealStatusData;
   bool _isSubmittingSave = false;
+
+  // ── Тематические цвета (как в LeadEditScreen) ──────────────────────────────
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.82);
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.16);
+  Color _screenFocusBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.3);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+  Color _screenFooterBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.94);
+  // ───────────────────────────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -358,10 +383,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
@@ -423,7 +448,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: _screenPrimaryText(context),
           ),
         ),
       ),
@@ -435,7 +460,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: _screenPrimaryText(context),
           ),
         ),
       ),
@@ -459,7 +484,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: _screenFieldBackground(context),
       items: menuItems,
     ).then((value) {
       if (value == 'manual') {
@@ -556,6 +581,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
 
   // Построение системных полей сделки на основе конфигурации
   Widget _buildStandardField(FieldConfiguration config) {
+    final fieldBackground = _screenFieldBackground(context);
+    final fieldBorder = _screenBorder(context);
+    final fieldText = _screenPrimaryText(context);
+    final fieldHint = _screenHintText(context);
+    final focusedBorder = _screenFocusBorder(context);
+
     switch (config.fieldName) {
       case 'name':
         return DealNameSelectionWidget(
@@ -597,6 +628,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
           controller: sumController,
           hintText: AppLocalizations.of(context)!.translate('enter_summ'),
           label: AppLocalizations.of(context)!.translate('summ'),
+          backgroundColor: fieldBackground,
+          labelColor: fieldText,
+          hintColor: fieldHint,
+          textColor: fieldText,
+          borderColor: fieldBorder,
+          focusedBorderColor: focusedBorder,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9\.,]')),
           ],
@@ -607,6 +644,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
           hintText:
               AppLocalizations.of(context)!.translate('enter_description'),
           label: AppLocalizations.of(context)!.translate('description_list'),
+          backgroundColor: fieldBackground,
+          labelColor: fieldText,
+          hintColor: fieldHint,
+          textColor: fieldText,
+          borderColor: fieldBorder,
+          focusedBorderColor: focusedBorder,
           maxLines: 5,
           keyboardType: TextInputType.multiline,
         );
@@ -646,20 +689,30 @@ class _DealEditScreenState extends State<DealEditScreen> {
           },
         );
       case 'city_id':
-        // ✅ НОВОЕ: Обработка поля город/область
         return CustomTextField(
           controller:
               TextEditingController(), // TODO: добавить контроллер в state если нужно сохранять
           hintText: AppLocalizations.of(context)!.translate('enter_city'),
           label: AppLocalizations.of(context)!.translate('oblast'),
+          backgroundColor: fieldBackground,
+          labelColor: fieldText,
+          hintColor: fieldHint,
+          textColor: fieldText,
+          borderColor: fieldBorder,
+          focusedBorderColor: focusedBorder,
         );
       case 'region_id':
-        // ✅ НОВОЕ: Обработка поля регион
         return CustomTextField(
           controller:
               TextEditingController(), // TODO: добавить контроллер в state если нужно сохранять
           hintText: AppLocalizations.of(context)!.translate('enter_region'),
           label: AppLocalizations.of(context)!.translate('region'),
+          backgroundColor: fieldBackground,
+          labelColor: fieldText,
+          hintColor: fieldHint,
+          textColor: fieldText,
+          borderColor: fieldBorder,
+          focusedBorderColor: focusedBorder,
         );
       // case 'file':
       //   // Показ блока файлов согласно позиции в конфигурации
@@ -768,6 +821,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
     final sortedFields = [...fieldConfigurations]
       ..sort((a, b) => a.position.compareTo(b.position));
 
+    final cardColor = _screenFieldBackground(context);
+    final cardBorder = _screenBorder(context);
+    final titleColor = _screenPrimaryText(context);
+    final subtitleColor = _screenHintText(context);
+    final mutedColor = _screenHintText(context);
+
     return Column(
       children: [
         Expanded(
@@ -787,9 +846,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                     scale: scale,
                     child: Material(
                       elevation: elevation,
-                      shadowColor: Colors.black.withOpacity(0.3),
+                      shadowColor:
+                          context.appColors.shadow.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
-                      color: Colors.transparent,
+                      color: context.appColors.overlay.withValues(alpha: 0),
                       child: child,
                     ),
                   );
@@ -845,12 +905,12 @@ class _DealEditScreenState extends State<DealEditScreen> {
               if (index == sortedFields.length) {
                 return Container(
                   key: _addFieldButtonKey,
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(top: 4, bottom: 4),
                   child: CustomButton(
                     buttonText:
                         AppLocalizations.of(context)!.translate('add_field'),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: _screenFieldBackground(context),
+                    textColor: _screenPrimaryText(context),
                     onPressed: _showAddFieldMenu,
                   ),
                 );
@@ -866,17 +926,17 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Color(0xffE5E9F2),
+                    color: cardBorder,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+                      color: context.appColors.shadow.withValues(alpha: 0.14),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -885,7 +945,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                   children: [
                     Icon(
                       Icons.drag_handle,
-                      color: Color(0xff99A4BA),
+                      color: mutedColor,
                       size: 24,
                     ),
                     const SizedBox(width: 16),
@@ -899,7 +959,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: titleColor,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -911,19 +971,15 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w400,
-                                  color: Color(0xff99A4BA),
+                                  color: subtitleColor,
                                 ),
                               ),
                             ],
                           ),
                           SizedBox(height: 12),
                           if (config.fieldName != 'name' &&
-                              config.fieldName != 'lead_id' &&
-                              config.fieldName != 'manager_id' &&
-                              config.fieldName != 'start_date' &&
-                              config.fieldName != 'end_date' &&
-                              config.fieldName != 'sum' &&
-                              config.fieldName != 'description')
+                              config.fieldName != 'deal_status_id' &&
+                              config.fieldName != 'manager_id')
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
@@ -933,7 +989,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     tableName: config.tableName,
                                     fieldName: config.fieldName,
                                     position: config.position,
-                                    required: false, // Всегда false в UI
+                                    required: false,
                                     isActive: !config.isActive,
                                     isCustomField: config.isCustomField,
                                     createdAt: config.createdAt,
@@ -943,8 +999,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     type: config.type,
                                     isDirectory: config.isDirectory,
                                     showOnTable: config.showOnTable,
-                                    originalRequired: config
-                                        .originalRequired, // Сохраняем оригинальное значение
+                                    originalRequired: config.originalRequired,
                                   );
 
                                   final idx = fieldConfigurations
@@ -967,12 +1022,14 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                       height: 24,
                                       decoration: BoxDecoration(
                                         color: config.isActive
-                                            ? Color(0xff4759FF)
-                                            : Colors.white,
+                                            ? context.appColors.buttonPrimaryBg
+                                            : context.appColors.overlay
+                                                .withValues(alpha: 0),
                                         border: Border.all(
                                           color: config.isActive
-                                              ? Color(0xff4759FF)
-                                              : Color(0xffCCD5E0),
+                                              ? context
+                                                  .appColors.buttonPrimaryBg
+                                              : cardBorder,
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -983,7 +1040,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         child: Icon(
                                           Icons.check_rounded,
                                           size: 16,
-                                          color: Colors.white,
+                                          color: context.appColors.textInverse,
                                         ),
                                       ),
                                     ),
@@ -996,8 +1053,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         color: config.isActive
-                                            ? Color(0xff1E2E52)
-                                            : Color(0xff6B7A99),
+                                            ? titleColor
+                                            : subtitleColor,
                                       ),
                                     ),
                                   ],
@@ -1016,11 +1073,11 @@ class _DealEditScreenState extends State<DealEditScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _screenFooterBackground(context),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
+                color: context.appColors.shadow.withValues(alpha: 0.08),
+                blurRadius: 8,
                 offset: Offset(0, -2),
               ),
             ],
@@ -1029,7 +1086,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
               ? Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Color(0xff4759FF).withOpacity(0.7),
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -1041,15 +1099,15 @@ class _DealEditScreenState extends State<DealEditScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                context.appColors.textInverse),
                           ),
                         ),
                         SizedBox(width: 12),
                         Text(
                           AppLocalizations.of(context)!.translate('saving'),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
@@ -1061,8 +1119,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 )
               : CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: Color(0xff4759FF),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.textInverse,
                   onPressed: () async {
                     setState(() {
                       isSavingFieldOrder = true;
@@ -1087,7 +1145,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: context.appColors.textInverse,
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
@@ -1096,7 +1154,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: context.appColors.success,
                             elevation: 3,
                             padding: EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
@@ -1145,14 +1203,14 @@ class _DealEditScreenState extends State<DealEditScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: _screenFieldBackground(context),
               title: Text(
                 AppLocalizations.of(context)!.translate('warning'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: _screenPrimaryText(context),
                 ),
               ),
               content: Text(
@@ -1162,7 +1220,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: _screenPrimaryText(context),
                 ),
               ),
               actions: [
@@ -1174,8 +1232,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
+                        buttonColor: context.appColors.buttonPrimaryBg,
+                        textColor: context.appColors.textInverse,
                       ),
                     ),
                     SizedBox(width: 8),
@@ -1184,8 +1242,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         buttonText: AppLocalizations.of(context)!
                             .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
-                        buttonColor: Colors.red,
-                        textColor: Colors.white,
+                        buttonColor: context.appColors.error,
+                        textColor: context.appColors.textInverse,
                       ),
                     ),
                   ],
@@ -1206,10 +1264,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: context.appColors.textInverse,
           ),
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: context.appColors.error,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
@@ -1302,10 +1360,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: context.appColors.error,
                 ),
               );
             }
@@ -1321,6 +1379,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
   }
 
   Widget _buildFileSelection() {
+    final fileTextColor = _screenPrimaryText(context);
+    final fileCardColor = _screenFieldBackground(context);
+    final fileBorderColor = _screenBorder(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1330,7 +1392,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: fileTextColor,
           ),
         ),
         SizedBox(height: 16),
@@ -1359,7 +1421,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: fileTextColor,
                             ),
                           ),
                         ],
@@ -1381,7 +1443,6 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
                           buildFileIcon(files, fileName, fileExtension),
                           SizedBox(height: 8),
                           Text(
@@ -1392,7 +1453,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: fileTextColor,
                             ),
                           ),
                         ],
@@ -1412,18 +1473,19 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.surfacePrimary,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: context.appColors.shadow
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
                           child: Icon(Icons.close,
-                              size: 16, color: Color(0xff1E2E52)),
+                              size: 16, color: fileTextColor),
                         ),
                       ),
                     ),
@@ -1439,616 +1501,706 @@ class _DealEditScreenState extends State<DealEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        elevation: 0,
-        title: Transform.translate(
-          offset: const Offset(-10, 0),
-          child: Text(
-            AppLocalizations.of(context)!.translate('edit_deal'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
+    final baseTheme = Theme.of(context);
+    final baseColors = context.appColors;
+    final baseTextStyles = context.appTextStyles;
+    final baseShadows = context.appShadows;
+    final screenTheme = baseTheme.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        baseColors.copyWith(
+          surfacePrimary: _screenSurfaceBackground(context),
+          surfaceElevated: _screenSurfaceElevated(context),
+          textPrimary: _screenPrimaryText(context),
+          textSecondary: _screenSecondaryText(context),
+          textMuted: _screenHintText(context),
+          textInverse: _screenPrimaryText(context),
+          iconPrimary: _screenPrimaryText(context),
+          iconSecondary: _screenSecondaryText(context),
+          borderPrimary: _screenBorder(context),
+          borderSubtle: _screenBorder(context),
+          buttonSecondaryBg: _screenFieldBackground(context),
+          buttonSecondaryFg: _screenPrimaryText(context),
+          fieldBg: _screenFieldBackground(context),
+          fieldBorder: _screenBorder(context),
+          fieldHint: _screenHintText(context),
+          overlay: baseColors.overlay,
         ),
-        centerTitle: false,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Transform.translate(
-            offset: const Offset(0, -2),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
+        baseTextStyles.copyWith(
+          titleLg: baseTextStyles.titleLg
+              .copyWith(color: _screenPrimaryText(context)),
+          titleMd: baseTextStyles.titleMd
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyLg: baseTextStyles.bodyLg
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyMd: baseTextStyles.bodyMd
+              .copyWith(color: _screenSecondaryText(context)),
+          bodySm: baseTextStyles.bodySm
+              .copyWith(color: _screenSecondaryText(context)),
+          labelLg: baseTextStyles.labelLg
+              .copyWith(color: _screenPrimaryText(context)),
+          labelMd: baseTextStyles.labelMd
+              .copyWith(color: _screenSecondaryText(context)),
+          caption: baseTextStyles.caption
+              .copyWith(color: _screenHintText(context)),
+        ),
+        baseShadows,
+      ],
+    );
+    final appBarGradient = [
+      _screenSurfaceElevated(context),
+      _screenFieldBackground(context),
+    ];
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+    final formSurface = _screenSurfaceBackground(context);
+    final footerSurface = _screenFooterBackground(context);
+
+    return Theme(
+      data: screenTheme,
+      child: Scaffold(
+        backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+        extendBodyBehindAppBar: !isSettingsMode,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          forceMaterialTransparency: true,
+          backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: context.appColors.overlay.withValues(alpha: 0),
+          shadowColor: context.appColors.overlay.withValues(alpha: 0),
+          toolbarHeight: 74,
+          titleSpacing: 16,
+          title: AppBarShell(
+            leading: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context, null),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: primaryText,
+                ),
               ),
-              onPressed: () => Navigator.pop(context, null),
             ),
-          ),
-        ),
-        leadingWidth: 40,
-        actions: [
-          IconButton(
-            icon: Icon(
-              isSettingsMode ? Icons.close : Icons.settings,
-              color: Color(0xff1E2E52),
-            ),
-            onPressed: () async {
-              if (isSettingsMode) {
-                // Выходим из режима настроек
-                if (_hasFieldChanges()) {
-                  // Есть несохраненные изменения - показываем диалог
-                  final shouldExit = await _showExitSettingsDialog();
-                  if (!shouldExit) return;
-
-                  // Восстанавливаем позиции, но сохраняем новые добавленные поля
-                  if (originalFieldConfigurations != null) {
-                    setState(() {
-                      // Находим новые поля (которые есть в текущей конфигурации, но нет в оригинальной)
-                      final newFields = fieldConfigurations.where((current) {
-                        return !originalFieldConfigurations!
-                            .any((original) => original.id == current.id);
-                      }).toList();
-
-                      // Восстанавливаем оригинальную конфигурацию
-                      fieldConfigurations = [...originalFieldConfigurations!];
-
-                      // Добавляем новые поля в конец списка
-                      if (newFields.isNotEmpty) {
-                        int maxPosition = fieldConfigurations.isEmpty
-                            ? 0
-                            : fieldConfigurations
-                                .map((e) => e.position)
-                                .reduce((a, b) => a > b ? a : b);
-                        for (int i = 0; i < newFields.length; i++) {
-                          fieldConfigurations.add(FieldConfiguration(
-                            id: newFields[i].id,
-                            tableName: newFields[i].tableName,
-                            fieldName: newFields[i].fieldName,
-                            position: maxPosition + i + 1,
-                            required: false, // Всегда false в UI
-                            isActive: newFields[i].isActive,
-                            isCustomField: newFields[i].isCustomField,
-                            createdAt: newFields[i].createdAt,
-                            updatedAt: newFields[i].updatedAt,
-                            customFieldId: newFields[i].customFieldId,
-                            directoryId: newFields[i].directoryId,
-                            type: newFields[i].type,
-                            isDirectory: newFields[i].isDirectory,
-                            showOnTable: newFields[i].showOnTable,
-                            originalRequired: newFields[i]
-                                .originalRequired, // Сохраняем оригинальное значение
-                          ));
-                        }
-                      }
-
-                      originalFieldConfigurations = null;
-                      isSettingsMode = false;
-                    });
-                  }
-                } else {
-                  // Нет изменений - просто выходим
-                  setState(() {
-                    originalFieldConfigurations = null;
-                    isSettingsMode = false;
-                  });
-                }
-              } else {
-                // Входим в режим настроек - сохраняем снимок конфигурации
-                setState(() {
-                  originalFieldConfigurations =
-                      fieldConfigurations.map((config) {
-                    return FieldConfiguration(
-                      id: config.id,
-                      tableName: config.tableName,
-                      fieldName: config.fieldName,
-                      position: config.position,
-                      required: false, // Всегда false в UI
-                      isActive: config.isActive,
-                      isCustomField: config.isCustomField,
-                      createdAt: config.createdAt,
-                      updatedAt: config.updatedAt,
-                      customFieldId: config.customFieldId,
-                      directoryId: config.directoryId,
-                      type: config.type,
-                      isDirectory: config.isDirectory,
-                      showOnTable: config.showOnTable,
-                      originalRequired: config
-                          .originalRequired, // Сохраняем оригинальное значение
-                    );
-                  }).toList();
-                  isSettingsMode = true;
-                });
-              }
-            },
-            tooltip: isSettingsMode
-                ? AppLocalizations.of(context)!.translate('close')
-                : AppLocalizations.of(context)!.translate('appbar_settings'),
-          ),
-          // IconButton(
-          //   icon: Icon(Icons.refresh, color: Color(0xff1E2E52)),
-          //   onPressed: () async {
-          //     // Очищаем кэш и загружаем заново
-          //     await ApiService().clearFieldConfigurationCache();
-          //     await ApiService().loadAndCacheAllFieldConfigurations();
-          //
-          //     // Перезагружаем конфигурацию
-          //     context.read<FieldConfigurationBloc>().add(
-          //         FetchFieldConfiguration('leads')
-          //     );
-          //
-          //     ScaffoldMessenger.of(context).showSnackBar(
-          //       SnackBar(
-          //         content: Text('Конфигурация обновлена'),
-          //         backgroundColor: Colors.green,
-          //       ),
-          //     );
-          //   },
-          //   tooltip: 'Обновить структуру полей',
-          // ),
-        ],
-      ),
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => MainFieldBloc()),
-          // ⚠️ Не создаём локальный GetAllClientBloc здесь.
-          // Используем глобальный, который уже поднят в main.dart с корректным ApiService.
-        ],
-        child: BlocListener<DealBloc, DealState>(
-          listener: (context, state) {
-            if (state is DealError) {
-              _showErrorSnackBar(
-                  AppLocalizations.of(context)!.translate(state.message));
-            } else if (state is DealSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!
-                        .translate('deal_updated_successfully'),
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            center: AppBarShell.capsule(
+              context,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('edit_deal'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    color: primaryText,
+                    letterSpacing: 0.2,
                   ),
                 ),
-              );
-              Navigator.pop(context, true);
-            }
-          },
-          child: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
-            listener: (context, configState) {
-              if (configState is FieldConfigurationLoaded) {
-                setState(() {
-                  fieldConfigurations = configState.fields;
-                  isConfigurationLoaded = true;
-                });
-              } else if (configState is FieldConfigurationError) {
-                _showErrorSnackBar(
-                    'Ошибка загрузки конфигурации: ${configState.message}');
-              }
-            },
-            builder: (context, configState) {
-              if (configState is FieldConfigurationLoading ||
-                  !isConfigurationLoaded) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
-                );
-              }
+              ),
+            ),
+            trailing: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: IconButton(
+                icon: Icon(
+                  isSettingsMode
+                      ? Icons.close_rounded
+                      : Icons.settings_rounded,
+                  color: primaryText,
+                  size: 20,
+                ),
+                onPressed: () async {
+                  if (isSettingsMode) {
+                    if (_hasFieldChanges()) {
+                      final shouldExit = await _showExitSettingsDialog();
+                      if (!shouldExit) return;
 
-              if (isSettingsMode) {
-                return _buildSettingsMode();
-              }
+                      if (originalFieldConfigurations != null) {
+                        setState(() {
+                          final newFields =
+                              fieldConfigurations.where((current) {
+                            return !originalFieldConfigurations!
+                                .any((original) => original.id == current.id);
+                          }).toList();
 
-              return Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          FocusScope.of(context).unfocus();
-                        },
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Динамические поля по конфигурации
-                              // Фильтруем только активные поля и сортируем по позициям
-                              ...(() {
-                                final sorted = fieldConfigurations
-                                    .where((config) =>
-                                        config.isActive &&
-                                        config.fieldName != 'lead_id')
-                                    .toList()
-                                  ..sort((a, b) =>
-                                      a.position.compareTo(b.position));
+                          fieldConfigurations = [
+                            ...originalFieldConfigurations!
+                          ];
 
-                                return sorted.map((config) {
-                                  return Column(
-                                    children: [
-                                      _buildFieldWidget(config),
-                                      const SizedBox(height: 16),
-                                    ],
-                                  );
-                                }).toList();
-                              })(),
+                          if (newFields.isNotEmpty) {
+                            int maxPosition = fieldConfigurations.isEmpty
+                                ? 0
+                                : fieldConfigurations
+                                    .map((e) => e.position)
+                                    .reduce((a, b) => a > b ? a : b);
+                            for (int i = 0; i < newFields.length; i++) {
+                              fieldConfigurations.add(FieldConfiguration(
+                                id: newFields[i].id,
+                                tableName: newFields[i].tableName,
+                                fieldName: newFields[i].fieldName,
+                                position: maxPosition + i + 1,
+                                required: false,
+                                isActive: newFields[i].isActive,
+                                isCustomField: newFields[i].isCustomField,
+                                createdAt: newFields[i].createdAt,
+                                updatedAt: newFields[i].updatedAt,
+                                customFieldId: newFields[i].customFieldId,
+                                directoryId: newFields[i].directoryId,
+                                type: newFields[i].type,
+                                isDirectory: newFields[i].isDirectory,
+                                showOnTable: newFields[i].showOnTable,
+                                originalRequired:
+                                    newFields[i].originalRequired,
+                              ));
+                            }
+                          }
 
-                              // Пользовательские поля, которых нет в конфигурации сервера
-                              ...customFields.where((field) {
-                                return !fieldConfigurations.any((config) =>
-                                    (config.isCustomField &&
-                                        config.fieldName == field.fieldName) ||
-                                    (config.isDirectory &&
-                                        config.directoryId ==
-                                            field.directoryId));
-                              }).map((field) {
-                                final index = customFields.indexOf(field);
-                                return Column(
-                                  children: [
-                                    field.isDirectoryField &&
-                                            field.directoryId != null
-                                        ? MainFieldDropdownWidget(
-                                            directoryId: field.directoryId!,
-                                            directoryName: field.fieldName,
-                                            selectedField: field.entryId != null
-                                                ? MainField(
-                                                    id: field.entryId!,
-                                                    value:
-                                                        field.controller.text)
-                                                : null,
-                                            onSelectField:
-                                                (MainField selectedField) {
-                                              setState(() {
-                                                customFields[index] =
-                                                    field.copyWith(
-                                                  entryId: selectedField.id,
-                                                  controller:
-                                                      TextEditingController(
-                                                          text: selectedField
-                                                              .value),
-                                                );
-                                              });
-                                            },
-                                            controller: field.controller,
-                                            onSelectEntryId: (int entryId) {
-                                              setState(() {
-                                                customFields[index] = field
-                                                    .copyWith(entryId: entryId);
-                                              });
-                                            },
-                                            initialEntryId: field.entryId,
-                                          )
-                                        : CustomFieldWidget(
-                                            fieldName: field.fieldName,
-                                            valueController: field.controller,
-                                            type: field.type,
-                                          ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                );
-                              }).toList(),
-
-                              // Всегда показываем выбор файлов
-                              _buildFileSelection(),
-                              const SizedBox(height: 16),
-                            ],
+                          originalFieldConfigurations = null;
+                          isSettingsMode = false;
+                        });
+                      }
+                    } else {
+                      setState(() {
+                        originalFieldConfigurations = null;
+                        isSettingsMode = false;
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      originalFieldConfigurations =
+                          fieldConfigurations.map((config) {
+                        return FieldConfiguration(
+                          id: config.id,
+                          tableName: config.tableName,
+                          fieldName: config.fieldName,
+                          position: config.position,
+                          required: false,
+                          isActive: config.isActive,
+                          isCustomField: config.isCustomField,
+                          createdAt: config.createdAt,
+                          updatedAt: config.updatedAt,
+                          customFieldId: config.customFieldId,
+                          directoryId: config.directoryId,
+                          type: config.type,
+                          isDirectory: config.isDirectory,
+                          showOnTable: config.showOnTable,
+                          originalRequired: config.originalRequired,
+                        );
+                      }).toList();
+                      isSettingsMode = true;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          centerTitle: false,
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+            MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (context) => MainFieldBloc()),
+              ],
+              child: BlocListener<DealBloc, DealState>(
+                listener: (context, state) {
+                  if (state is DealError) {
+                    _showErrorSnackBar(
+                        AppLocalizations.of(context)!.translate(state.message));
+                  } else if (state is DealSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate('deal_updated_successfully'),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.textInverse,
                           ),
                         ),
+                        backgroundColor: context.appColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
+                        duration: const Duration(seconds: 3),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 30),
-                      child: Row(
+                    );
+                    Navigator.pop(context, true);
+                  }
+                },
+                child: BlocConsumer<FieldConfigurationBloc,
+                    FieldConfigurationState>(
+                  listener: (context, configState) {
+                    if (configState is FieldConfigurationLoaded) {
+                      setState(() {
+                        fieldConfigurations = configState.fields;
+                        isConfigurationLoaded = true;
+                      });
+                    } else if (configState is FieldConfigurationError) {
+                      _showErrorSnackBar(
+                          'Ошибка загрузки конфигурации: ${configState.message}');
+                    }
+                  },
+                  builder: (context, configState) {
+                    if (configState is FieldConfigurationLoading ||
+                        !isConfigurationLoaded) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: primaryText,
+                        ),
+                      );
+                    }
+
+                    if (isSettingsMode) {
+                      return _buildSettingsMode();
+                    }
+
+                    return Form(
+                      key: _formKey,
+                      child: Column(
                         children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).padding.top + 10,
+                          ),
                           Expanded(
-                            child: CustomButton(
-                              buttonText: AppLocalizations.of(context)!
-                                  .translate('cancel'),
-                              buttonColor: const Color(0xffF4F7FD),
-                              textColor: Colors.black,
-                              onPressed: () => Navigator.pop(context, null),
+                            child: GestureDetector(
+                              onTap: () {
+                                FocusScope.of(context).unfocus();
+                              },
+                              child: SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      18, 18, 18, 22),
+                                  decoration: BoxDecoration(
+                                    color: formSurface,
+                                    borderRadius: BorderRadius.circular(30),
+                                    border: Border.all(
+                                      color: subtleBorder,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.appColors.shadow
+                                            .withValues(alpha: 0.14),
+                                        blurRadius: 28,
+                                        offset: const Offset(0, 14),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Динамические поля по конфигурации
+                                      ...(() {
+                                        final sorted = fieldConfigurations
+                                            .where((config) =>
+                                                config.isActive &&
+                                                config.fieldName != 'lead_id')
+                                            .toList()
+                                          ..sort((a, b) =>
+                                              a.position.compareTo(b.position));
+
+                                        return sorted.map((config) {
+                                          return Column(
+                                            children: [
+                                              _buildFieldWidget(config),
+                                              const SizedBox(height: 16),
+                                            ],
+                                          );
+                                        }).toList();
+                                      })(),
+
+                                      // Пользовательские поля, которых нет в конфигурации сервера
+                                      ...customFields.where((field) {
+                                        return !fieldConfigurations.any(
+                                            (config) =>
+                                                (config.isCustomField &&
+                                                    config.fieldName ==
+                                                        field.fieldName) ||
+                                                (config.isDirectory &&
+                                                    config.directoryId ==
+                                                        field.directoryId));
+                                      }).map((field) {
+                                        final index =
+                                            customFields.indexOf(field);
+                                        return Column(
+                                          children: [
+                                            field.isDirectoryField &&
+                                                    field.directoryId != null
+                                                ? MainFieldDropdownWidget(
+                                                    directoryId:
+                                                        field.directoryId!,
+                                                    directoryName:
+                                                        field.fieldName,
+                                                    selectedField:
+                                                        field.entryId != null
+                                                            ? MainField(
+                                                                id: field
+                                                                    .entryId!,
+                                                                value: field
+                                                                    .controller
+                                                                    .text)
+                                                            : null,
+                                                    onSelectField:
+                                                        (MainField
+                                                            selectedField) {
+                                                      setState(() {
+                                                        customFields[index] =
+                                                            field.copyWith(
+                                                          entryId:
+                                                              selectedField.id,
+                                                          controller:
+                                                              TextEditingController(
+                                                                  text:
+                                                                      selectedField
+                                                                          .value),
+                                                        );
+                                                      });
+                                                    },
+                                                    controller: field.controller,
+                                                    onSelectEntryId:
+                                                        (int entryId) {
+                                                      setState(() {
+                                                        customFields[index] =
+                                                            field.copyWith(
+                                                                entryId:
+                                                                    entryId);
+                                                      });
+                                                    },
+                                                    initialEntryId:
+                                                        field.entryId,
+                                                  )
+                                                : CustomFieldWidget(
+                                                    fieldName: field.fieldName,
+                                                    valueController:
+                                                        field.controller,
+                                                    type: field.type,
+                                                  ),
+                                            const SizedBox(height: 16),
+                                          ],
+                                        );
+                                      }).toList(),
+
+                                      // Всегда показываем выбор файлов
+                                      _buildFileSelection(),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: BlocBuilder<DealBloc, DealState>(
-                              builder: (context, state) {
-                                if (state is DealLoading) {
-                                  return const Center(
-                                    child: CircularProgressIndicator(
-                                        color: Color(0xff1E2E52)),
-                                  );
-                                } else if (_isSubmittingSave) {
-                                  return const Center(
-                                    child: CircularProgressIndicator(
-                                        color: Color(0xff1E2E52)),
-                                  );
-                                } else {
-                                  return CustomButton(
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 20),
+                            decoration: BoxDecoration(
+                              color: footerSurface,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.appColors.shadow
+                                      .withValues(alpha: 0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, -2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CustomButton(
                                     buttonText: AppLocalizations.of(context)!
-                                        .translate('save'),
-                                    buttonColor: const Color(0xff4759FF),
-                                    textColor: Colors.white,
-                                    onPressed: () async {
-                                      if (_isSubmittingSave) return;
-                                      if (_formKey.currentState!.validate() &&
-                                          selectedManager != null) {
-                                        setState(() {
-                                          _isSubmittingSave = true;
-                                        });
-                                        DateTime? parsedStartDate;
-                                        DateTime? parsedEndDate;
-
-                                        if (startDateController
-                                            .text.isNotEmpty) {
-                                          try {
-                                            parsedStartDate = DateFormat(
-                                                    'dd/MM/yyyy')
-                                                .parseStrict(
-                                                    startDateController.text);
-                                          } catch (e) {
-                                            _showErrorSnackBar(
-                                                AppLocalizations.of(context)!
-                                                    .translate(
-                                                        'error_parsing_date'));
-                                            setState(() {
-                                              _isSubmittingSave = false;
-                                            });
-                                            return;
-                                          }
-                                        }
-                                        if (endDateController.text.isNotEmpty) {
-                                          try {
-                                            parsedEndDate =
-                                                DateFormat('dd/MM/yyyy')
-                                                    .parseStrict(
-                                                        endDateController.text);
-                                          } catch (e) {
-                                            _showErrorSnackBar(
-                                                AppLocalizations.of(context)!
-                                                    .translate(
-                                                        'error_parsing_date'));
-                                            setState(() {
-                                              _isSubmittingSave = false;
-                                            });
-                                            return;
-                                          }
-                                        }
-
-                                        if (parsedStartDate != null &&
-                                            parsedEndDate != null &&
-                                            parsedStartDate
-                                                .isAfter(parsedEndDate)) {
-                                          setState(() {
-                                            isEndDateInvalid = true;
-                                          });
-                                          _showErrorSnackBar(AppLocalizations
-                                                  .of(context)!
-                                              .translate(
-                                                  'start_date_after_end_date'));
-                                          return;
-                                        }
-
-                                        List<Map<String, dynamic>>
-                                            customFieldList = [];
-                                        List<Map<String, int>> directoryValues =
-                                            [];
-
-                                        for (var field in customFields) {
-                                          String fieldName =
-                                              field.fieldName.trim();
-                                          String fieldValue =
-                                              field.controller.text.trim();
-                                          String? fieldType = field.type;
-
-                                          if (fieldType == 'number' &&
-                                              fieldValue.isNotEmpty) {
-                                            if (!RegExp(r'^\d+$')
-                                                .hasMatch(fieldValue)) {
-                                              _showErrorSnackBar(
-                                                  AppLocalizations.of(context)!
-                                                      .translate(
-                                                          'enter_valid_number'));
-                                              return;
-                                            }
-                                          }
-
-                                          if ((fieldType == 'date' ||
-                                                  fieldType == 'datetime') &&
-                                              fieldValue.isNotEmpty) {
-                                            try {
-                                              if (fieldType == 'date') {
-                                                DateFormat('dd/MM/yyyy')
-                                                    .parse(fieldValue);
-                                              } else {
-                                                DateFormat('dd/MM/yyyy HH:mm')
-                                                    .parse(fieldValue);
-                                              }
-                                            } catch (e) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    AppLocalizations.of(
-                                                            context)!
-                                                        .translate(
-                                                            'enter_valid_${fieldType}'),
-                                                    style: const TextStyle(
-                                                      fontFamily: 'Gilroy',
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                              return;
-                                            }
-                                          }
-
-                                          if (field.isDirectoryField &&
-                                              field.directoryId != null &&
-                                              field.entryId != null) {
-                                            directoryValues.add({
-                                              'directory_id':
-                                                  field.directoryId!,
-                                              'entry_id': field.entryId!,
-                                            });
-                                          } else if (fieldName.isNotEmpty &&
-                                              fieldValue.isNotEmpty) {
-                                            customFieldList.add({
-                                              'key': fieldName,
-                                              'value': fieldValue,
-                                              'type': fieldType ?? 'string',
-                                            });
-                                          }
-                                        }
-
-                                        // Преобразуем files на новые и существующие
-                                        // Новые файлы (id == 0)
-                                        final newFiles = files
-                                            .where((f) => f.id == 0)
-                                            .toList();
-
-                                        // Существующие файлы (id != 0)
-                                        final existingFileIds = files
-                                            .where((f) => f.id != 0)
-                                            .map((f) => f.id)
-                                            .toList();
-
-                                        final localizations =
-                                            AppLocalizations.of(context)!;
-                                        // ✅ НОВОЕ: преобразуем selectedUsers в List<int>
-                                        List<int>? userIds;
-                                        if (selectedUsers != null &&
-                                            selectedUsers!.isNotEmpty) {
-                                          userIds = selectedUsers!
-                                              .map((id) => int.parse(id))
-                                              .toList();
-                                        }
-
-                                        final parsedLeadId = int.tryParse(
-                                                (selectedLead ?? '').trim()) ??
-                                            widget.dealById?.lead?.id;
-                                        final refusalData =
-                                            await _collectReasonForRefusalIfNeeded();
-
-                                        if (!mounted) return;
-                                        final bool statusChanged =
-                                            _selectedStatusIds.length !=
-                                                    _initialStatusIds.length ||
-                                                !_selectedStatusIds
-                                                    .toSet()
-                                                    .containsAll(
-                                                        _initialStatusIds) ||
-                                                !_initialStatusIds
-                                                    .toSet()
-                                                    .containsAll(
-                                                        _selectedStatusIds);
-                                        if (statusChanged &&
-                                            _askReasonForRefusal &&
-                                            _selectedStatusIds.length == 1 &&
-                                            (await _resolveSelectedDealStatusData())
-                                                    ?.isFailure ==
-                                                true &&
-                                            refusalData == null) {
-                                          setState(() {
-                                            _isSubmittingSave = false;
-                                          });
-                                          return;
-                                        }
-
-                                        context.read<DealBloc>().add(UpdateDeal(
-                                              dealId: widget.dealId,
-                                              name: titleController.text,
-                                              dealStatusId:
-                                                  _selectedStatuses!.toInt(),
-                                              managerId: int.tryParse(
-                                                  (selectedManager ?? '')
-                                                      .trim()),
-                                              leadId: parsedLeadId,
-                                              description: descriptionController
-                                                      .text.isEmpty
-                                                  ? null
-                                                  : descriptionController.text,
-                                              startDate: parsedStartDate,
-                                              endDate: parsedEndDate,
-                                              sum: sumController.text.isEmpty
-                                                  ? null
-                                                  : sumController.text,
-                                              dealtypeId: 1,
-                                              customFields: customFieldList,
-                                              directoryValues: directoryValues,
-                                              localizations: localizations,
-                                              files: newFiles.isNotEmpty
-                                                  ? newFiles
-                                                  : null,
-                                              existingFiles:
-                                                  existingFileIds.isNotEmpty
-                                                      ? existingFileIds
-                                                      : null,
-                                              dealStatusIds: _selectedStatusIds,
-                                              userIds:
-                                                  userIds, // ✅ НОВОЕ: передаем выбранных пользователей
-                                              reasonForRefusalId:
-                                                  refusalData?.reasonId,
-                                              reasonForRefusal:
-                                                  refusalData?.comment,
-                                            ));
-                                        if (mounted) {
-                                          setState(() {
-                                            _isSubmittingSave = false;
-                                          });
-                                        }
-                                      } else {
-                                        if (mounted) {
-                                          setState(() {
-                                            _isSubmittingSave = false;
-                                          });
-                                        }
-                                        _showErrorSnackBar(AppLocalizations.of(
-                                                context)!
-                                            .translate('fill_required_fields'));
+                                        .translate('cancel'),
+                                    buttonColor: _screenFieldBackground(context),
+                                    textColor: _screenPrimaryText(context),
+                                    onPressed: () =>
+                                        Navigator.pop(context, null),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: BlocBuilder<DealBloc, DealState>(
+                                    builder: (context, state) {
+                                      if (state is DealLoading ||
+                                          _isSubmittingSave) {
+                                        return Container(
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: context
+                                                .appColors.buttonPrimaryBg
+                                                .withValues(alpha: 0.7),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                            Color>(
+                                                        context.appColors
+                                                            .textInverse),
+                                              ),
+                                            ),
+                                          ),
+                                        );
                                       }
+                                      return CustomButton(
+                                        buttonText:
+                                            AppLocalizations.of(context)!
+                                                .translate('save'),
+                                        buttonColor: context
+                                            .appColors.buttonPrimaryBg,
+                                        textColor:
+                                            context.appColors.textInverse,
+                                        onPressed: () async {
+                                          if (_isSubmittingSave) return;
+                                          setState(() {
+                                            _isSubmittingSave = true;
+                                          });
+
+                                          if (_formKey.currentState!
+                                              .validate()) {
+                                            // Парсим дату начала
+                                            DateTime? parsedStartDate;
+                                            if (startDateController
+                                                .text.isNotEmpty) {
+                                              try {
+                                                parsedStartDate =
+                                                    DateFormat('dd.MM.yyyy')
+                                                        .parse(startDateController
+                                                            .text);
+                                              } catch (e) {
+                                                parsedStartDate = null;
+                                              }
+                                            }
+
+                                            // Парсим дату завершения
+                                            DateTime? parsedEndDate;
+                                            if (endDateController
+                                                .text.isNotEmpty) {
+                                              try {
+                                                parsedEndDate =
+                                                    DateFormat('dd.MM.yyyy')
+                                                        .parse(
+                                                            endDateController
+                                                                .text);
+                                              } catch (e) {
+                                                parsedEndDate = null;
+                                              }
+                                            }
+
+                                            // Проверяем валидность даты завершения
+                                            if (parsedEndDate != null &&
+                                                parsedStartDate != null &&
+                                                parsedEndDate
+                                                    .isBefore(parsedStartDate)) {
+                                              setState(() {
+                                                isEndDateInvalid = true;
+                                                _isSubmittingSave = false;
+                                              });
+                                              return;
+                                            }
+
+                                            setState(() {
+                                              isEndDateInvalid = false;
+                                            });
+
+                                            // Собираем кастомные поля
+                                            final List<
+                                                    Map<String, dynamic>>
+                                                customFieldList = [];
+                                            final List<
+                                                    Map<String, dynamic>>
+                                                directoryValues = [];
+
+                                            for (var field in customFields) {
+                                              if (field.isDirectoryField &&
+                                                  field.directoryId != null) {
+                                                directoryValues.add({
+                                                  'entry_id': field.entryId,
+                                                  'directory_id':
+                                                      field.directoryId,
+                                                });
+                                              } else {
+                                                final fieldName =
+                                                    field.fieldName;
+                                                final fieldValue =
+                                                    field.controller.text;
+                                                final fieldType = field.type;
+
+                                                if (fieldValue.isNotEmpty) {
+                                                  customFieldList.add({
+                                                    'key': fieldName,
+                                                    'value': fieldValue,
+                                                    'type':
+                                                        fieldType ?? 'string',
+                                                  });
+                                                }
+                                              }
+                                            }
+
+                                            // Новые файлы (id == 0)
+                                            final newFiles = files
+                                                .where((f) => f.id == 0)
+                                                .toList();
+
+                                            // Существующие файлы (id != 0)
+                                            final existingFileIds = files
+                                                .where((f) => f.id != 0)
+                                                .map((f) => f.id)
+                                                .toList();
+
+                                            final localizations =
+                                                AppLocalizations.of(context)!;
+                                            List<int>? userIds;
+                                            if (selectedUsers != null &&
+                                                selectedUsers!.isNotEmpty) {
+                                              userIds = selectedUsers!
+                                                  .map((id) => int.parse(id))
+                                                  .toList();
+                                            }
+
+                                            final parsedLeadId = int.tryParse(
+                                                    (selectedLead ?? '')
+                                                        .trim()) ??
+                                                widget.dealById?.lead?.id;
+                                            final refusalData =
+                                                await _collectReasonForRefusalIfNeeded();
+
+                                            if (!mounted) return;
+                                            final bool statusChanged =
+                                                _selectedStatusIds.length !=
+                                                        _initialStatusIds
+                                                            .length ||
+                                                    !_selectedStatusIds
+                                                        .toSet()
+                                                        .containsAll(
+                                                            _initialStatusIds) ||
+                                                    !_initialStatusIds
+                                                        .toSet()
+                                                        .containsAll(
+                                                            _selectedStatusIds);
+                                            if (statusChanged &&
+                                                _askReasonForRefusal &&
+                                                _selectedStatusIds.length ==
+                                                    1 &&
+                                                (await _resolveSelectedDealStatusData())
+                                                        ?.isFailure ==
+                                                    true &&
+                                                refusalData == null) {
+                                              setState(() {
+                                                _isSubmittingSave = false;
+                                              });
+                                              return;
+                                            }
+
+                                            context
+                                                .read<DealBloc>()
+                                                .add(UpdateDeal(
+                                                  dealId: widget.dealId,
+                                                  name: titleController.text,
+                                                  dealStatusId:
+                                                      _selectedStatuses!
+                                                          .toInt(),
+                                                  managerId: int.tryParse(
+                                                      (selectedManager ?? '')
+                                                          .trim()),
+                                                  leadId: parsedLeadId,
+                                                  description:
+                                                      descriptionController
+                                                              .text.isEmpty
+                                                          ? null
+                                                          : descriptionController
+                                                              .text,
+                                                  startDate: parsedStartDate,
+                                                  endDate: parsedEndDate,
+                                                  sum: sumController
+                                                          .text.isEmpty
+                                                      ? null
+                                                      : sumController.text,
+                                                  dealtypeId: 1,
+                                                  customFields: customFieldList,
+                                                  // directoryValues:
+                                                  //     directoryValues,
+                                                  localizations: localizations,
+                                                  files: newFiles.isNotEmpty
+                                                      ? newFiles
+                                                      : null,
+                                                  existingFiles:
+                                                      existingFileIds.isNotEmpty
+                                                          ? existingFileIds
+                                                          : null,
+                                                  dealStatusIds:
+                                                      _selectedStatusIds,
+                                                  userIds: userIds,
+                                                  reasonForRefusalId:
+                                                      refusalData?.reasonId,
+                                                  reasonForRefusal:
+                                                      refusalData?.comment,
+                                                ));
+                                            if (mounted) {
+                                              setState(() {
+                                                _isSubmittingSave = false;
+                                              });
+                                            }
+                                          } else {
+                                            if (mounted) {
+                                              setState(() {
+                                                _isSubmittingSave = false;
+                                              });
+                                            }
+                                            _showErrorSnackBar(
+                                                AppLocalizations.of(context)!
+                                                    .translate(
+                                                        'fill_required_fields'));
+                                          }
+                                        },
+                                      );
                                     },
-                                  );
-                                }
-                              },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
 class CustomField {
   final String fieldName;
   final TextEditingController controller;

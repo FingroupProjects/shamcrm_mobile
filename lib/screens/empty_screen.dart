@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -18,7 +19,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
@@ -59,7 +60,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
                       fontSize: 30,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Gilroy',
-                      color: Colors.black,
+                      color: context.appColors.textPrimary,
                     ),
                     maxLines: 1,
                     minFontSize: 12,

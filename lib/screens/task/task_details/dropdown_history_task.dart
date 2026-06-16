@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_event.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/history_model_task.dart';
 import 'package:crm_task_manager/models/lead_history_model.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,8 @@ import 'package:intl/intl.dart';
 class ActionHistoryWidgetTask extends StatefulWidget {
   final int taskId;
 
-  const ActionHistoryWidgetTask({Key? key, required this.taskId}) : super(key: key);
+  const ActionHistoryWidgetTask({Key? key, required this.taskId})
+      : super(key: key);
 
   @override
   _ActionHistoryWidgetState createState() => _ActionHistoryWidgetState();
@@ -19,6 +21,28 @@ class ActionHistoryWidgetTask extends StatefulWidget {
 class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
   bool isActionHistoryExpanded = false;
   List<TaskHistory> actionHistory = [];
+
+  Color _sectionBackground(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark
+        ? context.appColors.backgroundSecondary.withValues(alpha: 0.94)
+        : context.appColors.surfacePrimary.withValues(alpha: 0.84);
+  }
+
+  BoxDecoration _sectionDecoration(BuildContext context) => BoxDecoration(
+        color: _sectionBackground(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.adaptiveBorderOn(_sectionBackground(context)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      );
 
   @override
   void initState() {
@@ -38,19 +62,22 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                backgroundColor: Colors.red,
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                backgroundColor: context.appColors.error,
                 elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -58,10 +85,11 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
         }
 
         return _buildExpandableActionContainer(
-          'История действий',
+          'История',
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
-          () => setState(() => isActionHistoryExpanded = !isActionHistoryExpanded),
+          () => setState(
+              () => isActionHistoryExpanded = !isActionHistoryExpanded),
         );
       },
     );
@@ -77,16 +105,14 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
-          borderRadius: BorderRadius.circular(8),
-        ),
+        padding:
+            const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 10),
+        decoration: _sectionDecoration(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTitleRow(title),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             AnimatedSize(
               duration: const Duration(milliseconds: 200),
               child: isExpanded
@@ -105,22 +131,46 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
   }
 
   Row _buildTitleRow(String title) {
+    final sectionBackground = _sectionBackground(context);
+    final primaryText = context.adaptiveForegroundOn(sectionBackground);
+    final secondaryText = context.adaptiveHintOn(
+      sectionBackground,
+      lightAlpha: 0.82,
+    );
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.history_rounded,
+            size: 18,
+            color: context.appColors.buttonPrimaryBg,
           ),
         ),
-        Image.asset(
-          'assets/icons/tabBar/dropdown.png',
-          width: 16,
-          height: 16,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              color: primaryText,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Icon(
+          isActionHistoryExpanded
+              ? Icons.keyboard_arrow_up_rounded
+              : Icons.keyboard_arrow_down_rounded,
+          color: secondaryText,
         ),
       ],
     );
@@ -135,16 +185,32 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
 
   // MARK: - Элемент действия
   Widget _buildActionItem(String item) {
+    final sectionBackground = _sectionBackground(context);
+    final dividerColor = context.adaptiveBorderOn(
+      sectionBackground,
+      lightAlpha: 0.08,
+      darkAlpha: 0.4,
+    );
+    final detailTextColor = context.adaptiveHintOn(
+      sectionBackground,
+      lightAlpha: 0.82,
+    );
+
     final parts = item.split('\n');
     final status = parts[0];
     final userAndDate = parts.length > 1 ? parts[1] : '';
     final details = parts.sublist(2).where((d) => d.isNotEmpty).toList();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            height: 1,
+            color: dividerColor,
+          ),
+          const SizedBox(height: 10),
           _buildStatusRow(status, userAndDate),
           if (details.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -152,11 +218,11 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     d,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 13,
                       fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                     color: Color(0xff1E2E52),
+                      fontWeight: FontWeight.w500,
+                      color: detailTextColor,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -169,17 +235,24 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
   }
 
   Row _buildStatusRow(String status, String userAndDate) {
+    final sectionBackground = _sectionBackground(context);
+    final primaryText = context.adaptiveForegroundOn(sectionBackground);
+    final secondaryText = context.adaptiveHintOn(
+      sectionBackground,
+      lightAlpha: 0.72,
+    );
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
             status,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              fontWeight: FontWeight.w700,
+              color: primaryText,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -189,11 +262,11 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
         Expanded(
           child: Text(
             userAndDate,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 13,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              fontWeight: FontWeight.w500,
+              color: secondaryText,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -204,46 +277,48 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
     );
   }
 
-// MARK: - Формирование истории
-List<String> _buildActionHistoryItems(List<TaskHistory> history) {
-  return history.map((entry) {
-    final userName = entry.user.fullName; // Используем fullName!
-    final date = DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-    final header = '${entry.status}\n$userName $date';
+  // MARK: - Формирование истории
+  List<String> _buildActionHistoryItems(List<TaskHistory> history) {
+    return history.map((entry) {
+      final userName = entry.user.fullName;
+      final date =
+          DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
+      final header = '${entry.status}\n$userName $date';
 
-    if (entry.changes.isEmpty) return header;
+      if (entry.changes.isEmpty) return header;
 
-    final lines = <String>[];
+      final lines = <String>[];
 
-    for (final change in entry.changes) {
-      for (final MapEntry(:key, :value) in change.body.entries) {
-        if (value is! ChangeValue) continue; // Добавляем проверку типа
+      for (final change in entry.changes) {
+        for (final MapEntry(:key, :value) in change.body.entries) {
+          if (value is! ChangeValue) continue;
 
-        final prev = value.previousValue?.toString() ?? '';
-        final next = value.newValue?.toString() ?? '';
+          final prev = value.previousValue?.toString() ?? '';
+          final next = value.newValue?.toString() ?? '';
 
-        final prevText = prev.isEmpty ? '—' : prev;
-        final nextText = next.isEmpty ? '—' : next;
+          final prevText = prev.isEmpty ? '—' : prev;
+          final nextText = next.isEmpty ? '—' : next;
 
-        final field = _formatFieldName(key);
+          final field = _formatFieldName(key);
 
-        if (key == 'from' || key == 'to') {
-          final prevDate = _formatDate(prev);
-          final nextDate = _formatDate(next);
-          lines.add('$field: $prevDate → $nextDate');
-        } else if (key == 'is_finished') {
-          final prevBool = _formatBool(prev);
-          final nextBool = _formatBool(next);
-          lines.add('$field: $prevBool → $nextBool');
-        } else {
-          lines.add('$field: $prevText → $nextText');
+          if (key == 'from' || key == 'to') {
+            final prevDate = _formatDate(prev);
+            final nextDate = _formatDate(next);
+            lines.add('$field: $prevDate → $nextDate');
+          } else if (key == 'is_finished') {
+            final prevBool = _formatBool(prev);
+            final nextBool = _formatBool(next);
+            lines.add('$field: $prevBool → $nextBool');
+          } else {
+            lines.add('$field: $prevText → $nextText');
+          }
         }
       }
-    }
 
-    return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
-  }).toList();
-}
+      return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
+    }).toList();
+  }
+
   // MARK: - Названия полей
   String _formatFieldName(String key) {
     return switch (key) {

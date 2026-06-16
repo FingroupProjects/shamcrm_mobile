@@ -502,21 +502,35 @@ class _ChatsScreenState extends State<ChatsScreen>
                       context: context,
                       position: position,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0)),
+                          borderRadius: BorderRadius.circular(18.0)),
                       color: context.appColors.surfacePrimary,
-                      elevation: 8,
+                      elevation: 10,
                       items: state.funnels
                           .map((funnel) => PopupMenuItem<SalesFunnel>(
                                 value: funnel,
-                                child: Text(
-                                  funnel.name,
-                                  style: context.appTextStyles.bodyLg.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: context.appColors.textPrimary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        funnel.name,
+                                        style: context.appTextStyles.bodyLg
+                                            .copyWith(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.appColors.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (_selectedFunnel?.id == funnel.id)
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 18,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
+                                      ),
+                                  ],
                                 ),
                               ))
                           .toList(),

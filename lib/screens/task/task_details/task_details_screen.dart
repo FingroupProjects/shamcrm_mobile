@@ -8,12 +8,12 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/file_utils.dart';
-import 'package:crm_task_manager/custom_widget/task_section_app_bar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/task_model.dart';
@@ -26,16 +26,11 @@ import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_
     as task_status_sheet;
 import 'package:crm_task_manager/screens/task/task_details/task_edit_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_navigate_to_chat.dart';
-import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'dropdown_history_task.dart';
 import 'task_history_dialog.dart';
 
@@ -185,21 +180,32 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   final GlobalKey keyTaskForReview = GlobalKey();
   final GlobalKey keyTaskHistory = GlobalKey();
 
+  // Field configuration
+  List<FieldConfiguration> _fieldConfiguration = [];
+  bool _isConfigurationLoaded = false;
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.96);
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.82);
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.58);
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.textInverse.withValues(alpha: 0.16);
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+  Color _screenAccent(BuildContext context) => context.appColors.buttonPrimaryBg;
+
   String _getTaskErrorMessage(String error) {
     if (error.toLowerCase().contains('интернет')) {
       return error;
     }
     return 'Задача была удалена';
   }
-
-  //
-  List<FieldConfiguration> _fieldConfiguration = [];
-  bool _isConfigurationLoaded = false;
-
-  // List<TargetFocus> targets = [];
-  // bool _isTutorialShown = false;
-  // bool _isTutorialInProgress = false;
-  // Map<String, dynamic>? tutorialProgress;
 
   @override
   void initState() {
@@ -212,7 +218,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         .read<TaskByIdBloc>()
         .add(FetchTaskByIdEvent(taskId: int.parse(widget.taskId)));
     _loadFieldConfiguration();
-    // _fetchTutorialProgress();
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -231,7 +236,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _isConfigurationLoaded = true;
       });
 
-      // ✅ Если данные уже загружены, обновляем детали с новой конфигурацией
+      // Если данные уже загружены, обновляем детали с новой конфигурацией
       if (currentTask != null) {
         _updateDetails(currentTask);
       }
@@ -265,10 +270,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _canCreateTask = results[2] as bool;
         _hasTaskCreateForMySelfPermission = results[3] as bool;
         _currentUserId = userId;
-        // _isAuthor обновляется в _updateDetails, чтобы избежать зависимости от null currentTask
       });
     } catch (e) {
-      //print('TaskDetailsScreen: Error checking permissions or userID: $e');
       setState(() {
         _canEditTask = false;
         _canDeleteTask = false;
@@ -347,255 +350,132 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  // void _initTutorialTargets() {
-  //   targets.addAll([
-  //     createTarget(
-  //       identify: "TaskEdit",
-  //       keyTarget: keyTaskEdit,
-  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_title'),
-  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_edit_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //       contentPosition: ContentPosition.above,
-  //     ),
-  //     if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
-  //       createTarget(
-  //         identify: "TaskDelete",
-  //         keyTarget: keyTaskDelete,
-  //         title: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_title'),
-  //         description: AppLocalizations.of(context)!.translate('tutorial_task_details_delete_description'),
-  //         align: ContentAlign.bottom,
-  //         context: context,
-  //         contentPosition: ContentPosition.above,
-  //       ),
-  //     createTarget(
-  //       identify: "TaskNavigateChat",
-  //       keyTarget: keyTaskNavigateChat,
-  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_title'),
-  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_chat_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //     ),
-  //     createTarget(
-  //       identify: "TaskForReview",
-  //       keyTarget: keyTaskForReview,
-  //       title: AppLocalizations.of(context)!.translate('tutorial_task_details_review_title'),
-  //       description: AppLocalizations.of(context)!.translate('tutorial_task_details_review_description'),
-  //       align: ContentAlign.bottom,
-  //       context: context,
-  //     ),
-  //     createTarget(
-  //         identify: "TaskHistory",
-  //         keyTarget: keyTaskHistory,
-  //         title: AppLocalizations.of(context)!.translate('tutorial_task_details_history_title'),
-  //         description: AppLocalizations.of(context)!.translate('tutorial_task_details_history_description'),
-  //         align: ContentAlign.top,
-  //         context: context,
-  //         contentPosition: ContentPosition.above,
-  //         contentPadding: EdgeInsets.only(bottom: 70)),
-  //   ]);
-  // }
+  void _openTaskHistoryDialog() {
+    if (currentTask == null) return;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => TaskHistoryDialog(
+        taskId: currentTask!.id,
+      ),
+    );
+  }
 
-  // void showTutorial() async {
-  //   if (_isTutorialInProgress) {
-  //     return;
-  //   }
+  Future<void> _openTaskCopyScreen() async {
+    if (currentTask == null) return;
 
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
+    final createdAtString =
+        currentTask?.createdAt != null && currentTask!.createdAt!.isNotEmpty
+            ? DateFormat('dd/MM/yyyy')
+                .format(DateTime.parse(currentTask!.createdAt!))
+            : null;
 
-  //   if (tutorialProgress == null ||
-  //       tutorialProgress!['tasks']?['view'] == true ||
-  //       isTutorialShown ||
-  //       _isTutorialShown) {
-  //     return;
-  //   }
+    final shouldUpdate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskCopyScreen(
+          taskId: currentTask!.id,
+          taskName: currentTask!.name,
+          priority: currentTask!.priority,
+          taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
+          project: currentTask!.project?.id.toString(),
+          user: currentTask!.user != null && currentTask!.user!.isNotEmpty
+              ? currentTask!.user!.map((user) => user.id).toList()
+              : null,
+          statusId: currentTask!.taskStatus?.id ?? 0,
+          description: currentTask!.description,
+          startDate: currentTask!.startDate,
+          endDate: currentTask!.endDate,
+          createdAt: createdAtString,
+          taskCustomFields: currentTask!.customFields,
+          files: currentTask!.files,
+          directoryValues: currentTask!.directoryValues,
+        ),
+      ),
+    );
+    if (shouldUpdate == true) {
+      setState(() {
+        _statusChangedFromDetails = true;
+      });
+      _loadFieldConfiguration();
+      context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+      context.read<CalendarBloc>().add(FetchCalendarEvents(
+          widget.initialDate?.month ?? DateTime.now().month,
+          widget.initialDate?.year ?? DateTime.now().year));
+    }
+  }
 
-  //   setState(() {
-  //     _isTutorialInProgress = true;
-  //   });
-  //   await Future.delayed(const Duration(milliseconds: 500));
+  Future<void> _openTaskEditScreen() async {
+    if (currentTask == null) return;
 
-  //   TutorialCoachMark(
-  //     targets: targets,
-  //     textSkip: AppLocalizations.of(context)!.translate('skip'),
-  //     textStyleSkip: TextStyle(
-  //       color: Colors.white,
-  //       fontFamily: 'Gilroy',
-  //       fontSize: 20,
-  //       fontWeight: FontWeight.w600,
-  //       shadows: [
-  //         Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-  //         Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-  //         Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-  //         Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-  //       ],
-  //     ),
-  //     colorShadow: Color(0xff1E2E52),
-  //     onSkip: () {
-  //       prefs.setBool('isTutorialShownTasksDet', true);
-  //       _apiService.markPageCompleted("tasks", "view").catchError((e) {});
-  //       setState(() {
-  //         _isTutorialShown = true;
-  //         _isTutorialInProgress = false;
-  //       });
-  //       return true;
-  //     },
-  //     onFinish: () {
-  //       prefs.setBool('isTutorialShownTasksDet', true);
-  //       _apiService.markPageCompleted("tasks", "view").catchError((e) {});
-  //       setState(() {
-  //         _isTutorialShown = true;
-  //         _isTutorialInProgress = false;
-  //       });
-  //     },
-  //   ).show(context: context);
-  // }
+    final createdAtString =
+        currentTask?.createdAt != null && currentTask!.createdAt!.isNotEmpty
+            ? DateFormat('dd/MM/yyyy')
+                .format(DateTime.parse(currentTask!.createdAt!))
+            : null;
 
-  // Future<void> _fetchTutorialProgress() async {
-  //   try {
-  //     final prefs = await SharedPreferences.getInstance();
-  //     final progress = await _apiService.getTutorialProgress();
-  //     setState(() {
-  //       tutorialProgress = progress['result'];
-  //     });
-  //     await prefs.setString('tutorial_progress', json.encode(progress['result']));
+    final shouldUpdate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskEditScreen(
+          taskId: currentTask!.id,
+          taskName: currentTask!.name,
+          priority: currentTask!.priority,
+          taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
+          project: currentTask!.project?.id.toString(),
+          user: currentTask!.user != null && currentTask!.user!.isNotEmpty
+              ? currentTask!.user!.map((user) => user.id).toList()
+              : null,
+          statusId: currentTask!.taskStatus?.id ?? 0,
+          description: currentTask!.description,
+          startDate: currentTask!.startDate,
+          endDate: currentTask!.endDate,
+          createdAt: createdAtString,
+          taskCustomFields: currentTask!.customFields,
+          files: currentTask!.files,
+          directoryValues: currentTask!.directoryValues,
+        ),
+      ),
+    );
+    if (shouldUpdate == true) {
+      setState(() {
+        _statusChangedFromDetails = true;
+      });
+      _loadFieldConfiguration();
+      context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+      context.read<CalendarBloc>().add(FetchCalendarEvents(
+          widget.initialDate?.month ?? DateTime.now().month,
+          widget.initialDate?.year ?? DateTime.now().year));
+    }
+  }
 
-  //     bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-  //     setState(() {
-  //       _isTutorialShown = isTutorialShown;
-  //     });
+  void _openTaskDeleteDialog() {
+    if (currentTask == null) return;
+    showDialog(
+      context: context,
+      builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
+    );
+  }
 
-  //     _initTutorialTargets();
-
-  //     if (tutorialProgress != null &&
-  //         tutorialProgress!['tasks']?['view'] == false &&
-  //         !isTutorialShown &&
-  //         !_isTutorialInProgress &&
-  //         targets.isNotEmpty &&
-  //         mounted) {
-  //       //showTutorial();
-  //     }
-  //   } catch (e) {
-  //     final prefs = await SharedPreferences.getInstance();
-  //     final savedProgress = prefs.getString('tutorial_progress');
-  //     if (savedProgress != null) {
-  //       setState(() {
-  //         tutorialProgress = json.decode(savedProgress);
-  //       });
-  //       bool isTutorialShown = prefs.getBool('isTutorialShownTasksDet') ?? false;
-  //       setState(() {
-  //         _isTutorialShown = isTutorialShown;
-  //       });
-
-  //       _initTutorialTargets();
-
-  //       if (tutorialProgress != null &&
-  //           tutorialProgress!['tasks']?['view'] == false &&
-  //           !isTutorialShown &&
-  //           !_isTutorialInProgress &&
-  //           targets.isNotEmpty &&
-  //           mounted) {
-  //         //showTutorial();
-  //       }
-  //     }
-  //   }
-  // }
-
-  // void _updateDetails(TaskById? task) {
-  //   if (task == null) {
-  //     currentTask = null;
-  //     details.clear();
-  //     _isAuthor = false; // Обновляем _isAuthor
-  //     return;
-  //   }
-  //
-  //   currentTask = task;
-  //   _isAuthor = _currentUserId != null && task.author?.id != null && _currentUserId == task.author!.id;
-  //
-  //   final Map<int, String> priorityLevels = {
-  //     1: AppLocalizations.of(context)!.translate('normal'),
-  //     2: AppLocalizations.of(context)!.translate('normal'),
-  //     3: AppLocalizations.of(context)!.translate('urgent'),
-  //   };
-  //
-  //   details = [
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('task_name'),
-  //       'value': task.name ?? ''
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-  //       'value': priorityLevels[task.priority] ?? AppLocalizations.of(context)!.translate('normal'),
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('description_details'),
-  //       'value': task.description?.isNotEmpty == true ? task.description! : ''
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('assignee'),
-  //       'value': task.user != null && task.user!.isNotEmpty
-  //           ? task.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
-  //           : '',
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('project_details'),
-  //       'value': task.project?.name ?? ''
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('dead_line'),
-  //       'value': task.endDate != null && task.endDate!.isNotEmpty
-  //           ? DateFormat('dd.MM.yyyy').format(DateTime.parse(task.endDate!))
-  //           : ''
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('status_details'),
-  //       'value': task.taskStatus?.taskStatus?.name ?? '',
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('author_details'),
-  //       'value': task.author?.name ?? ''
-  //     },
-  //     {
-  //       'label': AppLocalizations.of(context)!.translate('creation_date_details'),
-  //       'value': formatDate(task.createdAt)
-  //     },
-  //     if (task.deal != null && (task.deal?.name?.isNotEmpty == true))
-  //       {
-  //         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-  //         'value': task.deal!.name!
-  //       },
-  //     if (task.files != null && task.files!.isNotEmpty)
-  //       {
-  //         'label': AppLocalizations.of(context)!.translate('files_details'),
-  //         'value': task.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
-  //       },
-  //   ];
-  //
-  //   for (var field in task.taskCustomFields) {
-  //     details.add({'label': '${field.name}:', 'value': field.value});
-  //   }
-  //
-  //   if (task.directoryValues != null && task.directoryValues!.isNotEmpty) {
-  //     for (var dirValue in task.directoryValues!) {
-  //       final values = dirValue.entry.values;
-  //       final fieldValue = values.isNotEmpty ? values.first.value : '';
-  //
-  //       details.add({
-  //         'label': '${dirValue.entry.directory.name}:',
-  //         'value': fieldValue,
-  //       });
-  //     }
-  //   }
-  // }
+  Future<void> _handleAppBarMenuAction(String value) async {
+    switch (value) {
+      case 'history':
+        _openTaskHistoryDialog();
+        break;
+      case 'copy':
+        await _openTaskCopyScreen();
+        break;
+      case 'edit':
+        await _openTaskEditScreen();
+        break;
+      case 'delete':
+        _openTaskDeleteDialog();
+        break;
+    }
+  }
 
   void _updateDetails(TaskById? task) {
-    debugPrint("Custom Fields");
-    debugPrint("${task?.customFields.map((e) => e.name).toList()}");
-    debugPrint("${task?.customFields.map((e) => e.id).toList()}");
-    debugPrint("${task?.customFields.map((e) => e.value).toList()}");
-    debugPrint("${task?.customFields.map((e) => e.type).toList()}");
-
     currentTask = task;
     details.clear();
 
@@ -634,7 +514,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       final value = _getFieldValue(fc, task);
       final label = _getFieldName(fc);
 
-      details.add({'label': label, 'value': value});
+      details.add({
+        'label': label,
+        'value': value,
+        'fieldName': fc.fieldName,
+      });
     }
 
     // Всегда добавляем поле 'author', если оно не было добавлено из конфигурации
@@ -647,6 +531,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         details.add({
           'label': AppLocalizations.of(context)!.translate('author_details'),
           'value': authorName,
+          'fieldName': 'author',
         });
       }
     }
@@ -659,6 +544,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'label':
             AppLocalizations.of(context)!.translate('creation_date_details'),
         'value': formatDate(task.createdAt),
+        'fieldName': 'createdAt',
       });
     }
 
@@ -668,6 +554,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       details.add({
         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
         'value': task.deal!.name,
+        'fieldName': 'deal',
       });
     }
 
@@ -678,6 +565,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         details.add({
           'label': AppLocalizations.of(context)!.translate('status_details'),
           'value': statusName,
+          'fieldName': 'task_status_id',
         });
       }
     }
@@ -688,11 +576,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       details.add({
         'label': 'Причина отказа:',
         'value': refusalReason.isNotEmpty ? refusalReason : refusalComment,
+        'fieldName': 'reason_for_refusal',
       });
       if (refusalReason.isNotEmpty && refusalComment.isNotEmpty) {
         details.add({
           'label': 'Комментарий отказа:',
           'value': refusalComment,
+          'fieldName': 'reason_for_refusal_comment',
         });
       }
     }
@@ -703,6 +593,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('files_details'),
         'value':
             '${task.files!.length} ${AppLocalizations.of(context)!.translate('files')}',
+        'fieldName': 'files',
       });
     }
   }
@@ -816,239 +707,767 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  // ✅ Адаптивные размеры на основе ширины экрана
-  Map<String, double> _getAdaptiveSizes(BuildContext context) {
-    final MediaQueryData mediaQuery = MediaQuery.of(context);
-    final double screenWidth = mediaQuery.size.width;
+  Widget _buildExpandableText(String label, String value, double maxWidth) {
+    final TextStyle style = TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w500,
+      color: _screenPrimaryText(context),
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+    );
 
-    // Определяем размеры на основе ширины экрана
-    // Это более надежный метод, чем вычисление диагонали
-    double fontSize;
-    double iconSize;
-    double leadingIconSize;
-    double iconPadding;
-    double titleOffset;
-
-    if (screenWidth < 360) {
-      // Очень маленькие экраны (< 360px) - например, iPhone SE
-      fontSize = 16;
-      iconSize = 20;
-      leadingIconSize = 32;
-      iconPadding = 4;
-      titleOffset = -8;
-    } else if (screenWidth < 400) {
-      // Маленькие экраны (360-400px)
-      fontSize = 17;
-      iconSize = 22;
-      leadingIconSize = 36;
-      iconPadding = 6;
-      titleOffset = -9;
-    } else if (screenWidth < 480) {
-      // Средние экраны (400-480px)
-      fontSize = 18;
-      iconSize = 24;
-      leadingIconSize = 38;
-      iconPadding = 8;
-      titleOffset = -10;
-    } else {
-      // Большие экраны (> 480px)
-      fontSize = 20;
-      iconSize = 24;
-      leadingIconSize = 40;
-      iconPadding = 8;
-      titleOffset = -10;
-    }
-
-    return {
-      'fontSize': fontSize,
-      'iconSize': iconSize,
-      'leadingIconSize': leadingIconSize,
-      'iconPadding': iconPadding,
-      'titleOffset': titleOffset,
-    };
+    return GestureDetector(
+      onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: value));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: context.appColors.textInverse,
+              ),
+            ),
+            backgroundColor: context.appColors.success,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Text(
+        value,
+        style: style.copyWith(
+          decoration: TextDecoration.underline,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, String title) {
-    // ✅ Получаем адаптивные размеры
-    final adaptiveSizes = _getAdaptiveSizes(context);
-    final double fontSize = adaptiveSizes['fontSize']!;
-    final double iconSize = adaptiveSizes['iconSize']!;
-    final colors = context.appColors;
-
-    // Закомментирован код туториала
-    // if (!_isTutorialShown) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     //showTutorial();
-    //     setState(() {
-    //       _isTutorialShown = true;
-    //     });
-    //   });
-    // }
-    return TaskSectionAppBar(
-      title: title,
-      onBack: () => _handleBackNavigation(),
-      actions: [
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Icon(
-            Icons.history_outlined,
-            size: iconSize + 2,
-            color: colors.iconPrimary,
+  @override
+  Widget build(BuildContext context) {
+    final baseTheme = Theme.of(context);
+    final baseColors = context.appColors;
+    final baseTextStyles = context.appTextStyles;
+    final baseShadows = context.appShadows;
+    final screenTheme = baseTheme.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        baseColors.copyWith(
+          surfacePrimary: _screenSurfaceBackground(context),
+          surfaceElevated: _screenSurfaceElevated(context),
+          textPrimary: _screenPrimaryText(context),
+          textSecondary: _screenSecondaryText(context),
+          textMuted: _screenHintText(context),
+          textInverse: _screenPrimaryText(context),
+          iconPrimary: _screenPrimaryText(context),
+          iconSecondary: _screenSecondaryText(context),
+          borderPrimary: _screenBorder(context),
+          borderSubtle: _screenBorder(context),
+          buttonSecondaryBg: _screenFieldBackground(context),
+          buttonSecondaryFg: _screenPrimaryText(context),
+          fieldBg: _screenFieldBackground(context),
+          fieldBorder: _screenBorder(context),
+          fieldHint: _screenHintText(context),
+          overlay: baseColors.overlay,
+        ),
+        baseTextStyles.copyWith(
+          titleLg: baseTextStyles.titleLg
+              .copyWith(color: _screenPrimaryText(context)),
+          titleMd: baseTextStyles.titleMd
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyLg: baseTextStyles.bodyLg
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyMd: baseTextStyles.bodyMd.copyWith(
+            color: _screenSecondaryText(context),
           ),
-          onPressed: () {
-            if (currentTask != null) {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) => TaskHistoryDialog(
-                  taskId: currentTask!.id,
-                ),
-              );
+          bodySm: baseTextStyles.bodySm.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          labelLg: baseTextStyles.labelLg
+              .copyWith(color: _screenPrimaryText(context)),
+          labelMd: baseTextStyles.labelMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          caption:
+              baseTextStyles.caption.copyWith(color: _screenHintText(context)),
+        ),
+        baseShadows,
+      ],
+    );
+    final primaryText = _screenPrimaryText(context);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBackNavigation();
+      },
+      child: Theme(
+        data: screenTheme,
+        child: BlocListener<TaskByIdBloc, TaskByIdState>(
+          listener: (context, state) {
+            if (state is TaskByIdError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      state.message,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: context.appColors.textInverse,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: context.appColors.error,
+                    elevation: 3,
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              });
             }
           },
-        ),
-        if (_canCreateTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/copy.png',
-              width: iconSize,
-              height: iconSize,
-              color: colors.iconPrimary,
-            ),
-            onPressed: () async {
-              final createdAtString = currentTask?.createdAt != null &&
-                      currentTask!.createdAt!.isNotEmpty
-                  ? DateFormat('dd/MM/yyyy')
-                      .format(DateTime.parse(currentTask!.createdAt!))
-                  : null;
+          child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
+            builder: (context, state) {
+              if (state is TaskByIdLoaded) {
+                _updateDetails(state.task);
+              } else {
+                currentTask = null;
+                details.clear();
+                _isAuthor = false;
+              }
 
-              if (currentTask != null) {
-                final shouldUpdate = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TaskCopyScreen(
-                      taskId: currentTask!.id,
-                      taskName: currentTask!.name,
-                      priority: currentTask!.priority,
-                      taskStatus:
-                          currentTask!.taskStatus?.taskStatus.toString() ?? '',
-                      project: currentTask!.project?.id.toString(),
-                      user: currentTask!.user != null &&
-                              currentTask!.user!.isNotEmpty
-                          ? currentTask!.user!.map((user) => user.id).toList()
-                          : null,
-                      statusId: currentTask!.taskStatus?.id ?? 0,
-                      description: currentTask!.description,
-                      startDate: currentTask!.startDate,
-                      endDate: currentTask!.endDate,
-                      createdAt: createdAtString,
-                      taskCustomFields: currentTask!.customFields,
-                      files: currentTask!.files,
-                      directoryValues: currentTask!.directoryValues,
-                    ),
+              if (state is TaskByIdLoading || !_isConfigurationLoaded) {
+                return Scaffold(
+                  appBar: _buildAppBar(
+                    context,
+                    '${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber ?? ""}',
+                  ),
+                  backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+                  body: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                      ),
+                      Center(
+                        child: CircularProgressIndicator(color: primaryText),
+                      ),
+                    ],
                   ),
                 );
-                if (shouldUpdate == true) {
-                  setState(() {
-                    _statusChangedFromDetails = true;
-                  });
-                  _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
-                  context
-                      .read<TaskByIdBloc>()
-                      .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                  context
-                      .read<TaskBloc>()
-                      .add(FetchTaskStatuses(forceRefresh: true));
-                  context.read<CalendarBloc>().add(FetchCalendarEvents(
-                      widget.initialDate?.month ?? DateTime.now().month,
-                      widget.initialDate?.year ?? DateTime.now().year));
-                }
-              }
-            },
-          ),
-        if (_canEditTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
-          IconButton(
-            key: keyTaskEdit,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: iconSize,
-              height: iconSize,
-              color: colors.iconPrimary,
-            ),
-            onPressed: () async {
-              final createdAtString = currentTask?.createdAt != null &&
-                      currentTask!.createdAt!.isNotEmpty
-                  ? DateFormat('dd/MM/yyyy')
-                      .format(DateTime.parse(currentTask!.createdAt!))
-                  : null;
-
-              if (currentTask != null) {
-                final shouldUpdate = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TaskEditScreen(
-                      taskId: currentTask!.id,
-                      taskName: currentTask!.name,
-                      priority: currentTask!.priority,
-                      taskStatus:
-                          currentTask!.taskStatus?.taskStatus.toString() ?? '',
-                      project: currentTask!.project?.id.toString(),
-                      user: currentTask!.user != null &&
-                              currentTask!.user!.isNotEmpty
-                          ? currentTask!.user!.map((user) => user.id).toList()
-                          : null,
-                      statusId: currentTask!.taskStatus?.id ?? 0,
-                      description: currentTask!.description,
-                      startDate: currentTask!.startDate,
-                      endDate: currentTask!.endDate,
-                      createdAt: createdAtString,
-                      taskCustomFields: currentTask!.customFields,
-                      files: currentTask!.files,
-                      directoryValues: currentTask!.directoryValues,
+              } else if (state is TaskByIdLoaded) {
+                if (state.task == null) {
+                  return Scaffold(
+                    appBar: _buildAppBar(
+                      context,
+                      '${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber ?? ""}',
                     ),
+                    backgroundColor:
+                        context.appColors.overlay.withValues(alpha: 0),
+                    body: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        const AppBackgroundOverlay(
+                          preset: AppBackgroundPreset.aurora,
+                        ),
+                        Center(
+                          child: Text(
+                            AppLocalizations.of(context)!
+                                .translate('task_data_unavailable'),
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: primaryText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                TaskById task = state.task!;
+                final subtleBorder = _screenBorder(context);
+                final formSurface = _screenSurfaceBackground(context);
+
+                return Scaffold(
+                  extendBodyBehindAppBar: false,
+                  backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+                  appBar: _buildAppBar(
+                    context,
+                    '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}',
+                  ),
+                  body: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                        child: ListView(
+                          children: [
+                            Container(
+                              padding:
+                                  const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                              decoration: BoxDecoration(
+                                color: formSurface,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: subtleBorder),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.appColors.shadow
+                                        .withValues(alpha: 0.14),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 14),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Container(
+                                  //   padding: const EdgeInsets.symmetric(
+                                  //     horizontal: 12,
+                                  //     vertical: 8,
+                                  //   ),
+                                  //   decoration: BoxDecoration(
+                                  //     color: _screenAccent(context)
+                                  //         .withValues(alpha: 0.12),
+                                  //     borderRadius: BorderRadius.circular(14),
+                                  //     border: Border.all(
+                                  //       color: _screenAccent(context)
+                                  //           .withValues(alpha: 0.18),
+                                  //     ),
+                                  //   ),
+                                  //   child: Row(
+                                  //     mainAxisSize: MainAxisSize.min,
+                                  //     children: [
+                                  //       Icon(
+                                  //         Icons.visibility_rounded,
+                                  //         size: 18,
+                                  //         color: _screenAccent(context),
+                                  //       ),
+                                  //       const SizedBox(width: 8),
+                                  //       Text(
+                                  //         AppLocalizations.of(context)!
+                                  //             .translate('view_task'),
+                                  //         style: TextStyle(
+                                  //           fontSize: 15,
+                                  //           fontFamily: 'Gilroy',
+                                  //           fontWeight: FontWeight.w700,
+                                  //           color: _screenAccent(context),
+                                  //         ),
+                                  //       ),
+                                  //     ],
+                                  //   ),
+                                  // ),
+                                  // const SizedBox(height: 16),
+                                  _buildDetailsList(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            if (task.chat != null || task.isFinished == 0)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                                decoration: BoxDecoration(
+                                  color: formSurface,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: subtleBorder),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.appColors.shadow
+                                          .withValues(alpha: 0.1),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 34,
+                                          height: 34,
+                                          decoration: BoxDecoration(
+                                            color: _screenAccent(context)
+                                                .withValues(alpha: 0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(
+                                            Icons.playlist_add_check_circle_rounded,
+                                            size: 18,
+                                            color: _screenAccent(context),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          'Выполнение',
+                                          style: TextStyle(
+                                            color: _screenPrimaryText(context),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'Gilroy',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Row(
+                                      children: [
+                                        if (task.chat != null)
+                                          Expanded(
+                                            key: keyTaskNavigateChat,
+                                            flex: task.isFinished == 1 ? 100 : 55,
+                                            child: TaskNavigateToChat(
+                                              chatId: task.chat!.id,
+                                              taskName: widget.taskName,
+                                              canSendMessage:
+                                                  task.chat!.canSendMessage,
+                                            ),
+                                          ),
+                                        if (task.isFinished == 0) ...[
+                                          if (task.chat != null)
+                                            const SizedBox(width: 8, height: 56),
+                                          Expanded(
+                                            key: keyTaskForReview,
+                                            flex: task.chat != null ? 45 : 100,
+                                            child: SizedBox(
+                                              height: 48,
+                                              child: ElevatedButton.icon(
+                                                onPressed: () =>
+                                                    _showFinishTaskDialog(task),
+                                                style: ElevatedButton.styleFrom(
+                                                  elevation: 0,
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 12,
+                                                  ),
+                                                  backgroundColor:
+                                                      _screenAccent(context),
+                                                  foregroundColor: context
+                                                      .appColors.buttonPrimaryFg,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(16),
+                                                  ),
+                                                ),
+                                                icon: Icon(
+                                                  Icons.check_circle_rounded,
+                                                  size: 18,
+                                                  color: context.appColors
+                                                      .buttonPrimaryFg,
+                                                ),
+                                                label: Text(
+                                                  AppLocalizations.of(context)!
+                                                      .translate('for_review'),
+                                                  style: TextStyle(
+                                                    color: context.appColors
+                                                        .buttonPrimaryFg,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontFamily: 'Gilroy',
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ActionHistoryWidgetTask(
+                              taskId: int.parse(widget.taskId),
+                              key: keyTaskHistory,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
-                if (shouldUpdate == true) {
-                  setState(() {
-                    _statusChangedFromDetails = true;
-                  });
-                  _loadFieldConfiguration(); // ✅ Обновляем конфигурацию полей
-                  context
-                      .read<TaskByIdBloc>()
-                      .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-                  context
-                      .read<TaskBloc>()
-                      .add(FetchTaskStatuses(forceRefresh: true));
-                  context.read<CalendarBloc>().add(FetchCalendarEvents(
-                      widget.initialDate?.month ?? DateTime.now().month,
-                      widget.initialDate?.year ?? DateTime.now().year));
-                }
               }
-            },
-          ),
-        if (_canDeleteTask || (_hasTaskCreateForMySelfPermission && _isAuthor))
-          IconButton(
-            key: keyTaskDelete,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/delete.png',
-              width: iconSize,
-              height: iconSize,
-              color: colors.error,
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
+
+              if (state is TaskByIdError) {
+                return Scaffold(
+                  backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+                  body: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                      ),
+                      Center(
+                        child: Text(
+                          _getTaskErrorMessage(state.message),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: primaryText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Scaffold(
+                body: Center(
+                  child: Text(''),
+                ),
               );
             },
           ),
-      ],
+        ),
+      ),
+    );
+  }
+
+  void _showFinishTaskDialog(TaskById task) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _screenSurfaceBackground(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: _screenBorder(context)),
+        ),
+        contentPadding:
+            EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        title: Text(
+          AppLocalizations.of(context)!.translate('confirm_task_completion'),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: _screenPrimaryText(context),
+          ),
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  style: TextButton.styleFrom(
+                    backgroundColor: context.appColors.buttonDangerBg,
+                    minimumSize: Size(80, 48),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('cancel'),
+                    style: TextStyle(
+                      color: context.appColors.buttonDangerFg,
+                      fontFamily: 'Gilroy',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: StatefulBuilder(
+                  builder: (context, setState) => TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            setState(() => _isLoading = true);
+                            final taskId = int.parse(widget.taskId);
+                            try {
+                              final result = await context
+                                  .read<ApiService>()
+                                  .finishTask(taskId);
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(this.context)!
+                                        .translate(result['message'] ?? ''),
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: result['success'] == true
+                                      ? Colors.green
+                                      : Colors.red,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                              if (result['success'] == true) {
+                                this.context.read<CalendarBloc>().add(
+                                    FetchCalendarEvents(
+                                        widget.initialDate?.month ??
+                                            DateTime.now().month,
+                                        widget.initialDate?.year ??
+                                            DateTime.now().year));
+                                this
+                                    .context
+                                    .read<TaskBloc>()
+                                    .add(FetchTaskStatuses(forceRefresh: true));
+                              }
+                            } catch (e) {
+                              Navigator.pop(dialogContext);
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(this.context)!
+                                        .translate('error_task_finish'),
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  elevation: 3,
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            } finally {
+                              setState(() => _isLoading = false);
+                            }
+                          },
+                    style: TextButton.styleFrom(
+                      backgroundColor: context.appColors.buttonPrimaryBg,
+                      minimumSize: Size(130, 48),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: context.appColors.buttonPrimaryFg,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            AppLocalizations.of(context)!.translate('confirm'),
+                            style: TextStyle(
+                              color: context.appColors.buttonPrimaryFg,
+                              fontFamily: 'Gilroy',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar(BuildContext context, String title) {
+    final appBarGradient = [
+      _screenSurfaceElevated(context),
+      _screenFieldBackground(context),
+    ];
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+    final menuTextColor = _screenPrimaryText(context);
+    final menuMutedColor = _screenSecondaryText(context);
+    const menuDangerColor = Color(0xFFD92D20);
+
+    PopupMenuItem<String> buildMenuItem({
+      required String value,
+      required IconData icon,
+      required String label,
+      Color? iconColor,
+      Color? textColor,
+    }) {
+      return PopupMenuItem<String>(
+        value: value,
+        height: 46,
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 19,
+              color: iconColor ?? menuMutedColor,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: textColor ?? menuTextColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+      forceMaterialTransparency: true,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: context.appColors.overlay.withValues(alpha: 0),
+      shadowColor: context.appColors.overlay.withValues(alpha: 0),
+      centerTitle: false,
+      toolbarHeight: 74,
+      titleSpacing: 16,
+      title: AppBarShell(
+        leading: AppBarShell.capsule(
+          context,
+          width: AppBarShell.orbSize,
+          padding: EdgeInsets.zero,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: IconButton(
+            onPressed: _handleBackNavigation,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: primaryText,
+            ),
+          ),
+        ),
+        center: AppBarShell.capsule(
+          context,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                color: primaryText,
+                letterSpacing: 0.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                tooltip: '',
+                color: _screenFieldBackground(context),
+                surfaceTintColor: _screenFieldBackground(context),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                onSelected: _handleAppBarMenuAction,
+                itemBuilder: (context) => [
+                  buildMenuItem(
+                    value: 'history',
+                    icon: Icons.history_rounded,
+                    label: AppLocalizations.of(context)!.translate('history'),
+                  ),
+                  if (_canCreateTask ||
+                      (_hasTaskCreateForMySelfPermission && _isAuthor))
+                    buildMenuItem(
+                      value: 'copy',
+                      icon: Icons.content_copy_rounded,
+                      label: AppLocalizations.of(context)!.translate('copy_task'),
+                    ),
+                  if (_canEditTask ||
+                      (_hasTaskCreateForMySelfPermission && _isAuthor))
+                    buildMenuItem(
+                      value: 'edit',
+                      icon: Icons.edit_rounded,
+                      label: AppLocalizations.of(context)!.translate('task_edit'),
+                    ),
+                  if (_canDeleteTask ||
+                      (_hasTaskCreateForMySelfPermission && _isAuthor))
+                    const PopupMenuDivider(height: 8),
+                  if (_canDeleteTask ||
+                      (_hasTaskCreateForMySelfPermission && _isAuthor))
+                    buildMenuItem(
+                      value: 'delete',
+                      icon: Icons.delete_outline_rounded,
+                      label: AppLocalizations.of(context)!.translate('delete'),
+                      iconColor: menuDangerColor,
+                      textColor: menuDangerColor,
+                    ),
+                ],
+                child: Center(
+                  child: Icon(
+                    Icons.more_vert_rounded,
+                    color: primaryText,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1063,393 +1482,345 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           child: _buildDetailItem(
             details[index]['label']!,
             details[index]['value']!,
+            details[index]['fieldName'] ?? '',
           ),
         );
       },
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    if (label == AppLocalizations.of(context)!.translate('status_details')) {
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _openStatusChangeSheet,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+  Widget _buildDetailItem(String label, String value, String fieldName) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (fieldName == 'task_status_id' || fieldName == 'taskStatus') {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _openStatusChangeSheet,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: _screenPrimaryText(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: _screenPrimaryText(context),
+                        size: 16,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xff1E2E52),
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (label == AppLocalizations.of(context)!.translate('task_name') ||
-        label ==
-            AppLocalizations.of(context)!.translate('description_details') ||
-        label == AppLocalizations.of(context)!.translate('project_details')) {
-      return GestureDetector(
-        onTap: () {
-          if (value.isNotEmpty) {
-            _showFullTextDialog(
-              label.replaceAll(':', ''),
-              value,
-            );
-          }
-        },
-        onLongPress: () {
-          Clipboard.setData(ClipboardData(text: value));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)
-                        ?.translate('copied_to_clipboard') ??
-                    'Скопировано',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
                 ),
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 2),
+              ],
             ),
           );
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                  decoration:
-                      value.isNotEmpty ? TextDecoration.underline : null,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+        }
 
-    if (label == AppLocalizations.of(context)!.translate('assignee') &&
-        value.contains(',')) {
-      label = AppLocalizations.of(context)!.translate('assignees');
-    }
+        if (label == AppLocalizations.of(context)!.translate('files_details')) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(height: 8),
+              Container(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: currentTask?.files?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final file = currentTask!.files![index];
+                    final fileExtension =
+                        file.name.split('.').last.toLowerCase();
 
-    if (label == AppLocalizations.of(context)!.translate('assignees')) {
-      return GestureDetector(
-        onTap: () => _showUsersDialog(value),
-        onLongPress: () {
-          Clipboard.setData(ClipboardData(text: value));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)
-                        ?.translate('copied_to_clipboard') ??
-                    'Скопировано',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                value.split(',').take(3).join(', ') +
-                    (value.split(',').length > 3
-                        ? ' и еще ${value.split(',').length - 3}...'
-                        : ''),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    if (label == AppLocalizations.of(context)!.translate('files_details')) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          SizedBox(height: 8),
-          Container(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: currentTask?.files?.length ?? 0,
-              itemBuilder: (context, index) {
-                final file = currentTask!.files![index];
-                final fileExtension = file.name.split('.').last.toLowerCase();
-
-                return Padding(
-                  padding: EdgeInsets.only(right: 16),
-                  child: GestureDetector(
-                    onTap: () {
-                      if (!_isDownloading) {
-                        FileUtils.showFile(
-                          context: context,
-                          fileUrl: file.path,
-                          fileId: file.id,
-                          setState: setState,
-                          downloadProgress: _downloadProgress,
-                          isDownloading: _isDownloading,
-                          apiService: _apiService,
-                        );
-                      }
-                    },
-                    child: Container(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
+                    return Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isDownloading) {
+                            FileUtils.showFile(
+                              context: context,
+                              fileUrl: file.path,
+                              fileId: file.id,
+                              setState: setState,
+                              downloadProgress: _downloadProgress,
+                              isDownloading: _isDownloading,
+                              apiService: _apiService,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 100,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _screenFieldBackground(context),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: _screenBorder(context)),
+                          ),
+                          child: Column(
                             children: [
-                              Image.asset(
-                                'assets/icons/files/$fileExtension.png',
-                                width: 60,
-                                height: 60,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.asset(
-                                    'assets/icons/files/file.png',
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/files/$fileExtension.png',
                                     width: 60,
                                     height: 60,
-                                  );
-                                },
-                              ),
-                              if (_downloadProgress.containsKey(file.id))
-                                CircularProgressIndicator(
-                                  value: _downloadProgress[file.id],
-                                  strokeWidth: 3,
-                                  backgroundColor: Colors.grey.withOpacity(0.3),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xff1E2E52),
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/icons/files/file.png',
+                                        width: 60,
+                                        height: 60,
+                                      );
+                                    },
                                   ),
+                                  if (_downloadProgress.containsKey(file.id))
+                                    CircularProgressIndicator(
+                                      value: _downloadProgress[file.id],
+                                      strokeWidth: 3,
+                                      backgroundColor: context.appColors.overlay
+                                          .withValues(alpha: 0.2),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        _screenPrimaryText(context),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                file.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  color: _screenPrimaryText(context),
                                 ),
+                              ),
                             ],
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            file.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+
+        if (fieldName == 'priority' || fieldName == 'priority_level') {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel(label),
+              SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: IntrinsicWidth(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getPriorityBackgroundColor(value),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: _getPriorityColor(value),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        if (fieldName == 'deal') {
+          return GestureDetector(
+            onTap: () {
+              if (currentTask?.deal?.id != null) {
+                navigatorKey.currentState?.push(
+                  MaterialPageRoute(
+                    builder: (context) => DealDetailsScreen(
+                      dealId: currentTask!.deal!.id.toString(),
+                      dealName: value,
+                      dealStatus: "",
+                      statusId: 0,
+                      sum: '',
                     ),
                   ),
                 );
-              },
-            ),
-          ),
-        ],
-      );
-    }
-
-    if (label ==
-        AppLocalizations.of(context)!.translate('priority_level_colon')) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          SizedBox(width: 8),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: IntrinsicWidth(
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: _getPriorityBackgroundColor(value),
-                    borderRadius: BorderRadius.circular(16),
+              }
+            },
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
+                  backgroundColor: context.appColors.success,
+                  behavior: SnackBarBehavior.floating,
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(label),
+                SizedBox(width: 8),
+                Expanded(
                   child: Text(
                     value,
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: _getPriorityColor(value),
+                      color: _screenPrimaryText(context),
+                      decoration:
+                          value.isNotEmpty && currentTask?.deal?.id != null
+                              ? TextDecoration.underline
+                              : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        String effectiveLabel = label;
+        if (fieldName == 'executor' && value.contains(',')) {
+          effectiveLabel =
+              AppLocalizations.of(context)!.translate('assignees');
+        }
+
+        if (fieldName == 'executor' &&
+            effectiveLabel ==
+                AppLocalizations.of(context)!.translate('assignees')) {
+          return GestureDetector(
+            onTap: () => _showUsersDialog(value),
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
+                    style: const TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  backgroundColor: context.appColors.success,
+                  behavior: SnackBarBehavior.floating,
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel(effectiveLabel),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value.split(',').take(3).join(', ') +
+                        (value.split(',').length > 3
+                            ? ' и еще ${value.split(',').length - 3}...'
+                            : ''),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: _screenPrimaryText(context),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-    if (label == AppLocalizations.of(context)!.translate('task_by_deal')) {
-      return GestureDetector(
-        onTap: () {
-          if (currentTask?.deal?.id != null) {
-            navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => DealDetailsScreen(
-                  dealId: currentTask!.deal!.id.toString(),
-                  dealName: value,
-                  dealStatus: "",
-                  statusId: 0,
-                  sum: '',
-                ),
-              ),
-            );
-          }
-        },
-        onLongPress: () {
-          Clipboard.setData(ClipboardData(text: value));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)
-                        ?.translate('copied_to_clipboard') ??
-                    'Скопировано',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 2),
+              ],
             ),
           );
-        },
-        child: Row(
+        }
+
+        return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                  decoration: value.isNotEmpty && currentTask?.deal?.id != null
-                      ? TextDecoration.underline
-                      : null,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: (fieldName == 'name' ||
+                      fieldName == 'description' ||
+                      fieldName == 'project')
+                  ? _buildExpandableText(label, value, constraints.maxWidth)
+                  : _buildValue(value),
             ),
           ],
-        ),
-      );
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildLabel(label),
-        SizedBox(width: 8),
-        Expanded(
-          child: _buildValue(value),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Color _getPriorityBackgroundColor(String priority) {
-    final priorityColors = {
-      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9),
-      AppLocalizations.of(context)!.translate('normal'): Color(0xFFE8F5E9),
-      AppLocalizations.of(context)!.translate('urgent'): Color(0xFFFFEBEE),
-    };
-    return priorityColors[priority] ?? Color(0xFFE8F5E9);
-  }
-
-  Color _getPriorityBorderColor(String priority) {
-    final priorityBorderColors = {
-      AppLocalizations.of(context)!.translate('normal'): Colors.green,
-      AppLocalizations.of(context)!.translate('normal'): Colors.green,
-      AppLocalizations.of(context)!.translate('urgent'): Colors.red,
-    };
-    return priorityBorderColors[priority] ?? Color(0xFF2E7D32);
+    if (priority == AppLocalizations.of(context)!.translate('urgent')) {
+      return Color(0xFFFFEBEE);
+    }
+    return Color(0xFFE8F5E9);
   }
 
   Color _getPriorityColor(String priority) {
-    final priorityColors = {
-      AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32),
-      AppLocalizations.of(context)!.translate('normal'): Color(0xFF2E7D32),
-      AppLocalizations.of(context)!.translate('urgent'): Color(0xFFC62828),
-    };
-    return priorityColors[priority] ?? Color(0xFF2E7D32);
+    if (priority == AppLocalizations.of(context)!.translate('urgent')) {
+      return Color(0xFFC62828);
+    }
+    return Color(0xFF2E7D32);
   }
 
   void _showUsersDialog(String users) {
@@ -1459,7 +1830,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: _screenSurfaceBackground(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _screenBorder(context)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1468,8 +1843,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: Text(
                   AppLocalizations.of(context)!.translate('assignee_list'),
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: _screenPrimaryText(context),
                     fontSize: 18,
+                    fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1486,8 +1862,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(
-                          color: Color(0xff1E2E52),
+                          color: _screenPrimaryText(context),
                           fontSize: 16,
+                          fontFamily: 'Gilroy',
                         ),
                       ),
                     );
@@ -1501,8 +1878,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -1516,15 +1893,19 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return Text(
       label,
       style: TextStyle(
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+        color: _screenHintText(context),
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    if (value.isEmpty) {
+      return Container();
+    }
     return GestureDetector(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
@@ -1540,7 +1921,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 color: Colors.white,
               ),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: context.appColors.success,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape:
@@ -1554,10 +1935,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
+          fontWeight: FontWeight.w600,
+          color: _screenPrimaryText(context),
         ),
-        overflow: TextOverflow.visible,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1577,9 +1959,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: _screenSurfaceBackground(context),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _screenBorder(context)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1589,7 +1972,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: _screenPrimaryText(context),
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -1604,7 +1987,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     content,
                     textAlign: TextAlign.justify,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: _screenPrimaryText(context),
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -1617,565 +2000,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
           ),
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        await _handleBackNavigation();
-      },
-      child: BlocListener<TaskByIdBloc, TaskByIdState>(
-        listener: (context, state) {
-          if (state is TaskByIdError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.red,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        },
-        child: BlocBuilder<TaskByIdBloc, TaskByIdState>(
-          builder: (context, state) {
-            // Удаляем вызов _updateDetails из BlocBuilder, чтобы избежать setState
-            // if (state is TaskByIdLoaded) {
-            //   // Обновляем данные без setState
-            //   currentTask = state.task;
-            //   _isAuthor = _currentUserId != null && state.task.author?.id != null && _currentUserId == state.task!.author!.id;
-            //
-            //   final Map<int, String> priorityLevels = {
-            //     1: AppLocalizations.of(context)!.translate('normal'),
-            //     2: AppLocalizations.of(context)!.translate('normal'),
-            //     3: AppLocalizations.of(context)!.translate('urgent'),
-            //   };
-            //
-            //   details = [
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('task_name'),
-            //       'value': state.task!.name ?? ''
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('priority_level_colon'),
-            //       'value': priorityLevels[state.task!.priority] ?? AppLocalizations.of(context)!.translate('normal'),
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('description_details'),
-            //       'value': state.task!.description?.isNotEmpty == true ? state.task!.description! : ''
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('assignee'),
-            //       'value': state.task!.user != null && state.task!.user!.isNotEmpty
-            //           ? state.task!.user!.map((user) => '${user.name} ${user.lastname ?? ''}').join(', ')
-            //           : '',
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('project_details'),
-            //       'value': state.task!.project?.name ?? ''
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('dead_line'),
-            //       'value': state.task!.endDate != null && state.task!.endDate!.isNotEmpty
-            //           ? DateFormat('dd.MM.yyyy').format(DateTime.parse(state.task!.endDate!))
-            //           : ''
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('status_details'),
-            //       'value': state.task!.taskStatus?.taskStatus?.name ?? '',
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('author_details'),
-            //       'value': state.task!.author?.name ?? ''
-            //     },
-            //     {
-            //       'label': AppLocalizations.of(context)!.translate('creation_date_details'),
-            //       'value': formatDate(state.task!.createdAt)
-            //     },
-            //     if (state.task!.deal != null && (state.task!.deal?.name?.isNotEmpty == true))
-            //       {
-            //         'label': AppLocalizations.of(context)!.translate('task_by_deal'),
-            //         'value': state.task!.deal!.name!
-            //       },
-            //     if (state.task!.files != null && state.task!.files!.isNotEmpty)
-            //       {
-            //         'label': AppLocalizations.of(context)!.translate('files_details'),
-            //         'value': state.task!.files!.length.toString() + ' ' + AppLocalizations.of(context)!.translate('files'),
-            //       },
-            //   ];
-            //
-            //   for (var field in state.task!.taskCustomFields) {
-            //     details.add({'label': '${field.name}:', 'value': field.value});
-            //   }
-            //
-            //   if (state.task.directoryValues != null && state.task!.directoryValues!.isNotEmpty) {
-            //     for (var dirValue in state.task.directoryValues!) {
-            //       final values = dirValue.entry.values; // This is a List
-            //       final fieldValue = values.isNotEmpty ? values.first.value : ''; // take first value safely
-            //
-            //       details.add({
-            //         'label': '${dirValue.entry.directory.name}:',
-            //         'value': fieldValue,
-            //       });
-            //     }
-            //   }
-            //
-            // }
-            if (state is TaskByIdLoaded) {
-              _updateDetails(state.task);
-            } else {
-              currentTask = null;
-              details.clear();
-              _isAuthor = false;
-            }
-
-            if (state is TaskByIdLoading) {
-              return Scaffold(
-                backgroundColor: Colors.transparent,
-                body: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const AppBackgroundOverlay(
-                      preset: AppBackgroundPreset.aurora,
-                    ),
-                    Center(
-                      child: CircularProgressIndicator(
-                        color: context.appColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else if (state is TaskByIdLoaded) {
-              if (!_isConfigurationLoaded) {
-                return Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      const AppBackgroundOverlay(
-                        preset: AppBackgroundPreset.aurora,
-                      ),
-                      Center(
-                        child: CircularProgressIndicator(
-                          color: context.appColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              if (state.task == null) {
-                return Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      const AppBackgroundOverlay(
-                        preset: AppBackgroundPreset.aurora,
-                      ),
-                      Center(
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .translate('task_data_unavailable'),
-                          style: context.appTextStyles.bodyMd.copyWith(
-                            color: context.appColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              TaskById task = state.task!;
-
-              return Scaffold(
-                appBar: _buildAppBar(context,
-                    '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}'),
-                backgroundColor: Colors.transparent,
-                extendBodyBehindAppBar: true,
-                body: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const AppBackgroundOverlay(
-                      preset: AppBackgroundPreset.aurora,
-                    ),
-                    SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          MediaQuery.of(context).padding.top +
-                              kToolbarHeight +
-                              8,
-                          16,
-                          8,
-                        ),
-                        child: ListView(
-                          children: [
-                            _buildDetailsList(),
-                            if (task.chat != null || task.isFinished == 0)
-                              Row(
-                                children: [
-                                  if (task.chat != null)
-                                    Expanded(
-                                      key: keyTaskNavigateChat,
-                                      flex: task.isFinished == 1 ? 100 : 55,
-                                      child: TaskNavigateToChat(
-                                        chatId: task.chat!.id,
-                                        taskName: widget.taskName,
-                                        canSendMessage:
-                                            task.chat!.canSendMessage,
-                                      ),
-                                    ),
-                                  if (task.isFinished == 0) ...[
-                                    if (task.chat != null)
-                                      SizedBox(width: 8, height: 60),
-                                    Expanded(
-                                      key: keyTaskForReview,
-                                      flex: task.chat != null ? 45 : 100,
-                                      child: ElevatedButton(
-                                        onPressed: () => showDialog(
-                                          context: context,
-                                          builder: (dialogContext) =>
-                                              AlertDialog(
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                    horizontal: 24,
-                                                    vertical: 20),
-                                            title: Text(
-                                              AppLocalizations.of(context)!
-                                                  .translate(
-                                                      'confirm_task_completion'),
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                  fontFamily: 'Gilroy',
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                            content: Container(
-                                              width: double.maxFinite,
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Expanded(
-                                                    child: TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                              dialogContext),
-                                                      style:
-                                                          TextButton.styleFrom(
-                                                        backgroundColor:
-                                                            Colors.red,
-                                                        minimumSize:
-                                                            Size(80, 48),
-                                                        padding: EdgeInsets
-                                                            .symmetric(
-                                                                horizontal: 16),
-                                                        shape:
-                                                            RoundedRectangleBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            8)),
-                                                      ),
-                                                      child: Text(
-                                                        AppLocalizations.of(
-                                                                context)!
-                                                            .translate(
-                                                                'cancel'),
-                                                        style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontFamily:
-                                                                'Gilroy',
-                                                            fontSize: 13,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w500),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 16),
-                                                  Expanded(
-                                                    child: StatefulBuilder(
-                                                      builder:
-                                                          (context, setState) =>
-                                                              TextButton(
-                                                        onPressed: _isLoading
-                                                            ? null
-                                                            : () async {
-                                                                setState(() =>
-                                                                    _isLoading =
-                                                                        true);
-                                                                final taskId = int
-                                                                    .parse(widget
-                                                                        .taskId);
-                                                                try {
-                                                                  final result = await context
-                                                                      .read<
-                                                                          ApiService>()
-                                                                      .finishTask(
-                                                                          taskId);
-                                                                  Navigator.pop(
-                                                                      dialogContext);
-                                                                  ScaffoldMessenger.of(
-                                                                          context)
-                                                                      .showSnackBar(
-                                                                    SnackBar(
-                                                                      content:
-                                                                          Text(
-                                                                        AppLocalizations.of(context)!.translate(result['message'] ??
-                                                                            ''),
-                                                                        style: TextStyle(
-                                                                            fontFamily:
-                                                                                'Gilroy',
-                                                                            fontSize:
-                                                                                16,
-                                                                            fontWeight:
-                                                                                FontWeight.w500,
-                                                                            color: Colors.white),
-                                                                      ),
-                                                                      behavior:
-                                                                          SnackBarBehavior
-                                                                              .floating,
-                                                                      margin: EdgeInsets.symmetric(
-                                                                          horizontal:
-                                                                              16,
-                                                                          vertical:
-                                                                              8),
-                                                                      shape: RoundedRectangleBorder(
-                                                                          borderRadius:
-                                                                              BorderRadius.circular(12)),
-                                                                      backgroundColor: result['success'] ==
-                                                                              true
-                                                                          ? Colors
-                                                                              .green
-                                                                          : Colors
-                                                                              .red,
-                                                                      elevation:
-                                                                          3,
-                                                                      padding: EdgeInsets.symmetric(
-                                                                          vertical:
-                                                                              12,
-                                                                          horizontal:
-                                                                              16),
-                                                                      duration: Duration(
-                                                                          seconds:
-                                                                              2),
-                                                                    ),
-                                                                  );
-                                                                  if (result[
-                                                                          'success'] ==
-                                                                      true) {
-                                                                    context.read<CalendarBloc>().add(FetchCalendarEvents(
-                                                                        widget.initialDate?.month ??
-                                                                            DateTime.now()
-                                                                                .month,
-                                                                        widget.initialDate?.year ??
-                                                                            DateTime.now().year));
-                                                                    context
-                                                                        .read<
-                                                                            TaskBloc>()
-                                                                        .add(FetchTaskStatuses(
-                                                                            forceRefresh:
-                                                                                true));
-                                                                  }
-                                                                } catch (e) {
-                                                                  Navigator.pop(
-                                                                      dialogContext);
-                                                                  ScaffoldMessenger.of(
-                                                                          context)
-                                                                      .showSnackBar(
-                                                                    SnackBar(
-                                                                      content:
-                                                                          Text(
-                                                                        AppLocalizations.of(context)!
-                                                                            .translate('error_task_finish'),
-                                                                        style: TextStyle(
-                                                                            fontFamily:
-                                                                                'Gilroy',
-                                                                            fontSize:
-                                                                                16,
-                                                                            fontWeight:
-                                                                                FontWeight.w500,
-                                                                            color: Colors.white),
-                                                                      ),
-                                                                      behavior:
-                                                                          SnackBarBehavior
-                                                                              .floating,
-                                                                      margin: EdgeInsets.symmetric(
-                                                                          horizontal:
-                                                                              16,
-                                                                          vertical:
-                                                                              8),
-                                                                      shape: RoundedRectangleBorder(
-                                                                          borderRadius:
-                                                                              BorderRadius.circular(12)),
-                                                                      backgroundColor:
-                                                                          Colors
-                                                                              .red,
-                                                                      elevation:
-                                                                          3,
-                                                                      padding: EdgeInsets.symmetric(
-                                                                          vertical:
-                                                                              12,
-                                                                          horizontal:
-                                                                              16),
-                                                                      duration: Duration(
-                                                                          seconds:
-                                                                              3),
-                                                                    ),
-                                                                  );
-                                                                } finally {
-                                                                  setState(() =>
-                                                                      _isLoading =
-                                                                          false);
-                                                                }
-                                                              },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              Color(0xff1E2E52),
-                                                          minimumSize:
-                                                              Size(130, 48),
-                                                          padding: EdgeInsets
-                                                              .symmetric(
-                                                                  horizontal:
-                                                                      16),
-                                                          shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8)),
-                                                        ),
-                                                        child: _isLoading
-                                                            ? SizedBox(
-                                                                width: 20,
-                                                                height: 20,
-                                                                child: CircularProgressIndicator(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    strokeWidth:
-                                                                        2))
-                                                            : Text(
-                                                                AppLocalizations.of(
-                                                                        context)!
-                                                                    .translate(
-                                                                        'confirm'),
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .white,
-                                                                    fontFamily:
-                                                                        'Gilroy',
-                                                                    fontSize:
-                                                                        13,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w500)),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            backgroundColor: Color.fromARGB(
-                                                255, 255, 255, 255),
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12)),
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 12),
-                                          backgroundColor: Color(0xFF1E2E52),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8)),
-                                        ),
-                                        child: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('for_review'),
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Gilroy'),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            const SizedBox(height: 16),
-                            ActionHistoryWidgetTask(
-                                taskId: int.parse(widget.taskId),
-                                key: keyTaskHistory),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else if (state is TaskByIdError) {
-              return Scaffold(
-                backgroundColor: Colors.transparent,
-                body: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const AppBackgroundOverlay(
-                      preset: AppBackgroundPreset.aurora,
-                    ),
-                    Center(
-                      child: Text(
-                        _getTaskErrorMessage(state.message),
-                        style: context.appTextStyles.bodyMd.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: context.appColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return Scaffold(
-              body: Center(
-                child: Text(''),
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 }

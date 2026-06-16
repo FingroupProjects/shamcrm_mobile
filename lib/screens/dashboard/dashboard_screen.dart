@@ -132,14 +132,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (isFirstTime) {
         await Future.wait([
           _loadUserRoles(),
-          _checkPermissionsAndTutorial(),
           _checkAccountingDashboardPermission(), // НОВОЕ: Проверяем право
-          Future.delayed(const Duration(seconds: 3)),
         ]);
         await prefs.setBool('isFirstTime', false);
       } else {
         await _loadUserRoles();
-        await _checkPermissionsAndTutorial();
         await _checkAccountingDashboardPermission(); // НОВОЕ: Проверяем право
       }
 
@@ -148,6 +145,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           isLoading = false;
         });
       }
+
+      // Не держим главный loader из-за tutorial/progress-проверок:
+      // дашборд должен появляться сразу, а это можно догрузить в фоне.
+      await _checkPermissionsAndTutorial();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -734,6 +735,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               chartSettingsTrigger:
                                   _analyticsChartSettingsTrigger,
                               showStatistics: userRoles.contains('admin'),
+                              showInitialLoader: false,
                             )
                           : RefreshIndicator(
                               color: const Color(0xff1E2E52),

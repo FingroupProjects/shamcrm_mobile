@@ -13,6 +13,7 @@ import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/event/event_cache.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_add_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_card.dart';
@@ -468,15 +469,35 @@ class _EventScreenState extends State<EventScreen>
                       context: context,
                       position: position,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      elevation: 8,
+                          borderRadius: BorderRadius.circular(18)),
+                      color: context.appColors.surfacePrimary,
+                      elevation: 10,
                       items: state.funnels
                           .map((f) => PopupMenuItem<SalesFunnel>(
                                 value: f,
-                                child: Text(f.name,
-                                    style:
-                                        const TextStyle(fontFamily: 'Gilroy')),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        f.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.appTextStyles.bodyLg
+                                            .copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: context.appColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_selectedFunnel?.id == f.id)
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 18,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
+                                      ),
+                                  ],
+                                ),
                               ))
                           .toList(),
                     );
@@ -519,17 +540,24 @@ class _EventScreenState extends State<EventScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.expand_more,
-                            color: Color(0xff1E2E52), size: 24),
+                        Icon(
+                          Icons.expand_more,
+                          color: selectedFunnel != null
+                              ? context.appColors.buttonPrimaryBg
+                              : context.appColors.textPrimary,
+                          size: 24,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: selectedFunnel != null
+                                  ? context.appColors.buttonPrimaryBg
+                                  : context.appColors.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -544,11 +572,13 @@ class _EventScreenState extends State<EventScreen>
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: selectedFunnel != null
+                        ? context.appColors.buttonPrimaryBg
+                        : context.appColors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

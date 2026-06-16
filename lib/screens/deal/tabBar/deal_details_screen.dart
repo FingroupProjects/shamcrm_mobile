@@ -12,6 +12,11 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_state.dart
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
@@ -201,9 +206,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           if (!mounted) return;
           setState(() {
             _statusChangedFromDetails = true;
-            _currentStatusId = newStatusIds.isNotEmpty
-                ? newStatusIds.first
-                : _currentStatusId;
+            _currentStatusId =
+                newStatusIds.isNotEmpty ? newStatusIds.first : _currentStatusId;
           });
           _reloadDealView();
         },
@@ -345,18 +349,18 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -371,7 +375,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                     content,
                     textAlign: TextAlign.justify,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textSecondary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -384,8 +388,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -811,143 +815,185 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       },
       child: MultiBlocListener(
         listeners: [
-        BlocListener<DealByIdBloc, DealByIdState>(
-          listener: (context, state) {
-            if (state is DealByIdError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
+          BlocListener<DealByIdBloc, DealByIdState>(
+            listener: (context, state) {
+              if (state is DealByIdError) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.translate(state.message),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: Colors.red,
+                      elevation: 3,
+                      padding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      duration: Duration(seconds: 3),
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
-              });
-            }
-          },
-        ),
-        BlocListener<OrderByLeadBloc, OrderByLeadState>(
-          listener: (context, state) {
-            if (state is OrderByLeadError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              });
-            }
-          },
-        ),
+                  );
+                });
+              }
+            },
+          ),
+          BlocListener<OrderByLeadBloc, OrderByLeadState>(
+            listener: (context, state) {
+              if (state is OrderByLeadError) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                });
+              }
+            },
+          ),
         ],
         child: BlocBuilder<DealByIdBloc, DealByIdState>(
           builder: (context, state) {
-          if (state is DealByIdLoading) {
-            return Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52))),
-            );
-          } else if (state is DealByIdLoaded) {
-            if (!_isConfigurationLoaded) {
+            if (state is DealByIdLoading) {
               return Scaffold(
-                backgroundColor: Colors.white,
+                backgroundColor: context.appColors.backgroundPrimary,
                 body: Center(
-                    child: CircularProgressIndicator(color: Color(0xff1E2E52))),
-              );
-            }
-            DealById deal = state.deal;
-            _updateDetails(deal);
-            return Scaffold(
-              appBar: _buildAppBar(context,
-                  AppLocalizations.of(context)!.translate('view_deal'), deal),
-              backgroundColor: Colors.white,
-              body: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ListView(
-                  children: [
-                    _buildDetailsList(),
-                    if ((currentDeal?.lead?.id ?? 0) > 0) ...[
-                      const SizedBox(height: 8),
-                      LeadNavigateToChat(
-                        leadId: currentDeal!.lead!.id,
-                        leadName: currentDeal!.lead!.name,
-                        chats: (currentDeal!.lead!.chats ?? [])
-                            .map((chat) => {
-                                  'id': chat['id'],
-                                  'integration': chat['integration'] != null
-                                      ? {
-                                          'id': chat['integration']['id'],
-                                          'name': chat['integration']['name'],
-                                          'username': chat['integration']
-                                              ['username'],
-                                        }
-                                      : null,
-                                })
-                            .toList(),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    ActionHistoryWidget(
-                        dealId: int.parse(widget.dealId), key: keyDealHistory),
-                    if (_canReadOrders) ...[
-                      const SizedBox(height: 8),
-                      OrdersWidget(
-                        entityId: int.parse(widget.dealId),
-                        relationType: 'deal',
-                        leadId: currentDeal?.lead?.id,
-                        clientPhone: currentDeal?.lead?.phone,
-                        autoFetch: false,
-                        onOrdersChanged: _refreshDealDetails,
-                        key: GlobalKey(),
-                      ),
-                    ],
-                    if (_createTaskInDealEnabled) ...[
-                      const SizedBox(height: 8),
-                      _buildDealNoticeCreateBlock(),
-                      const SizedBox(height: 8),
-                      _buildDealNoticesList(),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          } else if (state is DealByIdError) {
-            return Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(
-                child: Text(
-                  _getDealErrorMessage(state.message),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                  child: PlayStoreImageLoading(
+                    size: 72,
+                    duration: const Duration(milliseconds: 950),
                   ),
                 ),
-              ),
+              );
+            } else if (state is DealByIdLoaded) {
+              if (!_isConfigurationLoaded) {
+                return Scaffold(
+                  backgroundColor: context.appColors.backgroundPrimary,
+                  body: Center(
+                    child: PlayStoreImageLoading(
+                      size: 72,
+                      duration: const Duration(milliseconds: 950),
+                    ),
+                  ),
+                );
+              }
+              DealById deal = state.deal;
+              _updateDetails(deal);
+              return Scaffold(
+                extendBodyBehindAppBar: false,
+                appBar: _buildAppBar(context,
+                    AppLocalizations.of(context)!.translate('view_deal'), deal),
+                backgroundColor:
+                    context.appColors.overlay.withValues(alpha: 0),
+                body: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const AppBackgroundOverlay(
+                      preset: AppBackgroundPreset.aurora,
+                    ),
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                      child: ListView(
+                        children: [
+                          Container(
+                            padding:
+                                const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                            decoration: BoxDecoration(
+                              color: context.appColors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                  color: context.appColors.borderSubtle),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.appColors.shadow
+                                      .withValues(alpha: 0.14),
+                                  blurRadius: 28,
+                                  offset: const Offset(0, 14),
+                                ),
+                              ],
+                            ),
+                            child: _buildDetailsList(),
+                          ),
+                          if ((currentDeal?.lead?.id ?? 0) > 0) ...[
+                            const SizedBox(height: 10),
+                            LeadNavigateToChat(
+                              leadId: currentDeal!.lead!.id,
+                              leadName: currentDeal!.lead!.name,
+                              chats: (currentDeal!.lead!.chats ?? [])
+                                  .map((chat) => {
+                                        'id': chat['id'],
+                                        'integration':
+                                            chat['integration'] != null
+                                                ? {
+                                                    'id': chat['integration']
+                                                        ['id'],
+                                                    'name': chat['integration']
+                                                        ['name'],
+                                                    'username': chat[
+                                                        'integration']
+                                                    ['username'],
+                                                  }
+                                                : null,
+                                      })
+                                  .toList(),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          ActionHistoryWidget(
+                              dealId: int.parse(widget.dealId),
+                              key: keyDealHistory),
+                          if (_canReadOrders) ...[
+                            const SizedBox(height: 8),
+                            OrdersWidget(
+                              entityId: int.parse(widget.dealId),
+                              relationType: 'deal',
+                              leadId: currentDeal?.lead?.id,
+                              clientPhone: currentDeal?.lead?.phone,
+                              autoFetch: false,
+                              onOrdersChanged: _refreshDealDetails,
+                              key: GlobalKey(),
+                            ),
+                          ],
+                          if (_createTaskInDealEnabled) ...[
+                            const SizedBox(height: 8),
+                            _buildDealNoticeCreateBlock(),
+                            const SizedBox(height: 8),
+                            _buildDealNoticesList(),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else if (state is DealByIdError) {
+              return Scaffold(
+                backgroundColor: context.appColors.backgroundPrimary,
+                body: Center(
+                  child: Text(
+                    _getDealErrorMessage(state.message),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return Scaffold(
+              backgroundColor: context.appColors.backgroundPrimary,
+              body: Center(child: Text('')),
             );
-          }
-          return Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(child: Text('')),
-          );
           },
         ),
       ),
@@ -974,10 +1020,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
+                Icon(
                   Icons.keyboard_arrow_down_rounded,
                   size: 18,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
               ],
             ),
@@ -994,11 +1040,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   }
                 },
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
+            foregroundColor: context.appColors.buttonPrimaryFg,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: const Color(0xff1E2E52),
+            backgroundColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
           child: _isCreatingDealNotice
@@ -1027,40 +1073,59 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   Future<void> _showDealNoticeTypePicker() async {
     final type = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.appColors.borderSubtle,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 8),
               ListTile(
-                title: const Text(
+                leading: Icon(
+                  Icons.task_alt_rounded,
+                  color: context.appColors.buttonPrimaryBg,
+                ),
+                title: Text(
                   'Задачи',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 onTap: () => Navigator.pop(context, 'task'),
               ),
-              const Divider(height: 1),
+              Divider(height: 1, color: context.appColors.borderSubtle),
               ListTile(
-                title: const Text(
+                leading: Icon(
+                  Icons.mode_comment_outlined,
+                  color: context.appColors.buttonPrimaryBg,
+                ),
+                title: Text(
                   'Комментарий',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 onTap: () => Navigator.pop(context, 'comment'),
               ),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -1075,10 +1140,13 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   Widget _buildDealNoticesList() {
     if (_isDealNoticesLoading) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: PlayStoreImageLoading(
+            size: 46,
+            duration: const Duration(milliseconds: 950),
+          ),
         ),
       );
     }
@@ -1091,9 +1159,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         child: Container(
           width: double.infinity,
           decoration: TaskCardStyles.taskCardDecoration(context),
-          child: const Center(
+          child: Center(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Text(
                 'Пусто',
                 textAlign: TextAlign.center,
@@ -1101,7 +1169,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textSecondary,
                 ),
               ),
             ),
@@ -1146,10 +1214,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                           : Icons.radio_button_unchecked_rounded),
                   size: 22,
                   color: isComment
-                      ? const Color(0xff1E2E52)
+                      ? context.appColors.buttonPrimaryBg
                       : (note.isFinished
-                          ? const Color(0xff34C759)
-                          : const Color(0xff99A4BA)),
+                          ? context.appColors.success
+                          : context.appColors.textMuted),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1160,11 +1228,11 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                         note.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1172,22 +1240,22 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                         note.body,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textSecondary,
                         ),
                       ),
                       if (formattedDate.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
                           formattedDate,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
+                            color: context.appColors.textMuted,
                           ),
                         ),
                       ],
@@ -1195,10 +1263,10 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   ),
                 ),
                 PopupMenuButton<String>(
-                  color: Colors.white,
-                  surfaceTintColor: Colors.white,
+                  color: context.appColors.surfacePrimary,
+                  surfaceTintColor: context.appColors.surfacePrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   onSelected: (value) async {
                     if (value == 'edit') {
@@ -1207,21 +1275,21 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       await _showDeleteDealNoticeDialog(note);
                     }
                   },
-                  itemBuilder: (context) => const [
+                  itemBuilder: (context) => [
                     PopupMenuItem<String>(
                       value: 'edit',
                       child: Row(
                         children: [
                           Icon(Icons.edit_outlined,
-                              size: 18, color: Color(0xff1E2E52)),
-                          SizedBox(width: 8),
+                              size: 18, color: context.appColors.iconPrimary),
+                          const SizedBox(width: 8),
                           Text(
                             'Редактировать',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textPrimary,
                             ),
                           ),
                         ],
@@ -1232,27 +1300,27 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       child: Row(
                         children: [
                           Icon(Icons.delete_outline,
-                              size: 18, color: Color(0xff1E2E52)),
-                          SizedBox(width: 8),
+                              size: 18, color: context.appColors.iconPrimary),
+                          const SizedBox(width: 8),
                           Text(
                             'Удалить',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textPrimary,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                  child: const Padding(
-                    padding: EdgeInsets.only(left: 4),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4),
                     child: Icon(
                       Icons.more_vert,
                       size: 20,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.iconPrimary,
                     ),
                   ),
                 ),
@@ -1268,42 +1336,42 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       child: TextField(
                         controller: controller,
                         onTap: () {},
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Комментарий',
-                          hintStyle: const TextStyle(
+                          hintStyle: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
+                            color: context.appColors.textMuted,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 8),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.appColors.fieldBg,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(
-                              color: Color(0xff1E3A8A),
+                            borderSide: BorderSide(
+                              color: context.appColors.fieldBorder,
                               width: 2,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(
-                              color: Color(0xff1E3A8A),
+                            borderSide: BorderSide(
+                              color: context.appColors.fieldBorder,
                               width: 2,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(
-                              color: Color(0xff1E3A8A),
+                            borderSide: BorderSide(
+                              color: context.appColors.buttonPrimaryBg,
                               width: 2,
                             ),
                           ),
@@ -1323,8 +1391,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                               ),
                       style: ElevatedButton.styleFrom(
                         elevation: 0,
-                        backgroundColor: const Color(0xff4F40EC),
-                        foregroundColor: Colors.white,
+                        backgroundColor: context.appColors.buttonPrimaryBg,
+                        foregroundColor: context.appColors.buttonPrimaryFg,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -2008,7 +2076,6 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title, DealById? deal) {
-    // Формируем заголовок в зависимости от наличия номера сделки
     String appBarTitle;
     if (deal?.dealNumber != null) {
       appBarTitle =
@@ -2017,163 +2084,196 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       appBarTitle = AppLocalizations.of(context)!.translate('view_deal');
     }
 
+    final primaryText = context.appColors.textPrimary;
+    final subtleBorder = context.appColors.borderSubtle;
+    final appBarGradient = [
+      context.appColors.surfacePrimary,
+      context.appColors.surfaceElevated,
+    ];
+
     return AppBar(
-      backgroundColor: Colors.white,
+      automaticallyImplyLeading: false,
+      backgroundColor: context.appColors.overlay.withValues(alpha: 0),
       forceMaterialTransparency: true,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: context.appColors.overlay.withValues(alpha: 0),
+      shadowColor: context.appColors.overlay.withValues(alpha: 0),
       centerTitle: false,
-      leadingWidth: 40,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
+      toolbarHeight: 74,
+      titleSpacing: 16,
+      title: AppBarShell(
+        leading: AppBarShell.capsule(
+          context,
+          width: AppBarShell.orbSize,
+          padding: EdgeInsets.zero,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
           child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            onPressed: _handleBackNavigation,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: primaryText,
             ),
-            onPressed: () => _handleBackNavigation(),
           ),
         ),
-      ),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
-        child: Text(
-          appBarTitle,
-          style: const TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        center: AppBarShell.capsule(
+          context,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              appBarTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 18,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                color: primaryText,
+                letterSpacing: 0.2,
+              ),
+            ),
           ),
         ),
-      ),
-      actions: [
-        if (_canEditDeal)
-          IconButton(
-            key: keyDealEdit,
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-              if (currentDeal != null) {
-                // ✅ ИСПРАВЛЕНО: Правильный парсинг дат
-                String? startDateString;
-                String? endDateString;
-                String? createdAtDateString;
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_canEditDeal) ...[
+              AppBarShell.capsule(
+                context,
+                width: AppBarShell.orbSize,
+                padding: EdgeInsets.zero,
+                gradientColors: appBarGradient,
+                borderColor: subtleBorder,
+                child: IconButton(
+                  key: keyDealEdit,
+                  onPressed: () async {
+                    if (currentDeal != null) {
+                      String? startDateString;
+                      String? endDateString;
+                      String? createdAtDateString;
 
-                try {
-                  // Парсим startDate
-                  if (currentDeal!.startDate != null &&
-                      currentDeal!.startDate!.isNotEmpty) {
-                    final parsedStartDate =
-                        DateTime.parse(currentDeal!.startDate!);
-                    startDateString =
-                        DateFormat('dd/MM/yyyy').format(parsedStartDate);
-                  }
-                } catch (e) {
-                  debugPrint('Ошибка парсинга startDate: $e');
-                  startDateString = null;
-                }
+                      try {
+                        if (currentDeal!.startDate != null &&
+                            currentDeal!.startDate!.isNotEmpty) {
+                          final parsedStartDate =
+                              DateTime.parse(currentDeal!.startDate!);
+                          startDateString =
+                              DateFormat('dd/MM/yyyy').format(parsedStartDate);
+                        }
+                      } catch (e) {
+                        debugPrint('Ошибка парсинга startDate: $e');
+                        startDateString = null;
+                      }
 
-                try {
-                  // Парсим endDate
-                  if (currentDeal!.endDate != null &&
-                      currentDeal!.endDate!.isNotEmpty) {
-                    final parsedEndDate = DateTime.parse(currentDeal!.endDate!);
-                    endDateString =
-                        DateFormat('dd/MM/yyyy').format(parsedEndDate);
-                  }
-                } catch (e) {
-                  debugPrint('Ошибка парсинга endDate: $e');
-                  endDateString = null;
-                }
+                      try {
+                        if (currentDeal!.endDate != null &&
+                            currentDeal!.endDate!.isNotEmpty) {
+                          final parsedEndDate =
+                              DateTime.parse(currentDeal!.endDate!);
+                          endDateString =
+                              DateFormat('dd/MM/yyyy').format(parsedEndDate);
+                        }
+                      } catch (e) {
+                        debugPrint('Ошибка парсинга endDate: $e');
+                        endDateString = null;
+                      }
 
-                try {
-                  // Парсим createdAt
-                  if (currentDeal!.createdAt != null &&
-                      currentDeal!.createdAt!.isNotEmpty) {
-                    final parsedCreatedAt =
-                        DateTime.parse(currentDeal!.createdAt!);
-                    createdAtDateString =
-                        DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
-                  }
-                } catch (e) {
-                  debugPrint('Ошибка парсинга createdAt: $e');
-                  createdAtDateString = null;
-                }
+                      try {
+                        if (currentDeal!.createdAt != null &&
+                            currentDeal!.createdAt!.isNotEmpty) {
+                          final parsedCreatedAt =
+                              DateTime.parse(currentDeal!.createdAt!);
+                          createdAtDateString =
+                              DateFormat('dd/MM/yyyy').format(parsedCreatedAt);
+                        }
+                      } catch (e) {
+                        debugPrint('Ошибка парсинга createdAt: $e');
+                        createdAtDateString = null;
+                      }
 
-                final shouldUpdate = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DealEditScreen(
-                      dealId: currentDeal!.id,
-                      dealName: currentDeal!.name,
-                      statusId: currentDeal!.statusId,
-                      dealStatuses: currentDeal!
-                          .dealStatuses, // ✅ Передаём массив статусов
-                      manager: currentDeal!.manager != null
-                          ? currentDeal!.manager!.id.toString()
-                          : '',
-                      lead: currentDeal!.lead != null
-                          ? currentDeal!.lead!.id.toString()
-                          : '',
-                      startDate: startDateString,
-                      endDate: endDateString,
-                      createdAt: createdAtDateString,
-                      sum: currentDeal!.sum,
-                      description: currentDeal!.description ?? '',
-                      // dealCustomFields: currentDeal!.dealCustomFields,
-                      directoryValues: currentDeal!.directoryValues,
-                      files: currentDeal!.files,
-                      dealById: currentDeal!,
-                    ),
+                      final shouldUpdate = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DealEditScreen(
+                            dealId: currentDeal!.id,
+                            dealName: currentDeal!.name,
+                            statusId: currentDeal!.statusId,
+                            dealStatuses: currentDeal!.dealStatuses,
+                            manager: currentDeal!.manager != null
+                                ? currentDeal!.manager!.id.toString()
+                                : '',
+                            lead: currentDeal!.lead != null
+                                ? currentDeal!.lead!.id.toString()
+                                : '',
+                            startDate: startDateString,
+                            endDate: endDateString,
+                            createdAt: createdAtDateString,
+                            sum: currentDeal!.sum,
+                            description: currentDeal!.description ?? '',
+                            directoryValues: currentDeal!.directoryValues,
+                            files: currentDeal!.files,
+                            dealById: currentDeal!,
+                          ),
+                        ),
+                      );
+
+                      if (shouldUpdate == true) {
+                        setState(() {
+                          _statusChangedFromDetails = true;
+                        });
+                        _loadFieldConfiguration();
+                        context
+                            .read<DealByIdBloc>()
+                            .add(FetchDealByIdEvent(dealId: currentDeal!.id));
+                        context.read<DealBloc>().add(FetchDealStatuses());
+                      }
+                    }
+                  },
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: primaryText,
                   ),
-                );
-
-                if (shouldUpdate == true) {
-                  setState(() {
-                    _statusChangedFromDetails = true;
-                  });
-                  _loadFieldConfiguration();
-                  context
-                      .read<DealByIdBloc>()
-                      .add(FetchDealByIdEvent(dealId: currentDeal!.id));
-                  context.read<DealBloc>().add(FetchDealStatuses());
-                }
-              }
-            },
-          ),
-        if (_canDeleteDeal)
-          IconButton(
-            key: keyDealDelete,
-            padding: EdgeInsets.only(right: 8),
-            constraints: BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/delete.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              showDialog<bool>(
-                context: context,
-                builder: (context) => DeleteDealDialog(
-                  dealId: currentDeal!.id,
-                  leadId: currentDeal!.lead!.id,
                 ),
-              ).then((deleted) {
-                if (deleted == true && mounted) {
-                  Navigator.pop(context, true);
-                }
-              });
-            },
-          ),
-      ],
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (_canDeleteDeal)
+              AppBarShell.capsule(
+                context,
+                width: AppBarShell.orbSize,
+                padding: EdgeInsets.zero,
+                gradientColors: appBarGradient,
+                borderColor: subtleBorder,
+                child: IconButton(
+                  key: keyDealDelete,
+                  onPressed: () {
+                    showDialog<bool>(
+                      context: context,
+                      builder: (context) => DeleteDealDialog(
+                        dealId: currentDeal!.id,
+                        leadId: currentDeal?.lead?.id ?? 0,
+                      ),
+                    ).then((deleted) {
+                      if (deleted == true && mounted) {
+                        Navigator.pop(context, true);
+                      }
+                    });
+                  },
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 20,
+                    color: primaryText,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2201,16 +2301,18 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Text(
                   AppLocalizations.of(context)!.translate('assignee_list'),
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2228,7 +2330,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textSecondary,
                           fontSize: 16,
                         ),
                       ),
@@ -2243,8 +2345,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -2258,47 +2360,36 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
   Widget _buildDetailItem(String label, String value) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (label == AppLocalizations.of(context)!.translate('status_details') ||
-            label == AppLocalizations.of(context)!.translate('status_history')) {
+        if (label ==
+                AppLocalizations.of(context)!.translate('status_details') ||
+            label ==
+                AppLocalizations.of(context)!.translate('status_history')) {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _openStatusChangeSheet,
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-
                 SnackBar(
-
                   content: Text(
-
-                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
                     style: const TextStyle(
-
                       fontFamily: 'Gilroy',
-
                       fontSize: 15,
-
                       fontWeight: FontWeight.w500,
-
                       color: Colors.white,
-
                     ),
-
                   ),
-
                   backgroundColor: Colors.green,
-
                   behavior: SnackBarBehavior.floating,
-
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
-
                 ),
-
               );
             },
             child: Row(
@@ -2317,16 +2408,16 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.buttonPrimaryBg,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                         size: 16,
                       ),
                     ],
@@ -2347,39 +2438,26 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-
                 SnackBar(
-
                   content: Text(
-
-                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
                     style: const TextStyle(
-
                       fontFamily: 'Gilroy',
-
                       fontSize: 15,
-
                       fontWeight: FontWeight.w500,
-
                       color: Colors.white,
-
                     ),
-
                   ),
-
                   backgroundColor: Colors.green,
-
                   behavior: SnackBarBehavior.floating,
-
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
-
                 ),
-
               );
             },
             child: Row(
@@ -2396,7 +2474,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.buttonPrimaryBg,
                       decoration: TextDecoration.underline,
                     ),
                     maxLines: 1,
@@ -2466,7 +2544,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                                       backgroundColor:
                                           Colors.grey.withOpacity(0.3),
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xff1E2E52),
+                                        context.appColors.buttonPrimaryBg,
                                       ),
                                     ),
                                 ],
@@ -2480,7 +2558,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                                  color: context.appColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -2510,39 +2588,26 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-
                 SnackBar(
-
                   content: Text(
-
-                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
                     style: const TextStyle(
-
                       fontFamily: 'Gilroy',
-
                       fontSize: 15,
-
                       fontWeight: FontWeight.w500,
-
                       color: Colors.white,
-
                     ),
-
                   ),
-
                   backgroundColor: Colors.green,
-
                   behavior: SnackBarBehavior.floating,
-
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
-
                 ),
-
               );
             },
             child: Row(
@@ -2557,7 +2622,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.buttonPrimaryBg,
                       decoration:
                           value.isNotEmpty ? TextDecoration.underline : null,
                     ),
@@ -2591,39 +2656,26 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-
                 SnackBar(
-
                   content: Text(
-
-                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
                     style: const TextStyle(
-
                       fontFamily: 'Gilroy',
-
                       fontSize: 15,
-
                       fontWeight: FontWeight.w500,
-
                       color: Colors.white,
-
                     ),
-
                   ),
-
                   backgroundColor: Colors.green,
-
                   behavior: SnackBarBehavior.floating,
-
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
-
                 ),
-
               );
             },
             child: Row(
@@ -2638,7 +2690,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.buttonPrimaryBg,
                       decoration: TextDecoration.underline,
                     ),
                     maxLines: 1,
@@ -2671,7 +2723,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textMuted,
       ),
     );
   }
@@ -2681,39 +2733,24 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
               style: const TextStyle(
-
                 fontFamily: 'Gilroy',
-
                 fontSize: 15,
-
                 fontWeight: FontWeight.w500,
-
                 color: Colors.white,
-
               ),
-
             ),
-
             backgroundColor: Colors.green,
-
             behavior: SnackBarBehavior.floating,
-
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
-
           ),
-
         );
       },
       child: Text(
@@ -2722,7 +2759,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
+          color: context.appColors.textPrimary,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,

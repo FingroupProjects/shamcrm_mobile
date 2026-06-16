@@ -7,7 +7,6 @@ import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
-import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -1338,6 +1337,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
+        padding: EdgeInsets.zero,
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
@@ -1448,6 +1448,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
                 itemCount:
                     filteredTasks.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
@@ -1504,31 +1505,68 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCustomTabBar() {
-    final colors = context.appColors;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      controller: _tabScrollController,
-      child: Row(
-        children: [
-          ...List.generate(_tabTitles.length, (index) {
-            if (_tabKeys.length <= index) {
-              _tabKeys.add(GlobalKey());
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildTabButton(index),
-            );
-          }),
-          if (_canCreateTaskStatus)
-            IconButton(
-              icon: Icon(
-                Icons.add_circle_rounded,
-                color: colors.buttonPrimaryBg,
-                size: 30,
-              ),
-              onPressed: _addNewTab,
-            ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
         ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        controller: _tabScrollController,
+        child: Row(
+          children: [
+            ...List.generate(_tabTitles.length, (index) {
+              if (_tabKeys.length <= index) {
+                _tabKeys.add(GlobalKey());
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _buildTabButton(index),
+              );
+            }),
+            if (_canCreateTaskStatus)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: _addNewTab,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.appColors.surfacePrimary
+                            .withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: context.appColors.borderSubtle
+                              .withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Image.asset(
+                        'assets/icons/tabBar/add_black.png',
+                        width: 20,
+                        height: 20,
+                        color: context.appColors.iconPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1605,7 +1643,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   // Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int taskCount) {
-    final colors = context.appColors;
+    final title = (_tabTitles[index]['title'] as String?)?.trim() ?? '';
 
     return GestureDetector(
       key: _tabKeys[index],
@@ -1621,39 +1659,74 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       onLongPress: () {
         _showStatusOptions(context, index);
       },
-      child: Container(
-        decoration: TaskStyles.tabButtonDecoration(context, isActive),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        decoration: BoxDecoration(
+          color: isActive
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
+              : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isActive
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.55)
+                : context.appColors.borderSubtle.withValues(alpha: 0.35),
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : const [],
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _tabTitles[index]['title'],
-              style: TaskStyles.tabTextStyle(context).copyWith(
-                color: isActive
-                    ? TaskStyles.activeColor(context)
-                    : TaskStyles.inactiveColor(context),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                title.isEmpty ? 'Статус' : title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.textPrimary
+                      : context.appColors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                ),
               ),
             ),
-            Transform.translate(
-              offset: const Offset(12, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isActive ? colors.textPrimary : colors.textSecondary,
-                    width: 1,
-                  ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.18)
+                    : context.appColors.surfaceElevated.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.85)
+                      : context.appColors.textInverse.withValues(alpha: 0.22),
+                  width: 1,
                 ),
-                child: Text(
-                  taskCount.toString(),
-                  style: TextStyle(
-                    color: isActive ? colors.textPrimary : colors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              child: Text(
+                taskCount.toString(),
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.textPrimary,
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -31,13 +32,6 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   ProjectTask? selectedProjectData;
   bool _hasAutoSelected = false;
 
-  final TextStyle projectTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -45,10 +39,8 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
   }
 
   void _handleProjectSelection(List<ProjectTask> projects) {
-    // Избегаем повторного автоматического выбора
     if (_hasAutoSelected) return;
 
-    // Автоматический выбор, если только один проект
     if (projects.length == 1 && selectedProjectData == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
@@ -60,37 +52,29 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
     } else if (widget.selectedProject != null && projects.isNotEmpty) {
       try {
         final foundProject = projects.firstWhere(
-          (projectTask) => projectTask.id.toString() == widget.selectedProject,
+          (p) => p.id.toString() == widget.selectedProject,
         );
         if (selectedProjectData != foundProject) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              selectedProjectData = foundProject;
-            });
+            setState(() => selectedProjectData = foundProject);
           });
         }
       } catch (e) {
         if (selectedProjectData != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              selectedProjectData = null;
-            });
+            setState(() => selectedProjectData = null);
           });
         }
       }
     }
   }
 
-  // Метод для проверки, содержится ли selectedProjectData в текущем списке
   ProjectTask? _getValidInitialItem(List<ProjectTask> projects) {
     if (selectedProjectData == null) return null;
-
-    // Проверяем, содержится ли selectedProjectData в текущем списке проектов
     try {
       return projects
-          .firstWhere((project) => project.id == selectedProjectData!.id);
+          .firstWhere((p) => p.id == selectedProjectData!.id);
     } catch (e) {
-      // Если не найден, возвращаем null
       return null;
     }
   }
@@ -116,6 +100,15 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final projectTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = projectTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+
     return FormField<ProjectTask>(
       validator: (value) {
         if (selectedProjectData == null) {
@@ -138,21 +131,19 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1.5,
+                  width: 1,
                   color: widget.errorText != null
-                      ? Colors.red
-                      : Colors.transparent,
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
-
-                    // Обрабатываем выбор проекта после завершения build
                     _handleProjectSelection(projectsList);
                   }
 
@@ -165,18 +156,45 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: projectTextStyle,
+                      listItemStyle: projectTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.14),
+                        highlightColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.backgroundPrimary,
+                        textStyle: projectTextStyle,
+                        hintStyle: hintStyle,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.borderSubtle,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return Padding(
@@ -198,19 +216,14 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                     },
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!.translate('select_project'),
-                      style: projectTextStyle.copyWith(
-                        fontSize: 14,
-                        color: const Color(0xFF1E2E52),
-                      ),
+                      style: hintStyle,
                     ),
                     excludeSelected: false,
                     initialItem: _getValidInitialItem(projectsList),
                     onChanged: (value) {
                       if (value != null) {
                         widget.onSelectProject(value);
-                        setState(() {
-                          selectedProjectData = value;
-                        });
+                        setState(() => selectedProjectData = value);
                         field.didChange(value);
                         FocusScope.of(context).unfocus();
                       }
@@ -221,14 +234,11 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
             ),
             if (widget.errorText != null)
               Padding(
-                padding: const EdgeInsets.only(top: 4, left: 0),
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   widget.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Gilroy',
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),

@@ -5,7 +5,6 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,8 +15,19 @@ import 'package:intl/intl.dart';
 
 class MyTaskAddScreen extends StatefulWidget {
   final int statusId;
+  final String? initialName;
+  final String? initialDescription;
+  final String? initialEndDate;
+  final bool isCopyMode;
 
-  const MyTaskAddScreen({Key? key, required this.statusId}) : super(key: key);
+  const MyTaskAddScreen({
+    Key? key,
+    required this.statusId,
+    this.initialName,
+    this.initialDescription,
+    this.initialEndDate,
+    this.isCopyMode = false,
+  }) : super(key: key);
 
   @override
   _MyTaskAddScreenState createState() => _MyTaskAddScreenState();
@@ -49,6 +59,17 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
   void _setDefaultValues() {
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
+    nameController.text = widget.initialName ?? '';
+    descriptionController.text = widget.initialDescription ?? '';
+
+    if (widget.initialEndDate != null && widget.initialEndDate!.isNotEmpty) {
+      try {
+        endDateController.text = DateFormat('dd/MM/yyyy')
+            .format(DateTime.parse(widget.initialEndDate!));
+      } catch (_) {
+        endDateController.text = widget.initialEndDate!;
+      }
+    }
   }
 
   // Функция выбора файла
@@ -250,7 +271,9 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
-            AppLocalizations.of(context)!.translate('new_task'),
+            widget.isCopyMode
+                ? AppLocalizations.of(context)!.translate('copy_task')
+                : AppLocalizations.of(context)!.translate('new_task'),
             style: const TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',

@@ -103,6 +103,7 @@ dependencies:
   android_intent_plus: ^6.0.0
   firebase_crashlytics: ^4.3.10
   firebase_analytics: ^11.6.0
+  flex_color_picker: ^3.8.0
   # home_widget: ^0.8.1
 
 

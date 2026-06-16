@@ -39,8 +39,10 @@ class AppThemeController extends ChangeNotifier {
   String? get backgroundAssetPath => _backgroundAssetPath;
   double get backgroundBlurPercent => _backgroundBlurPercent;
   double get backgroundBlurSigma => _blurPercentToSigma(_backgroundBlurPercent);
-  AppPalette get lightPalette => _palettePreset.lightPalette;
-  AppPalette get darkPalette => _palettePreset.darkPalette;
+  AppPalette get lightPalette =>
+      _palettePreset.lightPaletteForSeed(_paletteSeedColor);
+  AppPalette get darkPalette =>
+      _palettePreset.darkPaletteForSeed(_paletteSeedColor);
   Color get paletteSeedColor => _paletteSeedColor ?? const Color(0xFF0EA5E9);
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   bool get isSystemMode => _themeMode == ThemeMode.system;

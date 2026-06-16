@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +12,6 @@ class UserMultiSelectWidget extends StatefulWidget {
   final String? customLabelText;
   final bool hasError;
   final bool isRequired;
-  final Color backgroundColor;
 
   const UserMultiSelectWidget({
     super.key,
@@ -20,7 +20,6 @@ class UserMultiSelectWidget extends StatefulWidget {
     this.customLabelText,
     this.hasError = false,
     this.isRequired = true,
-    this.backgroundColor = const Color(0xFFF4F7FD),
   });
 
   @override
@@ -42,13 +41,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
   bool isLoading = false;
-
-  final TextStyle userTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -183,16 +175,32 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     if (selectedUsersData.isEmpty) {
       return localizations.translate('select_assignees_list');
     }
-
     return selectedUsersData
         .map((user) => '${user.name} ${user.lastname}'.trim())
         .where((name) => name.isNotEmpty)
         .join(', ');
   }
 
+  bool get _allVisible {
+    if (usersList.isEmpty) return false;
+    return usersList.every(
+      (u) => selectedUsersData.any((s) => s.id == u.id),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+
+    final userTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = userTextStyle.copyWith(
+      fontSize: 14,
+      color: context.appColors.textSecondary,
+    );
+    final borderColor = context.appColors.borderSubtle;
 
     return FormField<List<UserData>>(
       initialValue: selectedUsersData,
@@ -218,13 +226,13 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: widget.backgroundColor,
+                color: context.appColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1.5,
+                  width: 1,
                   color: (widget.hasError || field.hasError)
-                      ? Colors.red
-                      : const Color(0xFFE5E7EB),
+                      ? context.appColors.error
+                      : context.appColors.borderSubtle,
                 ),
               ),
               child: isLoading
@@ -249,92 +257,109 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       searchHintText: localizations.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: widget.backgroundColor,
-                        expandedFillColor: Colors.white,
+                        closedFillColor: context.appColors.fieldBg,
+                        expandedFillColor: context.appColors.surfacePrimary,
                         closedBorder: Border.all(
                           color: Colors.transparent,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: const Color(0xFFE5E7EB),
+                          color: context.appColors.borderSubtle,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
+                        hintStyle: hintStyle,
+                        headerStyle: userTextStyle,
+                        listItemStyle: userTextStyle,
+                        listItemDecoration: ListItemDecoration(
+                          selectedColor: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.14),
+                          highlightColor: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.08),
+                          splashColor: Colors.transparent,
+                        ),
+                        searchFieldDecoration: SearchFieldDecoration(
+                          fillColor: context.appColors.backgroundPrimary,
+                          textStyle: userTextStyle,
+                          hintStyle: hintStyle,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: context.appColors.buttonPrimaryBg,
+                            ),
+                          ),
+                        ),
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         final isSelectAll = item.id == -1;
-                        final visibleUsers =
-                            usersList.where((user) => user.id != -1).toList();
-                        final allVisibleSelected = visibleUsers.isNotEmpty &&
-                            visibleUsers.every(
-                              (visibleUser) => selectedUsersData.any(
-                                (selected) => selected.id == visibleUser.id,
-                              ),
-                            );
 
-                        return ListTile(
-                          onTap: () {
-                            if (isSelectAll) {
-                              _toggleSelectAll();
-                            } else {
-                              onItemSelect();
-                            }
-                          },
-                          minTileHeight: 1,
-                          minVerticalPadding: 2,
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          title: Padding(
-                            padding: EdgeInsets.zero,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: const Color(0xff1E2E52),
-                                      width: 1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(4),
-                                    color: isSelectAll
-                                        ? (allVisibleSelected
-                                            ? const Color(0xff1E2E52)
-                                            : Colors.transparent)
-                                        : (isSelected
-                                            ? const Color(0xff1E2E52)
-                                            : Colors.transparent),
-                                  ),
-                                  child: (isSelectAll && allVisibleSelected) ||
-                                          (!isSelectAll && isSelected)
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 16,
-                                        )
-                                      : null,
+                        if (isSelectAll) {
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    isSelectAll
-                                        ? localizations.translate('select_all')
-                                        : '${item.name} ${item.lastname}'
-                                            .trim(),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
-                                    ),
+                                child: GestureDetector(
+                                  onTap: _toggleSelectAll,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color:
+                                                context.appColors.textPrimary,
+                                            width: 1,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          color: _allVisible
+                                              ? context
+                                                  .appColors.buttonPrimaryBg
+                                              : Colors.transparent,
+                                        ),
+                                        child: _allVisible
+                                            ? const Icon(
+                                                Icons.check,
+                                                color: Colors.white,
+                                                size: 14,
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          localizations.translate('select_all'),
+                                          style: userTextStyle,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                              Divider(
+                                height: 20,
+                                color: context.appColors.borderSubtle,
+                              ),
+                            ],
+                          );
+                        }
+
+                        return _buildListItem(
+                          context,
+                          item,
+                          isSelected,
+                          onItemSelect,
+                          userTextStyle,
                         );
                       },
                       headerListBuilder: (context, hint, enabled) {
@@ -347,21 +372,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       },
                       hintBuilder: (context, hint, enabled) => Text(
                         localizations.translate('select_assignees_list'),
-                        style: userTextStyle.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF6B7280),
-                        ),
+                        style: hintStyle,
                       ),
                       onListChanged: (values) {
                         final filteredValues = _normalizeSelection(values);
                         final currentIds =
-                            selectedUsersData.map((u) => u.id).toList()..sort();
-                        final newIds = filteredValues.map((u) => u.id).toList()
-                          ..sort();
+                            selectedUsersData.map((u) => u.id).toList()
+                              ..sort();
+                        final newIds =
+                            filteredValues.map((u) => u.id).toList()..sort();
 
-                        if (listEquals(currentIds, newIds)) {
-                          return;
-                        }
+                        if (listEquals(currentIds, newIds)) return;
 
                         setState(() {
                           selectedUsersData = filteredValues;
@@ -373,19 +394,62 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             ),
             if (field.hasError)
               Padding(
-                padding: const EdgeInsets.only(top: 4, left: 0),
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.error,
                   ),
                 ),
               ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildListItem(
+    BuildContext context,
+    UserData item,
+    bool isSelected,
+    Function() onItemSelect,
+    TextStyle textStyle,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: GestureDetector(
+        onTap: onItemSelect,
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: context.appColors.textPrimary,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${item.name} ${item.lastname}'.trim(),
+                style: textStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

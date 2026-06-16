@@ -8,15 +8,15 @@ import 'package:crm_task_manager/bloc/notifications/notifications_bloc.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_event.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
-import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -41,6 +41,8 @@ String _stripHtmlTags(String html) {
 }
 
 class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
@@ -278,12 +280,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Color(0xff5A6B87),
-              duration: Duration(seconds: 2),
+              backgroundColor: context.appColors.info,
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -295,6 +297,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+          backgroundColor: context.appColors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -302,7 +305,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             children: [
               Icon(
                 Icons.warning_amber_rounded,
-                color: Colors.orange,
+                color: context.appColors.warning,
                 size: 28,
               ),
               SizedBox(width: 12),
@@ -313,7 +316,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                     fontFamily: 'Gilroy',
                   ),
                 ),
@@ -327,7 +330,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color: Color(0xff5A6B87),
+              color: context.appColors.textSecondary,
               fontFamily: 'Gilroy',
             ),
           ),
@@ -341,7 +344,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff5A6B87),
+                  color: context.appColors.textSecondary,
                   fontFamily: 'Gilroy',
                 ),
               ),
@@ -351,11 +354,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Navigator.of(dialogContext).pop(true);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: context.appColors.buttonDangerBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
@@ -389,71 +393,100 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.translate('notifications'),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+        toolbarHeight: 78,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary.withValues(alpha: 0.94),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(28),
+            ),
+            border: Border.all(
+              color: colors.borderSubtle.withValues(alpha: 0.55),
+            ),
+            boxShadow: context.appShadows.card,
           ),
         ),
-        iconTheme: const IconThemeData(color: Color(0xff1E2E52)),
-        leadingWidth: 96,
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
+        title: Text(
+          AppLocalizations.of(context)!.translate('notifications'),
+          style: textStyles.titleLg.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: IconThemeData(color: colors.iconPrimary),
+        leadingWidth: 84,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16, top: 10, bottom: 10),
+          child: Material(
+            color: colors.backgroundSecondary,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () {
                 Navigator.of(context).pop();
               },
+              child: Center(
+                child: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: colors.iconPrimary,
+                ),
+              ),
             ),
-          ],
+          ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    splashRadius: 16,
-                    icon: const Icon(
-                      Icons.delete,
-                      color: Color(0xff1E2E52),
-                      size: 24,
+                  width: 40,
+                  height: 40,
+                  child: Material(
+                    color: colors.backgroundSecondary,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: _clearAllNotifications,
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: colors.iconPrimary,
+                        size: 22,
+                      ),
                     ),
-                    onPressed: _clearAllNotifications,
                   ),
                 ),
                 const SizedBox(width: 8),
                 SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    splashRadius: 16,
-                    icon: Image.asset(
-                      'assets/icons/home_appBar.png',
-                      width: 20,
-                      height: 20,
+                  width: 40,
+                  height: 40,
+                  child: Material(
+                    color: colors.backgroundSecondary,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: _navigateToHomeScreen,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/icons/home_appBar.png',
+                          width: 18,
+                          height: 18,
+                          color: colors.iconPrimary,
+                        ),
+                      ),
                     ),
-                    onPressed: _navigateToHomeScreen,
                   ),
                 ),
               ],
@@ -494,10 +527,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.green,
+                  backgroundColor: colors.success,
                   elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 2),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             } else {
@@ -516,10 +550,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.red,
+                  backgroundColor: colors.error,
                   elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 2),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }
@@ -542,10 +577,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.green,
+                  backgroundColor: colors.success,
                   elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 2),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             } else {
@@ -564,10 +600,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.red,
+                  backgroundColor: colors.error,
                   elevation: 3,
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: Duration(seconds: 2),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }
@@ -587,10 +624,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
                 elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 2),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: const Duration(seconds: 2),
               ),
             );
           }
@@ -601,13 +639,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
             if (state is NotificationLoading) {
               debugPrint("🔄 [BUILD] Показываем начальную загрузку");
-              return const Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+              return Center(
+                child: PlayStoreImageLoading(
+                  size: 72,
+                  duration: const Duration(milliseconds: 950),
+                ),
+              );
             } else if (state is NotificationError) {
               debugPrint("❌ [BUILD] Ошибка: ${state.message}");
               return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.buttonPrimaryBg,
+                backgroundColor: colors.surfacePrimary,
                 onRefresh: _onRefresh,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -617,16 +659,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Icon(
                       Icons.notifications_off_outlined,
                       size: 56,
-                      color: Colors.grey.shade400,
+                      color: colors.textMuted,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       state.message,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                      style: textStyles.bodyMd.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -634,8 +675,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       child: ElevatedButton(
                         onPressed: _onRefresh,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -652,16 +693,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               );
             } else if (state is NotificationDeleted) {
               return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.buttonPrimaryBg,
+                backgroundColor: colors.surfacePrimary,
                 onRefresh: _onRefresh,
                 child: ListView(
-                  physics: AlwaysScrollableScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(height: MediaQuery.of(context).size.height * 0.4),
                     Center(
-                        child: Text(AppLocalizations.of(context)!
-                            .translate('no_notifications_yet'))),
+                      child: Text(
+                        AppLocalizations.of(context)!
+                            .translate('no_notifications_yet'),
+                        style: textStyles.bodyLg
+                            .copyWith(color: colors.textSecondary),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -673,23 +719,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   "✅ [BUILD] Уведомлений: ${notifications.length}, все загружено: $isAllLoaded");
 
               return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.buttonPrimaryBg,
+                backgroundColor: colors.surfacePrimary,
                 onRefresh: _onRefresh,
                 child: notifications.isEmpty
                     ? ListView(
-                        physics: AlwaysScrollableScrollPhysics(),
+                        physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           SizedBox(
                               height: MediaQuery.of(context).size.height * 0.4),
                           Center(
-                              child: Text(AppLocalizations.of(context)!
-                                  .translate('no_notifications_yet'))),
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('no_notifications_yet'),
+                              style: textStyles.bodyLg
+                                  .copyWith(color: colors.textSecondary),
+                            ),
+                          ),
                         ],
                       )
                     : ListView.builder(
                         controller: _scrollController,
-                        physics: AlwaysScrollableScrollPhysics(),
+                        physics: const AlwaysScrollableScrollPhysics(),
                         itemCount: notifications.length + (isAllLoaded ? 0 : 1),
                         padding: const EdgeInsets.symmetric(
                             vertical: 8, horizontal: 16),
@@ -700,11 +751,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   "🔄 [BUILD] Показываем индикатор пагинации");
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Center(
-                                    child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
-                                  strokeWidth: 2,
-                                )),
+                                child: Center(child: PlayStoreImageLoading()),
                               );
                             } else if (!isAllLoaded) {
                               return const SizedBox(height: 50);
@@ -722,15 +769,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: colors.buttonDangerBg,
                                 borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                                boxShadow: context.appShadows.card,
                               ),
                               alignment: Alignment.centerRight,
                               child: const Icon(Icons.delete,
@@ -749,32 +790,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colors.surfacePrimary
+                                    .withValues(alpha: 0.96),
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: colors.borderSubtle
+                                      .withValues(alpha: 0.7),
+                                ),
+                                boxShadow: context.appShadows.card,
                               ),
                               child: ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.notifications,
-                                    color: Color(0xff1E2E52), size: 24),
+                                leading: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceAccent,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.notifications,
+                                    color: colors.buttonPrimaryBg,
+                                    size: 22,
+                                  ),
+                                ),
                                 title: Text(
                                   _getNotificationTitle(
                                       context, notification.type),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    const SizedBox(height: 6),
                                     Text(
                                       _stripHtmlTags(notification.message),
                                       maxLines: 2,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w400,
-                                        color: Color(0xff5A6B87),
+                                        color: colors.textSecondary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                       softWrap: true,
@@ -787,11 +846,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                           DateFormat('dd.MM.yyyy HH:mm').format(
                                               notification.createdAt
                                                   .add(Duration(hours: 5))),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             fontFamily: 'Gilroy',
-                                            color: Color(0xff1E2E52),
+                                            color: colors.textMuted,
                                           ),
                                         ),
                                       ],
@@ -885,13 +944,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           builder: (context) {
             return Center(
               child: Container(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
+                  boxShadow: context.appShadows.floating,
                 ),
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
+                child: PlayStoreImageLoading(
+                  size: 54,
+                  duration: const Duration(milliseconds: 950),
                 ),
               ),
             );

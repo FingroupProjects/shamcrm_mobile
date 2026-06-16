@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/task_overdue_history/task_overdue_history_bloc.dart';
 import 'package:crm_task_manager/bloc/task_overdue_history/task_overdue_history_event.dart';
 import 'package:crm_task_manager/bloc/task_overdue_history/task_overdue_history_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/task_overdue_history_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,19 @@ class TaskHistoryDialog extends StatefulWidget {
 }
 
 class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  Color get _dialogSurface => _isDark
+      ? context.appColors.backgroundSecondary.withValues(alpha: 0.96)
+      : context.appColors.surfacePrimary;
+
+  Color get _dialogBorder => context.adaptiveBorderOn(_dialogSurface);
+
+  Color get _dialogPrimaryText => context.adaptiveForegroundOn(_dialogSurface);
+
+  Color get _dialogSecondaryText =>
+      context.adaptiveHintOn(_dialogSurface, lightAlpha: 0.72);
+
   @override
   void initState() {
     super.initState();
@@ -23,12 +37,15 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
         .read<TaskOverdueHistoryBloc>()
         .add(FetchTaskOverdueHistory(widget.taskId));
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: _dialogSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: _dialogBorder),
+      ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.92,
         height: MediaQuery.of(context).size.height * 0.82,
@@ -51,11 +68,11 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
         Expanded(
           child: Text(
             AppLocalizations.of(context)!.translate('execution_history'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
-              color: Color(0xff1E2E52),
+              color: _dialogPrimaryText,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -67,10 +84,10 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
+              color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.close, color: Color(0xff1E2E52), size: 20),
+            child: Icon(Icons.close, color: _dialogPrimaryText, size: 20),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -87,9 +104,9 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
     return BlocBuilder<TaskOverdueHistoryBloc, TaskOverdueHistoryState>(
       builder: (context, state) {
         if (state is TaskOverdueHistoryLoading) {
-          return const Center(
+          return Center(
             child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
+              color: context.appColors.buttonPrimaryBg,
             ),
           );
         } else if (state is TaskOverdueHistoryLoaded) {
@@ -130,7 +147,7 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
             Container(
               width: 2,
               height: 80,
-              color: const Color(0xFFE5E7EB),
+              color: _dialogBorder,
             ),
           ],
         ),
@@ -144,7 +161,7 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
               color: _getBackgroundColorForType(item.type),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _getBorderColorForType(item.type).withOpacity(0.3),
+                color: _getBorderColorForType(item.type).withValues(alpha: 0.32),
                 width: 1,
               ),
             ),
@@ -169,7 +186,8 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
                       style: TextStyle(
                         fontSize: 12,
                         fontFamily: 'Gilroy',
-                        color: _getTextColorForType(item.type).withOpacity(0.7),
+                        color: _getTextColorForType(item.type)
+                            .withValues(alpha: 0.72),
                       ),
                     ),
                   ],
@@ -187,7 +205,8 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
                     style: TextStyle(
                       fontSize: 13,
                       fontFamily: 'Gilroy',
-                      color: _getTextColorForType(item.type).withOpacity(0.8),
+                      color: _getTextColorForType(item.type)
+                          .withValues(alpha: 0.84),
                     ),
                   ),
                 ],
@@ -200,7 +219,7 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
   }
 
   Widget _buildBodyInfoCompact(HistoryBody body, String type) {
-    final textColor = _getTextColorForType(type).withOpacity(0.9);
+    final textColor = _getTextColorForType(type).withValues(alpha: 0.92);
     final items = <String>[];
 
     if (body.fromDate != null && body.toDate != null) {
@@ -236,13 +255,26 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
 
   // Цветовая схема - чистая и компактная
   Color _getBackgroundColorForType(String type) {
+    if (_isDark) {
+      switch (type) {
+        case 'overdue':
+          return const Color(0xFF3A1618);
+        case 'finished':
+          return const Color(0xFF0F2F25);
+        case 'change_deadline':
+          return const Color(0xFF102A36);
+        default:
+          return context.appColors.surfaceElevated.withValues(alpha: 0.86);
+      }
+    }
+
     switch (type) {
       case 'overdue':
-        return const Color(0xFFFEF2F2); // Светло-красный
+        return const Color(0xFFFEF2F2);
       case 'finished':
-        return const Color(0xFFF0FDF4); // Светло-зелёный
+        return const Color(0xFFF0FDF4);
       case 'change_deadline':
-        return const Color(0xFFF0F9FF); // Светло-голубой
+        return const Color(0xFFF0F9FF);
       default:
         return const Color(0xFFF9FAFB);
     }
@@ -292,11 +324,11 @@ class _TaskHistoryDialogState extends State<TaskHistoryDialog> {
       child: Text(
         AppLocalizations.of(context)!.translate('no_data'),
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff9CA3AF),
+          color: _dialogSecondaryText,
         ),
       ),
     );

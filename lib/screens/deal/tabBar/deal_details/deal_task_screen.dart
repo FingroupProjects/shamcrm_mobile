@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_event.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/deal_task_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/task_add.dart';
@@ -41,8 +42,6 @@ class _TasksWidgetState extends State<TasksWidget> {
     context.read<DealTasksBloc>().add(FetchDealTasks(widget.dealId));
   }
 
- 
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -68,7 +67,6 @@ class _TasksWidgetState extends State<TasksWidget> {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Colors.white,
-                    
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -110,8 +108,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                      
+                      color: context.appColors.textSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -159,7 +156,7 @@ class _TasksWidgetState extends State<TasksWidget> {
                   'assets/icons/MyNavBar/tasks_ON.png',
                   width: 24,
                   height: 24,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.buttonPrimaryBg,
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -172,12 +169,13 @@ class _TasksWidgetState extends State<TasksWidget> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 4),
-                       Row(
+                      Row(
                         children: [
                           Text(
                             '${AppLocalizations.of(context)!.translate('status_details')} ${task.taskStatus?.taskStatus?.name ?? ''} ',
-                            style: TaskCardStyles.priorityStyle(context).copyWith(
-                              color: Color(0xff1E2E52),
+                            style:
+                                TaskCardStyles.priorityStyle(context).copyWith(
+                              color: context.appColors.textSecondary,
                             ),
                           ),
                         ],
@@ -187,13 +185,13 @@ class _TasksWidgetState extends State<TasksWidget> {
                         children: [
                           Text(
                             '${AppLocalizations.of(context)!.translate('deadLine')}$formattedDateTo',
-                            style: TaskCardStyles.priorityStyle(context).copyWith(
-                              color: Color(0xff1E2E52),
+                            style:
+                                TaskCardStyles.priorityStyle(context).copyWith(
+                              color: context.appColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
-                     
                     ],
                   ),
                 ),
@@ -230,39 +228,41 @@ class _TasksWidgetState extends State<TasksWidget> {
         Text(
           title,
           style: TaskCardStyles.titleStyle(context).copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
-     if (_canCreateTask)
-        TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-             MaterialPageRoute(
-                builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
+        if (_canCreateTask)
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TaskAddFromDeal(dealId: widget.dealId),
+                ),
+              ).then((_) {
+                context
+                    .read<DealTasksBloc>()
+                    .add(FetchDealTasks(widget.dealId));
+              });
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: context.appColors.buttonPrimaryFg,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              backgroundColor: context.appColors.buttonPrimaryBg,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-            ).then((_) {
-              context.read<DealTasksBloc>().add(FetchDealTasks(widget.dealId));
-            });
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            backgroundColor: Color(0xff1E2E52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              AppLocalizations.of(context)!.translate('add'),
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: context.appColors.buttonPrimaryFg,
+              ),
             ),
           ),
-          child: Text(
-            AppLocalizations.of(context)!.translate('add'), 
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-        ),
       ],
     );
   }

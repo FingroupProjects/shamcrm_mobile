@@ -381,11 +381,12 @@ class TaskColumnState extends State<TaskColumn> {
                 onRefresh: _onRefresh,
                 child: Column(
                   children: [
-                    SizedBox(height: 8),
+                    // SizedBox(height: 8),
                     Expanded(
                       child: ListView.builder(
                         controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
                         itemCount:
                             tasks.length + (showPaginationLoader ? 1 : 0),
                         itemBuilder: (context, index) {

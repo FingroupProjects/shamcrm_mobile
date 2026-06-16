@@ -9,7 +9,6 @@ import 'package:crm_task_manager/bloc/field_configuration/field_configuration_ev
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
-import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
@@ -19,17 +18,15 @@ import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/models/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_delete.dart';
+import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_add_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart'
     as my_task_status_sheet;
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_edit_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'my_dropdown_history_task.dart';
 
@@ -146,6 +143,7 @@ class FileCacheManager {
 }
 
 class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
+  final GlobalKey _historySectionKey = GlobalKey();
   List<Map<String, String>> details = [];
   MyTaskById? currentMyTask;
   late final int _initialStatusId;
@@ -219,6 +217,102 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     context.read<CalendarBloc>().add(FetchCalendarEvents(
         widget.initialDate?.month ?? DateTime.now().month,
         widget.initialDate?.year ?? DateTime.now().year));
+  }
+
+  Future<void> _openEditTask() async {
+    if (currentMyTask == null) return;
+
+    final shouldUpdate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MyTaskEditScreen(
+          taskId: currentMyTask!.id,
+          taskName: currentMyTask!.name,
+          taskStatus: currentMyTask!.taskStatus?.taskStatus.toString() ?? '',
+          statusId: currentMyTask!.taskStatus?.id ?? 0,
+          description: currentMyTask!.description,
+          startDate: currentMyTask!.startDate,
+          endDate: currentMyTask!.endDate,
+          files: currentMyTask!.files,
+        ),
+      ),
+    );
+
+    if (shouldUpdate == true) {
+      setState(() {
+        _statusChangedFromDetails = true;
+      });
+      context
+          .read<MyTaskByIdBloc>()
+          .add(FetchMyTaskByIdEvent(taskId: currentMyTask!.id));
+      context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+      context.read<CalendarBloc>().add(FetchCalendarEvents(
+          widget.initialDate?.month ?? DateTime.now().month,
+          widget.initialDate?.year ?? DateTime.now().year));
+    }
+  }
+
+  Future<void> _openCopyTask() async {
+    if (currentMyTask == null) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MyTaskAddScreen(
+          statusId: currentMyTask!.taskStatus?.id ?? widget.statusId,
+          initialName: currentMyTask!.name,
+          initialDescription: currentMyTask!.description,
+          initialEndDate: currentMyTask!.endDate,
+          isCopyMode: true,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
+      context.read<CalendarBloc>().add(FetchCalendarEvents(
+          widget.initialDate?.month ?? DateTime.now().month,
+          widget.initialDate?.year ?? DateTime.now().year));
+    }
+  }
+
+  void _openDeleteTask() {
+    if (currentMyTask == null) return;
+    showDialog(
+      context: context,
+      builder: (context) => DeleteMyTaskDialog(taskId: currentMyTask!.id),
+    );
+  }
+
+  Future<void> _scrollToHistorySection() async {
+    final historyContext = _historySectionKey.currentContext;
+    if (historyContext == null) return;
+    await Scrollable.ensureVisible(
+      historyContext,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      alignment: 0.1,
+    );
+  }
+
+  Future<void> _handleMenuAction(String value) async {
+    switch (value) {
+      case 'execution':
+        _openStatusChangeSheet();
+        break;
+      case 'history':
+        await _scrollToHistorySection();
+        break;
+      case 'copy':
+        await _openCopyTask();
+        break;
+      case 'edit':
+        await _openEditTask();
+        break;
+      case 'delete':
+        _openDeleteTask();
+        break;
+    }
   }
 
   void _openStatusChangeSheet() {
@@ -626,8 +720,12 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                     children: [
                       _buildDetailsList(),
                       const SizedBox(height: 16),
-                      ActionHistoryWidgetMyTask(
-                          taskId: int.parse(widget.taskId)),
+                      KeyedSubtree(
+                        key: _historySectionKey,
+                        child: ActionHistoryWidgetMyTask(
+                          taskId: int.parse(widget.taskId),
+                        ),
+                      ),
                     ],
                   )),
             );
@@ -691,71 +789,92 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         ),
       ),
       actions: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/edit.png',
-                width: 24,
-                height: 24,
+        PopupMenuButton<String>(
+          padding: const EdgeInsets.only(right: 8),
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          onSelected: (value) => _handleMenuAction(value),
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              enabled: false,
+              value: 'title',
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff1E2E52),
+                ),
               ),
-              onPressed: () async {
-                if (currentMyTask != null) {
-                  final shouldUpdate = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MyTaskEditScreen(
-                        taskId: currentMyTask!.id,
-                        taskName: currentMyTask!.name,
-                        taskStatus:
-                            currentMyTask!.taskStatus?.taskStatus.toString() ??
-                                '',
-                        statusId: currentMyTask!.taskStatus?.id ?? 0,
-                        // statusId: widget.statusId,
-                        description: currentMyTask!.description,
-                        startDate: currentMyTask!.startDate,
-                        endDate: currentMyTask!.endDate,
-                        files: currentMyTask!.files,
-                      ),
-                    ),
-                  );
-
-                  if (shouldUpdate == true) {
-                    setState(() {
-                      _statusChangedFromDetails = true;
-                    });
-                    context
-                        .read<MyTaskByIdBloc>()
-                        .add(FetchMyTaskByIdEvent(taskId: currentMyTask!.id));
-                    context.read<MyTaskBloc>().add(FetchMyTaskStatuses());
-
-                    context.read<CalendarBloc>().add(FetchCalendarEvents(
-                        widget.initialDate?.month ?? DateTime.now().month,
-                        widget.initialDate?.year ?? DateTime.now().year));
-                  }
-                }
-              },
             ),
-            IconButton(
-              padding: EdgeInsets.only(right: 8),
-              constraints: BoxConstraints(),
-              icon: Image.asset(
-                'assets/icons/delete.png',
-                width: 24,
-                height: 24,
+            PopupMenuItem<String>(
+              value: 'history',
+              child: Text(
+                AppLocalizations.of(context)!.translate('history'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
               ),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) =>
-                      DeleteMyTaskDialog(taskId: currentMyTask!.id),
-                );
-              },
+            ),
+            PopupMenuItem<String>(
+              value: 'execution',
+              child: Text(
+                AppLocalizations.of(context)!.translate('execution_history'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'copy',
+              child: Text(
+                AppLocalizations.of(context)!.translate('copy_task'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'edit',
+              child: Text(
+                AppLocalizations.of(context)!.translate('edit_task'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: Text(
+                AppLocalizations.of(context)!.translate('delete'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
+                ),
+              ),
             ),
           ],
+          icon: const Icon(
+            Icons.more_vert,
+            color: Color(0xff1E2E52),
+          ),
         ),
       ],
     );

@@ -116,8 +116,8 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color:
-                          context.appColors.textInverse.withValues(alpha: 0.72),
+                      color: context.appColors.textSecondary
+                          .withValues(alpha: 0.9),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -199,8 +199,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.96),
+                          color: context.appColors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -211,8 +210,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.82),
+                          color: context.appColors.textSecondary,
                         ),
                       ),
                       SizedBox(height: 4),
@@ -222,8 +220,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.82),
+                          color: context.appColors.textSecondary,
                         ),
                       ),
                       SizedBox(height: 4),
@@ -233,8 +230,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.82),
+                          color: context.appColors.textSecondary,
                         ),
                       ),
                       SizedBox(height: 4),
@@ -244,8 +240,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.96),
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                     ],
@@ -269,7 +264,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w700,
-            color: context.appColors.textInverse.withValues(alpha: 0.96),
+            color: context.appColors.textPrimary,
           ),
         ),
         TextButton(
@@ -299,10 +294,10 @@ class _OrdersWidgetState extends State<OrdersWidget> {
           },
           style: TextButton.styleFrom(
             foregroundColor: context.appColors.buttonPrimaryFg,
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             backgroundColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
           child: Text(
@@ -310,7 +305,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: context.appColors.buttonPrimaryFg,
             ),
           ),

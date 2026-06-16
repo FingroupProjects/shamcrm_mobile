@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart'; // Путь к bloc для сделок
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +12,7 @@ class DeleteDealDialog extends StatelessWidget {
   final int dealId;
   final int leadId;
 
-  DeleteDealDialog({required this.dealId,required this.leadId});
+  DeleteDealDialog({required this.dealId, required this.leadId});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class DeleteDealDialog extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -34,7 +36,7 @@ class DeleteDealDialog extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -51,7 +53,7 @@ class DeleteDealDialog extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -59,7 +61,7 @@ class DeleteDealDialog extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -68,15 +70,18 @@ class DeleteDealDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_deal'),
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              fontWeight: FontWeight.w700,
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -86,8 +91,9 @@ class DeleteDealDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textSecondary,
           ),
+          textAlign: TextAlign.center,
         ),
         actions: [
           Row(
@@ -99,8 +105,9 @@ class DeleteDealDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop(false);
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: context.appColors.backgroundPrimary
+                      .withValues(alpha: 0.9),
+                  textColor: context.appColors.textPrimary,
                 ),
               ),
               SizedBox(width: 8),
@@ -109,8 +116,9 @@ class DeleteDealDialog extends StatelessWidget {
                   builder: (context, state) {
                     if (state is DealLoading) {
                       return Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
+                        child: PlayStoreImageLoading(
+                          size: 40,
+                          duration: const Duration(milliseconds: 900),
                         ),
                       );
                     }
@@ -123,8 +131,8 @@ class DeleteDealDialog extends StatelessWidget {
                             .read<DealBloc>()
                             .add(DeleteDeal(dealId, localizations));
                       },
-                      buttonColor: Color(0xff1E2E52),
-                      textColor: Colors.white,
+                      buttonColor: context.appColors.error,
+                      textColor: context.appColors.buttonPrimaryFg,
                     );
                   },
                 ),

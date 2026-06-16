@@ -315,17 +315,34 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       context: context,
                       position: position,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: context.appColors.textInverse,
-                      elevation: 8,
+                          borderRadius: BorderRadius.circular(18)),
+                      color: context.appColors.surfacePrimary,
+                      elevation: 10,
                       items: state.funnels
                           .map((f) => PopupMenuItem<SalesFunnel>(
                                 value: f,
-                                child: Text(
-                                  f.name,
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        f.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.appTextStyles.bodyLg
+                                            .copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: context.appColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_selectedFunnel?.id == f.id)
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 18,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
+                                      ),
+                                  ],
                                 ),
                               ))
                           .toList(),
