@@ -88,23 +88,23 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   // ─── Screen-scoped color helpers (same pattern as LeadAddScreen) ───
   Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.82);
+      context.appColors.textSecondary;
   Color _screenHintText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
+      context.appColors.fieldHint;
   Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.16);
+      context.appColors.borderSubtle;
   Color _screenFocusBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.3);
+      context.appColors.borderPrimary;
   Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+      context.appColors.fieldBg;
   Color _screenSurfaceBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+      context.appColors.surfacePrimary;
   Color _screenSurfaceElevated(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+      context.appColors.surfaceElevated;
   Color _screenFooterBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.94);
+      context.appColors.surfacePrimary;
 
   @override
   void initState() {

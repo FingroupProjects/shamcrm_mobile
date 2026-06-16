@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -21,7 +22,7 @@ void DropdownBottomSheet(
 
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: rootContext.appColors.surfacePrimary,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -38,7 +39,7 @@ void DropdownBottomSheet(
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 7),
                   decoration: BoxDecoration(
-                    color: Color(0xfffDFE3EC),
+                    color: rootContext.appColors.borderSubtle,
                     borderRadius: BorderRadius.circular(1200),
                   ),
                 ),
@@ -86,14 +87,14 @@ void DropdownBottomSheet(
                 isLoading
                     ? Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
+                          color: rootContext.appColors.buttonPrimaryBg,
                         ),
                       )
                     : CustomButton(
                         buttonText:
                             AppLocalizations.of(context)!.translate('save'),
-                        buttonColor: Color(0xfff4F40EC),
-                        textColor: Colors.white,
+                        buttonColor: rootContext.appColors.buttonPrimaryBg,
+                        textColor: rootContext.appColors.buttonPrimaryFg,
                         onPressed: () async {
                           if (selectedStatusId != null) {
                             final prefs = await SharedPreferences.getInstance();
@@ -138,24 +139,23 @@ void DropdownBottomSheet(
                             )
                                 .then((_) {
                               ScaffoldMessenger.of(rootContext).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate(
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(context)!.translate(
                                         'status_changed_successfully'),
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                      style: rootContext.appTextStyles.bodyMd
+                                          .copyWith(
+                                        color: rootContext.appColors.textInverse,
+                                      ),
                                     ),
-                                  ),
                                   behavior: SnackBarBehavior.floating,
                                   margin: EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor:
+                                      rootContext.appColors.success,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -181,11 +181,9 @@ void DropdownBottomSheet(
                                   SnackBar(
                                     content: Text(
                                       errorMessage,
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white,
+                                      style: rootContext.appTextStyles.bodyMd
+                                          .copyWith(
+                                        color: rootContext.appColors.textInverse,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
@@ -194,7 +192,8 @@ void DropdownBottomSheet(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: Colors.red,
+                                    backgroundColor:
+                                        rootContext.appColors.error,
                                     elevation: 3,
                                     padding: EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),

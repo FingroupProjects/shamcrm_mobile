@@ -308,18 +308,18 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('tutorial_skip'),
       textStyleSkip: TextStyle(
-        color: Colors.white,
+        color: context.appColors.textInverse,
         fontFamily: 'Gilroy',
         fontSize: 20,
         fontWeight: FontWeight.w600,
         shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
+          Shadow(offset: Offset(-1.5, -1.5), color: context.appColors.overlay),
+          Shadow(offset: Offset(1.5, -1.5), color: context.appColors.overlay),
+          Shadow(offset: Offset(1.5, 1.5), color: context.appColors.overlay),
+          Shadow(offset: Offset(-1.5, 1.5), color: context.appColors.overlay),
         ],
       ),
-      colorShadow: Color(0xff1E2E52),
+      colorShadow: context.appColors.overlay,
       onSkip: () {
         prefs.setBool('isTutorialShownDealDetails', true);
         _apiService.markPageCompleted("deals", "view").catchError((e) {
@@ -827,14 +827,14 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                           fontFamily: 'Gilroy',
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: context.appColors.textInverse,
                         ),
                       ),
                       behavior: SnackBarBehavior.floating,
                       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      backgroundColor: Colors.red,
+                      backgroundColor: context.appColors.error,
                       elevation: 3,
                       padding:
                           EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -852,7 +852,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(state.message),
-                      backgroundColor: Colors.red,
+                      backgroundColor: context.appColors.error,
                     ),
                   );
                 });
@@ -1559,7 +1559,8 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             color: Colors.white,
           ),
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
+        backgroundColor:
+            success ? context.appColors.success : context.appColors.error,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1574,7 +1575,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Не найден lead_id для сделки'),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
@@ -1586,7 +1587,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
     final created = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       isScrollControlled: true,
       builder: (BuildContext context) {
         return Padding(
@@ -1987,6 +1988,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         title: const Text(
           'Удалить',
           style: TextStyle(

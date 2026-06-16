@@ -1214,11 +1214,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   content: Text(
                                     AppLocalizations.of(this.context)!
                                         .translate(result['message'] ?? ''),
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                    style: context.appTextStyles.bodyMd
+                                        .copyWith(
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -1228,8 +1226,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   backgroundColor: result['success'] == true
-                                      ? Colors.green
-                                      : Colors.red,
+                                      ? context.appColors.success
+                                      : context.appColors.error,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -1255,11 +1253,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   content: Text(
                                     AppLocalizations.of(this.context)!
                                         .translate('error_task_finish'),
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
+                                    style: context.appTextStyles.bodyMd
+                                        .copyWith(
+                                      color: context.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -1268,7 +1264,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: context.appColors.error,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -1686,11 +1682,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     AppLocalizations.of(context)
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textInverse,
                     ),
                   ),
                   backgroundColor: context.appColors.success,
@@ -1811,16 +1804,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Color _getPriorityBackgroundColor(String priority) {
     if (priority == AppLocalizations.of(context)!.translate('urgent')) {
-      return Color(0xFFFFEBEE);
+      return context.appColors.error.withValues(alpha: 0.12);
     }
-    return Color(0xFFE8F5E9);
+    return context.appColors.success.withValues(alpha: 0.12);
   }
 
   Color _getPriorityColor(String priority) {
     if (priority == AppLocalizations.of(context)!.translate('urgent')) {
-      return Color(0xFFC62828);
+      return context.appColors.error;
     }
-    return Color(0xFF2E7D32);
+    return context.appColors.success;
   }
 
   void _showUsersDialog(String users) {

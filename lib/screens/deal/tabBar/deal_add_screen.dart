@@ -85,23 +85,23 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
   // ─── Цветовые хелперы (как в LeadAddScreen) ────────────────────────────────
   Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.82);
+      context.appColors.textSecondary;
   Color _screenHintText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
+      context.appColors.fieldHint;
   Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.16);
+      context.appColors.borderSubtle;
   Color _screenFocusBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.3);
+      context.appColors.borderPrimary;
   Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+      context.appColors.fieldBg;
   Color _screenSurfaceBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+      context.appColors.surfacePrimary;
   Color _screenSurfaceElevated(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+      context.appColors.surfaceElevated;
   Color _screenFooterBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.94);
+      context.appColors.surfacePrimary;
   // ────────────────────────────────────────────────────────────────────────────
 
   @override
@@ -166,7 +166,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                 fontFamily: 'Gilroy',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: context.appColors.textInverse,
               ),
             ),
             behavior: SnackBarBehavior.floating,
@@ -174,7 +174,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             duration: Duration(seconds: 3),
@@ -535,10 +535,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: context.appColors.textInverse,
           ),
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: context.appColors.error,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
@@ -587,14 +587,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
             SnackBar(
               content: Text(
                 'Справочник успешно добавлен',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: context.appColors.textInverse,
               ),
-              backgroundColor: Colors.green,
+            ),
+              backgroundColor: context.appColors.success,
               behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
@@ -1140,22 +1140,22 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                              'Настройки полей сохранены',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
+              content: Text(
+                'Настройки полей сохранены',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: context.appColors.textInverse,
+                ),
+              ),
                             behavior: SnackBarBehavior.floating,
                             margin: EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
                             elevation: 3,
                             padding: EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
@@ -1264,10 +1264,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: context.appColors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: context.appColors.error,
                 ),
               );
             }
@@ -1998,7 +1998,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
           SnackBar(
             content: Text(
                 AppLocalizations.of(context)!.translate('enter_valid_date')),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
           ),
         );
         return;
@@ -2014,7 +2014,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
           SnackBar(
             content: Text(
                 AppLocalizations.of(context)!.translate('enter_valid_date')),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
           ),
         );
         return;
@@ -2031,9 +2031,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
           content: Text(
             AppLocalizations.of(context)!
                 .translate('start_date_after_end_date'),
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: context.appColors.textInverse),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
         ),
       );
       return;
@@ -2058,10 +2058,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
             ),
           );
           return;
@@ -2087,10 +2087,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
             ),
           );
           return;
@@ -2160,14 +2160,14 @@ class _DealAddScreenState extends State<DealAddScreen> {
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           elevation: 3,
           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: Duration(seconds: 3),

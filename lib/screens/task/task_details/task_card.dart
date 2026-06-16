@@ -63,29 +63,31 @@ class TaskCardState extends State<TaskCard> {
 
   /// Получение цвета фона для приоритета задачи
   Color _getPriorityBackgroundColor(int? priority) {
+    final colors = context.appColors;
     switch (priority) {
       case 1:
-        return const Color(0xFFE8F5E9); // Цвет для обычного приоритета
+        return colors.success.withValues(alpha: 0.12);
       case 3:
-        return const Color(0xFFFFEBEE); // Цвет для критического приоритета
+        return colors.error.withValues(alpha: 0.12);
       case 2:
-        return const Color(0xFFE8F5E9); // Цвет для сложного приоритета
+        return colors.success.withValues(alpha: 0.12);
       default:
-        return const Color(0xFFE8F5E9); // Цвет по умолчанию
+        return colors.success.withValues(alpha: 0.12);
     }
   }
 
   /// Получение цвета текста для приоритета задачи
   Color _getPriorityTextColor(int? priority) {
+    final colors = context.appColors;
     switch (priority) {
       case 1:
-        return const Color(0xFF2E7D32); // Цвет для обычного приоритета
+        return colors.success;
       case 3:
-        return const Color(0xFFC62828); // Цвет для критического приоритета
+        return colors.error;
       case 2:
-        return const Color(0xFF2E7D32); // Цвет для сложного приоритета
+        return colors.success;
       default:
-        return const Color(0xFF2E7D32); // Цвет по умолчанию
+        return colors.success;
     }
   }
 
@@ -352,18 +354,18 @@ class TaskCardState extends State<TaskCard> {
                     Icons.schedule_rounded,
                     size: 16,
                     color: overdueDays > 0
-                        ? Colors.redAccent
+                        ? colors.error
                         : colors.textSecondary,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     formatDate(
                         widget.task.endDate ?? DateTime.now().toString()),
-                    style: context.appTextStyles.bodySm.copyWith(
+                      style: context.appTextStyles.bodySm.copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: overdueDays > 0
-                          ? Colors.redAccent
+                          ? colors.error
                           : colors.textSecondary,
                     ),
                   ),
@@ -373,14 +375,14 @@ class TaskCardState extends State<TaskCard> {
                       width: 22,
                       height: 22,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
+                      decoration: BoxDecoration(
+                        color: colors.error,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         overdueDays.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.textInverse,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -467,7 +469,7 @@ class TaskCardState extends State<TaskCard> {
         child: Text(
           initials,
           style: TextStyle(
-            color: Colors.white,
+            color: context.appColors.textInverse,
             fontSize: size * 0.38,
             fontWeight: FontWeight.w600,
           ),

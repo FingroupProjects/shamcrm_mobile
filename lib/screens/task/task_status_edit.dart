@@ -182,159 +182,185 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
       },
       builder: (context, state) {
         return Dialog(
+          backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
           ),
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
             height: needsPermission ? 530 : 420,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: context.appColors.surfacePrimary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Изменение статуса',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: context.appColors.textPrimary,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close,
-                            size: 24, color: context.appColors.iconSecondary),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: context.appColors.borderSubtle.withValues(alpha: 0.35),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.shadow.withValues(alpha: 0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
                   ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: state is TaskLoading
-                        ? const Center(
-                            child: CircularProgressIndicator())
-                        : SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 0),
-                                StatusList(
-                                  selectedTaskStatus:
-                                      selectedStatusNameId?.toString(),
-                                  onChanged:
-                                      (String? statusName, int? statusId) {
-                                    setState(() {
-                                      selectedStatusNameId = statusId;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                _buildCheckbox(
-                                  context,
-                                  'С доступом',
-                                  needsPermission,
-                                  (value) {
-                                    if (value != null) {
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Изменение статуса',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            color: context.appColors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close,
+                            size: 24,
+                            color: context.appColors.textSecondary,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: state is TaskLoading
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                color: context.appColors.buttonPrimaryBg,
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  StatusList(
+                                    selectedTaskStatus:
+                                        selectedStatusNameId?.toString(),
+                                    onChanged:
+                                        (String? statusName, int? statusId) {
                                       setState(() {
-                                        needsPermission = value;
-                                        if (!value) {
-                                          selectedRoleIds.clear();
-                                        }
-                                      });
-                                    }
-                                  },
-                                ),
-                                _buildCheckbox(
-                                  context,
-                                  'Завершающий этап',
-                                  finalStep,
-                                  (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        finalStep = value;
-                                      });
-                                    }
-                                  },
-                                ),
-                                _buildCheckbox(
-                                  context,
-                                  'Проверяющий этап',
-                                  checkingStep,
-                                  (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        checkingStep = value;
-                                      });
-                                    }
-                                  },
-                                ),
-                                _buildCheckbox(
-                                  context,
-                                  'Неразобранные',
-                                  isUnassembled,
-                                  (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        isUnassembled = value;
-                                      });
-                                    }
-                                  },
-                                ),
-                                if (needsPermission) ...[
-                                  const SizedBox(height: 16),
-                                  RoleSelectionWidget(
-                                    selectedRoleIds: selectedRoleIds,
-                                    onRolesChanged: (roleIds) {
-                                      setState(() {
-                                        selectedRoleIds = roleIds;
+                                        selectedStatusNameId = statusId;
                                       });
                                     },
                                   ),
+                                  const SizedBox(height: 20),
+                                  _buildCheckbox(
+                                    context,
+                                    'С доступом',
+                                    needsPermission,
+                                    (value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          needsPermission = value;
+                                          if (!value) {
+                                            selectedRoleIds.clear();
+                                          }
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  _buildCheckbox(
+                                    context,
+                                    'Завершающий этап',
+                                    finalStep,
+                                    (value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          finalStep = value;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  _buildCheckbox(
+                                    context,
+                                    'Проверяющий этап',
+                                    checkingStep,
+                                    (value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          checkingStep = value;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  _buildCheckbox(
+                                    context,
+                                    'Неразобранные',
+                                    isUnassembled,
+                                    (value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          isUnassembled = value;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  if (needsPermission) ...[
+                                    const SizedBox(height: 16),
+                                    RoleSelectionWidget(
+                                      selectedRoleIds: selectedRoleIds,
+                                      onRolesChanged: (roleIds) {
+                                        setState(() {
+                                          selectedRoleIds = roleIds;
+                                        });
+                                      },
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
+                            ),
+                    ),
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: context.appColors.buttonPrimaryBg,
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.appColors.buttonPrimaryBg
+                                  .withValues(alpha: 0.22),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: TextButton(
+                          onPressed: _saveChanges,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 10,
                             ),
                           ),
-                  ),
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                      child: TextButton(
-                        onPressed: _saveChanges,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 10,
-                          ),
-                        ),
-                        child: Text(
-                          'Сохранить',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: context.appColors.buttonPrimaryFg,
+                          child: Text(
+                            'Сохранить',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: context.appColors.buttonPrimaryFg,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -368,11 +394,11 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
     );
   }
 
-  TextStyle _textStyle() => const TextStyle(
+  TextStyle _textStyle() => TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: context.appColors.textPrimary,
         overflow: TextOverflow.ellipsis,
       );
 }

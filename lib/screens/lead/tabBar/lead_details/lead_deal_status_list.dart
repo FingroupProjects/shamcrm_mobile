@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,15 +10,22 @@ class DealStatusWidget extends StatefulWidget {
   final String? selectedDealStatus;
   final ValueChanged<String?> onChanged;
 
-  DealStatusWidget({required this.selectedDealStatus, required this.onChanged});
+  const DealStatusWidget({
+    super.key,
+    required this.selectedDealStatus,
+    required this.onChanged,
+  });
 
   @override
-  _DealStatusWidgetState createState() => _DealStatusWidgetState();
+  State<DealStatusWidget> createState() => _DealStatusWidgetState();
 }
 
 class _DealStatusWidgetState extends State<DealStatusWidget> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
@@ -25,16 +33,11 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
           dropdownItems = [
             DropdownMenuItem(
               value: null,
-              child: Text(
-                AppLocalizations.of(context)!.translate('loading'),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                child: Text(
+                  AppLocalizations.of(context)!.translate('loading'),
+                  style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
                 ),
               ),
-            ),
           ];
         } else if (state is DealLoaded) {
           if (state.dealStatuses.isEmpty) {
@@ -43,12 +46,7 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 value: null,
                 child: Text(
                   AppLocalizations.of(context)!.translate('no_deal_status'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
+                  style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
                 ),
               ),
             ];
@@ -58,12 +56,7 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 value: status.id.toString(),
                 child: Text(
                   status.title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
+                  style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
                   overflow: TextOverflow.ellipsis,
                 ),
               );
@@ -80,27 +73,16 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('deal_status'),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
+              style: textStyles.bodyLg.copyWith(color: colors.textPrimary),
             ),
             const SizedBox(height: 4),
-            Container(
-              child: DropdownButtonFormField<String>(
-                value: dropdownItems.any((item) => item.value == widget.selectedDealStatus)
+            DropdownButtonFormField<String>(
+                initialValue: dropdownItems.any((item) => item.value == widget.selectedDealStatus)
                     ? widget.selectedDealStatus
                     : null,
                 hint: Text(
                   AppLocalizations.of(context)!.translate('select_deal_status'),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
-                  ),
+                  style: textStyles.bodyMd.copyWith(color: colors.fieldHint),
                 ),
                 items: dropdownItems,
                 onChanged: widget.onChanged,
@@ -112,41 +94,33 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                 },
                 decoration: InputDecoration(
                   filled: true, 
-                  fillColor: Color(0xFFF4F7FD), 
-                  labelStyle: TextStyle(
-                    color: Colors.grey, 
-                    fontFamily: 'Gilroy', 
-                    fontSize: 14, 
-                    fontWeight: FontWeight.w500
-                  ),
+                  fillColor: colors.fieldBg,
+                  labelStyle: textStyles.bodyMd.copyWith(color: colors.fieldHint),
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(color: colors.fieldBorder),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(color: colors.fieldBorder),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFF4F7FD)),
+                    borderSide: BorderSide(color: colors.buttonPrimaryBg),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   errorBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 1.5),
+                      borderSide: BorderSide(color: colors.error, width: 1.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red, width: 1.5),
+                      borderSide: BorderSide(color: colors.error, width: 1.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  errorStyle: TextStyle(
-                    fontSize: 14, 
-                    color: Colors.red, 
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy'
+                  errorStyle: textStyles.bodySm.copyWith(
+                    color: colors.error,
                   ),
                 ),
-                dropdownColor: Colors.white,
+                dropdownColor: colors.surfacePrimary,
                 icon: Padding(
                   padding: const EdgeInsets.only(right: 6), 
                   child: Transform.rotate(
@@ -159,7 +133,6 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                   ),
                 ),
               ),
-            ),
           ],
         );
       },

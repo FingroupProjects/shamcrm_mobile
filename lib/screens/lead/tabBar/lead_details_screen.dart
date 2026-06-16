@@ -231,19 +231,19 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _statusChangedFromDetails = false;
 
   Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.82);
+      context.appColors.textSecondary;
   Color _screenHintText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
+      context.appColors.fieldHint;
   Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.16);
+      context.appColors.borderSubtle;
   Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+      context.appColors.fieldBg;
   Color _screenSurfaceBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+      context.appColors.surfacePrimary;
   Color _screenSurfaceElevated(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+      context.appColors.surfaceElevated;
 
   String _getLeadErrorMessage(String error) {
     if (error.toLowerCase().contains('интернет')) {
@@ -616,19 +616,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
+      textStyleSkip: context.appTextStyles.titleMd.copyWith(
+        color: context.appColors.textInverse,
       ),
-      colorShadow: Color(0xff1E2E52),
+      colorShadow: context.appColors.overlay,
       onClickTarget: (target) {
         if (target.identify == "keyNavigateChat") {
           _scrollController.animateTo(
@@ -1576,10 +1567,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     : _handleAcceptLead,
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: const Color(0xff2DBE60),
+                  backgroundColor: context.appColors.success,
                   disabledBackgroundColor:
-                      const Color(0xff2DBE60).withValues(alpha: 0.45),
-                  foregroundColor: Colors.white,
+                      context.appColors.success.withValues(alpha: 0.45),
+                  foregroundColor: context.appColors.textInverse,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1593,12 +1584,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'В сделку',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                        style: context.appTextStyles.labelMd.copyWith(
+                          color: context.appColors.textInverse,
                         ),
                       ),
               ),
@@ -1614,10 +1603,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     : _handleDeclineLead,
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: const Color(0xffEB4B4B),
+                  backgroundColor: context.appColors.error,
                   disabledBackgroundColor:
-                      const Color(0xffEB4B4B).withValues(alpha: 0.45),
-                  foregroundColor: Colors.white,
+                      context.appColors.error.withValues(alpha: 0.45),
+                  foregroundColor: context.appColors.textInverse,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1631,12 +1620,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Отказать',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                        style: context.appTextStyles.labelMd.copyWith(
+                          color: context.appColors.textInverse,
                         ),
                       ),
               ),
@@ -2021,11 +2008,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     AppLocalizations.of(context)
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
-                    style: const TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      color: context.appColors.textInverse,
                     ),
                   ),
                   backgroundColor: context.appColors.success,
@@ -2040,13 +2024,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             },
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: _screenPrimaryText(context),
-                decoration: TextDecoration.underline,
-              ),
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: _screenPrimaryText(context),
+                  decoration: TextDecoration.underline,
+                ),
             ),
           ),
         ],
@@ -2064,11 +2045,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 AppLocalizations.of(context)
                         ?.translate('copied_to_clipboard') ??
                     'Скопировано',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textInverse,
                 ),
               ),
               backgroundColor: context.appColors.success,
@@ -2111,18 +2089,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               children: [
                 Icon(
                   Icons.person_add_alt_1,
-                  color: Colors.white,
-                  size: 18,
+              color: context.appColors.textInverse,
+              size: 18,
                 ),
                 SizedBox(width: 6),
                 Text(
                   AppLocalizations.of(context)!.translate('become_manager'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textInverse,
                   ),
                 ),
               ],
@@ -2140,11 +2115,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             content: Text(
               AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
                   'Скопировано',
-              style: const TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textInverse,
               ),
             ),
             backgroundColor: context.appColors.success,

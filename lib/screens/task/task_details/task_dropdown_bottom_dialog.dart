@@ -187,7 +187,7 @@ void DropdownBottomSheet(
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: context.appColors.success,
                                   elevation: 3,
                                   padding: EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
@@ -225,7 +225,7 @@ void DropdownBottomSheet(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: context.appColors.error,
                                     elevation: 3,
                                     padding: EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),

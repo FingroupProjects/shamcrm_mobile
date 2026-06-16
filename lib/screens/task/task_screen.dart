@@ -508,19 +508,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     TutorialCoachMark(
       targets: targets,
       textSkip: AppLocalizations.of(context)!.translate('skip'),
-      textStyleSkip: TextStyle(
-        color: Colors.white,
-        fontFamily: 'Gilroy',
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        shadows: [
-          Shadow(offset: Offset(-1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, -1.5), color: Colors.black),
-          Shadow(offset: Offset(1.5, 1.5), color: Colors.black),
-          Shadow(offset: Offset(-1.5, 1.5), color: Colors.black),
-        ],
+      textStyleSkip: context.appTextStyles.titleMd.copyWith(
+        color: context.appColors.textInverse,
       ),
-      colorShadow: Color(0xff1E2E52),
+      colorShadow: context.appColors.overlay,
       onSkip: () {
         //print('Tutorial skipped for TaskScreen');
         prefs.setBool('isTutorialShownTaskSearchIconAppBar', true);
@@ -1488,11 +1479,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             return Center(
               child: Text(
                 state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Colors.red,
+                  color: context.appColors.error,
                 ),
               ),
             );
@@ -2141,10 +2132,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 14,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: context.appColors.success,
                 duration: Duration(seconds: 2),
               ),
             );
@@ -2158,10 +2149,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 14,
-                    color: Colors.white,
+                    color: context.appColors.textInverse,
                   ),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: context.appColors.success,
                 duration: Duration(seconds: 2),
               ),
             );

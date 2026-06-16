@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_event.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ class DirectoryGroupWidget extends StatefulWidget {
   final String? selectedDirectory;
   final Function(Directory) onSelectDirectory;
 
-  DirectoryGroupWidget({
+  const DirectoryGroupWidget({
     super.key,
     required this.onSelectDirectory,
     this.selectedDirectory,
@@ -25,13 +26,6 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
   List<Directory> directoriesList = [];
   Directory? selectedDirectoryData;
 
-  final TextStyle directoryTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -40,6 +34,9 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return FormField<Directory>(
       validator: (value) {
         if (selectedDirectoryData == null) {
@@ -53,19 +50,19 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('directory'),
-              style: directoryTextStyle.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
+              style: textStyles.bodyMd.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : Colors.white,
+                  color: field.hasError ? colors.error : colors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetDirectoryBloc, GetDirectoryState>(
@@ -87,18 +84,18 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
                   return CustomDropdown<Directory>.search(
                     closeDropDownOnClearFilterSearch: true,
                     items: directoriesList,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      searchHintText: AppLocalizations.of(context)!.translate('search'),
+                      overlayHeight: 400,
+                      decoration: CustomDropdownDecoration(
+                      closedFillColor: colors.fieldBg,
+                      expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -109,24 +106,22 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
                           horizontal: 16,
                           vertical: 8,
                         ),
-                        child: Text(
-                          item.name!,
-                          style: directoryTextStyle,
+                          child: Text(
+                          item.name,
+                          style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
                         ),
                       );
                     },
                     headerBuilder: (context, selectedItem, enabled) {
                       return Text(
-                        selectedItem?.name ??
-                            AppLocalizations.of(context)!.translate('select_directory'),
-                        style: directoryTextStyle,
+                        selectedItem.name,
+                        style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!.translate('select_directory'),
-                      style: directoryTextStyle.copyWith(
-                        fontSize: 14,
-                        color: const Color(0xFF6B7280),
+                      style: textStyles.bodyMd.copyWith(
+                        color: colors.fieldHint,
                       ),
                     ),
                     excludeSelected: false,
@@ -150,8 +145,8 @@ class _DirectoryGroupWidgetState extends State<DirectoryGroupWidget> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: colors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
