@@ -28,7 +28,7 @@ Future<void> showDealStatusBottomSheet(
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('no_permission'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,

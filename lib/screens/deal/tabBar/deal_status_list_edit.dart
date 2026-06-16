@@ -271,7 +271,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Text(
               AppLocalizations.of(context)!.translate('field_required'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: context.appColors.error,
                 fontSize: 12,
                 fontFamily: 'Gilroy',
@@ -316,7 +316,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       headerBuilder: (context, selectedItem, enabled) {
         if (isLoadingStatuses) {
-          return const Center(
+          return Center(
             child: SizedBox(
               width: 20,
               height: 20,
@@ -335,7 +335,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       hintBuilder: (context, hint, enabled) {
         if (isLoadingStatuses) {
-          return const Center(
+          return Center(
             child: SizedBox(
               width: 20,
               height: 20,
@@ -354,9 +354,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       noResultFoundBuilder: (context, text) {
         if (isLoadingStatuses) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(20.0),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -449,7 +449,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                               : Colors.transparent,
                         ),
                         child: allSelected
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check,
                                 color: context.appColors.textInverse,
                                 size: 14,
@@ -476,7 +476,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       headerListBuilder: (context, selectedItems, enabled) {
         if (isLoadingStatuses) {
-          return const Center(
+          return Center(
             child: SizedBox(
               width: 20,
               height: 20,
@@ -506,7 +506,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       hintBuilder: (context, hint, enabled) {
         if (isLoadingStatuses) {
-          return const Center(
+          return Center(
             child: SizedBox(
               width: 20,
               height: 20,
@@ -525,9 +525,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       },
       noResultFoundBuilder: (context, text) {
         if (isLoadingStatuses) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(20.0),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -606,7 +606,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                     isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
                       color: context.appColors.textInverse,
                       size: 14,
