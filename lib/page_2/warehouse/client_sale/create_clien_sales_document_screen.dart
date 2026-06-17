@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -631,6 +633,7 @@ class CreateClienSalesDocumentScreenState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return WillPopScope(
       onWillPop: () async {
@@ -642,8 +645,8 @@ class CreateClienSalesDocumentScreenState
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
-          appBar: _buildAppBar(localizations),
+          backgroundColor: colors.surfacePrimary,
+          appBar: _buildAppBar(localizations, colors),
           body: BlocListener<ClientSaleBloc, ClientSaleState>(
             listener: (context, state) {
               setState(() => _isLoading = false);
@@ -657,12 +660,12 @@ class CreateClienSalesDocumentScreenState
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.surfacePrimary,
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: const Color(0xff4759FF),
-                      unselectedLabelColor: const Color(0xff99A4BA),
-                      indicatorColor: const Color(0xff4759FF),
+                      labelColor: colors.buttonPrimaryBg,
+                      unselectedLabelColor: colors.textSecondary,
+                      indicatorColor: colors.buttonPrimaryBg,
                       indicatorWeight: 3,
                       labelStyle: const TextStyle(
                         fontSize: 16,
@@ -686,8 +689,10 @@ class CreateClienSalesDocumentScreenState
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _KeepAliveWrapper(child: _buildMainTab(localizations)),
-                        _KeepAliveWrapper(child: _buildGoodsTab(localizations)),
+                        _KeepAliveWrapper(
+                            child: _buildMainTab(localizations, colors)),
+                        _KeepAliveWrapper(
+                            child: _buildGoodsTab(localizations, colors)),
                       ],
                     ),
                   ),
@@ -700,7 +705,7 @@ class CreateClienSalesDocumentScreenState
     );
   }
 
-  Widget _buildMainTab(AppLocalizations localizations) {
+  Widget _buildMainTab(AppLocalizations localizations, AppThemeColors colors) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -744,7 +749,7 @@ class CreateClienSalesDocumentScreenState
     );
   }
 
-  Widget _buildGoodsTab(AppLocalizations localizations) {
+  Widget _buildGoodsTab(AppLocalizations localizations, AppThemeColors colors) {
     return Column(
       children: [
         Expanded(
@@ -765,11 +770,11 @@ class CreateClienSalesDocumentScreenState
                       child: Text(
                         localizations.translate('no_goods_added') ??
                             'Товары не добавлены',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -788,10 +793,10 @@ class CreateClienSalesDocumentScreenState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -801,7 +806,7 @@ class CreateClienSalesDocumentScreenState
           child: ElevatedButton(
             onPressed: _openVariantSelection,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -812,15 +817,15 @@ class CreateClienSalesDocumentScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
+                Icon(Icons.add, color: colors.buttonPrimaryFg, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   localizations.translate('add_good') ?? 'Добавить товар',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
               ],
@@ -831,18 +836,17 @@ class CreateClienSalesDocumentScreenState
     );
   }
 
-  AppBar _buildAppBar(AppLocalizations localizations) {
+  AppBar _buildAppBar(AppLocalizations localizations, AppThemeColors colors) {
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -862,11 +866,11 @@ class CreateClienSalesDocumentScreenState
                   'Создать реализацию',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -875,7 +879,7 @@ class CreateClienSalesDocumentScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
+                color: const Color(0xff16A34A).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -883,17 +887,17 @@ class CreateClienSalesDocumentScreenState
                 children: [
                   const Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: Color(0xff4CAF50),
+                    color: const Color(0xff16A34A),
                     size: 18,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     total.toStringAsFixed(0),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
-                      color: Color(0xff4CAF50),
+                      color: const Color(0xff16A34A),
                     ),
                   ),
                 ],
@@ -1007,6 +1011,7 @@ class CreateClienSalesDocumentScreenState
 
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
+    final colors = context.appColors;
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
@@ -1024,12 +1029,12 @@ class CreateClienSalesDocumentScreenState
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -1046,11 +1051,11 @@ class CreateClienSalesDocumentScreenState
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1061,14 +1066,14 @@ class CreateClienSalesDocumentScreenState
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
                       child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                          color: Color(0xff6B7280), size: 18),
                     ),
                   ],
                 ),
@@ -1084,13 +1089,13 @@ class CreateClienSalesDocumentScreenState
                       fontSize: 11,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
+                      color: Color(0xff16A34A),
                     ),
                   ),
                 ),
               ),
               if (!isCollapsed) ...[
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                Divider(height: 1, color: colors.borderSubtle),
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
@@ -1101,19 +1106,19 @@ class CreateClienSalesDocumentScreenState
                         Text(
                           AppLocalizations.of(context)!.translate('quantity') ??
                               'Кол-во',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        CompactTextField(
-                          controller:
-                              quantityController ?? TextEditingController(),
-                          focusNode: quantityFocusNode,
-                          hintText: AppLocalizations.of(context)!
+                          CompactTextField(
+                            controller:
+                                quantityController ?? TextEditingController(),
+                            focusNode: quantityFocusNode,
+                            hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
                           keyboardType: const TextInputType.numberWithOptions(
@@ -1122,11 +1127,11 @@ class CreateClienSalesDocumentScreenState
                             QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
@@ -1146,11 +1151,11 @@ class CreateClienSalesDocumentScreenState
                           Text(
                             AppLocalizations.of(context)!.translate('unit') ??
                                 'Ед.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1160,24 +1165,23 @@ class CreateClienSalesDocumentScreenState
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                border: Border.all(color: colors.borderSubtle),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: item['selectedUnit'],
                                   isDense: true,
                                   isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down,
-                                      size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
+                                  dropdownColor: colors.surfacePrimary,
+                                  icon: Icon(Icons.arrow_drop_down,
+                                      size: 16, color: colors.buttonPrimaryBg),
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
@@ -1204,19 +1208,18 @@ class CreateClienSalesDocumentScreenState
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                border: Border.all(color: colors.borderSubtle),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -1232,11 +1235,11 @@ class CreateClienSalesDocumentScreenState
                           Text(
                             AppLocalizations.of(context)!.translate('price') ??
                                 'Цена',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1257,8 +1260,8 @@ class CreateClienSalesDocumentScreenState
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
                               color: _hasPriceUpdatePermission
-                                  ? const Color(0xff1E2E52)
-                                  : const Color(0xff99A4BA),
+                                  ? colors.textPrimary
+                                  : colors.textSecondary,
                             ),
                             hasError: _priceErrors[variantId] == true,
                             enabled: _hasPriceUpdatePermission,
@@ -1279,6 +1282,7 @@ class CreateClienSalesDocumentScreenState
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Row(
       children: [
         // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
@@ -1287,7 +1291,7 @@ class CreateClienSalesDocumentScreenState
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+                border: Border.all(color: const Color(0xff16A34A), width: 1.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Material(
@@ -1304,8 +1308,8 @@ class CreateClienSalesDocumentScreenState
                           Icons.check_circle_outline,
                           size: 18,
                           color: _isLoading
-                              ? const Color(0xff99A4BA)
-                              : const Color(0xff4CAF50),
+                              ? const Color(0xff6B7280)
+                              : const Color(0xff16A34A),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -1316,8 +1320,8 @@ class CreateClienSalesDocumentScreenState
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: _isLoading
-                                ? const Color(0xff99A4BA)
-                                : const Color(0xff4CAF50),
+                                ? const Color(0xff6B7280)
+                                : const Color(0xff16A34A),
                           ),
                         ),
                       ],
@@ -1335,35 +1339,36 @@ class CreateClienSalesDocumentScreenState
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                disabledBackgroundColor: const Color(0xffE5E7EB),
+                backgroundColor: colors.buttonPrimaryBg,
+                disabledBackgroundColor: colors.borderSubtle,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.buttonPrimaryFg),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 18),
+                        Icon(Icons.save_outlined,
+                            color: colors.buttonPrimaryFg, size: 18),
                         const SizedBox(width: 6),
                         Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                           ),
                         ),
                       ],

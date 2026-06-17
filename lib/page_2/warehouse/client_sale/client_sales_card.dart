@@ -1,11 +1,8 @@
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/page_2/warehouse/client_sale/clien_sales_document_detail.dart';
-import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_details_screen.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/page_2/expense_document_model.dart';
 
@@ -18,44 +15,25 @@ class ClientSalesCard extends StatefulWidget {
   final VoidCallback onTap;
 
   const ClientSalesCard({
-    Key? key,
+    super.key,
     required this.document,
     this.onUpdate,
     required this.onLongPress,
     required this.isSelectionMode,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<ClientSalesCard> createState() => _ClientSalesCardState();
 }
 
 class _ClientSalesCardState extends State<ClientSalesCard> {
-  int? currencyId;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCurrencyId();
-  }
-
-  Future<void> _loadCurrencyId() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      currencyId = prefs.getInt('currency_id') ?? 1; // Дефолт USD
-    });
-  }
-
   String _formatDate(DateTime? date) {
-    if (date == null)
-      return AppLocalizations.of(context)!.translate('no_date') ?? 'Нет даты';
+    if (date == null) {
+      return AppLocalizations.of(context)!.translate('no_date');
+    }
     return DateFormat('dd.MM.yyyy').format(date);
-  }
-
-  String _formatSum(double sum) {
-    String symbol = widget.document.currency?.symbolCode ?? '\$';
-    return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
   String _getLocalizedStatus() {
@@ -64,14 +42,14 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
 
     // Приоритет: сначала проверяем deleted_at
     if (doc.deletedAt != null) {
-      return localizations.translate('deleted_incoming') ?? 'Удален';
+      return localizations.translate('deleted_incoming');
     }
 
     // Затем проверяем approved
     if (doc.approved == 1) {
-      return localizations.translate('approved_incoming') ?? 'Проведен';
+      return localizations.translate('approved_incoming');
     } else {
-      return localizations.translate('not_approved_incoming') ?? 'Не проведен';
+      return localizations.translate('not_approved_incoming');
     }
   }
 
@@ -90,7 +68,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
   @override
   Widget build(BuildContext context) {
     final doc = widget.document;
-    final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return GestureDetector(
       onTap: () {
@@ -103,10 +81,16 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: widget.isSelected
-              ? const Color(0xFFDDE8F5)
-              : const Color(0xFFE9EDF5),
+              ? colors.surfaceElevated
+              : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.06),
+              blurRadius: 4,
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -121,11 +105,11 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                       Expanded(
                         child: Text(
                           '№${doc.docNumber ?? 'N/A'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -133,7 +117,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _getStatusColor().withOpacity(0.1),
+                          color: _getStatusColor().withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -150,32 +134,32 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
-                    style: const TextStyle(
+                    '${AppLocalizations.of(context)!.translate('date')} ${_formatDate(doc.date)}',
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'} ${doc.model?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    '${AppLocalizations.of(context)!.translate('client')} ${doc.model?.name ?? 'N/A'}',
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}: ${doc.storage?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    '${AppLocalizations.of(context)!.translate('storage')}: ${doc.storage?.name ?? 'N/A'}',
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -183,23 +167,23 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${AppLocalizations.of(context)!.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
-                          style: const TextStyle(
+                          '${AppLocalizations.of(context)!.translate('author')}: ${doc.author?.name ?? 'N/A'}',
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),
                       // show price from documentGoods
                       Text(
-                        '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
-                        style: const TextStyle(
+                        '${AppLocalizations.of(context)!.translate('total')} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
+                        style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -241,7 +225,7 @@ class _ClientSalesCardState extends State<ClientSalesCard> {
                   widget.isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   size: 24,
                 ),
               ),

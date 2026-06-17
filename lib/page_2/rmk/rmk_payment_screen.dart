@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -196,28 +197,29 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final hasValidAmount = _amount > 0;
     final canSubmit = hasValidAmount &&
         (!_needsPaymentMethod || _selectedMethod != null) &&
         (!_requiresLead || _selectedLead != null);
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FB),
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Готово',
           style: TextStyle(
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
             fontFamily: 'Gilroy',
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -278,7 +280,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                         const SizedBox(height: 6),
                         Text(
                           _leadErrorText!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Color(0xffEF4444),
                             fontFamily: 'Gilroy',
                             fontSize: 12,
@@ -323,21 +325,32 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: canSubmit
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xffCBD5E0),
-                      foregroundColor: Colors.white,
+                          ? colors.buttonPrimaryBg
+                          : colors.surfaceElevated,
+                      foregroundColor: canSubmit
+                          ? colors.buttonPrimaryFg
+                          : colors.textPrimary,
                       elevation: 0,
+                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(999),
+                        side: BorderSide(
+                          color: canSubmit
+                              ? Colors.transparent
+                              : colors.borderSubtle,
+                        ),
                       ),
                     ),
                     onPressed: canSubmit ? _submit : null,
-                    child: const Text(
+                    child: Text(
                       'Создать продажу',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        color: canSubmit
+                            ? colors.buttonPrimaryFg
+                            : colors.textPrimary,
                       ),
                     ),
                   ),
@@ -393,6 +406,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
     double nameFontSize = 14,
     double phoneFontSize = 12,
   }) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -400,7 +414,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
         Text(
           lead.name,
           style: TextStyle(
-            color: const Color(0xff1E2E52),
+            color: colors.textPrimary,
             fontSize: nameFontSize,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -413,7 +427,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
             child: Text(
               lead.phone!.trim(),
               style: TextStyle(
-                color: const Color(0xff99A4BA),
+                color: colors.textSecondary,
                 fontSize: phoneFontSize,
                 fontWeight: FontWeight.w400,
                 fontFamily: 'Gilroy',
@@ -490,17 +504,18 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final selectedLead = widget.selectedLead;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Клиент',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -520,12 +535,11 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
           excludeSelected: false,
           initialItem: selectedLead,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
-            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+            closedFillColor: colors.surfaceElevated,
+            expandedFillColor: colors.surfacePrimary,
+            closedBorder: Border.all(color: colors.borderSubtle, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder:
-                Border.all(color: const Color(0xffF4F7FD), width: 1),
+            expandedBorder: Border.all(color: colors.borderSubtle, width: 1),
             expandedBorderRadius: BorderRadius.circular(12),
             searchFieldDecoration: const SearchFieldDecoration(
               autoFocus: false,
@@ -538,26 +552,26 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
             return _buildLeadInfo(item, phoneFontSize: 11);
           },
           hintBuilder: (context, hint, enabled) {
-            return const Text(
+            return Text(
               'Выберите клиента',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
           noResultFoundBuilder: (context, text) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Text(
                   'Ничего не найдено',
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -592,12 +606,13 @@ class _PaymentSummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Color(0xff718096),
+          style: TextStyle(
+            color: colors.textSecondary,
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -607,8 +622,7 @@ class _PaymentSummaryRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            color:
-                isPrimary ? const Color(0xff1E2E52) : const Color(0xff2D3748),
+            color: colors.textPrimary,
             fontFamily: 'Gilroy',
             fontSize: isPrimary ? 18 : 16,
             fontWeight: FontWeight.w800,
@@ -630,11 +644,13 @@ class _PaymentTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.borderSubtle),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -648,7 +664,7 @@ class _PaymentTabs extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selectedMode == mode
-                        ? Colors.white
+                        ? colors.surfacePrimary
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(9),
                   ),
@@ -658,8 +674,8 @@ class _PaymentTabs extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: selectedMode == mode
-                          ? const Color(0xff1E2E52)
-                          : const Color(0xff99A4BA),
+                          ? colors.textPrimary
+                          : colors.textSecondary,
                       fontFamily: 'Gilroy',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -693,12 +709,13 @@ class _AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       height: 58,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
         children: [
@@ -722,8 +739,8 @@ class _AmountField extends StatelessWidget {
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontFamily: 'Gilroy',
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -735,8 +752,8 @@ class _AmountField extends StatelessWidget {
             width: 108,
             height: double.infinity,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: Color(0xffF4F7FD),
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated,
               borderRadius: BorderRadius.horizontal(right: Radius.circular(12)),
             ),
             child: Text(
@@ -744,7 +761,7 @@ class _AmountField extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -770,24 +787,24 @@ class _PaymentMethodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return SizedBox(
       height: 62,
       child: Material(
-        color: isSelected ? const Color(0xff1E2E52) : Colors.white,
+        color: isSelected ? colors.buttonPrimaryBg : colors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          splashColor: const Color(0xff1E2E52).withValues(alpha: 0.06),
-          highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.04),
+          splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.06),
+          highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.04),
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected
-                    ? const Color(0xff1E2E52)
-                    : const Color(0xffE2E8F0),
+                color:
+                    isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
               ),
             ),
             child: Column(
@@ -795,7 +812,8 @@ class _PaymentMethodButton extends StatelessWidget {
               children: [
                 Icon(
                   method.icon,
-                  color: isSelected ? Colors.white : const Color(0xff1E2E52),
+                  color:
+                      isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
                   size: 20,
                 ),
                 const SizedBox(height: 5),
@@ -804,7 +822,9 @@ class _PaymentMethodButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xff1E2E52),
+                    color: isSelected
+                        ? colors.buttonPrimaryFg
+                        : colors.textPrimary,
                     fontFamily: 'Gilroy',
                     fontSize: 12,
                     fontWeight: FontWeight.w800,

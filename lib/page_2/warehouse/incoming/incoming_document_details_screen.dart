@@ -8,6 +8,7 @@ import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_delete_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_update_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -250,6 +251,7 @@ class _IncomingDocumentDetailsScreenState
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
+    final colors = context.appColors;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -261,7 +263,8 @@ class _IncomingDocumentDetailsScreenState
             color: Colors.white,
           ),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        backgroundColor:
+            isSuccess ? colors.buttonPrimaryBg : const Color(0xffDC2626),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -363,12 +366,13 @@ class _IncomingDocumentDetailsScreenState
   }
 
   Widget _buildActionButton() {
+    final colors = context.appColors;
     if (_isButtonLoading) {
       return Container(
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 255, 255, 255),
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -376,7 +380,7 @@ class _IncomingDocumentDetailsScreenState
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
               strokeWidth: 2,
             ),
           ),
@@ -427,11 +431,12 @@ class _IncomingDocumentDetailsScreenState
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -443,7 +448,7 @@ class _IncomingDocumentDetailsScreenState
                 child: Text(
                   title,
                   style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -458,7 +463,7 @@ class _IncomingDocumentDetailsScreenState
                     content,
                     textAlign: TextAlign.justify,
                     style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -472,7 +477,7 @@ class _IncomingDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -512,7 +517,7 @@ class _IncomingDocumentDetailsScreenState
         },
         child: Scaffold(
           appBar: _buildAppBar(context),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           body: _isLoading
               ? Center(
                   child: PlayStoreImageLoading(
@@ -559,11 +564,12 @@ class _IncomingDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -577,6 +583,7 @@ class _IncomingDocumentDetailsScreenState
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.iconPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -698,7 +705,7 @@ class _IncomingDocumentDetailsScreenState
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
@@ -793,7 +800,8 @@ class _IncomingDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context)
+                            .copyWith(fontSize: 14),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),

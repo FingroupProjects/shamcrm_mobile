@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -10,13 +11,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class StorageWidget extends StatefulWidget {
   final String? selectedStorage;
   final ValueChanged<String?> onChanged;
-  final Key? key;
 
   const StorageWidget({
     required this.selectedStorage,
     required this.onChanged,
-    this.key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   _StorageWidgetState createState() => _StorageWidgetState();
@@ -56,6 +56,7 @@ class _StorageWidgetState extends State<StorageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<StorageBloc, StorageState>(
       listener: (context, state) {
         // ✅ Mark as loaded when data arrives
@@ -82,7 +83,7 @@ class _StorageWidgetState extends State<StorageWidget> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xffDC2626),
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: const Duration(seconds: 3),
@@ -129,11 +130,11 @@ class _StorageWidgetState extends State<StorageWidget> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('storage'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -145,24 +146,60 @@ class _StorageWidgetState extends State<StorageWidget> {
                 overlayHeight: 400,
                 enabled: !isLoading,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
+                  closedFillColor: colors.surfaceElevated,
+                  expandedFillColor: colors.surfacePrimary,
                   closedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
+                    color: colors.borderSubtle,
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: const Color(0xffF4F7FD),
+                    color: colors.borderSubtle,
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
+                  listItemDecoration: ListItemDecoration(
+                    splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.10),
+                    highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                    selectedColor: colors.surfaceElevated,
+                  ),
+                  searchFieldDecoration: SearchFieldDecoration(
+                    fillColor: colors.surfaceElevated,
+                    textStyle: TextStyle(
+                      color: colors.textPrimary,
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    hintStyle: TextStyle(
+                      color: colors.textSecondary,
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colors.borderSubtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                    ),
+                    prefixIcon: Icon(Icons.search,
+                        size: 22, color: colors.textSecondary),
+                    suffixIcon: (onClear) =>
+                        IconButton(
+                          onPressed: onClear,
+                          icon: Icon(Icons.close,
+                              size: 20, color: colors.textSecondary),
+                        ),
+                  ),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
-                    item.name ?? '',
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    item.name,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
@@ -187,14 +224,12 @@ class _StorageWidgetState extends State<StorageWidget> {
                   }
 
                   return Text(
-                    selectedItem?.name ??
-                        AppLocalizations.of(context)!
-                            .translate('select_storage'),
-                    style: const TextStyle(
+                    selectedItem.name,
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   );
                 },
@@ -215,11 +250,11 @@ class _StorageWidgetState extends State<StorageWidget> {
 
                   return Text(
                     AppLocalizations.of(context)!.translate('select_storage'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   );
                 },
@@ -241,10 +276,10 @@ class _StorageWidgetState extends State<StorageWidget> {
                       padding: const EdgeInsets.all(20.0),
                       child: Text(
                         AppLocalizations.of(context)!.translate('no_results'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),

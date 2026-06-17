@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<IncomingBloc, IncomingState>(
       listener: (context, state) {
         // Проверяем, что виджет все еще активен
@@ -45,7 +47,7 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_document') ?? 'Удалить документ',
@@ -53,7 +55,7 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -62,16 +64,16 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                 ),
                 SizedBox(height: 16),
                 Text(
                   AppLocalizations.of(context)!.translate('deleting') ?? 'Удаление...',
-                  style: TextStyle(
+                    style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ],
@@ -82,7 +84,7 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
         actions: _isDeleting 
@@ -97,8 +99,8 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      buttonColor: Colors.red,
-                      textColor: Colors.white,
+                      buttonColor: const Color(0xffDC2626),
+                      textColor: colors.buttonPrimaryFg,
                     ),
                   ),
                   SizedBox(width: 8),
@@ -109,8 +111,8 @@ class _DeleteDocumentDialogState extends State<DeleteDocumentDialog> {
                         final localizations = AppLocalizations.of(context)!;
                         context.read<IncomingBloc>().add(DeleteIncoming(widget.documentId, localizations));
                       },
-                      buttonColor: Color(0xff1E2E52),
-                      textColor: Colors.white,
+                      buttonColor: colors.buttonPrimaryBg,
+                      textColor: colors.buttonPrimaryFg,
                     ),
                   ),
                 ],

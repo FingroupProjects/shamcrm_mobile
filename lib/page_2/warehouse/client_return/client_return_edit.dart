@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
@@ -641,6 +642,7 @@ class _EditClientReturnDocumentScreenState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return WillPopScope(
       onWillPop: () async {
@@ -652,7 +654,7 @@ class _EditClientReturnDocumentScreenState
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: _buildAppBar(localizations),
           body: BlocListener<ClientReturnBloc, ClientReturnState>(
             listener: (context, state) {
@@ -667,7 +669,7 @@ class _EditClientReturnDocumentScreenState
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.surfacePrimary,
                     child: TabBar(
                       controller: _tabController,
                       labelColor: const Color(0xff4759FF),
@@ -757,6 +759,7 @@ class _EditClientReturnDocumentScreenState
   }
 
   Widget _buildGoodsTab(AppLocalizations? localizations) {
+    final colors = context.appColors;
     return Column(
       children: [
         Expanded(
@@ -777,11 +780,11 @@ class _EditClientReturnDocumentScreenState
                       child: Text(
                         localizations?.translate('no_goods_added') ??
                             'Товары не добавлены',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -800,10 +803,10 @@ class _EditClientReturnDocumentScreenState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.10),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -813,7 +816,7 @@ class _EditClientReturnDocumentScreenState
           child: ElevatedButton(
             onPressed: _openVariantSelection,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -824,15 +827,15 @@ class _EditClientReturnDocumentScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
+                Icon(Icons.add, color: colors.buttonPrimaryFg, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   localizations?.translate('add_good') ?? 'Добавить товар',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
               ],
@@ -844,17 +847,18 @@ class _EditClientReturnDocumentScreenState
   }
 
   AppBar _buildAppBar(AppLocalizations? localizations) {
+    final colors = context.appColors;
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios,
+            color: colors.iconPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -873,11 +877,11 @@ class _EditClientReturnDocumentScreenState
               '${localizations?.translate('edit_client_return') ?? 'Редактировать'} №${widget.document.docNumber}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -886,7 +890,7 @@ class _EditClientReturnDocumentScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
+                color: const Color(0xff4CAF50).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -964,16 +968,17 @@ class _EditClientReturnDocumentScreenState
   }
 
   Widget _buildTotalByCurrencyField(AppLocalizations? localizations) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           _totalByCurrencyLabel(localizations),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -981,16 +986,16 @@ class _EditClientReturnDocumentScreenState
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -1018,6 +1023,7 @@ class _EditClientReturnDocumentScreenState
 
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
+    final colors = context.appColors;
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
@@ -1035,12 +1041,12 @@ class _EditClientReturnDocumentScreenState
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.10),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -1057,11 +1063,11 @@ class _EditClientReturnDocumentScreenState
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1072,14 +1078,14 @@ class _EditClientReturnDocumentScreenState
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                      child: Icon(Icons.close,
+                          color: colors.textSecondary, size: 18),
                     ),
                   ],
                 ),
@@ -1091,17 +1097,17 @@ class _EditClientReturnDocumentScreenState
                   padding: const EdgeInsets.only(top: 4, bottom: 10),
                   child: Text(
                     '${AppLocalizations.of(context)?.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                 ),
               ),
               if (!isCollapsed) ...[
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                Divider(height: 1, color: colors.borderSubtle),
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
@@ -1112,11 +1118,11 @@ class _EditClientReturnDocumentScreenState
                         Text(
                           AppLocalizations.of(context)?.translate('quantity') ??
                               'Кол-во',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1133,11 +1139,11 @@ class _EditClientReturnDocumentScreenState
                             QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
@@ -1157,11 +1163,11 @@ class _EditClientReturnDocumentScreenState
                           Text(
                             AppLocalizations.of(context)?.translate('unit') ??
                                 'Ед.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1171,24 +1177,24 @@ class _EditClientReturnDocumentScreenState
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: colors.borderSubtle),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: item['selectedUnit'],
                                   isDense: true,
                                   isExpanded: true,
-                                  dropdownColor: Colors.white,
+                                  dropdownColor: colors.surfacePrimary,
                                   icon: const Icon(Icons.arrow_drop_down,
                                       size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
@@ -1215,19 +1221,19 @@ class _EditClientReturnDocumentScreenState
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: colors.borderSubtle),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -1243,11 +1249,11 @@ class _EditClientReturnDocumentScreenState
                           Text(
                             AppLocalizations.of(context)?.translate('price') ??
                                 'Цена',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1263,11 +1269,11 @@ class _EditClientReturnDocumentScreenState
                             inputFormatters: [
                               PriceInputFormatter(),
                             ],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                             hasError: _priceErrors[variantId] == true,
                             onChanged: (value) =>
@@ -1286,41 +1292,42 @@ class _EditClientReturnDocumentScreenState
   }
 
   Widget _buildActionButtons(AppLocalizations? localizations) {
+    final colors = context.appColors;
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _updateDocument,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff4759FF),
-          disabledBackgroundColor: const Color(0xffE5E7EB),
+          backgroundColor: colors.buttonPrimaryBg,
+          disabledBackgroundColor: colors.borderSubtle,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
         child: _isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryFg),
                 ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.save_outlined,
-                      color: Colors.white, size: 18),
+                  Icon(Icons.save_outlined,
+                      color: colors.buttonPrimaryFg, size: 18),
                   const SizedBox(width: 6),
                   Text(
                     localizations?.translate('save') ?? 'Обновить',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: colors.buttonPrimaryFg,
                     ),
                   ),
                 ],

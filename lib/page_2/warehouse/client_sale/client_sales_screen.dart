@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
@@ -49,7 +50,8 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
   void initState() {
     super.initState();
     _checkPermissions(); // НОВОЕ: Проверка прав
-    _clientSaleBloc = context.read<ClientSaleBloc>()..add(const FetchClientSales(forceRefresh: true));
+    _clientSaleBloc = context.read<ClientSaleBloc>()
+      ..add(const FetchClientSales(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -115,7 +117,8 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -160,6 +163,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return PopScope(
       canPop: true,
@@ -184,593 +188,746 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                       MaterialPageRoute(
                         builder: (context) => BlocProvider.value(
                           value: _clientSaleBloc,
-                          child: CreateClienSalesDocumentScreen(organizationId: widget.organizationId),
+                          child: CreateClienSalesDocumentScreen(
+                              organizationId: widget.organizationId),
                         ),
                       ),
                     );
 
                     if (mounted && result == true) {
-                      _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
+                      _clientSaleBloc
+                          .add(const FetchClientSales(forceRefresh: true));
                     }
                   },
                   backgroundColor: const Color(0xff1E2E52),
                   child: const Icon(Icons.add, color: Colors.white),
                 )
               : null,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: AppBar(
-          automaticallyImplyLeading: !_selectionMode,
-          forceMaterialTransparency: true,
-          title: _selectionMode
-              ? BlocBuilder<ClientSaleBloc, ClientSaleState>(
-                  builder: (context, state) {
-                    if (state is ClientSaleLoaded) {
-                      bool showApprove = state.selectedData!.any((doc) => doc.approved == 0 && doc.deletedAt == null);
-                      bool showDisapprove = state.selectedData!.any((doc) => doc.approved == 1 && doc.deletedAt == null);
-                      // ИЗМЕНЕНО: showDelete только с delete-правом
-                      bool showDelete = _hasDeletePermission &&
-                          state.selectedData!.any((doc) => doc.deletedAt == null);
-                      bool showRestore = state.selectedData!.any((doc) => doc.deletedAt != null);
-                      _isRefreshing = false;
+            backgroundColor: colors.surfacePrimary,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            automaticallyImplyLeading: !_selectionMode,
+            forceMaterialTransparency: false,
+            title: _selectionMode
+                ? BlocBuilder<ClientSaleBloc, ClientSaleState>(
+                    builder: (context, state) {
+                      if (state is ClientSaleLoaded) {
+                        bool showApprove = state.selectedData!.any((doc) =>
+                            doc.approved == 0 && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) =>
+                            doc.approved == 1 && doc.deletedAt == null);
+                        // ИЗМЕНЕНО: showDelete только с delete-правом
+                        bool showDelete = _hasDeletePermission &&
+                            state.selectedData!
+                                .any((doc) => doc.deletedAt == null);
+                        bool showRestore = state.selectedData!
+                            .any((doc) => doc.deletedAt != null);
+                        _isRefreshing = false;
+
+                        return AppBarSelectionMode(
+                          title:
+                              localizations?.translate('appbar_client_sales') ??
+                                  'Реализация клиент',
+                          onDismiss: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _clientSaleBloc.add(UnselectAllDocuments());
+                          },
+                          onApprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _clientSaleBloc
+                                .add(MassApproveClientSaleDocuments());
+                          },
+                          onDisapprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _clientSaleBloc
+                                .add(MassDisapproveClientSaleDocuments());
+                          },
+                          onDelete: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _clientSaleBloc
+                                .add(MassDeleteClientSaleDocuments());
+                          },
+                          onRestore: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _clientSaleBloc
+                                .add(MassRestoreClientSaleDocuments());
+                          },
+                          showApprove: showApprove,
+                          showDelete: showDelete,
+                          showDisapprove: showDisapprove,
+                          showRestore: showRestore,
+                        );
+                      }
 
                       return AppBarSelectionMode(
-                        title: localizations?.translate('appbar_client_sales') ?? 'Реализация клиент',
+                        title:
+                            localizations?.translate('appbar_client_sales') ??
+                                'Реализация клиент',
                         onDismiss: () {
                           setState(() {
                             _selectionMode = false;
                           });
                           _clientSaleBloc.add(UnselectAllDocuments());
                         },
-                        onApprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _clientSaleBloc.add(MassApproveClientSaleDocuments());
-                        },
-                        onDisapprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _clientSaleBloc.add(MassDisapproveClientSaleDocuments());
-                        },
-                        onDelete: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _clientSaleBloc.add(MassDeleteClientSaleDocuments());
-                        },
-                        onRestore: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _clientSaleBloc.add(MassRestoreClientSaleDocuments());
-                        },
-                        showApprove: showApprove,
-                        showDelete: showDelete,
-                        showDisapprove: showDisapprove,
-                        showRestore: showRestore,
                       );
-                    }
-
-                    return AppBarSelectionMode(
-                      title: localizations?.translate('appbar_client_sales') ?? 'Реализация клиент',
-                      onDismiss: () {
+                    },
+                  )
+                : CustomAppBarPage2(
+                    title: localizations?.translate('appbar_client_sales') ??
+                        'Продажа',
+                    showSearchIcon: true,
+                    showFilterIcon: false,
+                    showFilterOrderIcon: false,
+                    showFilterIncomeIcon: false,
+                    showFilterIncomingIcon: true,
+                    onIncomingResetFilters: _onResetFilters,
+                    onFilterIncomingSelected: _onFilterSelected,
+                    onChangedSearchInput: _onSearch,
+                    textEditingController: _searchController,
+                    focusNode: _focusNode,
+                    clearButtonClick: (value) {
+                      if (!value) {
                         setState(() {
-                          _selectionMode = false;
+                          _isSearching = false;
+                          _searchController.clear();
+                          _search = null;
                         });
-                        _clientSaleBloc.add(UnselectAllDocuments());
-                      },
-                    );
-                  },
-                )
-              : CustomAppBarPage2(
-                  title: localizations?.translate('appbar_client_sales') ?? 'Продажа',
-                  showSearchIcon: true,
-                  showFilterIcon: false,
-                  showFilterOrderIcon: false,
-                  showFilterIncomeIcon: false,
-                  showFilterIncomingIcon: true,
-                  onIncomingResetFilters: _onResetFilters,
-                  onFilterIncomingSelected: _onFilterSelected,
-                  onChangedSearchInput: _onSearch,
-                  textEditingController: _searchController,
-                  focusNode: _focusNode,
-                  clearButtonClick: (value) {
-                    if (!value) {
+                        _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: null,
+                        ));
+                      }
+                    },
+                    onClickProfileAvatar: () {},
+                    clearButtonClickFiltr: (bool p1) {},
+                    currentFilters: _currentFilters,
+                  ),
+          ),
+          body: BlocListener<ClientSaleBloc, ClientSaleState>(
+            listener: (context, state) {
+              debugPrint(
+                  "ClientSaleScreen.Bloc.State: ${_clientSaleBloc.state}");
+
+              if (!mounted) return;
+
+              if (state is ClientSaleLoaded) {
+                if (mounted) {
+                  setState(() {
+                    _hasReachedMax = state.hasReachedMax;
+                    _isInitialLoad = false;
+                    _isLoadingMore = false;
+                    _isRefreshing = false;
+                  });
+                }
+              } else if (state is ClientSaleError) {
+                if (mounted) {
+                  setState(() {
+                    _isInitialLoad = false;
+                    _isLoadingMore = false;
+                    _isRefreshing = false;
+                  });
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        final localizations = AppLocalizations.of(context)!;
+                        showSimpleErrorDialog(
+                            context,
+                            localizations.translate('error') ?? 'Ошибка',
+                            state.message);
+                        return;
+                      }
+                      debugPrint("ClientSaleScreen.Error: ${state.message}");
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is ClientSaleCreateSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _clientSaleBloc
+                          .add(const FetchClientSales(forceRefresh: true));
+                    }
+                  });
+                }
+              } else if (state is ClientSaleCreateError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                        _clientSaleBloc.add(FetchClientSales(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        final localizations = AppLocalizations.of(context)!;
+                        showSimpleErrorDialog(
+                            context,
+                            localizations.translate('error') ?? 'Ошибка',
+                            state.message);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is ClientSaleUpdateSuccess) {
+                // ИЗМЕНЕНО: С addPostFrameCallback
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is ClientSaleUpdateError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                        _clientSaleBloc.add(FetchClientSales(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        final localizations = AppLocalizations.of(context)!;
+                        showSimpleErrorDialog(
+                            context,
+                            localizations.translate('error') ?? 'Ошибка',
+                            state.message);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is ClientSaleApproveMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is ClientSaleApproveMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is ClientSaleDisapproveMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is ClientSaleDisapproveMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is ClientSaleDeleteSuccess) {
+                debugPrint(
+                    "ClientSaleScreen.Bloc.State.ClientSaleDeleteSuccess: ${_clientSaleBloc.state}");
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
                       setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                        _search = null;
+                        _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
                       });
                       _clientSaleBloc.add(FetchClientSales(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: null,
-                      ));
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
                     }
-                  },
-                  onClickProfileAvatar: () {},
-                  clearButtonClickFiltr: (bool p1) {},
-                  currentFilters: _currentFilters,
-                ),
-        ),
-        body: BlocListener<ClientSaleBloc, ClientSaleState>(
-          listener: (context, state) {
-            debugPrint("ClientSaleScreen.Bloc.State: ${_clientSaleBloc.state}");
-
-            if (!mounted) return;
-
-            if (state is ClientSaleLoaded) {
-              if (mounted) {
-                setState(() {
-                  _hasReachedMax = state.hasReachedMax;
-                  _isInitialLoad = false;
-                  _isLoadingMore = false;
-                  _isRefreshing = false;
-                });
-              }
-            } else if (state is ClientSaleError) {
-              if (mounted) {
-                setState(() {
-                  _isInitialLoad = false;
-                  _isLoadingMore = false;
-                  _isRefreshing = false;
-                });
-
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      final localizations = AppLocalizations.of(context)!;
-                      showSimpleErrorDialog(
-                          context,
-                          localizations.translate('error') ?? 'Ошибка',
-                          state.message);
-                      return;
-                    }
-                    debugPrint("ClientSaleScreen.Error: ${state.message}");
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleCreateSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _clientSaleBloc.add(const FetchClientSales(forceRefresh: true));
-                  }
-                });
-              }
-            } else if (state is ClientSaleCreateError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                      final localizations = AppLocalizations.of(context)!;
-                      showSimpleErrorDialog(
-                          context,
-                          localizations.translate('error') ?? 'Ошибка',
-                          state.message);
+                  });
+                }
+              } else if (state is ClientSaleDeleteError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message);
+                        _clientSaleBloc.add(FetchClientSales(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
                         return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleUpdateSuccess) { // ИЗМЕНЕНО: С addPostFrameCallback
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _clientSaleBloc.add(FetchClientSales(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleUpdateError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                      final localizations = AppLocalizations.of(context)!;
-                      showSimpleErrorDialog(
-                          context,
-                          localizations.translate('error') ?? 'Ошибка',
-                          state.message);
-                      return;
+                  });
+                }
+              } else if (state is ClientSaleRestoreSuccess) {
+                debugPrint(
+                    "ClientSaleScreen.Bloc.State.ClientSaleRestoreSuccess: ${_clientSaleBloc.state}");
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      setState(() {
+                        _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
+                      });
+                      _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleApproveMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleApproveMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                      return;
+                  });
+                }
+              } else if (state is ClientSaleRestoreError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message);
+                        _clientSaleBloc.add(FetchClientSales(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleDisapproveMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleDisapproveMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(context, localizations?.translate('error') ?? 'Ошибка', state.message);
-                      return;
+                  });
+                }
+              } else if (state is ClientSaleDeleteMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleDeleteSuccess) {
-              debugPrint("ClientSaleScreen.Bloc.State.ClientSaleDeleteSuccess: ${_clientSaleBloc.state}");
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    setState(() {
-                      _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
-                    });
-                    _clientSaleBloc.add(FetchClientSales(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleDeleteError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
-                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                      return;
+                  });
+                }
+              } else if (state is ClientSaleDeleteMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message);
+                        _clientSaleBloc.add(FetchClientSales(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleRestoreSuccess) {
-              debugPrint("ClientSaleScreen.Bloc.State.ClientSaleRestoreSuccess: ${_clientSaleBloc.state}");
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    setState(() {
-                      _isRefreshing = true; // ИЗМЕНЕНО: Как в примере
-                    });
-                    _clientSaleBloc.add(FetchClientSales(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleRestoreError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
-                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                      return;
+                  });
+                }
+              } else if (state is ClientSaleRestoreMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _clientSaleBloc.add(FetchClientSales(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is ClientSaleDeleteMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleDeleteMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
-                      _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                      return;
+                  });
+                }
+              } else if (state is ClientSaleRestoreMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
                     }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
+                  });
+                }
               }
-            } else if (state is ClientSaleRestoreMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _clientSaleBloc.add(FetchClientSales(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is ClientSaleRestoreMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message);
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            }
-          },
-          child: BlocBuilder<ClientSaleBloc, ClientSaleState>(
-            builder: (context, state) {
+            },
+            child: BlocBuilder<ClientSaleBloc, ClientSaleState>(
+              builder: (context, state) {
+                debugPrint(
+                    "ClientSaleScreen.Bloc.State.Build: ${_clientSaleBloc.state}");
 
-              debugPrint("ClientSaleScreen.Bloc.State.Build: ${_clientSaleBloc.state}");
-
-              // ИЗМЕНЕНО: Loading с _isInitialLoad
-              if (_isInitialLoad || state is ClientSaleLoading || state is ClientSaleDeleteLoading ||
-                  state is ClientSaleRestoreLoading || state is ClientSaleCreateLoading ||
-                  state is ClientSaleApproveMassLoading || state is ClientSaleDisapproveMassLoading ||
-                  state is ClientSaleDeleteMassLoading || state is ClientSaleRestoreMassLoading ||
-              _isRefreshing) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                );
-              }
-
-              final List<ExpenseDocument> currentData = state is ClientSaleLoaded ? state.data : [];
-
-              if (currentData.isEmpty && state is ClientSaleLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations?.translate('nothing_found') ?? 'Ничего не найдено')
-
-                        : (localizations?.translate('no_client_sales') ?? 'Нет документов реализации'), // ИЗМЕНЕНО: Текст
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                // ИЗМЕНЕНО: Loading с _isInitialLoad
+                if (_isInitialLoad ||
+                    state is ClientSaleLoading ||
+                    state is ClientSaleDeleteLoading ||
+                    state is ClientSaleRestoreLoading ||
+                    state is ClientSaleCreateLoading ||
+                    state is ClientSaleApproveMassLoading ||
+                    state is ClientSaleDisapproveMassLoading ||
+                    state is ClientSaleDeleteMassLoading ||
+                    state is ClientSaleRestoreMassLoading ||
+                    _isRefreshing) {
+                  return Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: const Duration(milliseconds: 1000),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
-                  itemBuilder: (context, index) {
-                    if (index >= currentData.length) {
-                      return _isLoadingMore
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: const Duration(milliseconds: 1000),
+                final List<ExpenseDocument> currentData =
+                    state is ClientSaleLoaded ? state.data : [];
+
+                if (currentData.isEmpty && state is ClientSaleLoaded) {
+                  return Center(
+                    child: Text(
+                      _isSearching
+                          ? (localizations?.translate('nothing_found') ??
+                              'Ничего не найдено')
+                          : (localizations?.translate('no_client_sales') ??
+                              'Нет документов реализации'), // ИЗМЕНЕНО: Текст
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  color: const Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  onRefresh: _onRefresh,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
+                    itemBuilder: (context, index) {
+                      if (index >= currentData.length) {
+                        return _isLoadingMore
+                            ? Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: PlayStoreImageLoading(
+                                    size: 80.0,
+                                    duration:
+                                        const Duration(milliseconds: 1000),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink();
+                      }
+
+                      // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
+                      return _hasDeletePermission
+                          ? Dismissible(
+                              key: Key(currentData[index].id.toString()),
+                              // Свайп только справа налево для обоих действий
+                              direction: DismissDirection.endToStart,
+
+                              background: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: currentData[index].deletedAt == null
+                                      ? Colors.red
+                                      : const Color(0xFF2196F3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.centerRight,
+                                child: Icon(
+                                  currentData[index].deletedAt == null
+                                      ? Icons.delete
+                                      : Icons.restore_from_trash,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+
+                              confirmDismiss: (direction) async {
+                                final isDeleted =
+                                    currentData[index].deletedAt != null;
+                                final docNumber =
+                                    currentData[index].docNumber ?? 'N/A';
+
+                                if (isDeleted) {
+                                  return await DocumentConfirmDialog
+                                      .showRestoreConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                } else {
+                                  return await DocumentConfirmDialog
+                                      .showDeleteConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                }
+                              },
+                              onDismissed: (direction) {
+                                final isDeleted =
+                                    currentData[index].deletedAt != null;
+
+                                if (isDeleted) {
+                                  // RESTORE - для удалённых документов
+                                  debugPrint(
+                                      "♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                                  _clientSaleBloc.add(RestoreClientSale(
+                                    currentData[index].id!,
+                                    localizations!,
+                                  ));
+                                } else {
+                                  // DELETE - для активных документов
+                                  debugPrint(
+                                      "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                                  _clientSaleBloc.add(DeleteClientSale(
+                                    currentData[index].id!,
+                                    localizations!,
+                                    shouldReload: true,
+                                  ));
+                                }
+                              },
+
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: ClientSalesCard(
+                                  document: currentData[index],
+                                  onTap: () {
+                                    if (_selectionMode) {
+                                      _clientSaleBloc.add(
+                                          SelectDocument(currentData[index]));
+
+                                      final currentState =
+                                          context.read<ClientSaleBloc>().state;
+
+                                      if (currentState is ClientSaleLoaded) {
+                                        final selectedCount =
+                                            currentState.selectedData?.length ??
+                                                0;
+                                        if (selectedCount <= 1 &&
+                                            currentState.selectedData?.contains(
+                                                    currentData[index]) ==
+                                                true) {
+                                          setState(() {
+                                            _selectionMode = false;
+                                          });
+                                        }
+                                      }
+                                      return;
+                                    }
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (ctx) => BlocProvider.value(
+                                          value: _clientSaleBloc,
+                                          child:
+                                              ClientSalesDocumentDetailsScreen(
+                                            documentId: currentData[index].id!,
+                                            docNumber:
+                                                currentData[index].docNumber ??
+                                                    'N/A',
+                                            hasUpdatePermission:
+                                                _hasUpdatePermission,
+                                            hasDeletePermission:
+                                                _hasDeletePermission,
+                                            onDocumentUpdated: () {
+                                              _clientSaleBloc
+                                                  .add(FetchClientSales(
+                                                forceRefresh: true,
+                                                filters: _currentFilters,
+                                                search: _search,
+                                              ));
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  isSelectionMode: _selectionMode,
+                                  isSelected: (state as ClientSaleLoaded)
+                                          .selectedData
+                                          ?.contains(currentData[index]) ??
+                                      false,
+                                  onLongPress: _hasDeletePermission
+                                      ? () {
+                                          if (_selectionMode) return;
+                                          setState(() {
+                                            _selectionMode = true;
+                                          });
+                                          _clientSaleBloc.add(SelectDocument(
+                                              currentData[index]));
+                                        }
+                                      : () {},
                                 ),
                               ),
                             )
-                          : const SizedBox.shrink();
-                    }
-
-                    // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
-                    return _hasDeletePermission
-                        ? Dismissible(
-                      key: Key(currentData[index].id.toString()),
-                      // Свайп только справа налево для обоих действий
-                      direction: DismissDirection.endToStart,
-
-                      background: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.centerRight,
-                        child: Icon(
-                          currentData[index].deletedAt == null 
-                              ? Icons.delete 
-                              : Icons.restore_from_trash,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-
-                      confirmDismiss: (direction) async {
-                        final isDeleted = currentData[index].deletedAt != null;
-                        final docNumber = currentData[index].docNumber ?? 'N/A';
-
-                        if (isDeleted) {
-                          return await DocumentConfirmDialog.showRestoreConfirmation(
-                            context,
-                            docNumber,
-                          );
-                        } else {
-                          return await DocumentConfirmDialog.showDeleteConfirmation(
-                            context,
-                            docNumber,
-                          );
-                        }
-                      },
-                      onDismissed: (direction) {
-                        final isDeleted = currentData[index].deletedAt != null;
-                        
-                        if (isDeleted) {
-                          // RESTORE - для удалённых документов
-                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
-                          _clientSaleBloc.add(RestoreClientSale(
-                            currentData[index].id!,
-                            localizations!,
-                          ));
-                        } else {
-                          // DELETE - для активных документов
-                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                          _clientSaleBloc.add(DeleteClientSale(
-                            currentData[index].id!,
-                            localizations!,
-                            shouldReload: true,
-                          ));
-                        }
-                      },
-
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: ClientSalesCard(
-                          document: currentData[index],
-                          onTap: () {
-                            if (_selectionMode) {
-                              _clientSaleBloc.add(SelectDocument(currentData[index]));
-
-                              final currentState = context.read<ClientSaleBloc>().state;
-
-                              if (currentState is ClientSaleLoaded) {
-                                final selectedCount = currentState.selectedData?.length ?? 0;
-                                if (selectedCount <= 1 && currentState.selectedData?.contains(currentData[index]) == true) {
-                                  setState(() {
-                                    _selectionMode = false;
-                                  });
-                                }
-                              }
-                              return;
-                            }
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (ctx) => BlocProvider.value(
-                                  value: _clientSaleBloc,
-                                  child: ClientSalesDocumentDetailsScreen(
-                                    documentId: currentData[index].id!,
-                                    docNumber: currentData[index].docNumber ?? 'N/A',
-                                    hasUpdatePermission: _hasUpdatePermission,
-                                    hasDeletePermission: _hasDeletePermission,
-                                    onDocumentUpdated: () {
-                                      _clientSaleBloc.add(FetchClientSales(
-                                        forceRefresh: true,
-                                        filters: _currentFilters,
-                                        search: _search,
-                                      ));
-                                    },
-                                  ),
-                                ),
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: ClientSalesCard(
+                                document: currentData[index],
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (ctx) =>
+                                          ClientSalesDocumentDetailsScreen(
+                                        documentId: currentData[index].id!,
+                                        docNumber:
+                                            currentData[index].docNumber ??
+                                                'N/A',
+                                        hasUpdatePermission:
+                                            _hasUpdatePermission,
+                                        hasDeletePermission:
+                                            _hasDeletePermission,
+                                        onDocumentUpdated: () {
+                                          _clientSaleBloc.add(FetchClientSales(
+                                            forceRefresh: true,
+                                            filters: _currentFilters,
+                                            search: _search,
+                                          ));
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                                isSelectionMode: _selectionMode,
+                                isSelected: (state as ClientSaleLoaded)
+                                        .selectedData
+                                        ?.contains(currentData[index]) ??
+                                    false,
+                                onLongPress: () {},
                               ),
                             );
-                          },
-                          isSelectionMode: _selectionMode,
-                          isSelected: (state as ClientSaleLoaded).selectedData?.contains(currentData[index]) ?? false,
-                          onLongPress: _hasDeletePermission
-                              ? () {
-                            if (_selectionMode) return;
-                            setState(() {
-                              _selectionMode = true;
-                            });
-                            _clientSaleBloc.add(SelectDocument(currentData[index]));
-                          }
-                              : () {},
-                        ),
-                      ),
-                    )
-                        : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ClientSalesCard(
-                        document: currentData[index],
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (ctx) => ClientSalesDocumentDetailsScreen(
-                                documentId: currentData[index].id!,
-                                docNumber: currentData[index].docNumber ?? 'N/A',
-                                hasUpdatePermission: _hasUpdatePermission,
-                                hasDeletePermission: _hasDeletePermission,
-                                onDocumentUpdated: () {
-                                  _clientSaleBloc.add(FetchClientSales(
-                                    forceRefresh: true,
-                                    filters: _currentFilters,
-                                    search: _search,
-                                  ));
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                        isSelectionMode: _selectionMode,
-                        isSelected: (state as ClientSaleLoaded).selectedData?.contains(currentData[index]) ?? false,
-                        onLongPress: () {},
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }

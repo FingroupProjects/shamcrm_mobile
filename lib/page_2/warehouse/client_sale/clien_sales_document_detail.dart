@@ -1,12 +1,11 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart'
     as expDoc;
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/edit_client_sales_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/widgets/client_sale_delete_document.dart';
@@ -262,7 +261,8 @@ class _ClientSalesDocumentDetailsScreenState
             color: Colors.white,
           ),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        backgroundColor:
+            isSuccess ? const Color(0xff16A34A) : const Color(0xffDC2626),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -383,20 +383,21 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildActionButton() {
+    final colors = context.appColors;
     if (_isButtonLoading) {
       return Container(
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
+              color: colors.buttonPrimaryBg,
               strokeWidth: 2,
             ),
           ),
@@ -413,7 +414,7 @@ class _ClientSalesDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('restore_document') ??
             'Восстановить',
         icon: Icons.restore,
-        color: const Color(0xFF2196F3),
+        color: colors.buttonPrimaryBg,
         onPressed: _restoreDocument,
       );
     }
@@ -433,7 +434,7 @@ class _ClientSalesDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('approve_document') ??
             'Провести',
         icon: Icons.check_circle_outline,
-        color: const Color(0xFF4CAF50),
+        color: const Color(0xFF16A34A),
         onPressed: _approveDocument,
       );
     }
@@ -442,17 +443,18 @@ class _ClientSalesDocumentDetailsScreenState
       text: AppLocalizations.of(context)!.translate('unapprove_document') ??
           'Отменить проведение',
       icon: Icons.cancel_outlined,
-      color: const Color(0xFFFFA500),
+      color: const Color(0xFFDC2626),
       onPressed: _unApproveDocument,
     );
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -463,8 +465,8 @@ class _ClientSalesDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -478,8 +480,8 @@ class _ClientSalesDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -493,7 +495,7 @@ class _ClientSalesDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -506,6 +508,7 @@ class _ClientSalesDocumentDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return PopScope(
       onPopInvoked: (didPop) {
         if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
@@ -514,7 +517,7 @@ class _ClientSalesDocumentDetailsScreenState
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         body: _isLoading
             ? Center(
                 child: PlayStoreImageLoading(
@@ -528,11 +531,11 @@ class _ClientSalesDocumentDetailsScreenState
                       AppLocalizations.of(context)!
                               .translate('document_data_unavailable') ??
                           'Данные документа недоступны',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   )
@@ -561,6 +564,7 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     // ИЗМЕНЕНО: showActions с правами
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
@@ -569,8 +573,8 @@ class _ClientSalesDocumentDetailsScreenState
         : AppLocalizations.of(context)!.translate('client_sale');
 
     return AppBar(
-      backgroundColor: Colors.white,
-      forceMaterialTransparency: true,
+      backgroundColor: colors.surfacePrimary,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
       leadingWidth: 40,
@@ -583,6 +587,7 @@ class _ClientSalesDocumentDetailsScreenState
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.iconPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -592,11 +597,11 @@ class _ClientSalesDocumentDetailsScreenState
         offset: const Offset(-10, 0),
         child: Text(
           "$titlePrefix №${widget.docNumber}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -614,6 +619,7 @@ class _ClientSalesDocumentDetailsScreenState
                         'assets/icons/edit.png',
                         width: 24,
                         height: 24,
+                        color: colors.iconPrimary,
                       ),
                       onPressed: () async {
                         if (_isLoading) return;
@@ -642,6 +648,7 @@ class _ClientSalesDocumentDetailsScreenState
                         'assets/icons/delete.png',
                         width: 24,
                         height: 24,
+                        color: const Color(0xffDC2626),
                       ),
                       onPressed: () {
                         if (_isLoading) return;
@@ -682,6 +689,7 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildDetailItem(String label, String value) {
+    final colors = context.appColors;
     // Обработка клиента с навигацией на экран лида
     if (label == AppLocalizations.of(context)!.translate('client') &&
         value.isNotEmpty) {
@@ -746,7 +754,7 @@ class _ClientSalesDocumentDetailsScreenState
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
@@ -812,6 +820,7 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(expDoc.DocumentGood good) {
+    final colors = context.appColors;
     final selectedUnit = good.selectedUnit;
     final amount = selectedUnit.amount ?? 1;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
@@ -840,7 +849,8 @@ class _ClientSalesDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context)
+                            .copyWith(fontSize: 14),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -861,7 +871,7 @@ class _ClientSalesDocumentDetailsScreenState
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
+                                      color: Color(0xff6B7280),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -871,7 +881,7 @@ class _ClientSalesDocumentDetailsScreenState
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
+                                      color: Color(0xff1F2937),
                                     ),
                                   ),
                                 ],
@@ -890,7 +900,7 @@ class _ClientSalesDocumentDetailsScreenState
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: Color(0xff6B7280),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -900,7 +910,7 @@ class _ClientSalesDocumentDetailsScreenState
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: Color(0xff1F2937),
                                   ),
                                 ),
                               ],
@@ -919,7 +929,7 @@ class _ClientSalesDocumentDetailsScreenState
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: Color(0xff6B7280),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -933,7 +943,7 @@ class _ClientSalesDocumentDetailsScreenState
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: Color(0xff1F2937),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -947,7 +957,7 @@ class _ClientSalesDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
+                          color: colors.surfaceElevated,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -961,7 +971,7 @@ class _ClientSalesDocumentDetailsScreenState
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                color: Color(0xff1F2937),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -971,7 +981,7 @@ class _ClientSalesDocumentDetailsScreenState
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xff4CAF50),
+                                color: Color(0xff16A34A),
                               ),
                             ),
                           ],
@@ -1015,16 +1025,20 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildPlaceholderImage() {
+    final colors = context.appColors;
     return Container(
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child:
-            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          size: 40,
+          color: colors.iconSecondary,
+        ),
       ),
     );
   }
@@ -1063,25 +1077,27 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    final colors = context.appColors;
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: colors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

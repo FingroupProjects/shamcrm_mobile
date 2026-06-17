@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -582,6 +583,7 @@ class CreateClientReturnDocumentScreenState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return WillPopScope(
       onWillPop: () async {
@@ -593,7 +595,7 @@ class CreateClientReturnDocumentScreenState
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: _buildAppBar(localizations),
           body: BlocListener<ClientReturnBloc, ClientReturnState>(
             listener: (context, state) {
@@ -608,7 +610,7 @@ class CreateClientReturnDocumentScreenState
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.surfacePrimary,
                     child: TabBar(
                       controller: _tabController,
                       labelColor: const Color(0xff4759FF),
@@ -696,6 +698,7 @@ class CreateClientReturnDocumentScreenState
   }
 
   Widget _buildGoodsTab(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Column(
       children: [
         Expanded(
@@ -736,13 +739,13 @@ class CreateClientReturnDocumentScreenState
             message: localizations.translate('save_hint') ??
                 "После добавления товаров перейдите в \"Основное\" для сохранения",
           ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              boxShadow: [
+                BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.10),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -783,17 +786,18 @@ class CreateClientReturnDocumentScreenState
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios,
+          color: colors.iconPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -813,11 +817,11 @@ class CreateClientReturnDocumentScreenState
                   'Создать возврат от клиента',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -826,7 +830,7 @@ class CreateClientReturnDocumentScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
+                color: const Color(0xff4CAF50).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

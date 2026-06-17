@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 enum ErrorDialogEnum {
   goodsIncomingDelete,
@@ -46,7 +47,7 @@ class _ParsedInventoryError {
 void showSimpleErrorDialog(BuildContext context, String title, String errorMessage, {ErrorDialogEnum errorDialogEnum = ErrorDialogEnum.nothing}) {
   showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (BuildContext context) {
         return ErrorDialog(title: title, errorMessage: errorMessage, errorDialogEnum: errorDialogEnum);
       });
@@ -4455,6 +4456,7 @@ class ErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -4465,11 +4467,11 @@ class ErrorDialog extends StatelessWidget {
           maxWidth: 420,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Color(0xff1E2E52).withOpacity(0.15),
+              color: colors.shadow.withValues(alpha: 0.15),
               spreadRadius: 0,
               blurRadius: 24,
               offset: Offset(0, 8),
@@ -4485,7 +4487,7 @@ class ErrorDialog extends StatelessWidget {
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
+                  colors: [colors.buttonPrimaryBg, const Color(0xff2C3E68)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -4499,7 +4501,7 @@ class ErrorDialog extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -4543,7 +4545,7 @@ class ErrorDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xff1E2E52),
+                    backgroundColor: colors.buttonPrimaryBg,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: EdgeInsets.symmetric(vertical: 16),

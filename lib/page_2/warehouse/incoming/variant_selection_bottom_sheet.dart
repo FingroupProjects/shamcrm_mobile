@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bottom_sheet_bloc/vari
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bottom_sheet_bloc/variant_bottom_sheet_state.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -212,6 +213,7 @@ class _VariantSelectionBottomSheetState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return BlocBuilder<VariantBottomSheetBloc, VariantBottomSheetState>(
       builder: (context, state) {
@@ -229,8 +231,8 @@ class _VariantSelectionBottomSheetState
           },
           child: Container(
             height: MediaQuery.of(context).size.height * _bottomSheetHeight,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -250,12 +252,13 @@ class _VariantSelectionBottomSheetState
 
   Widget _buildHeader(
       AppLocalizations localizations, VariantBottomSheetState state) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: const Color(0xFFE5E7EB).withValues(alpha: 0.5),
+            color: colors.borderSubtle,
           ),
         ),
       ),
@@ -268,11 +271,11 @@ class _VariantSelectionBottomSheetState
               children: [
                 Text(
                   localizations.translate('select_variant'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 if (state.isInCategoryMode) _buildCategoryBreadcrumb(state),
@@ -281,7 +284,7 @@ class _VariantSelectionBottomSheetState
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Color(0xff99A4BA)),
+            icon: Icon(Icons.close, color: colors.textSecondary),
             onPressed: () {
               FocusScope.of(context).unfocus();
               Navigator.pop(context);
@@ -293,6 +296,7 @@ class _VariantSelectionBottomSheetState
   }
 
   Widget _buildCategoryBreadcrumb(VariantBottomSheetState state) {
+    final colors = context.appColors;
     // ✅ ИСПРАВЛЕНИЕ: Получаем название категории из состояния
     final categoryName = state.selectedCategoryName ??
         (state.categoryVariants.isNotEmpty
@@ -308,17 +312,17 @@ class _VariantSelectionBottomSheetState
             const Icon(
               Icons.arrow_back,
               size: 14,
-              color: Color(0xff4759FF),
+              color: Colors.blueAccent,
             ),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
                 categoryName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -333,6 +337,7 @@ class _VariantSelectionBottomSheetState
     final totalResults =
         state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -340,11 +345,11 @@ class _VariantSelectionBottomSheetState
         localizations
             .translate('found_results')
             .replaceAll('{count}', totalResults.toString()),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
+          color: colors.textSecondary,
         ),
       ),
     );
@@ -352,6 +357,7 @@ class _VariantSelectionBottomSheetState
 
   Widget _buildSearchField(
       AppLocalizations localizations, VariantBottomSheetState state) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -362,15 +368,15 @@ class _VariantSelectionBottomSheetState
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: localizations.translate('search_variants'),
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                 ),
-                prefixIcon: const Icon(Icons.search, color: Color(0xff4759FF)),
+                prefixIcon: Icon(Icons.search, color: colors.buttonPrimaryBg),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
+                        icon: Icon(Icons.clear, color: colors.textSecondary),
                         onPressed: () {
                           _searchController.clear();
                           _bloc.add(SearchAll(''));
@@ -378,10 +384,10 @@ class _VariantSelectionBottomSheetState
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFFF4F7FD),
+                fillColor: colors.surfaceElevated,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: colors.borderSubtle),
                 ),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -394,13 +400,13 @@ class _VariantSelectionBottomSheetState
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
                 icon: Icon(
                   _showAllMode ? Icons.list : Icons.grid_view,
-                  color: const Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                   size: 24,
                 ),
                 tooltip: _showAllMode ? 'По категориям' : 'Все товары',
@@ -510,33 +516,34 @@ class _VariantSelectionBottomSheetState
   }
 
   Widget _buildSectionHeader(String title, int count) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xff4759FF).withValues(alpha: 0.1),
+              color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               count.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff4759FF),
+                color: colors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -547,14 +554,15 @@ class _VariantSelectionBottomSheetState
 
   Widget _buildCategories(
       AppLocalizations localizations, VariantBottomSheetState state) {
+    final colors = context.appColors;
     if (state.categories.isEmpty) {
       return Center(
         child: Text(
           localizations.translate('no_categories_found'),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
           ),
         ),
       );
@@ -571,6 +579,7 @@ class _VariantSelectionBottomSheetState
   }
 
   Widget _buildCategoryCard(CategoryWithCount categoryWithCount) {
+    final colors = context.appColors;
     final category = categoryWithCount.category;
     final level = categoryWithCount.level;
 
@@ -582,12 +591,12 @@ class _VariantSelectionBottomSheetState
         margin:
             EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: level > 0
-                ? const Color(0xFFE5E7EB).withValues(alpha: 0.7)
-                : const Color(0xFFE5E7EB),
+                ? colors.borderSubtle.withValues(alpha: 0.7)
+                : colors.borderSubtle,
             width: 1,
           ),
         ),
@@ -600,7 +609,7 @@ class _VariantSelectionBottomSheetState
                   width: 3,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xff4759FF).withValues(alpha: 0.3),
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -610,7 +619,7 @@ class _VariantSelectionBottomSheetState
                 width: level > 0 ? 40 : 50,
                 height: level > 0 ? 40 : 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: category.image != null && category.image!.isNotEmpty
@@ -631,16 +640,16 @@ class _VariantSelectionBottomSheetState
                             level > 0
                                 ? Icons.subdirectory_arrow_right
                                 : Icons.category,
-                            color: const Color(0xff4759FF),
+                            color: colors.buttonPrimaryBg,
                             size: level > 0 ? 20 : 28,
                           ),
                         ),
                       )
                     : Icon(
-                        level > 0
-                            ? Icons.subdirectory_arrow_right
-                            : Icons.category,
-                        color: const Color(0xff4759FF),
+                    level > 0
+                        ? Icons.subdirectory_arrow_right
+                        : Icons.category,
+                        color: colors.buttonPrimaryBg,
                         size: level > 0 ? 20 : 28,
                       ),
               ),
@@ -652,13 +661,13 @@ class _VariantSelectionBottomSheetState
                     fontSize: level > 0 ? 14 : 16,
                     fontFamily: 'Gilroy',
                     fontWeight: level > 0 ? FontWeight.w500 : FontWeight.w600,
-                    color: const Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
               const Icon(
                 Icons.arrow_forward_ios,
-                color: Color(0xff99A4BA),
+                color: Colors.grey,
                 size: 18,
               ),
             ],
@@ -704,6 +713,7 @@ class _VariantSelectionBottomSheetState
     required VariantBottomSheetState state,
     required AppLocalizations localizations,
   }) {
+    final colors = context.appColors;
     final availableVariants =
         variants.where((v) => !_isItemAlreadyAdded(v)).toList();
 
@@ -711,10 +721,10 @@ class _VariantSelectionBottomSheetState
       return Center(
         child: Text(
           localizations.translate(emptyMessageKey),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
           ),
         ),
       );
@@ -748,11 +758,12 @@ class _VariantSelectionBottomSheetState
     required String title,
     required String subtitle,
   }) {
+    final colors = context.appColors;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: const Color(0xff99A4BA)),
+          Icon(icon, size: 64, color: colors.textSecondary),
           const SizedBox(height: 16),
           Text(
             title,
@@ -778,6 +789,7 @@ class _VariantSelectionBottomSheetState
   }
 
   Widget _buildVariantCard(Variant variant, AppLocalizations localizations) {
+    final colors = context.appColors;
     final displayName = variant.fullName ??
         variant.good?.name ??
         localizations.translate('unknown_variant');
@@ -788,10 +800,10 @@ class _VariantSelectionBottomSheetState
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFE5E7EB),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
@@ -803,7 +815,7 @@ class _VariantSelectionBottomSheetState
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: imageUrl != null
@@ -819,16 +831,16 @@ class _VariantSelectionBottomSheetState
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           ),
-                          errorWidget: (context, url, error) => const Icon(
+                          errorWidget: (context, url, error) => Icon(
                             Icons.shopping_cart_outlined,
-                            color: Color(0xff4759FF),
+                            color: colors.buttonPrimaryBg,
                             size: 24,
                           ),
                         ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.shopping_cart_outlined,
-                        color: Color(0xff4759FF),
+                        color: colors.buttonPrimaryBg,
                         size: 24,
                       ),
               ),
@@ -839,11 +851,11 @@ class _VariantSelectionBottomSheetState
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -853,11 +865,11 @@ class _VariantSelectionBottomSheetState
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           variant.price!.toStringAsFixed(2),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff4759FF),
+                            color: colors.buttonPrimaryBg,
                           ),
                         ),
                       ),
@@ -868,9 +880,9 @@ class _VariantSelectionBottomSheetState
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.add,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
                 size: 22,
               ),
             ],
@@ -881,6 +893,7 @@ class _VariantSelectionBottomSheetState
   }
 
   Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
+    final colors = context.appColors;
     final remainder = variant.remainder;
     final hasStock = remainder != null && remainder > 0;
     final quantityText = localizations.translate('quantity');
@@ -892,7 +905,7 @@ class _VariantSelectionBottomSheetState
         fontSize: 12,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: hasStock ? const Color(0xff99A4BA) : const Color(0xffff5722),
+        color: hasStock ? colors.textSecondary : const Color(0xffff5722),
       ),
     );
   }

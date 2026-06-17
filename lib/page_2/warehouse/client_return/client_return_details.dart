@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -252,15 +253,16 @@ class _ClientReturnDocumentDetailsScreenState
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
+    final colors = context.appColors;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.buttonPrimaryFg,
           ),
         ),
         backgroundColor: isSuccess ? Colors.green : Colors.red,
@@ -402,12 +404,13 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildActionButton() {
+    final colors = context.appColors;
     if (_isButtonLoading) {
       return Container(
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfaceElevated,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -415,7 +418,7 @@ class _ClientReturnDocumentDetailsScreenState
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
+              color: Color(0xff4759FF),
               strokeWidth: 2,
             ),
           ),
@@ -467,11 +470,12 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -482,8 +486,8 @@ class _ClientReturnDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -497,8 +501,8 @@ class _ClientReturnDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -512,7 +516,7 @@ class _ClientReturnDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -525,6 +529,7 @@ class _ClientReturnDocumentDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return PopScope(
       onPopInvoked: (didPop) {
         if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
@@ -533,7 +538,7 @@ class _ClientReturnDocumentDetailsScreenState
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         body: _isLoading
             ? Center(
                 child: PlayStoreImageLoading(
@@ -547,11 +552,11 @@ class _ClientReturnDocumentDetailsScreenState
                       AppLocalizations.of(context)!
                               .translate('document_data_unavailable') ??
                           'Данные документа недоступны',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   )
@@ -579,12 +584,13 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     // ИЗМЕНЕНО: showActions с правами
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -598,6 +604,7 @@ class _ClientReturnDocumentDetailsScreenState
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.iconPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -607,11 +614,11 @@ class _ClientReturnDocumentDetailsScreenState
         offset: const Offset(-10, 0),
         child: Text(
           "${AppLocalizations.of(context)!.translate('client_return') ?? 'Возврат от клиента'} №${widget.docNumber}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -629,6 +636,7 @@ class _ClientReturnDocumentDetailsScreenState
                         'assets/icons/edit.png',
                         width: 24,
                         height: 24,
+                        color: colors.iconPrimary,
                       ),
                       onPressed: () async {
                         if (_isLoading) return;
@@ -658,6 +666,7 @@ class _ClientReturnDocumentDetailsScreenState
                         'assets/icons/delete.png',
                         width: 24,
                         height: 24,
+                        color: colors.iconPrimary,
                       ),
                       onPressed: () {
                         if (_isLoading) return;
@@ -698,6 +707,7 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildDetailItem(String label, String value) {
+    final colors = context.appColors;
     // Обработка клиента с навигацией на экран лида
     if (label == AppLocalizations.of(context)!.translate('client') &&
         value.isNotEmpty) {
@@ -724,11 +734,11 @@ class _ClientReturnDocumentDetailsScreenState
             Expanded(
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration: TextDecoration.underline,
                 ),
                 maxLines: 1,
@@ -762,7 +772,7 @@ class _ClientReturnDocumentDetailsScreenState
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
@@ -785,6 +795,7 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildGoodsList(List<DocumentGood> goods) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -802,11 +813,11 @@ class _ClientReturnDocumentDetailsScreenState
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty') ??
                         'Нет товаров',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -828,6 +839,7 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
+    final colors = context.appColors;
     final selectedUnit = good.selectedUnit;
     final amount =
         1; // USE 1 for amount; DO NOT USE good.selectedUnit.amount ?? 1;
@@ -857,7 +869,10 @@ class _ClientReturnDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context).copyWith(
+                          fontSize: 14,
+                          color: colors.textPrimary,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -874,21 +889,21 @@ class _ClientReturnDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -903,21 +918,21 @@ class _ClientReturnDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ],
@@ -932,11 +947,11 @@ class _ClientReturnDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('price') ??
                                       'Цена',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -946,11 +961,11 @@ class _ClientReturnDocumentDetailsScreenState
                                                   good.price ?? '0.00') ??
                                               0.00))
                                       .toStringAsFixed(2)),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -964,7 +979,7 @@ class _ClientReturnDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
+                        color: colors.surfaceElevated,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -974,21 +989,21 @@ class _ClientReturnDocumentDetailsScreenState
                               AppLocalizations.of(context)!
                                       .translate('total') ??
                                   'Итого',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xff4CAF50),
+                                color: const Color(0xff4CAF50),
                               ),
                             ),
                           ],
@@ -1032,16 +1047,16 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildPlaceholderImage() {
+    final colors = context.appColors;
     return Container(
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child:
-            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+      child: Center(
+        child: Icon(Icons.image_not_supported, size: 40, color: colors.textSecondary),
       ),
     );
   }
@@ -1080,25 +1095,27 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    final colors = context.appColors;
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: colors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

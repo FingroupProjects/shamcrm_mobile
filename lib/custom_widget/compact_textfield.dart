@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -101,7 +102,7 @@ class _CompactTextFieldState extends State<CompactTextField> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFD1D5DB).withOpacity(0.95),
+        color: const Color(0xFFD1D5DB).withValues(alpha: 0.95),
         border: const Border(
           top: BorderSide(
             color: Color(0xFF9CA3AF),
@@ -153,6 +154,7 @@ class _CompactTextFieldState extends State<CompactTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return TextField(
       controller: widget.controller,
       focusNode: _effectiveFocusNode, // ✅ ИЗМЕНЕНО: Используем эффективный FocusNode
@@ -165,35 +167,35 @@ class _CompactTextFieldState extends State<CompactTextField> {
       decoration: widget.decoration ??
           InputDecoration(
             hintText: widget.hintText,
-            hintStyle: const TextStyle(
+            hintStyle: TextStyle(
               fontSize: 12,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w400,
-              color: Color(0xff99A4BA),
+              color: colors.textSecondary,
             ),
             filled: true,
             isDense: widget.isDense, // ✅ НОВОЕ: Используем переданный isDense
-            fillColor: const Color(0xFFF4F7FD),
+            fillColor: colors.surfaceElevated,
             contentPadding: widget.contentPadding ?? // ✅ НОВОЕ: Используем переданный padding или дефолтный уменьшенный
                 const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // ✅ ИЗМЕНЕНО: 8 -> 6
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                color: widget.hasError ? Colors.red : colors.borderSubtle,
                 width: widget.hasError ? 2 : 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                color: widget.hasError ? Colors.red : colors.borderSubtle,
                 width: widget.hasError ? 2 : 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red : const Color(0xff4759FF),
+                color: widget.hasError ? Colors.red : colors.buttonPrimaryBg,
                 width: widget.hasError ? 2 : 1.5,
               ),
             ),

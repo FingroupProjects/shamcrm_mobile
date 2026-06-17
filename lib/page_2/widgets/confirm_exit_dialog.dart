@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 /// Диалог подтверждения выхода с несохранёнными данными
@@ -32,13 +33,14 @@ class ConfirmExitDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       elevation: 8,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -49,7 +51,7 @@ class ConfirmExitDialog extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xffFF9800).withOpacity(0.1),
+                color: const Color(0xffFF9800).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -63,11 +65,11 @@ class ConfirmExitDialog extends StatelessWidget {
             // Заголовок
             Text(
               title ?? localizations.translate('exit_confirmation') ?? 'Подтверждение выхода',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -77,11 +79,11 @@ class ConfirmExitDialog extends StatelessWidget {
             Text(
               message ?? localizations.translate('unsaved_changes_message') ?? 
                 'У вас есть несохранённые изменения. Вы действительно хотите выйти?',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
@@ -107,11 +109,11 @@ class ConfirmExitDialog extends StatelessWidget {
                     ),
                     child: Text(
                       localizations.translate('cancel') ?? 'Отмена',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff4759FF),
+                        color: colors.buttonPrimaryBg,
                       ),
                     ),
                   ),
@@ -123,7 +125,7 @@ class ConfirmExitDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xffF44336),
+                      backgroundColor: const Color(0xffDC2626),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

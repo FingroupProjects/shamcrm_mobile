@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_details.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -75,6 +76,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final doc = widget.document;
     return GestureDetector(
       onTap: () {
@@ -86,11 +88,16 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: widget.isSelected
-              ? const Color(0xFFDDE8F5)
-              : const Color(0xFFE9EDF5),
+          color: widget.isSelected ? colors.surfaceElevated : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -105,11 +112,11 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                       Expanded(
                         child: Text(
                           '№${doc.docNumber ?? 'N/A'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -117,7 +124,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _getStatusColor().withOpacity(0.1),
+                          color: _getStatusColor().withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -135,31 +142,31 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                   const SizedBox(height: 8),
                   Text(
                     '${AppLocalizations.of(context)!.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${AppLocalizations.of(context)!.translate('client') ?? 'Клиент'} ${doc.model?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}: ${doc.storage?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -168,22 +175,22 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                       Expanded(
                         child: Text(
                           '${AppLocalizations.of(context)!.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),
                       // show price from documentGoods
                       Text(
                         '${AppLocalizations.of(context)!.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -198,7 +205,7 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
                   widget.isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   size: 24,
                 ),
               ),

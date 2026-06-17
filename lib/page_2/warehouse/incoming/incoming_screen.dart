@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
@@ -186,6 +187,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
@@ -197,7 +199,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
       child: BlocProvider.value(
         value: _incomingBloc,
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: AppBar(
           automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,

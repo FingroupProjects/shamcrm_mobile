@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<ClientReturnBloc, ClientReturnState>(
       listener: (context, state) {
         if (state is ClientReturnError) {
@@ -50,7 +52,7 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_return_document') ?? 'Удалить возврат',
@@ -58,7 +60,7 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -70,7 +72,7 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -84,8 +86,8 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: const Color(0xffDC2626),
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -101,8 +103,8 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                     Navigator.pop(context, true);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],

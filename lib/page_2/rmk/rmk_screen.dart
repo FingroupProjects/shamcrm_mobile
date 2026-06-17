@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
@@ -13,6 +14,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 const _rmkLoading = Center(
@@ -187,18 +189,18 @@ class _RmkScreenState extends State<RmkScreen> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xffD7DEE9),
+                  color: colors.borderSubtle,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Склад',
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -495,6 +497,7 @@ class _RmkScreenState extends State<RmkScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
+        final colors = context.appColors;
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.72,
@@ -502,9 +505,10 @@ class _RmkScreenState extends State<RmkScreen> {
           maxChildSize: 0.92,
           builder: (context, controller) {
             return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xffF8F9FB),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              decoration: BoxDecoration(
+                color: colors.surfacePrimary,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -521,11 +525,11 @@ class _RmkScreenState extends State<RmkScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Выбранные товары',
                             style: TextStyle(
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               fontFamily: 'Gilroy',
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -538,13 +542,14 @@ class _RmkScreenState extends State<RmkScreen> {
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colors.surfacePrimary,
                             borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: colors.borderSubtle),
                           ),
                           child: Text(
                             '${items.length} шт',
-                            style: const TextStyle(
-                              color: Color(0xff1E2E52),
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontFamily: 'Gilroy',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -585,12 +590,12 @@ class _RmkScreenState extends State<RmkScreen> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: colors.surfacePrimary,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colors.borderSubtle),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xff1E2E52)
-                                  .withValues(alpha: 0.06),
+                              color: colors.shadow.withValues(alpha: 0.08),
                               blurRadius: 18,
                               offset: const Offset(0, 6),
                             ),
@@ -598,10 +603,10 @@ class _RmkScreenState extends State<RmkScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Text(
+                            Text(
                               'Итого',
                               style: TextStyle(
-                                color: Color(0xff718096),
+                                color: colors.textSecondary,
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -610,8 +615,8 @@ class _RmkScreenState extends State<RmkScreen> {
                             const Spacer(),
                             Text(
                               _formatMoney(total),
-                              style: const TextStyle(
-                                color: Color(0xff1E2E52),
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontFamily: 'Gilroy',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
@@ -634,6 +639,20 @@ class _RmkScreenState extends State<RmkScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final themeController = AppThemeController.instance;
+    final isDark = themeController.isDarkMode ||
+        Theme.of(context).brightness == Brightness.dark;
+    final appBarForeground = isDark ? colors.textInverse : colors.textPrimary;
+    final appBarShellColor =
+        isDark ? colors.surfaceElevated : colors.surfacePrimary;
+    if (kDebugMode) {
+      debugPrint(
+        'RMK AppBar theme: mode=${themeController.themeMode}, '
+        'isDark=$isDark, brightness=${Theme.of(context).brightness}, '
+        'fg=${appBarForeground.toARGB32().toRadixString(16)}, '
+        'shell=${appBarShellColor.toARGB32().toRadixString(16)}',
+      );
+    }
 
     return Scaffold(
       backgroundColor: colors.surfacePrimary,
@@ -649,7 +668,7 @@ class _RmkScreenState extends State<RmkScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
           child: Material(
-            color: colors.surfaceElevated,
+            color: appBarShellColor,
             shape: const CircleBorder(),
             child: InkWell(
               customBorder: const CircleBorder(),
@@ -662,11 +681,7 @@ class _RmkScreenState extends State<RmkScreen> {
                 child: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
-                  color: context.adaptiveForegroundOn(
-                    colors.surfaceElevated,
-                    lightColor: colors.iconPrimary,
-                    darkColor: colors.buttonPrimaryFg,
-                  ),
+                  color: appBarForeground,
                 ),
               ),
             ),
@@ -680,11 +695,8 @@ class _RmkScreenState extends State<RmkScreen> {
               )
             : _AppBarTitleShell(
                 title: 'РМК',
-                textColor: context.adaptiveForegroundOn(
-                  colors.surfaceElevated,
-                  lightColor: colors.textPrimary,
-                  darkColor: colors.buttonPrimaryFg,
-                ),
+                textColor: appBarForeground,
+                backgroundColor: appBarShellColor,
               ),
         actions: _isSearching
             ? [
@@ -692,11 +704,7 @@ class _RmkScreenState extends State<RmkScreen> {
                   tooltip: 'Закрыть поиск',
                   icon: Icon(
                     Icons.close,
-                    color: context.adaptiveForegroundOn(
-                      colors.surfacePrimary,
-                      lightColor: colors.iconPrimary,
-                      darkColor: colors.buttonPrimaryFg,
-                    ),
+                    color: appBarForeground,
                     size: 24,
                   ),
                   onPressed: _toggleSearch,
@@ -710,11 +718,7 @@ class _RmkScreenState extends State<RmkScreen> {
                     'assets/icons/AppBar/search.png',
                     width: 24,
                     height: 24,
-                    color: context.adaptiveForegroundOn(
-                      colors.surfacePrimary,
-                      lightColor: colors.iconPrimary,
-                      darkColor: colors.buttonPrimaryFg,
-                    ),
+                    color: appBarForeground,
                   ),
                   onPressed: _toggleSearch,
                 ),
@@ -724,11 +728,7 @@ class _RmkScreenState extends State<RmkScreen> {
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
-                    color: context.adaptiveForegroundOn(
-                      colors.surfacePrimary,
-                      lightColor: colors.iconPrimary,
-                      darkColor: colors.buttonPrimaryFg,
-                    ),
+                    color: appBarForeground,
                   ),
                   onPressed: _openMainFilter,
                 ),
@@ -738,11 +738,7 @@ class _RmkScreenState extends State<RmkScreen> {
                     'assets/icons/AppBar/scanner.png',
                     width: 24,
                     height: 24,
-                    color: context.adaptiveForegroundOn(
-                      colors.surfacePrimary,
-                      lightColor: colors.iconPrimary,
-                      darkColor: colors.buttonPrimaryFg,
-                    ),
+                    color: appBarForeground,
                   ),
                   onPressed: _scanBarcode,
                 ),
@@ -1110,11 +1106,16 @@ class _DoneButton extends StatelessWidget {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor:
-                    isEnabled ? colors.buttonPrimaryBg : colors.borderSubtle,
-                foregroundColor: colors.buttonPrimaryFg,
+                    isEnabled ? colors.buttonPrimaryBg : colors.surfaceElevated,
+                foregroundColor:
+                    isEnabled ? colors.buttonPrimaryFg : colors.textPrimary,
                 elevation: 0,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),
+                  side: BorderSide(
+                    color: isEnabled ? Colors.transparent : colors.borderSubtle,
+                  ),
                 ),
               ),
               onPressed: isEnabled ? onTap : null,
@@ -1133,7 +1134,10 @@ class _DoneButton extends StatelessWidget {
                       'Готово · ${_formatMoney(total)} $currencyTitle',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: isEnabled
+                            ? colors.buttonPrimaryFg
+                            : colors.textPrimary,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -1149,9 +1153,11 @@ class _DoneButton extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  isEnabled ? colors.surfacePrimary : colors.borderSubtle,
-              foregroundColor: colors.buttonPrimaryBg,
+                  isEnabled ? colors.surfacePrimary : colors.surfaceElevated,
+              foregroundColor:
+                  isEnabled ? colors.buttonPrimaryBg : colors.textSecondary,
               elevation: 0,
+              shadowColor: Colors.transparent,
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(999),
@@ -1188,8 +1194,8 @@ class _DoneButton extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.buttonPrimaryFg,
                           fontFamily: 'Gilroy',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -1403,6 +1409,7 @@ class _RmkSelectedItemImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final url = imageUrl;
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -1410,11 +1417,11 @@ class _RmkSelectedItemImage extends StatelessWidget {
         width: 62,
         height: 62,
         child: url == null || url.isEmpty
-            ? const ColoredBox(
-                color: Color(0xffEEF2F7),
+            ? ColoredBox(
+                color: colors.surfaceElevated,
                 child: Icon(
                   Icons.inventory_2_outlined,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                 ),
               )
             : CachedNetworkImage(
@@ -1424,12 +1431,12 @@ class _RmkSelectedItemImage extends StatelessWidget {
                 fadeInDuration: Duration.zero,
                 fadeOutDuration: Duration.zero,
                 placeholder: (_, __) =>
-                    const ColoredBox(color: Color(0xffEEF2F7)),
-                errorWidget: (_, __, ___) => const ColoredBox(
-                  color: Color(0xffEEF2F7),
+                    ColoredBox(color: colors.surfaceElevated),
+                errorWidget: (_, __, ___) => ColoredBox(
+                  color: colors.surfaceElevated,
                   child: Icon(
                     Icons.inventory_2_outlined,
-                    color: Color(0xff99A4BA),
+                    color: colors.textSecondary,
                   ),
                 ),
               ),
@@ -1455,14 +1462,15 @@ class _RmkMetaChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: RichText(
         text: TextSpan(
           children: [
             TextSpan(
               text: '$label: ',
-              style: const TextStyle(
-                color: Color(0xff718096),
+              style: TextStyle(
+                color: colors.textSecondary,
                 fontFamily: 'Gilroy',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -1470,8 +1478,8 @@ class _RmkMetaChip extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -1596,10 +1604,12 @@ class _AppBarTitleShell extends StatelessWidget {
   const _AppBarTitleShell({
     required this.title,
     required this.textColor,
+    required this.backgroundColor,
   });
 
   final String title;
   final Color textColor;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1608,7 +1618,7 @@ class _AppBarTitleShell extends StatelessWidget {
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
-        color: colors.surfaceElevated,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: colors.borderSubtle),
       ),

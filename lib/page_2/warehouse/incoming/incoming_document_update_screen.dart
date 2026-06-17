@@ -11,6 +11,7 @@ import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
@@ -92,7 +93,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
               _showSnackBar(
                 AppLocalizations.of(context)!.translate('select_lead_first') ??
                     'Пожайлуста заполните вкладку "Oсновное"',
-                false,
+                false
               );
             }
           });
@@ -314,7 +315,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
-        isService: false,
+        isService: false
       ),
     );
 
@@ -487,7 +488,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       _showSnackBar(
         AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
             'Добавьте хотя бы один товар',
-        false,
+        false
       );
       cancelLoading();
       return;
@@ -497,7 +498,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_storage') ??
             'Выберите склад',
-        false,
+        false
       );
       cancelLoading();
       return;
@@ -507,7 +508,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       _showSnackBar(
         AppLocalizations.of(context)!.translate('select_supplier') ??
             'Выберите поставщика',
-        false,
+        false
       );
       cancelLoading();
       return;
@@ -555,7 +556,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       _showSnackBar(
         AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
             'Заполните все обязательные поля',
-        false,
+        false
       );
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
@@ -599,30 +600,30 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     }
   }
 
-  void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-          ),
+void _showSnackBar(String message, bool isSuccess) {
+  if (!mounted) return;
+  final colors = context.appColors;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        message,
+        style: TextStyle(
+          fontFamily: 'Gilroy',
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: colors.surfacePrimary,
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 3),
       ),
-    );
-  }
+      backgroundColor: isSuccess ? Colors.green : Colors.red,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
 
   // ✅ НОВОЕ: Вычисляем общую сумму
   double get _totalAmount {
@@ -632,6 +633,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return WillPopScope(
       onWillPop: () async {
@@ -643,7 +645,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: _buildAppBar(localizations),
           body: BlocListener<IncomingBloc, IncomingState>(
             listener: (context, state) {
@@ -658,12 +660,12 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.surfacePrimary,
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: const Color(0xff4759FF),
-                      unselectedLabelColor: const Color(0xff99A4BA),
-                      indicatorColor: const Color(0xff4759FF),
+                      labelColor: colors.buttonPrimaryBg,
+                      unselectedLabelColor: colors.textSecondary,
+                      indicatorColor: colors.buttonPrimaryBg,
                       indicatorWeight: 3,
                       labelStyle: const TextStyle(
                         fontSize: 16,
@@ -753,6 +755,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   Widget _buildGoodsTab(AppLocalizations localizations) {
+        final colors = context.appColors; // ← добавь эту строку
+
     return Column(
       children: [
         Expanded(
@@ -773,11 +777,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                       child: Text(
                         localizations.translate('no_goods_added') ??
                             'Товары не добавлены',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -796,7 +800,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
                 color: Colors.grey.withOpacity(0.1),
@@ -840,17 +844,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -869,11 +873,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
               '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -882,25 +886,25 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
+                color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: Color(0xff4CAF50),
+                    color: colors.buttonPrimaryBg,
                     size: 18,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     total.toStringAsFixed(0),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
-                      color: Color(0xff4CAF50),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                 ],
@@ -909,7 +913,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           ],
         ],
       ),
-      centerTitle: false,
+      centerTitle: false
     );
   }
 
@@ -960,16 +964,17 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   Widget _buildTotalByCurrencyField(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           _totalByCurrencyLabel(localizations),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -977,16 +982,16 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -1014,6 +1019,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
+    final colors = context.appColors;
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
@@ -1031,9 +1037,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
                 color: Colors.grey.withOpacity(0.1),
@@ -1053,11 +1059,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1068,14 +1074,14 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                      child: Icon(Icons.close,
+                          color: colors.textSecondary, size: 18),
                     ),
                   ],
                 ),
@@ -1087,11 +1093,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                   padding: const EdgeInsets.only(top: 4, bottom: 10),
                   child: Text(
                     '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                 ),
@@ -1108,11 +1114,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                         Text(
                           AppLocalizations.of(context)!.translate('quantity') ??
                               'Кол-во',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1129,11 +1135,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                             QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
@@ -1153,11 +1159,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           Text(
                             AppLocalizations.of(context)!.translate('unit') ??
                                 'Ед.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1177,14 +1183,14 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                                   value: item['selectedUnit'],
                                   isDense: true,
                                   isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down,
-                                      size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
+                                  dropdownColor: colors.surfacePrimary,
+                                  icon: Icon(Icons.arrow_drop_down,
+                                      size: 16, color: colors.buttonPrimaryBg),
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
@@ -1219,11 +1225,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -1239,11 +1245,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                           Text(
                             AppLocalizations.of(context)!.translate('price') ??
                                 'Цена',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1259,11 +1265,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
                             inputFormatters: [
                               PriceInputFormatter(),
                             ],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                             hasError: _priceErrors[variantId] == true,
                             onChanged: (value) =>
@@ -1282,14 +1288,15 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _updateDocument,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff4759FF),
-          disabledBackgroundColor: const Color(0xffE5E7EB),
+          backgroundColor: colors.buttonPrimaryBg,
+          disabledBackgroundColor: colors.borderSubtle,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

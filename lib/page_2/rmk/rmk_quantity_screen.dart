@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:flutter/material.dart';
@@ -249,19 +250,23 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) Navigator.pop(context);
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          title: const Text(
+          backgroundColor: colors.surfacePrimary,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          title: Text(
             'О товаре',
             style: TextStyle(
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               fontSize: 20,
@@ -271,9 +276,9 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
             IconButton(
               tooltip: 'Удалить',
               onPressed: _deleteAndPop,
-              icon: const Icon(
+              icon: Icon(
                 Icons.delete_outline,
-                color: Color(0xffF44336),
+                color: colors.error,
               ),
             ),
           ],
@@ -317,8 +322,8 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
                 height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff1E2E52),
-                    foregroundColor: Colors.white,
+                    backgroundColor: colors.buttonPrimaryBg,
+                    foregroundColor: colors.buttonPrimaryFg,
                     elevation: 0,
                     shape: const RoundedRectangleBorder(),
                   ),
@@ -361,9 +366,10 @@ class _ProductHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       width: double.infinity,
-      color: const Color(0xff1E2E52),
+      color: colors.surfaceElevated,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,8 +391,8 @@ class _ProductHeader extends StatelessWidget {
                   good.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontFamily: 'Gilroy',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -424,14 +430,15 @@ class _InfoLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(top: 3),
       child: Text(
         '$label: $value',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: colors.textSecondary,
           fontFamily: 'Gilroy',
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -449,11 +456,12 @@ class _ProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url == null || url!.isEmpty) {
-      return const ColoredBox(
-        color: Colors.white,
+      final colors = context.appColors;
+      return ColoredBox(
+        color: colors.surfaceElevated,
         child: Icon(
           Icons.image_outlined,
-          color: Color(0xff99A4BA),
+          color: colors.textSecondary,
           size: 42,
         ),
       );
@@ -463,15 +471,21 @@ class _ProductImage extends StatelessWidget {
       imageUrl: url!,
       fit: BoxFit.cover,
       memCacheWidth: 320,
-      placeholder: (_, __) => const ColoredBox(color: Colors.white),
-      errorWidget: (_, __, ___) => const ColoredBox(
-        color: Colors.white,
-        child: Icon(
-          Icons.image_outlined,
-          color: Color(0xff99A4BA),
-          size: 42,
-        ),
-      ),
+      placeholder: (_, __) {
+        final colors = context.appColors;
+        return ColoredBox(color: colors.surfaceElevated);
+      },
+      errorWidget: (_, __, ___) {
+        final colors = context.appColors;
+        return ColoredBox(
+          color: colors.surfaceElevated,
+          child: Icon(
+            Icons.image_outlined,
+            color: colors.textSecondary,
+            size: 42,
+          ),
+        );
+      },
     );
   }
 }
@@ -497,8 +511,9 @@ class _TotalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Material(
-      color: Colors.white,
+      color: colors.surfacePrimary,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -507,19 +522,17 @@ class _TotalRow extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: selected
-                    ? const Color(0xff1E2E52)
-                    : const Color(0xffD9E1EC),
+                color: selected ? colors.buttonPrimaryBg : colors.borderSubtle,
                 width: selected ? 2 : 1,
               ),
             ),
           ),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Всего:',
                 style: TextStyle(
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -527,7 +540,7 @@ class _TotalRow extends StatelessWidget {
               ),
               const Spacer(),
               SizedBox(
-                width: 150,
+                width: 180,
                 child: selected
                     ? _NumberField(
                         controller: controller,
@@ -544,8 +557,8 @@ class _TotalRow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          color: Color(0xff1E2E52),
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontFamily: 'Gilroy',
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -585,13 +598,14 @@ class _ActiveFieldPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       height: 74,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary,
         border: Border(
-          bottom: BorderSide(color: Color(0xffE5EAF2)),
+          bottom: BorderSide(color: colors.borderSubtle),
         ),
       ),
       child: AnimatedSwitcher(
@@ -641,13 +655,14 @@ class _PanelNumberField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Row(
       children: [
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xff718096),
+            style: TextStyle(
+              color: colors.textSecondary,
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -655,7 +670,7 @@ class _PanelNumberField extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: 160,
+          width: 190,
           child: _NumberField(
             controller: controller,
             focusNode: focusNode,
@@ -694,6 +709,7 @@ class _NumberField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return TextField(
       controller: controller,
       focusNode: focusNode,
@@ -708,26 +724,38 @@ class _NumberField extends StatelessWidget {
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
       ],
       maxLines: 1,
-      cursorColor: const Color(0xff1E2E52),
-      style: const TextStyle(
-        color: Color(0xff1E2E52),
+      cursorColor: colors.buttonPrimaryBg,
+      style: TextStyle(
+        color: colors.textPrimary,
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w700,
       ),
       decoration: InputDecoration(
         isDense: true,
-        border: InputBorder.none,
-        contentPadding: EdgeInsets.zero,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderSubtle),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderSubtle),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.buttonPrimaryBg, width: 1.2),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         hintText: hint,
         suffixText: suffix,
-        suffixStyle: const TextStyle(
-          color: Color(0xff1E2E52),
+        suffixStyle: TextStyle(
+          color: colors.textPrimary,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w700,
         ),
-        hintStyle: const TextStyle(
-          color: Color(0xff1E2E52),
+        hintStyle: TextStyle(
+          color: colors.textPrimary,
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w700,
@@ -782,20 +810,21 @@ class _KeyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Material(
-      color: Colors.white,
+      color: colors.surfacePrimary,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xffE5EAF2), width: 0.5),
+            border: Border.all(color: colors.borderSubtle, width: 0.5),
           ),
           child: Center(
             child: Text(
               label,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style: TextStyle(
+                color: label == '⌫' ? colors.error : colors.textPrimary,
                 fontSize: 26,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,

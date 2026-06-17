@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
@@ -164,10 +165,11 @@ class _RmkSalesScreenState extends State<RmkSalesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBarPage2(
@@ -211,17 +213,17 @@ class _RmkSalesScreenState extends State<RmkSalesScreen> {
                         ? (localizations?.translate('nothing_found') ??
                             'Ничего не найдено')
                         : 'Нет продаж РМК',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                 )
               : RefreshIndicator(
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
+                  color: colors.buttonPrimaryBg,
+                  backgroundColor: colors.surfacePrimary,
                   onRefresh: _onRefresh,
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(

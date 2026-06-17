@@ -456,8 +456,13 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                           notification.disallowIndicator();
                           return true;
                         },
-                        child: Theme(
+                          child: Theme(
                           data: Theme.of(context).copyWith(
+                            canvasColor: decoration?.expandedFillColor ??
+                                CustomDropdownDecoration._defaultFillColor,
+                            scaffoldBackgroundColor:
+                                decoration?.expandedFillColor ??
+                                    CustomDropdownDecoration._defaultFillColor,
                             scrollbarTheme: decoration
                                     ?.overlayScrollbarDecoration ??
                                 ScrollbarThemeData(

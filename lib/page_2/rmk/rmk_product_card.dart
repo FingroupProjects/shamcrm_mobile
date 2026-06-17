@@ -145,10 +145,7 @@ class _ProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url == null || url!.isEmpty) {
-      return const ColoredBox(
-        color: Color(0xffEEF2F7),
-        child: Icon(Icons.inventory_2_outlined, color: Color(0xff99A4BA)),
-      );
+      return _EmptyProductImage();
     }
 
     return CachedNetworkImage(
@@ -157,10 +154,23 @@ class _ProductImage extends StatelessWidget {
       memCacheWidth: 320,
       fadeInDuration: Duration.zero,
       fadeOutDuration: Duration.zero,
-      placeholder: (_, __) => const ColoredBox(color: Color(0xffEEF2F7)),
-      errorWidget: (_, __, ___) => const ColoredBox(
-        color: Color(0xffEEF2F7),
-        child: Icon(Icons.inventory_2_outlined, color: Color(0xff99A4BA)),
+      placeholder: (_, __) => const _EmptyProductImage(),
+      errorWidget: (_, __, ___) => const _EmptyProductImage(),
+    );
+  }
+}
+
+class _EmptyProductImage extends StatelessWidget {
+  const _EmptyProductImage();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return ColoredBox(
+      color: colors.surfaceElevated,
+      child: Icon(
+        Icons.inventory_2_outlined,
+        color: colors.textSecondary,
       ),
     );
   }

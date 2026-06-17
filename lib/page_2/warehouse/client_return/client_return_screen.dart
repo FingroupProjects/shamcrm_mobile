@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
@@ -186,6 +187,7 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return PopScope(
       canPop: true,
@@ -219,11 +221,11 @@ class _ClientReturnScreenState extends State<ClientReturnScreen> {
                     }
                   });
                 },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
+                backgroundColor: colors.buttonPrimaryBg,
+                child: Icon(Icons.add, color: colors.buttonPrimaryFg),
               )
             : null,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         appBar: AppBar(
           automaticallyImplyLeading: !_selectionMode,
           forceMaterialTransparency: true,
