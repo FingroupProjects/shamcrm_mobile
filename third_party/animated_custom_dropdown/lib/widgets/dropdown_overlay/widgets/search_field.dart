@@ -117,7 +117,7 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
           } else if (isFieldEmpty) {
             isFieldEmpty = false;
           }
-
+        
           if (widget.searchType != null &&
               widget.searchType == _SearchType.onRequestData &&
               widget.onSearchQueryChanged != null) {

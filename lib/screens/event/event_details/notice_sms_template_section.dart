@@ -144,6 +144,10 @@ class NoticeSmsTemplateSection extends StatelessWidget {
                               template.text == selectedTemplate?.text;
 
                       return ListTile(
+                        tileColor: colors.surfacePrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         title: Text(
                           template.name,
                           style: TextStyle(

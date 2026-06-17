@@ -6,13 +6,16 @@ import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_noti
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_state.dart';
 import 'package:crm_task_manager/models/notice_history_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:intl/intl.dart';
 
 class NoticeHistorySection extends StatefulWidget {
   final int leadId;
   final int noteId;
 
-  const NoticeHistorySection({Key? key, required this.leadId, required this.noteId}) : super(key: key);
+  const NoticeHistorySection(
+      {Key? key, required this.leadId, required this.noteId})
+      : super(key: key);
 
   @override
   _NoticeHistorySectionState createState() => _NoticeHistorySectionState();
@@ -45,12 +48,20 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
     );
   }
 
-  Widget _buildExpandableNoticeContainer(String title, List<String> items, bool isExpanded, VoidCallback onTap) {
+  Widget _buildExpandableNoticeContainer(
+      String title, List<String> items, bool isExpanded, VoidCallback onTap) {
+    final colors = context.appColors;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
-        decoration: BoxDecoration(color: const Color(0xFFF4F7FD), borderRadius: BorderRadius.circular(8)),
+        padding:
+            const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 10),
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colors.borderSubtle),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -61,7 +72,8 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
               child: isExpanded
                   ? SizedBox(
                       height: 250,
-                      child: SingleChildScrollView(child: _buildItemList(items)),
+                      child:
+                          SingleChildScrollView(child: _buildItemList(items)),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -72,11 +84,29 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
   }
 
   Row _buildTitleRow(String title) {
+    final colors = context.appColors;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 16, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: Color(0xff1E2E52))),
-        Image.asset('assets/icons/tabBar/dropdown.png', width: 16, height: 16),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+        ),
+        Icon(
+          isExpanded
+              ? Icons.keyboard_arrow_up_rounded
+              : Icons.keyboard_arrow_down_rounded,
+          color: colors.textSecondary,
+          size: 22,
+        ),
       ],
     );
   }
@@ -89,13 +119,14 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
   }
 
   Widget _buildNoticeItem(String item) {
+    final colors = context.appColors;
     final parts = item.split('\n');
     final status = parts[0];
     final userAndDate = parts.length > 1 ? parts[1] : '';
     final details = parts.sublist(2).where((d) => d.isNotEmpty).toList();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -106,7 +137,12 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     d,
-                    style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w400, color: Color(0xff1E2E52)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: colors.textSecondary,
+                    ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -118,22 +154,47 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
   }
 
   Row _buildStatusRow(String status, String userAndDate) {
+    final colors = context.appColors;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Text(status, style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)), maxLines: 2, overflow: TextOverflow.ellipsis),
+          child: Text(
+            status,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(userAndDate, style: const TextStyle(fontSize: 14, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: Color(0xff1E2E52)), maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end),
+          child: Text(
+            userAndDate,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: colors.textSecondary,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+          ),
         ),
       ],
     );
   }
 
-  List<String> _buildNoticeHistoryItems(List<NoticeHistory> history, int noteId) {
-    final target = history.firstWhere((n) => n.id == noteId, orElse: () => NoticeHistory(id: 0, title: '', history: []));
+  List<String> _buildNoticeHistoryItems(
+      List<NoticeHistory> history, int noteId) {
+    final target = history.firstWhere((n) => n.id == noteId,
+        orElse: () => NoticeHistory(id: 0, title: '', history: []));
     if (target.id == 0) return [];
 
     return target.history.map((item) {
@@ -147,12 +208,10 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
 
       for (final change in item.changes) {
         for (final MapEntry(:key, :value) in change.body.entries) {
-          if (value is! Map<String, dynamic>) continue;
+          if (value is! ChangeValue) continue;
 
-                     if (value is! ChangeValue) continue;
-
-            final prev = value.previousValue?.toString() ?? '';
-            final next = value.newValue?.toString() ?? '';
+          final prev = value.previousValue?.toString() ?? '';
+          final next = value.newValue?.toString() ?? '';
 
           final prevText = prev.isEmpty ? '—' : prev;
           final nextText = next.isEmpty ? '—' : next;

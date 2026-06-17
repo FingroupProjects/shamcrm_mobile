@@ -1221,6 +1221,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 2), // Минимальный вертикальный отступ
+                      tileColor: _screenSurfaceElevated(context),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       title: Text(
                         '${index + 1}. ${userList[index]}',
                         style: TextStyle(
@@ -1282,22 +1286,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         if (label == 'call_details' && notice.call != null) {
           bool isMissed = notice.call!.missed ?? false;
           bool isIncoming = notice.call!.incoming ?? false;
-          Color statusColor;
+          Color statusAccent;
           String statusText;
 
           if (!isMissed && isIncoming) {
-            statusColor = const Color(0xffE6F4EA);
+            statusAccent = const Color(0xFF16A34A);
             statusText =
                 AppLocalizations.of(context)!.translate('incoming_call');
           } else if (isMissed && isIncoming) {
-            statusColor = const Color(0xffFEE6E6);
+            statusAccent = const Color(0xFFEF4444);
             statusText = AppLocalizations.of(context)!.translate('missed_call');
           } else if (!isMissed && !isIncoming) {
-            statusColor = const Color(0xffE6F4EA);
+            statusAccent = const Color(0xFF16A34A);
             statusText =
                 AppLocalizations.of(context)!.translate('outgoing_call');
           } else {
-            statusColor = const Color(0xffFEE6E6);
+            statusAccent = const Color(0xFFEF4444);
             statusText = AppLocalizations.of(context)!
                 .translate('outgoing_call_unanswered');
           }
@@ -1482,32 +1486,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 Container(
                   width: double.infinity,
                   padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: statusColor.withValues(alpha: 0.45)),
+                    color: cardBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: subtleBorder),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.info,
-                        color: statusColor == const Color(0xffFEE6E6)
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF16A34A),
+                        color: statusAccent,
                         size: 16,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 8),
                       Text(
                         statusText,
                         style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: statusColor == const Color(0xffFEE6E6)
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF16A34A),
+                          color: statusAccent,
                         ),
                       ),
                     ],

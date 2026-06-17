@@ -1286,6 +1286,10 @@ class _DealAddScreenState extends State<DealAddScreen> {
     final fileTextColor = _screenPrimaryText(context);
     final fileBorderColor = _screenBorder(context);
     final fileCardColor = _screenFieldBackground(context);
+    final addFileIconAsset =
+        ThemeData.estimateBrightnessForColor(fileCardColor) == Brightness.dark
+            ? 'assets/icons/files/add_for_dark.png'
+            : 'assets/icons/files/add.png';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1330,7 +1334,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
                             ),
                             alignment: Alignment.center,
                             child: Image.asset(
-                              'assets/icons/files/add_for_dark.png',
+                              addFileIconAsset,
                               width: 60,
                               height: 60,
                             ),

@@ -1260,6 +1260,10 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     final fileCardColor = _screenFieldBackground(context);
     final fileTextColor = _screenPrimaryText(context);
     final fileBorderColor = _screenBorder(context);
+    final addFileIconAsset =
+        ThemeData.estimateBrightnessForColor(fileCardColor) == Brightness.dark
+            ? 'assets/icons/files/add_for_dark.png'
+            : 'assets/icons/files/add.png';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1300,8 +1304,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Image.asset('assets/icons/files/add_for_dark.png',
-                              width: 54, height: 54),
+                          Image.asset(addFileIconAsset, width: 54, height: 54),
                           SizedBox(height: 6),
                           Flexible(
                             child: Text(

@@ -64,7 +64,10 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+            color: hasError ? colors.error : colors.borderSubtle,
+            width: 1,
+          ),
         ),
         filled: true,
         fillColor: colors.fieldBg,
@@ -101,15 +104,15 @@ class _CustomTextFieldNoLabelState extends State<CustomTextFieldNoLabel> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: hasError ? colors.error : Colors.transparent,
+            color: hasError ? colors.error : colors.borderSubtle,
+            width: 1,
           ),
         ),
-        // Не менять цвет при фокусе, сохранять прозрачную или красную границу
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: hasError ? colors.error : Colors.transparent,
-            width: hasError ? 1.5 : 0,
+            color: hasError ? colors.error : colors.borderSubtle,
+            width: 1.2,
           ),
         ),
         errorBorder: OutlineInputBorder(

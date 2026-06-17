@@ -21,7 +21,6 @@ class AppThemeController extends ChangeNotifier {
   static const _backgroundImagePathKey = 'app_background_image_path_v1';
   static const _backgroundAssetPathKey = 'app_background_asset_path_v1';
   static const _backgroundBlurKey = 'app_background_blur_v1';
-  static const String defaultBackgroundAssetPath = 'assets/fon/IMG_1614.JPG';
 
   ThemeMode _themeMode;
   AppPalettePreset _palettePreset;
@@ -77,18 +76,6 @@ class AppThemeController extends ChangeNotifier {
         await prefs.remove(_backgroundAssetPathKey);
         await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
       }
-    }
-    final hasStoredBackgroundSelection = prefs.containsKey(_backgroundKey) ||
-        prefs.containsKey(_backgroundImagePathKey) ||
-        prefs.containsKey(_backgroundAssetPathKey);
-    if (!hasStoredBackgroundSelection &&
-        _backgroundPreset == AppBackgroundPreset.none &&
-        _backgroundImagePath == null &&
-        _backgroundAssetPath == null) {
-      _backgroundPreset = AppBackgroundPreset.custom;
-      _backgroundAssetPath = defaultBackgroundAssetPath;
-      await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
-      await prefs.setString(_backgroundAssetPathKey, _backgroundAssetPath!);
     }
     _isInitialized = true;
     notifyListeners();
@@ -179,8 +166,8 @@ class AppThemeController extends ChangeNotifier {
   Future<void> resetAppearance() async {
     final previousPath = _backgroundImagePath;
     _themeMode = ThemeMode.system;
-    _palettePreset = AppPalettePreset.custom;
-    _paletteSeedColor = const Color(0xFF0EA5E9);
+    _palettePreset = AppPalettePreset.analogous;
+    _paletteSeedColor = null;
     _backgroundPreset = AppBackgroundPreset.none;
     _backgroundImagePath = null;
     _backgroundAssetPath = null;
@@ -188,8 +175,7 @@ class AppThemeController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, _themeModeToStorage(_themeMode));
     await prefs.setString(_paletteKey, _palettePreset.storageKey);
-    await prefs.setString(
-        _paletteSeedColorKey, _colorToHex(_paletteSeedColor!));
+    await prefs.remove(_paletteSeedColorKey);
     await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
     await prefs.remove(_backgroundImagePathKey);
     await prefs.remove(_backgroundAssetPathKey);

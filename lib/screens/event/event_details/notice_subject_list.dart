@@ -132,7 +132,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: context.appColors.surfaceElevated.withValues(alpha: 0.96),
+            color: context.appColors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: borderColor,
@@ -192,7 +192,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
             margin: const EdgeInsets.only(top: 4),
             constraints: const BoxConstraints(maxHeight: 400),
             decoration: BoxDecoration(
-              color: context.appColors.surfacePrimary,
+              color: context.appColors.surfaceElevated,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: context.appColors.borderSubtle,
@@ -214,6 +214,8 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                         Icons.search,
                         color: context.appColors.textSecondary,
                       ),
+                      filled: true,
+                      fillColor: context.appColors.surfacePrimary,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -255,29 +257,39 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                               ),
                             )
                           : ListView.builder(
+                              padding: EdgeInsets.zero,
                               shrinkWrap: true,
                               itemCount: filteredList.length,
                               itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text(
-                                    filteredList[index].title,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Gilroy',
-                                      color: context.appColors.textPrimary,
+                                return Ink(
+                                  color: context.appColors.surfacePrimary,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 0,
                                     ),
+                                    minVerticalPadding: 0,
+                                    visualDensity: VisualDensity.compact,
+                                    title: Text(
+                                      filteredList[index].title,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Gilroy',
+                                        color: context.appColors.textPrimary,
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        _textController.text =
+                                            filteredList[index].title;
+                                        _isDropdownVisible = false;
+                                        _searchController.clear();
+                                      });
+                                      widget.onSelectSubject(
+                                          filteredList[index].title.trim());
+                                    },
                                   ),
-                                  onTap: () {
-                                    setState(() {
-                                      _textController.text =
-                                          filteredList[index].title;
-                                      _isDropdownVisible = false;
-                                      _searchController.clear();
-                                    });
-                                    widget.onSelectSubject(
-                                        filteredList[index].title.trim());
-                                  },
                                 );
                               },
                             ),

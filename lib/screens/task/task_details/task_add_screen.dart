@@ -1525,6 +1525,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final fileCardColor = _screenFieldBackground(context);
     final fileTextColor = _screenPrimaryText(context);
     final fileBorderColor = _screenBorder(context);
+    final addFileIconAsset =
+        ThemeData.estimateBrightnessForColor(fileCardColor) == Brightness.dark
+            ? 'assets/icons/files/add_for_dark.png'
+            : 'assets/icons/files/add.png';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1563,7 +1567,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/icons/files/add_for_dark.png',
+                            addFileIconAsset,
                             width: 54,
                             height: 54,
                           ),

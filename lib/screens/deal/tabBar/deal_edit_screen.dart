@@ -1381,7 +1381,10 @@ class _DealEditScreenState extends State<DealEditScreen> {
   Widget _buildFileSelection() {
     final fileTextColor = _screenPrimaryText(context);
     final fileCardColor = _screenFieldBackground(context);
-    final fileBorderColor = _screenBorder(context);
+    final addFileIconAsset =
+        ThemeData.estimateBrightnessForColor(fileCardColor) == Brightness.dark
+            ? 'assets/icons/files/add_for_dark.png'
+            : 'assets/icons/files/add.png';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1412,8 +1415,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png',
-                              width: 60, height: 60),
+                          Image.asset(addFileIconAsset, width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),

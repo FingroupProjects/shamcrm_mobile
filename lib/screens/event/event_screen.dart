@@ -1081,17 +1081,29 @@ class _EventScreenState extends State<EventScreen>
 
   Widget _buildCustomTabBar() {
     return Container(
-      height: 45,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: SingleChildScrollView(
         controller: _tabScrollController,
         scrollDirection: Axis.horizontal,
         child: Row(
           children: List.generate(_tabTitles.length, (index) {
             return Padding(
-              padding: EdgeInsets.only(
-                left: index == 0 ? 16 : 8,
-                right: index == _tabTitles.length - 1 ? 16 : 0,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               child: _buildTabButton(index),
             );
           }),
@@ -1102,32 +1114,54 @@ class _EventScreenState extends State<EventScreen>
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+    final title = (_tabTitles[index]['title'] as String?)?.trim() ?? '';
 
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
         _tabController.animateTo(index);
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: isActive
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
+              : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isActive ? Color(0xff1E2E52) : Color(0xffE9EDF3),
-            width: 1,
+            color: isActive
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.55)
+                : context.appColors.borderSubtle.withValues(alpha: 0.35),
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : const [],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _tabTitles[index]['title'],
-              style: TextStyle(
-                color: isActive ? Color(0xff1E2E52) : Color(0xff99A4BA),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(
+                title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isActive
+                      ? context.appColors.textPrimary
+                      : context.appColors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                ),
               ),
             ),
           ],

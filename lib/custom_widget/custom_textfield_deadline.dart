@@ -199,7 +199,8 @@ class CustomTextFieldDate extends StatelessWidget {
                   borderRadius: context.appRadius.input,
                   borderSide: hasError
                       ? BorderSide(color: context.appColors.error, width: 1.5)
-                      : const BorderSide(color: Colors.transparent),
+                      : BorderSide(
+                          color: context.appColors.borderSubtle, width: 1),
                 ),
                 errorStyle: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.error,
@@ -209,7 +210,8 @@ class CustomTextFieldDate extends StatelessWidget {
                   borderRadius: context.appRadius.input,
                   borderSide: hasError
                       ? BorderSide(color: context.appColors.error, width: 1.5)
-                      : const BorderSide(color: Colors.transparent),
+                      : BorderSide(
+                          color: context.appColors.borderSubtle, width: 1),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: context.appRadius.input,

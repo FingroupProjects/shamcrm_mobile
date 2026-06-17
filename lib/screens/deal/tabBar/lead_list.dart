@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -59,6 +60,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
     double nameFontSize = 14,
     double phoneFontSize = 12,
   }) {
+    final colors = context.appColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -66,7 +69,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         Text(
           lead.name,
           style: TextStyle(
-            color: const Color(0xff1E2E52),
+            color: colors.textPrimary,
             fontSize: nameFontSize,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -79,7 +82,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             child: Text(
               lead.phone!.trim(),
               style: TextStyle(
-                color: const Color(0xff99A4BA),
+                color: colors.textSecondary,
                 fontSize: phoneFontSize,
                 fontWeight: FontWeight.w400,
                 fontFamily: 'Gilroy',
@@ -179,17 +182,18 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   }
 
   @override
+
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('lead'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -238,14 +242,44 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   overlayHeight: 400,
                   enabled: !isStillLoading,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    closedFillColor: context.appColors.surfacePrimary,
+                    expandedFillColor: context.appColors.surfacePrimary,
+                    closedBorder: Border.all(
+                      color: context.appColors.borderSubtle,
+                      width: 1,
+                    ),
                     closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder:
-                        Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    expandedBorder: Border.all(
+                      color: context.appColors.borderSubtle,
+                      width: 1,
+                    ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: context.appColors.surfacePrimary,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      textStyle: TextStyle(
+                        color: context.appColors.textPrimary,
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                      ),
+                      hintStyle: TextStyle(
+                        color: context.appColors.fieldHint,
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 22,
+                        color: context.appColors.iconSecondary,
+                      ),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Column(
@@ -275,14 +309,14 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     if (isStillLoading) {
-                      return const Center(
+                      return Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xff1E2E52),
+                              context.appColors.buttonPrimaryBg,
                             ),
                           ),
                         ),
@@ -315,14 +349,14 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   },
                   hintBuilder: (context, hint, enabled) {
                     if (isStillLoading) {
-                      return const Center(
+                      return Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xff1E2E52),
+                              context.appColors.buttonPrimaryBg,
                             ),
                           ),
                         ),
@@ -331,11 +365,11 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
                     return Text(
                       AppLocalizations.of(context)!.translate('select_lead'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     );
                   },
@@ -358,10 +392,10 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
                           AppLocalizations.of(context)!.translate('no_results'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: context.appColors.textPrimary,
                           ),
                         ),
                       ),
@@ -398,7 +432,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Color(0xffEF4444),
+                            color: Colors.red,
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
                             fontFamily: 'Gilroy',
@@ -410,7 +444,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                         child: Text(
                           AppLocalizations.of(context)!.translate('refresh'),
                           style: const TextStyle(
-                            color: Color(0xff4759FF),
+                            color: Color(0xFF4759FF),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             fontFamily: 'Gilroy',

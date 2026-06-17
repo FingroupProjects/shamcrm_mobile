@@ -1271,7 +1271,12 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/icons/files/add_for_dark.png',
+                            ThemeData.estimateBrightnessForColor(
+                                      colors.fieldBackground.withOpacity(0.92),
+                                    ) ==
+                                    Brightness.dark
+                                ? 'assets/icons/files/add_for_dark.png'
+                                : 'assets/icons/files/add.png',
                             width: 54,
                             height: 54,
                           ),

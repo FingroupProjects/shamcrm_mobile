@@ -5,6 +5,8 @@ class CustomButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Color buttonColor;
   final Color textColor;
+  final Color? borderColor;
+  final double borderWidth;
   final Widget? child;
   final bool isLoading;
 
@@ -14,6 +16,8 @@ class CustomButton extends StatefulWidget {
     required this.onPressed,
     required this.buttonColor,
     required this.textColor,
+    this.borderColor,
+    this.borderWidth = 0,
     this.child,
     this.isLoading = false,
   });
@@ -59,6 +63,12 @@ class _CustomButtonState extends State<CustomButton> {
           backgroundColor: widget.buttonColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.0),
+            side: widget.borderColor == null
+                ? BorderSide.none
+                : BorderSide(
+                    color: widget.borderColor!,
+                    width: widget.borderWidth,
+                  ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
@@ -69,8 +79,7 @@ class _CustomButtonState extends State<CustomButton> {
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(widget.textColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(widget.textColor),
                 ),
               )
             : (widget.child ??
