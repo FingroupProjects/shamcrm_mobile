@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
@@ -127,7 +128,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
         smsNoticeNotificationEnabled = isEnabled;
         sendSms = isEnabled ? sendSms : false;
         smsTemplates = templates;
-        selectedSmsTemplate = matchedTemplate ?? selectedSmsTemplate ?? templates.first;
+        selectedSmsTemplate =
+            matchedTemplate ?? selectedSmsTemplate ?? templates.first;
       });
     } catch (_) {
       if (!mounted) return;
@@ -161,20 +163,20 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: context.appColors.surfacePrimary,
         elevation: 0,
         title: Transform.translate(
           offset: const Offset(-10, 0),
           child: Text(
             AppLocalizations.of(context)!.translate('edit_notice'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -209,10 +211,10 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.buttonPrimaryFg,
                   ),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: context.appColors.error,
                 behavior: SnackBarBehavior.floating,
                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
@@ -232,10 +234,10 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.buttonPrimaryFg,
                   ),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: context.appColors.success,
                 behavior: SnackBarBehavior.floating,
                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
@@ -335,8 +337,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                       child: CustomButton(
                         buttonText:
                             AppLocalizations.of(context)!.translate('cancel'),
-                        buttonColor: Color(0xffF4F7FD),
-                        textColor: Colors.black,
+                        buttonColor: context.appColors.buttonSecondaryBg,
+                        textColor: context.appColors.buttonSecondaryFg,
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
@@ -347,15 +349,15 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                           if (isLoading) {
                             return Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
+                                color: context.appColors.buttonPrimaryBg,
                               ),
                             );
                           }
                           return CustomButton(
                             buttonText:
                                 AppLocalizations.of(context)!.translate('save'),
-                            buttonColor: Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: context.appColors.buttonPrimaryBg,
+                            textColor: context.appColors.buttonPrimaryFg,
                             onPressed: _submitForm,
                           );
                         },
@@ -421,7 +423,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         SizedBox(height: 16),
@@ -450,7 +452,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textPrimary,
                             ),
                           ),
                         ],
@@ -483,7 +485,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: context.appColors.textPrimary,
                             ),
                           ),
                         ],
@@ -508,7 +510,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.buttonPrimaryFg,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -519,7 +521,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                             ],
                           ),
                           child: Icon(Icons.close,
-                              size: 16, color: Color(0xff1E2E52)),
+                              size: 16,
+                              color: context.appColors.buttonPrimaryBg),
                         ),
                       ),
                     ),
@@ -615,7 +618,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                 fontFamily: 'Gilroy',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: context.appColors.buttonPrimaryFg,
               ),
             ),
             behavior: SnackBarBehavior.floating,
@@ -623,7 +626,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appColors.error,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             duration: Duration(seconds: 3),
@@ -665,10 +668,10 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.buttonPrimaryFg,
             ),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appColors.error,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(

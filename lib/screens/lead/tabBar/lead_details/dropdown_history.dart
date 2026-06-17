@@ -21,10 +21,10 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
   List<LeadHistory> actionHistory = [];
 
   BoxDecoration _sectionDecoration(BuildContext context) => BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: context.appColors.textInverse.withValues(alpha: 0.16),
+          color: context.appColors.borderSubtle,
         ),
       );
 
@@ -128,14 +128,14 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: context.appColors.textInverse.withValues(alpha: 0.96),
+            color: context.appColors.textPrimary,
           ),
         ),
         Icon(
           isActionHistoryExpanded
               ? Icons.keyboard_arrow_up_rounded
               : Icons.keyboard_arrow_down_rounded,
-          color: context.appColors.textInverse.withValues(alpha: 0.82),
+          color: context.appColors.textSecondary,
         ),
       ],
     );
@@ -171,8 +171,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color:
-                          context.appColors.textInverse.withValues(alpha: 0.82),
+                      color: context.appColors.textSecondary,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -195,7 +194,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: context.appColors.textInverse.withValues(alpha: 0.96),
+              color: context.appColors.textPrimary,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -209,7 +208,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: context.appColors.textInverse.withValues(alpha: 0.72),
+              color: context.appColors.textSecondary,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

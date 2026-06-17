@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:flutter/material.dart';
 
@@ -21,10 +22,9 @@ class NoticeSmsTemplateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isVisible) {
-      return const SizedBox.shrink();
-    }
+    if (!isVisible) return const SizedBox.shrink();
 
+    final colors = context.appColors;
     final selectedName = selectedTemplate?.name ??
         (templates.isNotEmpty ? templates.first.name : 'Пустой шаблон');
 
@@ -32,39 +32,36 @@ class NoticeSmsTemplateSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               'Авто рассылка',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(width: 8),
             Switch(
               value: sendSms,
               onChanged: onToggle,
-              activeThumbColor: Colors.white,
-              inactiveTrackColor:
-                  const Color.fromARGB(255, 179, 179, 179).withValues(alpha: 0.5),
-              activeTrackColor: const Color(0xff4759FF),
-              inactiveThumbColor: Colors.white,
+              activeThumbColor: colors.buttonPrimaryFg,
+              inactiveTrackColor: colors.borderSubtle.withValues(alpha: 0.5),
+              activeTrackColor: colors.buttonPrimaryBg,
+              inactiveThumbColor: colors.buttonPrimaryFg,
             ),
           ],
         ),
         if (sendSms) ...[
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Шаблон сообщений',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -75,25 +72,26 @@ class NoticeSmsTemplateSection extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xffF4F7FD),
+                color: colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.borderSubtle),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       selectedName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xff1E2E52),
+                    color: colors.iconPrimary,
                   ),
                 ],
               ),
@@ -105,28 +103,31 @@ class NoticeSmsTemplateSection extends StatelessWidget {
   }
 
   Future<void> _showTemplatePicker(BuildContext context) async {
+    final colors = context.appColors;
     final selected = await showModalBottomSheet<NoticeSmsSample>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final sheetColors = context.appColors;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Text(
                     'Шаблон сообщений',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: sheetColors.textPrimary,
                     ),
                   ),
                 ),
@@ -134,24 +135,27 @@ class NoticeSmsTemplateSection extends StatelessWidget {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: templates.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: sheetColors.borderSubtle),
                     itemBuilder: (context, index) {
                       final template = templates[index];
-                      final isSelected = template.name == selectedTemplate?.name &&
-                          template.text == selectedTemplate?.text;
+                      final isSelected =
+                          template.name == selectedTemplate?.name &&
+                              template.text == selectedTemplate?.text;
 
                       return ListTile(
                         title: Text(
                           template.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: sheetColors.textPrimary,
                           ),
                         ),
                         trailing: isSelected
-                            ? const Icon(Icons.check, color: Color(0xff4759FF))
+                            ? Icon(Icons.check,
+                                color: sheetColors.buttonPrimaryBg)
                             : null,
                         onTap: () => Navigator.pop(context, template),
                       );

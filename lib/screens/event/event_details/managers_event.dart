@@ -60,7 +60,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: context.appColors.textInverse.withValues(alpha: 0.96),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -73,10 +73,10 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 18),
             decoration: BoxDecoration(
-              color: context.appColors.surfaceElevated.withValues(alpha: 0.96),
+              color: context.appColors.surfaceElevated,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: context.appColors.textInverse.withValues(alpha: 0.16),
+                color: context.appColors.borderSubtle,
                 width: 1,
               ),
             ),
@@ -102,8 +102,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
-                            color: context.appColors.textInverse
-                                .withValues(alpha: 0.96),
+                            color: context.appColors.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -115,8 +114,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.58),
+                          color: context.appColors.textSecondary,
                         ),
                       );
                     },
@@ -126,7 +124,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   isExpanded
                       ? Icons.keyboard_arrow_up
                       : Icons.keyboard_arrow_down,
-                  color: context.appColors.textInverse.withValues(alpha: 0.82),
+                  color: context.appColors.iconSecondary,
                 ),
               ],
             ),
@@ -136,10 +134,10 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
           Container(
             margin: EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
-              color: context.appColors.surfacePrimary.withValues(alpha: 0.98),
+              color: context.appColors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: context.appColors.textInverse.withValues(alpha: 0.16),
+                color: context.appColors.borderSubtle,
               ),
               boxShadow: [
                 BoxShadow(
@@ -167,15 +165,13 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.16),
+                          color: context.appColors.borderSubtle,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.16),
+                          color: context.appColors.borderSubtle,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -191,8 +187,7 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     ),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
-                      color:
-                          context.appColors.textInverse.withValues(alpha: 0.96),
+                      color: context.appColors.textPrimary,
                     ),
                     onChanged: (value) {
                       setState(() {

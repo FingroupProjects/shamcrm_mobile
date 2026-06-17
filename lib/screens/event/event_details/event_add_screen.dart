@@ -8,6 +8,10 @@ import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -47,6 +51,26 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   List<String> selectedFiles = [];
   List<String> fileNames = [];
   List<String> fileSizes = [];
+
+  // ===== Цвета/темизация в стиле LeadAddScreen =====
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textPrimary;
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textSecondary;
+  Color _screenHintText(BuildContext context) =>
+      context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) =>
+      context.appColors.borderSubtle;
+  Color _screenFocusBorder(BuildContext context) =>
+      context.appColors.borderPrimary;
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.fieldBg;
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary;
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated;
+  Color _screenFooterBackground(BuildContext context) =>
+      context.appColors.surfacePrimary;
 
   @override
   void initState() {
@@ -125,430 +149,634 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   }
 
   Future<void> _pickFile() async {
-  // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
+    // Вычисляем текущий общий размер файлов
+    double totalSize = selectedFiles.fold<double>(
+      0.0,
+      (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+    );
 
-  // Показываем диалог выбора типа файла
-  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
-    context: context,
-    allowMultiple: true,
-    maxSizeMB: 50.0,
-    currentTotalSizeMB: totalSize,
-    fileLabel: AppLocalizations.of(context)!.translate('file'),
-    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
-    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
-    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
-  );
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
 
-  // Если файлы выбраны, добавляем их
-  if (pickedFiles != null && pickedFiles.isNotEmpty) {
-    setState(() {
-      for (var file in pickedFiles) {
-        selectedFiles.add(file.path);
-        fileNames.add(file.name);
-        fileSizes.add(file.sizeKB);
-      }
-    });
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          selectedFiles.add(file.path);
+          fileNames.add(file.name);
+          fileSizes.add(file.sizeKB);
+        }
+      });
+    }
   }
-}
 
- Widget _buildFileSelection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('file'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
-        ),
-      ),
-      SizedBox(height: 16),
-      Container(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-          itemBuilder: (context, index) {
-            // Кнопка добавления файла
-            if (fileNames.isEmpty || index == fileNames.length) {
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: GestureDetector(
-                  onTap: _pickFile,
-                  child: Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
-                        SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.translate('add_file'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-            
-            // Отображение выбранных файлов
-            final fileName = fileNames[index];
-            final fileExtension = fileName.split('.').last.toLowerCase();
-            
-            return Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                        _buildFileIcon(fileName, fileExtension),
-                        SizedBox(height: 8),
-                        Text(
-                          fileName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Кнопка удаления файла
-                  Positioned(
-                    right: -2,
-                    top: -6,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedFiles.removeAt(index);
-                          fileNames.removeAt(index);
-                          fileSizes.removeAt(index);
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+  /// Строит иконку файла или превью изображения (в стиле LeadAddScreen)
+  Widget _buildFileIcon(String fileName, String fileExtension) {
+    final fileTextColor = _screenPrimaryText(context);
+    // Список расширений изображений
+    final imageExtensions = [
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'bmp',
+      'webp',
+      'heic',
+      'heif'
+    ];
+
+    // Если файл - изображение, показываем превью
+    if (imageExtensions.contains(fileExtension)) {
+      final filePath = selectedFiles[fileNames.indexOf(fileName)];
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(filePath),
+          width: 54,
+          height: 54,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.insert_drive_file_rounded,
+              size: 40,
+              color: fileTextColor,
             );
           },
         ),
-      ),
-    ],
-  );
-}
-
-// ==========================================
-// НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД
-// Добавьте этот метод в класс _DealAddScreenState
-// ==========================================
-
-/// Строит иконку файла или превью изображения
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Список расширений изображений
-  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-  
-  // Если файл - изображение, показываем превью
-  if (imageExtensions.contains(fileExtension)) {
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(filePath),
-        width: 60,
-        height: 60,
-        fit: BoxFit.cover,
+      );
+    } else {
+      // Для остальных типов файлов показываем иконку по расширению
+      return Image.asset(
+        'assets/icons/files/$fileExtension.png',
+        width: 54,
+        height: 54,
         errorBuilder: (context, error, stackTrace) {
-          // Если не удалось загрузить превью, показываем иконку
           return Image.asset(
             'assets/icons/files/file.png',
-            width: 60,
-            height: 60,
+            width: 54,
+            height: 54,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.insert_drive_file_rounded,
+                size: 40,
+                color: fileTextColor,
+              );
+            },
           );
         },
-      ),
-    );
-  } else {
-    // Для остальных типов файлов показываем иконку по расширению
-    return Image.asset(
-      'assets/icons/files/$fileExtension.png',
-      width: 60,
-      height: 60,
-      errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
-        return Image.asset(
-          'assets/icons/files/file.png',
-          width: 60,
-          height: 60,
-        );
-      },
-    );
+      );
+    }
   }
-}
- @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Transform.translate(
-          offset: const Offset(-10, 0),
-          child: Text(
-            AppLocalizations.of(context)!.translate('new_notice'),
-            style: const TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
+
+  Widget _buildFileSelection() {
+    final fileCardColor = _screenFieldBackground(context);
+    final fileTextColor = _screenPrimaryText(context);
+    final fileBorderColor = _screenBorder(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: fileTextColor,
           ),
         ),
-        centerTitle: false,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Transform.translate(
-            offset: const Offset(0, -2),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        leadingWidth: 40,
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      ),
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => GetAllLeadBloc()),
-          BlocProvider(create: (_) => GetAllManagerBloc()),
-        ],
-        child: BlocListener<EventBloc, EventState>(
-          listener: (context, state) {
-            if (state is EventError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            } else if (state is EventSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!.translate(state.message),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-              Navigator.pop(context);
-            }
-          },
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Expanded(
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              // Кнопка добавления файла
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
                   child: GestureDetector(
-                    onTap: () {
-                      FocusScope.of(context).unfocus();
-                    },
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: fileCardColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: fileBorderColor,
+                        ),
+                      ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SubjectSelectionWidget(
-                            selectedSubject: selectedSubject,
-                            onSelectSubject: (String subject) {
-                              setState(() {
-                                selectedSubject = subject;
-                                if (subject.trim().isNotEmpty) {
-                                  isSubjectInvalid = false;
-                                }
-                              });
-                            },
-                            hasError: isSubjectInvalid,
+                          Image.asset('assets/icons/files/add_for_dark.png',
+                              width: 54, height: 54),
+                          SizedBox(height: 6),
+                          Flexible(
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('add_file'),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: fileTextColor,
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          // Lead selection
-                          LeadRadioGroupWidget(
-                            onSelectLead: (LeadData lead) {
-                              setState(() {
-                                selectedLead = lead.id.toString();
-                              });
-                            },
-                            selectedLead: selectedLead,
-                          ),
-                          const SizedBox(height: 8),
-                          // Description field
-                          CustomTextField(
-                            controller: _bodyController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('description_list'),
-                            label: AppLocalizations.of(context)!
-                                .translate('description_list'),
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return AppLocalizations.of(context)!
-                                    .translate('field_required');
-                              }
-                              return null;
-                            },
-                            onChanged: (value) {
-                              setState(() {
-                                body = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          // Date field
-                          CustomTextFieldDate(
-                            controller: _dateController,
-                            label: AppLocalizations.of(context)!
-                                .translate('reminder_date'),
-                            withTime: true,
-                            onDateSelected: (value) {
-                              setState(() {
-                                date = value;
-                                _dateController.text = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          // Manager selection
-                          ManagerMultiSelectWidget(
-                            selectedManagers: selectedManagers,
-                            onSelectManagers: (managers) {
-                              setState(() {
-                                selectedManagers = managers;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          NoticeSmsTemplateSection(
-                            isVisible: smsNoticeNotificationEnabled,
-                            sendSms: sendSms,
-                            templates: smsTemplates,
-                            selectedTemplate: selectedSmsTemplate,
-                            onToggle: (value) {
-                              setState(() {
-                                sendSms = value;
-                              });
-                            },
-                            onTemplateSelected: _handleTemplateSelected,
-                          ),
-                          const SizedBox(height: 15),
-                          _buildFileSelection(),
                         ],
                       ),
                     ),
                   ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CustomButton(
-                          buttonText:
-                              AppLocalizations.of(context)!.translate('cancel'),
-                          buttonColor: Color(0xffF4F7FD),
-                          textColor: Colors.black,
-                          onPressed: () => Navigator.pop(context),
+                );
+              }
+
+              // Отображение выбранных файлов
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: fileCardColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: fileBorderColor,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Center(
+                              child: _buildFileIcon(fileName, fileExtension),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Flexible(
+                            child: Text(
+                              fileName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: fileTextColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Кнопка удаления файла
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: context.appColors.surfacePrimary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.appColors.shadow
+                                    .withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.close,
+                              size: 16, color: fileTextColor),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final baseTheme = Theme.of(context);
+    final baseColors = context.appColors;
+    final baseTextStyles = context.appTextStyles;
+    final baseShadows = context.appShadows;
+    final screenTheme = baseTheme.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        baseColors.copyWith(
+          surfacePrimary: _screenSurfaceBackground(context),
+          surfaceElevated: _screenSurfaceElevated(context),
+          textPrimary: _screenPrimaryText(context),
+          textSecondary: _screenSecondaryText(context),
+          textMuted: _screenHintText(context),
+          textInverse: _screenPrimaryText(context),
+          iconPrimary: _screenPrimaryText(context),
+          iconSecondary: _screenSecondaryText(context),
+          borderPrimary: _screenBorder(context),
+          borderSubtle: _screenBorder(context),
+          buttonSecondaryBg: _screenFieldBackground(context),
+          buttonSecondaryFg: _screenPrimaryText(context),
+          fieldBg: _screenFieldBackground(context),
+          fieldBorder: _screenBorder(context),
+          fieldHint: _screenHintText(context),
+          overlay: baseColors.overlay,
+        ),
+        baseTextStyles.copyWith(
+          titleLg: baseTextStyles.titleLg
+              .copyWith(color: _screenPrimaryText(context)),
+          titleMd: baseTextStyles.titleMd
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyLg: baseTextStyles.bodyLg
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyMd: baseTextStyles.bodyMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          bodySm: baseTextStyles.bodySm.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          labelLg: baseTextStyles.labelLg
+              .copyWith(color: _screenPrimaryText(context)),
+          labelMd: baseTextStyles.labelMd.copyWith(
+            color: _screenSecondaryText(context),
+          ),
+          caption: baseTextStyles.caption
+              .copyWith(color: _screenHintText(context)),
+        ),
+        baseShadows,
+      ],
+    );
+    final appBarGradient = [
+      _screenSurfaceElevated(context),
+      _screenFieldBackground(context),
+    ];
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+    final formSurface = _screenSurfaceBackground(context);
+    final footerSurface = _screenFooterBackground(context);
+
+    return Theme(
+      data: screenTheme,
+      child: Scaffold(
+        backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          forceMaterialTransparency: true,
+          backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: context.appColors.overlay.withValues(alpha: 0),
+          shadowColor: context.appColors.overlay.withValues(alpha: 0),
+          toolbarHeight: 74,
+          titleSpacing: 16,
+          title: AppBarShell(
+            leading: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: primaryText,
+                ),
+              ),
+            ),
+            center: AppBarShell.capsule(
+              context,
+              gradientColors: appBarGradient,
+              borderColor: subtleBorder,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('new_notice'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    color: primaryText,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ),
+            // trailing: AppBarShell.capsule(
+            //   context,
+            //   width: AppBarShell.orbSize,
+            //   padding: EdgeInsets.zero,
+            //   gradientColors: appBarGradient,
+            //   borderColor: subtleBorder,
+            //   child: const SizedBox.shrink(),
+            // ),
+          ),
+          centerTitle: false,
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+            MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => GetAllLeadBloc()),
+                BlocProvider(create: (_) => GetAllManagerBloc()),
+              ],
+              child: BlocListener<EventBloc, EventState>(
+                listener: (context, state) {
+                  if (state is EventError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate(state.message),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.textInverse,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: context.appColors.error,
+                        elevation: 3,
+                        padding: EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  } else if (state is EventSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!
+                              .translate(state.message),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: context.appColors.textInverse,
+                          ),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        margin: EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: context.appColors.success,
+                        elevation: 3,
+                        padding: EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 16),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.top + 80,
+                      ),
                       Expanded(
-                        child: BlocBuilder<EventBloc, EventState>(
-                          builder: (context, state) {
-                            if (state is EventLoading) {
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
-                                ),
-                              );
-                            }
-                            return CustomButton(
-                              buttonText: AppLocalizations.of(context)!
-                                  .translate('add'),
-                              buttonColor: Color(0xff4759FF),
-                              textColor: Colors.white,
-                              onPressed: _submitForm,
-                            );
+                        child: GestureDetector(
+                          onTap: () {
+                            FocusScope.of(context).unfocus();
                           },
+                          child: SingleChildScrollView(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(
+                                  18, 18, 18, 22),
+                              decoration: BoxDecoration(
+                                color: formSurface,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: subtleBorder,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.appColors.shadow
+                                        .withValues(alpha: 0.14),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 14),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  SubjectSelectionWidget(
+                                    selectedSubject: selectedSubject,
+                                    onSelectSubject: (String subject) {
+                                      setState(() {
+                                        selectedSubject = subject;
+                                        if (subject.trim().isNotEmpty) {
+                                          isSubjectInvalid = false;
+                                        }
+                                      });
+                                    },
+                                    hasError: isSubjectInvalid,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Lead selection
+                                  LeadRadioGroupWidget(
+                                    onSelectLead: (LeadData lead) {
+                                      setState(() {
+                                        selectedLead = lead.id.toString();
+                                      });
+                                    },
+                                    selectedLead: selectedLead,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Description field
+                                  CustomTextField(
+                                    controller: _bodyController,
+                                    hintText: AppLocalizations.of(context)!
+                                        .translate('description_list'),
+                                    label: AppLocalizations.of(context)!
+                                        .translate('description_list'),
+                                    maxLines: 5,
+                                    keyboardType: TextInputType.multiline,
+                                    backgroundColor:
+                                        _screenFieldBackground(context),
+                                    labelColor: primaryText,
+                                    hintColor: _screenHintText(context),
+                                    textColor: primaryText,
+                                    borderColor: subtleBorder,
+                                    focusedBorderColor:
+                                        _screenFocusBorder(context),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return AppLocalizations.of(
+                                                context)!
+                                            .translate('field_required');
+                                      }
+                                      return null;
+                                    },
+                                    onChanged: (value) {
+                                      setState(() {
+                                        body = value;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Date field
+                                  CustomTextFieldDate(
+                                    controller: _dateController,
+                                    label: AppLocalizations.of(context)!
+                                        .translate('reminder_date'),
+                                    withTime: true,
+                                    onDateSelected: (value) {
+                                      setState(() {
+                                        date = value;
+                                        _dateController.text = value;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Manager selection
+                                  ManagerMultiSelectWidget(
+                                    selectedManagers: selectedManagers,
+                                    onSelectManagers: (managers) {
+                                      setState(() {
+                                        selectedManagers = managers;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  NoticeSmsTemplateSection(
+                                    isVisible: smsNoticeNotificationEnabled,
+                                    sendSms: sendSms,
+                                    templates: smsTemplates,
+                                    selectedTemplate: selectedSmsTemplate,
+                                    onToggle: (value) {
+                                      setState(() {
+                                        sendSms = value;
+                                      });
+                                    },
+                                    onTemplateSelected:
+                                        _handleTemplateSelected,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildFileSelection(),
+                                  const SizedBox(height: 8),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        margin:
+                            const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: footerSurface,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: subtleBorder,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: CustomButton(
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('cancel'),
+                                buttonColor:
+                                    _screenFieldBackground(context),
+                                textColor: primaryText,
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: BlocBuilder<EventBloc, EventState>(
+                                builder: (context, state) {
+                                  if (state is EventLoading) {
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        color: primaryText,
+                                      ),
+                                    );
+                                  } else {
+                                    return CustomButton(
+                                      buttonText:
+                                          AppLocalizations.of(context)!
+                                              .translate('add'),
+                                      buttonColor:
+                                          context.appColors.buttonPrimaryBg,
+                                      textColor:
+                                          context.appColors.buttonPrimaryFg,
+                                      onPressed: _submitForm,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -565,20 +793,24 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_datetime'),
+                AppLocalizations.of(context)!
+                    .translate('enter_valid_datetime'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
-              backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              backgroundColor: context.appColors.error,
+              elevation: 3,
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: Duration(seconds: 3),
             ),
           );
           return;
@@ -596,15 +828,18 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                 fontFamily: 'Gilroy',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: context.appColors.textInverse,
               ),
             ),
-            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            backgroundColor: context.appColors.error,
+            elevation: 3,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            duration: Duration(seconds: 3),
           ),
         );
         return;
@@ -637,15 +872,18 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: context.appColors.textInverse,
             ),
           ),
-          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          backgroundColor: context.appColors.error,
+          elevation: 3,
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          duration: Duration(seconds: 3),
         ),
       );
     }

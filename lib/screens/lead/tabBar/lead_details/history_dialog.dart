@@ -27,17 +27,17 @@ class _HistoryDialogState extends State<HistoryDialog> {
   int _noticeCount = 0;
 
   Color _primary(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _secondary(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.72);
+      context.appColors.textSecondary;
   Color _hint(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
+      context.appColors.fieldHint;
   Color _border(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.14);
+      context.appColors.borderSubtle;
   Color _surface(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.96);
+      context.appColors.surfacePrimary;
   Color _surfaceAlt(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+      context.appColors.surfaceElevated;
 
   @override
   void initState() {
@@ -238,10 +238,10 @@ class _HistoryDialogState extends State<HistoryDialog> {
               _buildLeadHistoryItem(item, isSmallScreen),
               // Добавляем разделитель только на маленьких экранах и не после последнего элемента
               if (isSmallScreen && !isLast)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Divider(
-                    color: Color(0xFFE0E0E0),
+                    color: context.appColors.borderSubtle,
                     height: 1,
                     thickness: 1,
                   ),

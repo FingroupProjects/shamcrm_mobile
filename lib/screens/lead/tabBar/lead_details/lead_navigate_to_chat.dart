@@ -32,10 +32,10 @@ class LeadNavigateToChat extends StatefulWidget {
 
 class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
   BoxDecoration _sectionDecoration(BuildContext context) => BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: context.appColors.textInverse.withValues(alpha: 0.16),
+          color: context.appColors.borderSubtle,
         ),
       );
   @override
@@ -81,7 +81,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: context.appColors.textInverse,
+                  color: context.appColors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -146,7 +146,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
-              color: context.appColors.textInverse.withValues(alpha: 0.16),
+              color: context.appColors.borderSubtle,
             ),
           ),
           child: Column(
@@ -157,8 +157,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                 child: Text(
                   AppLocalizations.of(context)!.translate('list_chat'),
                   style: TextStyle(
-                    color:
-                        context.appColors.textInverse.withValues(alpha: 0.96),
+                    color: context.appColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Gilroy',
@@ -174,8 +173,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                       //print('LeadNavigateToChat: Loading state');
                       return Center(
                         child: CircularProgressIndicator(
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.96),
+                          color: context.appColors.buttonPrimaryBg,
                         ),
                       );
                     } else if (state is LeadToChatLoaded) {
@@ -188,8 +186,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                             AppLocalizations.of(context)!
                                 .translate('no_chat_in_list'),
                             style: TextStyle(
-                              color: context.appColors.textInverse
-                                  .withValues(alpha: 0.82),
+                              color: context.appColors.textSecondary,
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -240,8 +237,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 title: Text(
                                   displayName,
                                   style: TextStyle(
-                                    color: context.appColors.textInverse
-                                        .withValues(alpha: 0.96),
+                                    color: context.appColors.textPrimary,
                                     fontSize: 18,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
@@ -316,8 +312,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                           AppLocalizations.of(context)!
                               .translate('no_chat_in_list'),
                           style: TextStyle(
-                            color: context.appColors.textInverse
-                                .withValues(alpha: 0.82),
+                            color: context.appColors.textSecondary,
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,

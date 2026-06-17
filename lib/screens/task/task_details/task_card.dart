@@ -63,32 +63,21 @@ class TaskCardState extends State<TaskCard> {
 
   /// Получение цвета фона для приоритета задачи
   Color _getPriorityBackgroundColor(int? priority) {
-    final colors = context.appColors;
     switch (priority) {
       case 1:
-        return colors.success.withValues(alpha: 0.12);
+        return const Color(0xFF16A34A);
       case 3:
-        return colors.error.withValues(alpha: 0.12);
+        return const Color(0xFFEF4444);
       case 2:
-        return colors.success.withValues(alpha: 0.12);
+        return const Color(0xFF16A34A);
       default:
-        return colors.success.withValues(alpha: 0.12);
+        return const Color(0xFF16A34A);
     }
   }
 
   /// Получение цвета текста для приоритета задачи
   Color _getPriorityTextColor(int? priority) {
-    final colors = context.appColors;
-    switch (priority) {
-      case 1:
-        return colors.success;
-      case 3:
-        return colors.error;
-      case 2:
-        return colors.success;
-      default:
-        return colors.success;
-    }
+    return Colors.white;
   }
 
   /// Получение текстового представления приоритета
@@ -215,12 +204,11 @@ class TaskCardState extends State<TaskCard> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _getPriorityBackgroundColor(widget.task.priority)
-                          .withValues(alpha: 0.7),
+                      color: _getPriorityBackgroundColor(widget.task.priority),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: _getPriorityTextColor(widget.task.priority)
-                            .withValues(alpha: 0.18),
+                        color:
+                            _getPriorityBackgroundColor(widget.task.priority),
                       ),
                     ),
                     child: Text(
@@ -354,18 +342,18 @@ class TaskCardState extends State<TaskCard> {
                     Icons.schedule_rounded,
                     size: 16,
                     color: overdueDays > 0
-                        ? colors.error
+                        ? const Color(0xFFEF4444)
                         : colors.textSecondary,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     formatDate(
                         widget.task.endDate ?? DateTime.now().toString()),
-                      style: context.appTextStyles.bodySm.copyWith(
+                    style: context.appTextStyles.bodySm.copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: overdueDays > 0
-                          ? colors.error
+                          ? const Color(0xFFEF4444)
                           : colors.textSecondary,
                     ),
                   ),
@@ -376,13 +364,13 @@ class TaskCardState extends State<TaskCard> {
                       height: 22,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: colors.error,
+                        color: const Color(0xFFEF4444),
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         overdueDays.toString(),
                         style: TextStyle(
-                          color: colors.textInverse,
+                          color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),

@@ -65,19 +65,17 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       {}; // Прогресс загрузки для каждого файла
 
   Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.72);
-  Color _screenHintText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
-  Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.14);
+      context.appColors.textSecondary;
+  Color _screenHintText(BuildContext context) => context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) => context.appColors.borderSubtle;
   Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.94);
+      context.appColors.surfaceElevated;
   Color _screenSurfaceBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+      context.appColors.surfacePrimary;
   Color _screenSurfaceElevated(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.98);
+      context.appColors.surfaceElevated;
 
   void _showCopiedSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +87,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             fontFamily: 'Gilroy',
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: context.appColors.textInverse,
+            color: context.appColors.buttonPrimaryFg,
           ),
         ),
         backgroundColor: context.appColors.success,
@@ -444,7 +442,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         builder: (BuildContext context) {
           return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surfacePrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -461,8 +459,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   children: [
                     Text(
                       AppLocalizations.of(context)!.translate('conclusion'),
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: context.appColors.textPrimary,
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.bold,
@@ -502,8 +500,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             buttonText: AppLocalizations.of(context)!
                                 .translate('cancel'),
                             onPressed: () => Navigator.of(context).pop(),
-                            buttonColor: Colors.red,
-                            textColor: Colors.white,
+                            buttonColor: context.appColors.buttonSecondaryBg,
+                            textColor: context.appColors.textPrimary,
                           ),
                         ),
                         Expanded(
@@ -536,11 +534,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                     content: Text(
                                       AppLocalizations.of(context)!.translate(
                                           'event_completed_successfully'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.white,
+                                        color:
+                                            context.appColors.buttonPrimaryFg,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
@@ -549,7 +548,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: context.appColors.success,
                                     elevation: 3,
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),
@@ -572,8 +571,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   }
                                 });
                               },
-                              buttonColor: const Color(0xff1E2E52),
-                              textColor: Colors.white,
+                              buttonColor: context.appColors.buttonPrimaryBg,
+                              textColor: context.appColors.buttonPrimaryFg,
                             ),
                           ),
                         ),
@@ -656,7 +655,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
-                            color: context.appColors.textInverse,
+                            color: context.appColors.textPrimary,
                           ),
                         ),
                         backgroundColor: context.appColors.error,
@@ -698,8 +697,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ? _duration.inSeconds.toDouble()
                       : (callDuration ?? 0).toDouble(),
                   activeColor: context.appColors.buttonPrimaryBg,
-                  inactiveColor:
-                      context.appColors.textInverse.withValues(alpha: 0.18),
+                  inactiveColor: context.appColors.borderSubtle,
                   onChanged: (value) async {
                     final newPosition = Duration(seconds: value.toInt());
                     try {
@@ -852,7 +850,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           fontFamily: 'Gilroy',
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: context.appColors.textInverse,
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                       behavior: SnackBarBehavior.floating,
@@ -1496,8 +1494,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       Icon(
                         Icons.info,
                         color: statusColor == const Color(0xffFEE6E6)
-                            ? Colors.red
-                            : Colors.green,
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF16A34A),
                         size: 16,
                       ),
                       const SizedBox(width: 4),
@@ -1508,8 +1506,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
                           color: statusColor == const Color(0xffFEE6E6)
-                              ? Colors.red
-                              : Colors.green,
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF16A34A),
                         ),
                       ),
                     ],

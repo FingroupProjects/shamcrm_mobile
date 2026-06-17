@@ -74,7 +74,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: context.appColors.textInverse.withValues(alpha: 0.96),
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -124,7 +124,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
   Widget _buildTextField() {
     final borderColor = widget.hasError
         ? context.appColors.error
-        : context.appColors.textInverse.withValues(alpha: 0.16);
+        : context.appColors.borderSubtle;
     final borderWidth = widget.hasError ? 2.0 : 1.0;
 
     return Column(
@@ -149,8 +149,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color:
-                        context.appColors.textInverse.withValues(alpha: 0.96),
+                    color: context.appColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!
@@ -159,7 +158,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: context.appColors.textMuted,
+                      color: context.appColors.textSecondary,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -193,10 +192,10 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
             margin: const EdgeInsets.only(top: 4),
             constraints: const BoxConstraints(maxHeight: 400),
             decoration: BoxDecoration(
-              color: context.appColors.surfacePrimary.withValues(alpha: 0.98),
+              color: context.appColors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: context.appColors.textInverse.withValues(alpha: 0.16),
+                color: context.appColors.borderSubtle,
                 width: 1,
               ),
             ),
@@ -213,7 +212,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                           AppLocalizations.of(context)!.translate('search'),
                       prefixIcon: Icon(
                         Icons.search,
-                        color: context.appColors.textMuted,
+                        color: context.appColors.textSecondary,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -222,8 +221,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.16),
+                          color: context.appColors.borderSubtle,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -237,8 +235,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                     ),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
-                      color:
-                          context.appColors.textInverse.withValues(alpha: 0.96),
+                      color: context.appColors.textPrimary,
                     ),
                     onChanged: filterSearchResults,
                   ),
@@ -253,7 +250,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  color: context.appColors.textMuted,
+                                  color: context.appColors.textSecondary,
                                 ),
                               ),
                             )
@@ -268,8 +265,7 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
-                                      color: context.appColors.textInverse
-                                          .withValues(alpha: 0.96),
+                                      color: context.appColors.textPrimary,
                                     ),
                                   ),
                                   onTap: () {

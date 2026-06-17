@@ -26,10 +26,10 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
   late ScrollController _scrollController;
 
   BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.84),
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: context.appColors.textInverse.withValues(alpha: 0.16),
+          color: context.appColors.borderSubtle,
         ),
       );
 
@@ -67,25 +67,6 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
         } else if (state is ContactPersonError) {
           // ScaffoldMessenger.of(context).showSnackBar(
           //   SnackBar(
-          //     content: Text(
-          //       '${state.message}',
-          //       style: TextStyle(
-          //         fontFamily: 'Gilroy',
-          //         fontSize: 16,
-          //         fontWeight: FontWeight.w500,
-          //         color: Colors.white,
-          //       ),
-          //     ),
-          //     behavior: SnackBarBehavior.floating,
-          //     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          //     shape: RoundedRectangleBorder(
-          //       borderRadius: BorderRadius.circular(12),
-          //     ),
-          //     backgroundColor: Colors.red,
-          //     elevation: 3,
-          //     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          //     duration: Duration(seconds: 3),
-          //   ),
           // );
         }
 
@@ -115,7 +96,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       color:
-                          context.appColors.textInverse.withValues(alpha: 0.72),
+                          context.appColors.textSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -168,8 +149,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
-                          color: context.appColors.textInverse
-                              .withValues(alpha: 0.96),
+                        color: context.appColors.textPrimary,
                         ),
                         maxLines: 2,
                       ),
@@ -181,8 +161,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: context.appColors.textInverse
-                                  .withValues(alpha: 0.82),
+                              color: context.appColors.textSecondary,
                             ),
                             maxLines: 1,
                           ),
@@ -195,8 +174,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: context.appColors.textInverse
-                                      .withValues(alpha: 0.96),
+                                  color: context.appColors.textPrimary,
                                   decoration: TextDecoration.underline,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -213,8 +191,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: context.appColors.textInverse
-                                  .withValues(alpha: 0.72),
+                              color: context.appColors.textSecondary,
                             ),
                           ),
                           Expanded(
@@ -224,8 +201,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: context.appColors.textInverse
-                                    .withValues(alpha: 0.96),
+                                color: context.appColors.textPrimary,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -240,8 +216,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: context.appColors.textInverse
-                                  .withValues(alpha: 0.72),
+                              color: context.appColors.textSecondary,
                             ),
                           ),
                           Expanded(
@@ -251,8 +226,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: context.appColors.textInverse
-                                    .withValues(alpha: 0.96),
+                                color: context.appColors.textPrimary,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -336,7 +310,7 @@ class _ContactPersonWidgetState extends State<ContactPersonWidget> {
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w700,
-            color: context.appColors.textInverse.withValues(alpha: 0.96),
+            color: context.appColors.textPrimary,
           ),
         ),
         TextButton(

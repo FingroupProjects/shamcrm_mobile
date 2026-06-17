@@ -185,20 +185,19 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   bool _isConfigurationLoaded = false;
 
   Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.82);
-  Color _screenHintText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
-  Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.16);
+      context.appColors.textSecondary;
+  Color _screenHintText(BuildContext context) => context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) => context.appColors.borderSubtle;
   Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+      context.appColors.surfaceElevated;
   Color _screenSurfaceBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+      context.appColors.surfacePrimary;
   Color _screenSurfaceElevated(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.94);
-  Color _screenAccent(BuildContext context) => context.appColors.buttonPrimaryBg;
+      context.appColors.surfaceElevated;
+  Color _screenAccent(BuildContext context) =>
+      context.appColors.buttonPrimaryBg;
 
   String _getTaskErrorMessage(String error) {
     if (error.toLowerCase().contains('интернет')) {
@@ -397,7 +396,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _statusChangedFromDetails = true;
       });
       _loadFieldConfiguration();
-      context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+      context
+          .read<TaskByIdBloc>()
+          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
       context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
       context.read<CalendarBloc>().add(FetchCalendarEvents(
           widget.initialDate?.month ?? DateTime.now().month,
@@ -442,7 +443,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         _statusChangedFromDetails = true;
       });
       _loadFieldConfiguration();
-      context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: currentTask!.id));
+      context
+          .read<TaskByIdBloc>()
+          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
       context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
       context.read<CalendarBloc>().add(FetchCalendarEvents(
           widget.initialDate?.month ?? DateTime.now().month,
@@ -729,7 +732,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 fontFamily: 'Gilroy',
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: context.appColors.textInverse,
+                color: context.appColors.textPrimary,
               ),
             ),
             backgroundColor: context.appColors.success,
@@ -824,7 +827,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: context.appColors.textInverse,
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -857,7 +860,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     context,
                     '${AppLocalizations.of(context)!.translate('view_task')} №${widget.taskNumber ?? ""}',
                   ),
-                  backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+                  backgroundColor:
+                      context.appColors.overlay.withValues(alpha: 0),
                   body: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -908,7 +912,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
                 return Scaffold(
                   extendBodyBehindAppBar: false,
-                  backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+                  backgroundColor:
+                      context.appColors.overlay.withValues(alpha: 0),
                   appBar: _buildAppBar(
                     context,
                     '${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ""}',
@@ -987,7 +992,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             if (task.chat != null || task.isFinished == 0)
                               Container(
                                 margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 16),
                                 decoration: BoxDecoration(
                                   color: formSurface,
                                   borderRadius: BorderRadius.circular(24),
@@ -1016,7 +1022,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                 BorderRadius.circular(12),
                                           ),
                                           child: Icon(
-                                            Icons.playlist_add_check_circle_rounded,
+                                            Icons
+                                                .playlist_add_check_circle_rounded,
                                             size: 18,
                                             color: _screenAccent(context),
                                           ),
@@ -1039,7 +1046,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                         if (task.chat != null)
                                           Expanded(
                                             key: keyTaskNavigateChat,
-                                            flex: task.isFinished == 1 ? 100 : 55,
+                                            flex:
+                                                task.isFinished == 1 ? 100 : 55,
                                             child: TaskNavigateToChat(
                                               chatId: task.chat!.id,
                                               taskName: widget.taskName,
@@ -1049,7 +1057,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                           ),
                                         if (task.isFinished == 0) ...[
                                           if (task.chat != null)
-                                            const SizedBox(width: 8, height: 56),
+                                            const SizedBox(
+                                                width: 8, height: 56),
                                           Expanded(
                                             key: keyTaskForReview,
                                             flex: task.chat != null ? 45 : 100,
@@ -1060,17 +1069,20 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                                     _showFinishTaskDialog(task),
                                                 style: ElevatedButton.styleFrom(
                                                   elevation: 0,
-                                                  padding: const EdgeInsets.symmetric(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
                                                     horizontal: 14,
                                                     vertical: 12,
                                                   ),
                                                   backgroundColor:
                                                       _screenAccent(context),
                                                   foregroundColor: context
-                                                      .appColors.buttonPrimaryFg,
+                                                      .appColors
+                                                      .buttonPrimaryFg,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(16),
+                                                        BorderRadius.circular(
+                                                            16),
                                                   ),
                                                 ),
                                                 icon: Icon(
@@ -1113,7 +1125,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
               if (state is TaskByIdError) {
                 return Scaffold(
-                  backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+                  backgroundColor:
+                      context.appColors.overlay.withValues(alpha: 0),
                   body: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -1156,8 +1169,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: _screenBorder(context)),
         ),
-        contentPadding:
-            EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         title: Text(
           AppLocalizations.of(context)!.translate('confirm_task_completion'),
           textAlign: TextAlign.center,
@@ -1214,9 +1226,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   content: Text(
                                     AppLocalizations.of(this.context)!
                                         .translate(result['message'] ?? ''),
-                                    style: context.appTextStyles.bodyMd
-                                        .copyWith(
-                                      color: context.appColors.textInverse,
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textPrimary,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -1253,9 +1265,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                   content: Text(
                                     AppLocalizations.of(this.context)!
                                         .translate('error_task_finish'),
-                                    style: context.appTextStyles.bodyMd
-                                        .copyWith(
-                                      color: context.appColors.textInverse,
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textPrimary,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
@@ -1430,14 +1442,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     buildMenuItem(
                       value: 'copy',
                       icon: Icons.content_copy_rounded,
-                      label: AppLocalizations.of(context)!.translate('copy_task'),
+                      label:
+                          AppLocalizations.of(context)!.translate('copy_task'),
                     ),
                   if (_canEditTask ||
                       (_hasTaskCreateForMySelfPermission && _isAuthor))
                     buildMenuItem(
                       value: 'edit',
                       icon: Icons.edit_rounded,
-                      label: AppLocalizations.of(context)!.translate('task_edit'),
+                      label:
+                          AppLocalizations.of(context)!.translate('task_edit'),
                     ),
                   if (_canDeleteTask ||
                       (_hasTaskCreateForMySelfPermission && _isAuthor))
@@ -1633,8 +1647,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   alignment: Alignment.centerLeft,
                   child: IntrinsicWidth(
                     child: Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: _getPriorityBackgroundColor(value),
                         borderRadius: BorderRadius.circular(16),
@@ -1683,7 +1697,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             ?.translate('copied_to_clipboard') ??
                         'Скопировано',
                     style: context.appTextStyles.bodyMd.copyWith(
-                      color: context.appColors.textInverse,
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                   backgroundColor: context.appColors.success,
@@ -1725,8 +1739,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
         String effectiveLabel = label;
         if (fieldName == 'executor' && value.contains(',')) {
-          effectiveLabel =
-              AppLocalizations.of(context)!.translate('assignees');
+          effectiveLabel = AppLocalizations.of(context)!.translate('assignees');
         }
 
         if (fieldName == 'executor' &&
@@ -1804,16 +1817,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Color _getPriorityBackgroundColor(String priority) {
     if (priority == AppLocalizations.of(context)!.translate('urgent')) {
-      return context.appColors.error.withValues(alpha: 0.12);
+      return const Color(0xFFEF4444);
     }
-    return context.appColors.success.withValues(alpha: 0.12);
+    return const Color(0xFF16A34A);
   }
 
   Color _getPriorityColor(String priority) {
     if (priority == AppLocalizations.of(context)!.translate('urgent')) {
-      return context.appColors.error;
+      return Colors.white;
     }
-    return context.appColors.success;
+    return Colors.white;
   }
 
   void _showUsersDialog(String users) {

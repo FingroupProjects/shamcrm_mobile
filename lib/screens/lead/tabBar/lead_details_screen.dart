@@ -234,10 +234,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
       context.appColors.textSecondary;
-  Color _screenHintText(BuildContext context) =>
-      context.appColors.fieldHint;
-  Color _screenBorder(BuildContext context) =>
-      context.appColors.borderSubtle;
+  Color _screenHintText(BuildContext context) => context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) => context.appColors.borderSubtle;
   Color _screenFieldBackground(BuildContext context) =>
       context.appColors.fieldBg;
   Color _screenSurfaceBackground(BuildContext context) =>
@@ -1567,21 +1565,21 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     : _handleAcceptLead,
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: context.appColors.success,
+                  backgroundColor: context.appColors.buttonPrimaryBg,
                   disabledBackgroundColor:
-                      context.appColors.success.withValues(alpha: 0.45),
+                      context.appColors.buttonPrimaryBg.withValues(alpha: 0.45),
                   foregroundColor: context.appColors.textInverse,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isAcceptingLead
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: context.appColors.textInverse,
                         ),
                       )
                     : Text(
@@ -1603,27 +1601,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     : _handleDeclineLead,
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: context.appColors.error,
+                  backgroundColor: context.appColors.buttonDangerBg,
                   disabledBackgroundColor:
-                      context.appColors.error.withValues(alpha: 0.45),
-                  foregroundColor: context.appColors.textInverse,
+                      context.appColors.buttonDangerBg.withValues(alpha: 0.45),
+                  foregroundColor: context.appColors.buttonDangerFg,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isRejectingLead
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: context.appColors.buttonDangerFg,
                         ),
                       )
                     : Text(
                         'Отказать',
                         style: context.appTextStyles.labelMd.copyWith(
-                          color: context.appColors.textInverse,
+                          color: context.appColors.buttonDangerFg,
                         ),
                       ),
               ),
@@ -1776,20 +1774,20 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       Flexible(
                         child: Text(
                           value,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: context.appColors.textInverse,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: Colors.white,
+                        color: context.appColors.textInverse,
                         size: 16,
                       ),
                     ],
@@ -2024,10 +2022,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             },
             child: Text(
               value,
-                style: context.appTextStyles.bodyMd.copyWith(
-                  color: _screenPrimaryText(context),
-                  decoration: TextDecoration.underline,
-                ),
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: _screenPrimaryText(context),
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
         ],
@@ -2089,8 +2087,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               children: [
                 Icon(
                   Icons.person_add_alt_1,
-              color: context.appColors.textInverse,
-              size: 18,
+                  color: context.appColors.textInverse,
+                  size: 18,
                 ),
                 SizedBox(width: 6),
                 Text(

@@ -190,7 +190,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: hasError ? colors.error : colors.borderSubtle,
+                width: 1,
+              ),
             ),
             filled: true,
             fillColor: widget.backgroundColor ?? colors.fieldBg,
@@ -210,7 +213,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide(
                 color: hasError
                     ? colors.error
-                    : (widget.borderColor ?? Colors.transparent),
+                    : (widget.borderColor ?? colors.borderSubtle),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -273,7 +276,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
           height: 24,
           color: context.appColors.textSecondary,
         ),
-        onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+        onPressed: () =>
+            setState(() => _isPasswordVisible = !_isPasswordVisible),
       );
     } else {
       return widget.suffixIcon;

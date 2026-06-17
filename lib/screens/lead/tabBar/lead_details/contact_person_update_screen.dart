@@ -38,15 +38,15 @@ class _ContactPersonUpdateScreenState extends State<ContactPersonUpdateScreen> {
   bool _isPhoneEdited = false;
 
   Color _screenPrimaryText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.96);
+      context.appColors.textPrimary;
   Color _screenHintText(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.58);
+      context.appColors.fieldHint;
   Color _screenBorder(BuildContext context) =>
-      context.appColors.textInverse.withValues(alpha: 0.16);
+      context.appColors.borderSubtle;
   Color _screenFieldBackground(BuildContext context) =>
-      context.appColors.surfaceElevated.withValues(alpha: 0.96);
+      context.appColors.fieldBg;
   Color _screenSurfaceBackground(BuildContext context) =>
-      context.appColors.surfacePrimary.withValues(alpha: 0.84);
+      context.appColors.surfacePrimary;
 
   @override
   void initState() {
