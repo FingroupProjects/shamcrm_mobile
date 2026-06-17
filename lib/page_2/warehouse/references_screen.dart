@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/warehouse/openings/openings_screen.dart'
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_creen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -102,7 +103,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   }
 
   void _initializeReferences() {
-    final Color refColor = const Color(0xff1E2E52);
+    final colors = context.appColors;
+    final Color refColor = colors.buttonPrimaryBg;
     List<ReferenceItem> allReferences = [];
 
     // Добавляем справочники только если есть соответствующее право
@@ -330,6 +332,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   }
 
   Widget _buildReferenceCard(ReferenceItem reference) {
+    final colors = context.appColors;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -338,17 +342,17 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         child: Container(
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: colors.shadow.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
             ],
             border: Border.all(
-              color: const Color(0xffE5E9F2),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
@@ -362,7 +366,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: reference.color.withOpacity(0.1),
+                    color: reference.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -380,11 +384,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -462,6 +466,8 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   }
 
   Widget _buildNoPermissionsWidget() {
+    final colors = context.appColors;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -477,11 +483,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             Text(
               AppLocalizations.of(context)!.translate('no_permissions') ??
                   'Нет доступа',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -490,11 +496,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
                       .translate('no_permissions_description') ??
                   'У вас нет прав доступа к справочникам. Обратитесь к администратору.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
             ),
           ],
@@ -506,6 +512,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Scaffold(
       appBar: AppBar(
@@ -542,7 +549,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
               : _references.isEmpty
                   ? _buildNoPermissionsWidget()
                   : Container(
-                      color: const Color(0xffF8F9FB),
+                      color: colors.surfacePrimary,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

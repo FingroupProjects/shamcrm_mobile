@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
@@ -153,7 +154,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   void _initializeDocuments() {
-    final Color docColor = const Color(0xff1E2E52);
+    final colors = context.appColors;
+    final Color docColor = colors.buttonPrimaryBg;
     List<WarehouseDocument> allDocuments = [];
 
     // Добавляем заказы первыми
@@ -470,6 +472,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   Widget _buildDocumentCard(WarehouseDocument document) {
+    final colors = context.appColors;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -477,17 +481,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         onTap: () => _navigateToDocument(document),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: colors.shadow.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
             ],
             border: Border.all(
-              color: const Color(0xffE5E9F2),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
@@ -517,11 +521,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       height: 1.1,
                     ),
                   ),
@@ -535,6 +539,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   Widget _buildNoPermissionsWidget() {
+    final colors = context.appColors;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -550,11 +556,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             Text(
               AppLocalizations.of(context)!.translate('no_permissions') ??
                   'Нет доступа',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -563,11 +569,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                       .translate('no_permissions_description') ??
                   'У вас нет прав доступа к данному разделу. Обратитесь к администратору.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
             ),
           ],
@@ -650,6 +656,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   }
 
   Widget _buildReferencesButton() {
+    final colors = context.appColors;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -659,17 +667,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           width: double.infinity,
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: colors.shadow.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
             ],
             border: Border.all(
-              color: const Color(0xffE5E9F2),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
@@ -680,31 +688,31 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xff1E2E52).withOpacity(0.1),
+                  color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.library_books_outlined,
                   size: 28,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
               const SizedBox(width: 16),
               Text(
                 AppLocalizations.of(context)!.translate('references') ??
                     'Справочники',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const Spacer(),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
               const SizedBox(width: 20),
             ],
