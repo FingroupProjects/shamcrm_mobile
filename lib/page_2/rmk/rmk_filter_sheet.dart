@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/offline/db/app_database.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 Future<int?> showRmkFilterSheet({
@@ -66,13 +67,14 @@ class _RmkFilterContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final nodes = _flattenCategories();
 
     return SafeArea(
       child: Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -124,31 +126,32 @@ class _FilterHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: const Color(0xFFE5E7EB).withValues(alpha: 0.5),
+            color: colors.borderSubtle.withValues(alpha: 0.5),
           ),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
               'Фильтр',
               style: TextStyle(
                 fontSize: 18,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Color(0xff99A4BA)),
+            icon: Icon(Icons.close, color: colors.textSecondary),
             onPressed: onClose,
           ),
         ],
@@ -187,6 +190,7 @@ class _FilterCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final leftPadding = 16.0 + (level * 24.0);
+    final colors = context.appColors;
 
     return GestureDetector(
       onTap: onTap,
@@ -196,12 +200,12 @@ class _FilterCategoryCard extends StatelessWidget {
           left: level > 0 ? leftPadding - 16 : 0,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF4F7FD) : Colors.white,
+          color: isSelected ? colors.surfaceElevated : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: level > 0
-                ? const Color(0xFFE5E7EB).withValues(alpha: 0.7)
-                : const Color(0xFFE5E7EB),
+                ? colors.borderSubtle.withValues(alpha: 0.7)
+                : colors.borderSubtle,
             width: 1,
           ),
         ),
@@ -214,7 +218,7 @@ class _FilterCategoryCard extends StatelessWidget {
                   width: 3,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xff4759FF).withValues(alpha: 0.3),
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -224,12 +228,12 @@ class _FilterCategoryCard extends StatelessWidget {
                 width: level > 0 ? 40 : 50,
                 height: level > 0 ? 40 : 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                   size: level > 0 ? 20 : 28,
                 ),
               ),
@@ -241,22 +245,22 @@ class _FilterCategoryCard extends StatelessWidget {
                     fontSize: level > 0 ? 14 : 16,
                     fontFamily: 'Gilroy',
                     fontWeight: level > 0 ? FontWeight.w500 : FontWeight.w600,
-                    color: const Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (isSelected)
-                const Icon(
+                Icon(
                   Icons.check_rounded,
-                  color: Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                   size: 22,
                 )
               else if (showArrow)
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                   size: 18,
                 ),
             ],

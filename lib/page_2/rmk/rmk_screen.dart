@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/rmk/rmk_product_card.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -164,6 +165,7 @@ class _RmkScreenState extends State<RmkScreen> {
   }
 
   Future<void> _openStoragePicker() async {
+    final colors = context.appColors;
     if (_storages.isEmpty) {
       await _loadStoragesAndSync();
       return;
@@ -171,7 +173,7 @@ class _RmkScreenState extends State<RmkScreen> {
 
     final selected = await showModalBottomSheet<WareHouse>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -269,9 +271,10 @@ class _RmkScreenState extends State<RmkScreen> {
   }
 
   Future<void> _openMainFilter() async {
+    final colors = context.appColors;
     final action = await showModalBottomSheet<_RmkFilterAction>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -286,17 +289,17 @@ class _RmkScreenState extends State<RmkScreen> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xffD7DEE9),
+                    color: colors.borderSubtle,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Фильтр',
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -630,40 +633,70 @@ class _RmkScreenState extends State<RmkScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FB),
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
-        titleSpacing: 16,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        leadingWidth: 74,
+        titleSpacing: 8,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+          child: Material(
+            color: colors.surfaceElevated,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+              highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.05),
+              onTap: () => Navigator.of(context).maybePop(),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: context.adaptiveForegroundOn(
+                    colors.surfaceElevated,
+                    lightColor: colors.iconPrimary,
+                    darkColor: colors.buttonPrimaryFg,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         title: _isSearching
             ? _AppBarSearchField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
                 onChanged: _onSearchChanged,
               )
-            : const Text(
-                'РМК',
-                style: TextStyle(
-                  color: Color(0xff1E2E52),
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 20,
+            : _AppBarTitleShell(
+                title: 'РМК',
+                textColor: context.adaptiveForegroundOn(
+                  colors.surfaceElevated,
+                  lightColor: colors.textPrimary,
+                  darkColor: colors.buttonPrimaryFg,
                 ),
               ),
         actions: _isSearching
             ? [
-                IconButton(
+                _AppBarActionButton(
                   tooltip: 'Закрыть поиск',
-                  style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
-                  ),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
-                    color: Color(0xff1E2E52),
+                    color: context.adaptiveForegroundOn(
+                      colors.surfacePrimary,
+                      lightColor: colors.iconPrimary,
+                      darkColor: colors.buttonPrimaryFg,
+                    ),
                     size: 24,
                   ),
                   onPressed: _toggleSearch,
@@ -671,45 +704,45 @@ class _RmkScreenState extends State<RmkScreen> {
                 const SizedBox(width: 6),
               ]
             : [
-                IconButton(
+                _AppBarActionButton(
                   tooltip: 'Поиск',
-                  style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
-                  ),
                   icon: Image.asset(
                     'assets/icons/AppBar/search.png',
                     width: 24,
                     height: 24,
+                    color: context.adaptiveForegroundOn(
+                      colors.surfacePrimary,
+                      lightColor: colors.iconPrimary,
+                      darkColor: colors.buttonPrimaryFg,
+                    ),
                   ),
                   onPressed: _toggleSearch,
                 ),
-                IconButton(
+                _AppBarActionButton(
                   tooltip: 'Фильтр',
-                  style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
-                  ),
                   icon: Image.asset(
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
+                    color: context.adaptiveForegroundOn(
+                      colors.surfacePrimary,
+                      lightColor: colors.iconPrimary,
+                      darkColor: colors.buttonPrimaryFg,
+                    ),
                   ),
                   onPressed: _openMainFilter,
                 ),
-                IconButton(
+                _AppBarActionButton(
                   tooltip: 'Сканер',
-                  style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
-                  ),
                   icon: Image.asset(
                     'assets/icons/AppBar/scanner.png',
                     width: 24,
                     height: 24,
+                    color: context.adaptiveForegroundOn(
+                      colors.surfacePrimary,
+                      lightColor: colors.iconPrimary,
+                      darkColor: colors.buttonPrimaryFg,
+                    ),
                   ),
                   onPressed: _scanBarcode,
                 ),
@@ -738,7 +771,7 @@ class _RmkScreenState extends State<RmkScreen> {
               return Column(
                 children: [
                   Container(
-                    color: const Color(0xffF8F9FB),
+                    color: colors.surfacePrimary,
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                     child: Column(
                       children: [
@@ -763,8 +796,8 @@ class _RmkScreenState extends State<RmkScreen> {
                   ),
                   Expanded(
                     child: RefreshIndicator(
-                      color: const Color(0xff1E2E52),
-                      backgroundColor: Colors.white,
+                      color: colors.textPrimary,
+                      backgroundColor: colors.surfacePrimary,
                       onRefresh: _handlePullRefresh,
                       child: CustomScrollView(
                         controller: _scrollController,
@@ -804,8 +837,8 @@ class _RmkScreenState extends State<RmkScreen> {
                                             ? _emptyCatalogMessage()
                                             : 'Загрузка каталога...',
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xff718096),
+                                        style: TextStyle(
+                                          color: colors.textSecondary,
                                           fontFamily: 'Gilroy',
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -907,24 +940,25 @@ class _StoragePickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Material(
-        color: isSelected ? const Color(0xffF4F7FD) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: isSelected ? colors.surfaceElevated : colors.surfacePrimary,
+        borderRadius: BorderRadius.circular(999),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          splashColor: const Color(0xff1E2E52).withValues(alpha: 0.05),
-          highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(999),
+          splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+          highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.05),
           onTap: onTap,
           child: Container(
             constraints: const BoxConstraints(minHeight: 46),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.warehouse_outlined,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
@@ -934,7 +968,7 @@ class _StoragePickerTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: const Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 14,
                       fontWeight:
@@ -943,9 +977,9 @@ class _StoragePickerTile extends StatelessWidget {
                   ),
                 ),
                 if (isSelected)
-                  const Icon(
+                  Icon(
                     Icons.check_rounded,
-                    color: Color(0xff1E2E52),
+                    color: colors.buttonPrimaryBg,
                     size: 20,
                   ),
               ],
@@ -978,18 +1012,19 @@ class _RmkFilterOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA);
+    final colors = context.appColors;
+    final color = isActive ? colors.buttonPrimaryBg : colors.textSecondary;
     return Material(
-      color: const Color(0xffF4F7FD),
-      borderRadius: BorderRadius.circular(12),
+      color: colors.surfaceElevated,
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        splashColor: const Color(0xff1E2E52).withValues(alpha: 0.06),
-        highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(999),
+        splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.05),
         onTap: isLoading ? null : onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 54),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
               if (isLoading)
@@ -1011,8 +1046,8 @@ class _RmkFilterOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xff718096),
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1023,8 +1058,8 @@ class _RmkFilterOptionTile extends StatelessWidget {
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontFamily: 'Gilroy',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1033,9 +1068,9 @@ class _RmkFilterOptionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_right_rounded,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
                 size: 22,
               ),
             ],
@@ -1065,6 +1100,7 @@ class _DoneButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final isEnabled = count > 0 && !isLoading;
     return Row(
       children: [
@@ -1073,23 +1109,24 @@ class _DoneButton extends StatelessWidget {
             height: 52,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isEnabled
-                    ? const Color(0xff1E2E52)
-                    : const Color(0xffCBD5E0),
-                foregroundColor: Colors.white,
+                backgroundColor:
+                    isEnabled ? colors.buttonPrimaryBg : colors.borderSubtle,
+                foregroundColor: colors.buttonPrimaryFg,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
               onPressed: isEnabled ? onTap : null,
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colors.buttonPrimaryFg,
+                        ),
                       ),
                     )
                   : Text(
@@ -1112,16 +1149,14 @@ class _DoneButton extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  isEnabled ? Colors.white : const Color(0xffE2E8F0),
-              foregroundColor: const Color(0xff1E2E52),
+                  isEnabled ? colors.surfacePrimary : colors.borderSubtle,
+              foregroundColor: colors.buttonPrimaryBg,
               elevation: 0,
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(999),
                 side: BorderSide(
-                  color: isEnabled
-                      ? const Color(0xffD9E2F1)
-                      : const Color(0xffE2E8F0),
+                  color: isEnabled ? colors.borderSubtle : colors.borderSubtle,
                 ),
               ),
             ),
@@ -1133,9 +1168,8 @@ class _DoneButton extends StatelessWidget {
                 Icon(
                   Icons.receipt_long_rounded,
                   size: 22,
-                  color: isEnabled
-                      ? const Color(0xff1E2E52)
-                      : const Color(0xff99A4BA),
+                  color:
+                      isEnabled ? colors.buttonPrimaryBg : colors.textSecondary,
                 ),
                 if (count > 0)
                   Positioned(
@@ -1148,7 +1182,7 @@ class _DoneButton extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xff1E2E52),
+                        color: colors.buttonPrimaryBg,
                         borderRadius: BorderRadius.circular(999),
                       ),
                       alignment: Alignment.center,
@@ -1196,11 +1230,11 @@ class _CategoryStatusBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final item = items[index];
           final isSelected = item.id == selectedCategoryId;
@@ -1228,22 +1262,21 @@ class _CategoryStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Material(
-      color: isSelected ? const Color(0xff1E2E52) : Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      color: isSelected ? colors.buttonPrimaryBg : colors.surfacePrimary,
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        splashColor: const Color(0xff1E2E52).withValues(alpha: 0.08),
-        highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(999),
+        splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.04),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xff1E2E52)
-                  : const Color(0xffD9E2F1),
+              color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
             ),
           ),
           child: Center(
@@ -1252,7 +1285,7 @@ class _CategoryStatusChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xff1E2E52),
+                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -1276,9 +1309,10 @@ class _RmkSelectedCartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final total = item.customTotal ?? item.quantity * item.price;
     return Material(
-      color: Colors.white,
+      color: colors.surfacePrimary,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -1286,9 +1320,9 @@ class _RmkSelectedCartCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xffE7EDF6)),
+            border: Border.all(color: colors.borderSubtle),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1303,8 +1337,8 @@ class _RmkSelectedCartCard extends StatelessWidget {
                       item.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontFamily: 'Gilroy',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1333,10 +1367,10 @@ class _RmkSelectedCartCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
+                  Text(
                     'Сумма',
                     style: TextStyle(
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                       fontFamily: 'Gilroy',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1345,8 +1379,8 @@ class _RmkSelectedCartCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _formatMoney(total),
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -1415,11 +1449,12 @@ class _RmkMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
-        borderRadius: BorderRadius.circular(12),
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: RichText(
         text: TextSpan(
@@ -1462,6 +1497,7 @@ class _AppBarSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return SizedBox(
       height: 42,
       child: TextSelectionTheme(
@@ -1501,17 +1537,89 @@ class _AppBarSearchField extends StatelessWidget {
               minHeight: 42,
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
+            fillColor: colors.surfaceElevated,
             contentPadding: EdgeInsets.zero,
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+              borderRadius: BorderRadius.circular(999),
+              borderSide: BorderSide(color: colors.borderSubtle),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+              borderRadius: BorderRadius.circular(999),
+              borderSide: BorderSide(color: colors.buttonPrimaryBg),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppBarActionButton extends StatelessWidget {
+  const _AppBarActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final Widget icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: colors.surfaceElevated,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+            highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.05),
+            onTap: onPressed,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(child: icon),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppBarTitleShell extends StatelessWidget {
+  const _AppBarTitleShell({
+    required this.title,
+    required this.textColor,
+  });
+
+  final String title;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: colors.borderSubtle),
+      ),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: TextStyle(
+          color: textColor,
+          fontFamily: 'Gilroy',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
