@@ -375,7 +375,7 @@ class _IncomingDocumentDetailsScreenState
           color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
@@ -447,7 +447,7 @@ class _IncomingDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -462,7 +462,7 @@ class _IncomingDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',

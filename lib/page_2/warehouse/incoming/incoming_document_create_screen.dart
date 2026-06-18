@@ -584,7 +584,7 @@ class _IncomingDocumentCreateScreenState
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -1037,7 +1037,7 @@ class _IncomingDocumentCreateScreenState
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
