@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.118+146
+version: 2.1.119+149
 
 
 environment:
@@ -27,8 +27,7 @@ dependencies:
   share_plus: ^10.1.4
   dropdown_search: ^6.0.2
   dart_pusher_channels: ^1.2.3
-  social_media_recorder:
-    path: third_party/social_media_recorder
+  social_media_recorder: ^1.2.1
   fl_chart: ^0.69.0
   firebase_core: ^3.6.0
   firebase_messaging: ^15.2.9
@@ -40,7 +39,6 @@ dependencies:
   just_audio: ^0.9.18
   audioplayers: ^6.1.0
   file_picker: ^10.3.3
-  flutter_image_compress: ^2.4.0
   voice_message_package:
     git:
       url: https://github.com/noolfj/voice_message_playerCustom.git
@@ -60,6 +58,9 @@ dependencies:
   vibration: ^2.0.1
   device_info_plus: ^11.1.1
   image_picker: ^1.2.0
+  flutter_image_compress: ^2.4.0
+  photo_manager: ^3.7.1
+  video_thumbnail: ^0.5.6
   app_tracking_transparency: ^2.0.6+1
   url_launcher: ^6.3.1
   flutter_localization: ^0.3.1
@@ -79,9 +80,7 @@ dependencies:
   package_info_plus: ^8.1.1
   provider: ^6.1.5
   path: ^1.9.1
-  photo_manager: ^3.7.1
   sqlite3_flutter_libs: ^0.5.39
-  video_thumbnail: ^0.5.6
 
   flutter_html: ^3.0.0
   html: ^0.15.6
@@ -103,7 +102,6 @@ dependencies:
   android_intent_plus: ^6.0.0
   firebase_crashlytics: ^4.3.10
   firebase_analytics: ^11.6.0
-  flex_color_picker: ^3.8.0
   # home_widget: ^0.8.1
 
 
@@ -152,7 +150,6 @@ flutter:
     - assets/icons/
     - assets/icons/shamCRM.jpg
     - assets/images/
-    - assets/fon/
     - assets/images/avatar2.png
     - assets/icons/languages/
     - assets/langs/
@@ -181,7 +178,6 @@ flutter:
     - assets/audio/voice_operator.mp3
     - assets/icons/MyNavBar/money_ON.png
     - assets/icons/sip/
-    - assets/icons/files/add_for_dark.png
 
   fonts:
     - family: Gilroy

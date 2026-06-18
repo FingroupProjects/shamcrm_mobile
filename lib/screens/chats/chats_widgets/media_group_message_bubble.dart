@@ -1,14 +1,15 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
 
 class MediaGroupMessageBubble extends StatefulWidget {
   final List<Message> messages;
@@ -57,30 +58,54 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
     try {
       final staticBaseUrl = await _apiService.getStaticBaseUrl();
       if (!mounted) return;
-      setState(() => _baseUrl = staticBaseUrl);
+      setState(() {
+        _baseUrl = staticBaseUrl;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _baseUrl = 'https://info1fingrouptj-back.shamcrm.com');
+      setState(() {
+        _baseUrl = 'https://info1fingrouptj-back.shamcrm.com';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final messages = widget.messages;
-    if (messages.isEmpty) return const SizedBox.shrink();
+    final firstMessage = widget.messages.first;
+    final items =
+        firstMessage.type == 'media_group' && firstMessage.mediaItems.isNotEmpty
+            ? firstMessage.mediaItems
+            : widget.messages
+                .map(
+                  (message) => MessageMediaItem(
+                    path: message.filePath ?? '',
+                    name: message.text,
+                    isImage: message.type == 'image',
+                    isVideo: message.type == 'video',
+                  ),
+                )
+                .where((item) => item.path.isNotEmpty)
+                .toList();
+
+    final isUploading = widget.messages.any((message) => message.isUploading);
+    final viewerImagePaths = items
+        .where((item) => item.isImage && item.path.isNotEmpty)
+        .map((item) => _buildImageUrl(item.path, _baseUrl))
+        .whereType<String>()
+        .toList();
 
     return DecoratedBox(
       decoration: BoxDecoration(
         boxShadow: widget.isHighlighted
             ? [
                 BoxShadow(
-                  color: context.appColors.shadow.withValues(alpha: 0.15),
-                  blurRadius: 10,
+                  color: context.appColors.shadow.withValues(alpha: 0.18),
+                  blurRadius: 6,
                   spreadRadius: 1,
-                  offset: const Offset(0, 1),
+                  offset: const Offset(0, -2),
                 ),
               ]
-            : const [],
+            : [],
       ),
       child: Align(
         alignment:
@@ -98,7 +123,7 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   widget.senderName,
-                  style: context.appTextStyles.bodySm.copyWith(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: widget.isSender
                         ? context.appColors.textSecondary
@@ -107,10 +132,12 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
                 ),
               ),
             _MediaCollage(
-              messages: messages,
+              items: items,
+              viewerImagePaths: viewerImagePaths,
               time: widget.time,
               isSender: widget.isSender,
               isRead: widget.isRead,
+              isUploading: isUploading,
               isMenuOpen: widget.isMenuOpen,
               baseUrl: _baseUrl,
               senderName: widget.senderName,
@@ -139,31 +166,41 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
 }
 
 class _MediaCollage extends StatelessWidget {
-  static const double _spacing = 2;
-  static const double _maxWidth = 290;
-
-  final List<Message> messages;
+  final List<MessageMediaItem> items;
+  final List<String> viewerImagePaths;
   final String time;
   final bool isSender;
   final bool isRead;
+  final bool isUploading;
   final bool isMenuOpen;
   final String? baseUrl;
   final String senderName;
 
   const _MediaCollage({
-    required this.messages,
+    required this.items,
+    required this.viewerImagePaths,
     required this.time,
     required this.isSender,
     required this.isRead,
+    required this.isUploading,
     required this.isMenuOpen,
     required this.baseUrl,
     required this.senderName,
   });
 
+  static const double _spacing = 2;
+  static const double _maxWidth = 290;
+  static const double _singleHeight = 320;
+  static const double _doubleHeight = 196;
+  static const double _tripleHeight = 248;
+  static const double _quadHeight = 248;
+  static const double _manyHeight = 286;
+
   @override
   Widget build(BuildContext context) {
-    final items = _buildItems();
-    if (items.isEmpty) return const SizedBox.shrink();
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return SizedBox(
       width: _maxWidth,
@@ -171,7 +208,10 @@ class _MediaCollage extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Stack(
           children: [
-            _layout(context, items),
+            DecoratedBox(
+              decoration: const BoxDecoration(color: Colors.transparent),
+              child: _buildLayout(context),
+            ),
             Positioned(
               right: 8,
               bottom: 8,
@@ -179,7 +219,7 @@ class _MediaCollage extends StatelessWidget {
                 time: time,
                 isSender: isSender,
                 isRead: isRead,
-                isUploading: messages.any((message) => message.isUploading),
+                isUploading: isUploading,
               ),
             ),
           ],
@@ -188,158 +228,175 @@ class _MediaCollage extends StatelessWidget {
     );
   }
 
-  List<_MediaTileData> _buildItems() {
-    final built = <_MediaTileData>[];
-    for (final message in messages) {
-      if (message.type == 'media_group' && message.mediaItems.isNotEmpty) {
-        for (final item in message.mediaItems) {
-          built.add(
-            _MediaTileData(
-              path: item.path,
-              name: item.name,
-              isImage: item.isImage,
-              isVideo: item.isVideo,
-              uploadProgress: item.uploadProgress,
-              isUploading: message.isUploading,
-            ),
-          );
-        }
-        continue;
-      }
-
-      final path = message.filePath ?? '';
-      if (path.isEmpty) continue;
-      built.add(
-        _MediaTileData(
-          path: path,
-          name: message.text.isEmpty ? path.split('/').last : message.text,
-          isImage: message.type == 'image',
-          isVideo: message.type == 'video',
-          uploadProgress: message.isUploading ? 0 : 1,
-          isUploading: message.isUploading,
-        ),
-      );
-    }
-    return built.take(10).toList();
-  }
-
-  Widget _layout(BuildContext context, List<_MediaTileData> items) {
-    if (items.length == 1) {
-      return _tile(context, items[0], height: 320);
-    }
-    if (items.length == 2) {
-      return SizedBox(
-        height: 196,
-        child: Row(
-          children: [
-            Expanded(child: _tile(context, items[0], height: 196)),
-            const SizedBox(width: _spacing),
-            Expanded(child: _tile(context, items[1], height: 196)),
-          ],
-        ),
-      );
-    }
-    if (items.length == 3) {
-      return SizedBox(
-        height: 248,
-        child: Row(
-          children: [
-            Expanded(
-              flex: 13,
-              child: _tile(context, items[0], height: 248),
-            ),
-            const SizedBox(width: _spacing),
-            Expanded(
-              flex: 9,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: _tile(context, items[1], height: 123),
-                  ),
-                  const SizedBox(height: _spacing),
-                  Expanded(
-                    child: _tile(context, items[2], height: 123),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    if (items.length == 4) {
-      return SizedBox(
-        height: 248,
-        child: Column(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(child: _tile(context, items[0], height: 123)),
-                  const SizedBox(width: _spacing),
-                  Expanded(child: _tile(context, items[1], height: 123)),
-                ],
-              ),
-            ),
-            const SizedBox(height: _spacing),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(child: _tile(context, items[2], height: 123)),
-                  const SizedBox(width: _spacing),
-                  Expanded(child: _tile(context, items[3], height: 123)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final visible = items.take(5).toList();
-    final hiddenCount = items.length - visible.length;
-    return SizedBox(
-      height: 286,
-      child: Column(
-        children: [
-          Expanded(
-            flex: 11,
-            child: Row(
-              children: [
-                Expanded(child: _tile(context, visible[0], height: 124)),
-                const SizedBox(width: _spacing),
-                Expanded(child: _tile(context, visible[1], height: 124)),
-              ],
-            ),
+  Widget _buildLayout(BuildContext context) {
+    switch (items.length) {
+      case 1:
+      return _tile(context, items[0], height: _singleHeight);
+      case 2:
+        return SizedBox(
+          height: _doubleHeight,
+          child: Row(
+            children: [
+              Expanded(child: _tile(context, items[0], height: _doubleHeight)),
+              const SizedBox(width: _spacing),
+              Expanded(child: _tile(context, items[1], height: _doubleHeight)),
+            ],
           ),
-          const SizedBox(height: _spacing),
-          Expanded(
-            flex: 13,
-            child: Row(
-              children: [
-                Expanded(child: _tile(context, visible[2], height: 160)),
-                const SizedBox(width: _spacing),
-                Expanded(child: _tile(context, visible[3], height: 160)),
-                const SizedBox(width: _spacing),
-                Expanded(
-                  child: _tile(
-                    context,
-                    visible[4],
-                    height: 160,
-                    extraCount: hiddenCount > 0 ? hiddenCount : 0,
-                  ),
+        );
+      case 3:
+        return SizedBox(
+          height: _tripleHeight,
+          child: Row(
+            children: [
+              Expanded(
+                flex: 13,
+                child: _tile(context, items[0], height: _tripleHeight),
+              ),
+              const SizedBox(width: _spacing),
+              Expanded(
+                flex: 9,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[1],
+                        height: (_tripleHeight - _spacing) / 2,
+                      ),
+                    ),
+                    const SizedBox(height: _spacing),
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[2],
+                        height: (_tripleHeight - _spacing) / 2,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      case 4:
+        return SizedBox(
+          height: _quadHeight,
+          child: Column(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[0],
+                        height: (_quadHeight - _spacing) / 2,
+                      ),
+                    ),
+                    const SizedBox(width: _spacing),
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[1],
+                        height: (_quadHeight - _spacing) / 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: _spacing),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[2],
+                        height: (_quadHeight - _spacing) / 2,
+                      ),
+                    ),
+                    const SizedBox(width: _spacing),
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[3],
+                        height: (_quadHeight - _spacing) / 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      default:
+        return SizedBox(
+          height: _manyHeight,
+          child: Column(
+            children: [
+              Expanded(
+                flex: 11,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[0],
+                        height: 124,
+                      ),
+                    ),
+                    const SizedBox(width: _spacing),
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[1],
+                        height: 124,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: _spacing),
+              Expanded(
+                flex: 13,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[2],
+                        height: 160,
+                      ),
+                    ),
+                    const SizedBox(width: _spacing),
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[3],
+                        height: 160,
+                      ),
+                    ),
+                    const SizedBox(width: _spacing),
+                    Expanded(
+                      child: _tile(
+                        context,
+                        items[4],
+                        height: 160,
+                        extraCount: items.length > 5 ? items.length - 5 : 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+    }
   }
 
   Widget _tile(
     BuildContext context,
-    _MediaTileData item, {
+    MessageMediaItem item, {
     required double height,
     int extraCount = 0,
   }) {
@@ -347,8 +404,10 @@ class _MediaCollage extends StatelessWidget {
       item: item,
       height: height,
       extraCount: extraCount,
+      viewerImagePaths: viewerImagePaths,
       baseUrl: baseUrl,
       isMenuOpen: isMenuOpen,
+      isUploading: isUploading,
       time: time,
       senderName: senderName,
       isSender: isSender,
@@ -356,30 +415,14 @@ class _MediaCollage extends StatelessWidget {
   }
 }
 
-class _MediaTileData {
-  final String path;
-  final String name;
-  final bool isImage;
-  final bool isVideo;
-  final double uploadProgress;
-  final bool isUploading;
-
-  const _MediaTileData({
-    required this.path,
-    required this.name,
-    required this.isImage,
-    required this.isVideo,
-    required this.uploadProgress,
-    required this.isUploading,
-  });
-}
-
 class _MediaTile extends StatelessWidget {
-  final _MediaTileData item;
+  final MessageMediaItem item;
   final double height;
   final int extraCount;
+  final List<String> viewerImagePaths;
   final String? baseUrl;
   final bool isMenuOpen;
+  final bool isUploading;
   final String time;
   final String senderName;
   final bool isSender;
@@ -388,8 +431,10 @@ class _MediaTile extends StatelessWidget {
     required this.item,
     required this.height,
     required this.extraCount,
+    required this.viewerImagePaths,
     required this.baseUrl,
     required this.isMenuOpen,
+    required this.isUploading,
     required this.time,
     required this.senderName,
     required this.isSender,
@@ -399,28 +444,52 @@ class _MediaTile extends StatelessWidget {
       item.path.startsWith('/') || item.path.startsWith('file:');
 
   String? _buildRemoteUrl() {
-    if (baseUrl == null || item.path.isEmpty) return null;
+    if (baseUrl == null) return null;
     final normalizedPath = item.path.startsWith('storage/')
         ? item.path
         : 'storage/${item.path.startsWith('/') ? item.path.substring(1) : item.path}';
     return Uri.parse(baseUrl!).resolve(normalizedPath).toString();
   }
 
+  int _resolveInitialIndex(String? remoteUrl) {
+    if (remoteUrl == null || viewerImagePaths.isEmpty) {
+      return 0;
+    }
+
+    final exactMatchIndex =
+        viewerImagePaths.indexWhere((path) => path == remoteUrl);
+    if (exactMatchIndex >= 0) {
+      return exactMatchIndex;
+    }
+
+    final normalizedRemoteUrl = Uri.tryParse(remoteUrl)?.toString();
+    if (normalizedRemoteUrl == null) {
+      return 0;
+    }
+
+    final fallbackIndex = viewerImagePaths.indexWhere((path) {
+      final parsedPath = Uri.tryParse(path)?.toString();
+      return parsedPath == normalizedRemoteUrl || path.contains(remoteUrl);
+    });
+
+    return fallbackIndex >= 0 ? fallbackIndex : 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final remoteUrl = _buildRemoteUrl();
-    final viewableImagePath = _isLocalFile ? item.path : remoteUrl;
-    final colors = context.appColors;
-    final textStyles = context.appTextStyles;
+    final initialIndex = _resolveInitialIndex(remoteUrl);
 
     return GestureDetector(
-      onTap: item.isImage && !isMenuOpen && viewableImagePath != null
+      onTap: item.isImage && !isMenuOpen && remoteUrl != null
           ? () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FullImageScreenViewer(
-                    imagePath: viewableImagePath,
+                      builder: (context) => FullImageScreenViewer(
+                    imagePaths:
+                        viewerImagePaths.isNotEmpty ? viewerImagePaths : [remoteUrl],
+                    initialIndex: initialIndex,
                     time: time,
                     fileName: item.name,
                     senderName: !isSender ? senderName : '',
@@ -436,68 +505,98 @@ class _MediaTile extends StatelessWidget {
           children: [
             _buildMediaContent(context, remoteUrl),
             if (item.isVideo)
-              Center(
-                child: Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: colors.overlay.withValues(alpha: 0.34),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.play_arrow_rounded,
-                    size: 34,
-                    color: colors.textInverse,
-                  ),
+              const Center(
+                child: Icon(
+                  Icons.play_circle_fill_rounded,
+                  size: 34,
+                  color: Colors.white,
                 ),
               ),
             if (extraCount > 0)
               Container(
-                color: colors.overlay.withValues(alpha: 0.44),
+                color: Colors.black.withValues(alpha: 0.42),
                 alignment: Alignment.center,
                 child: Text(
                   '+$extraCount',
-                  style: textStyles.displayLg.copyWith(
-                    color: colors.textInverse,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
+                    fontFamily: 'Gilroy',
                   ),
                 ),
               ),
-            if (item.isUploading)
+            if (isUploading)
               Container(
-                color: colors.overlay.withValues(alpha: 0.28),
+                color: Colors.black.withValues(alpha: 0.24),
                 alignment: Alignment.center,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      width: 42,
-                      height: 42,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            strokeWidth: 2.6,
-                            value: item.uploadProgress.clamp(0, 1),
-                            backgroundColor:
-                                colors.textInverse.withValues(alpha: 0.18),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colors.textInverse,
-                            ),
-                          ),
-                          Text(
-                            '${(item.uploadProgress.clamp(0, 1) * 100).round()}%',
-                            style: textStyles.bodySm.copyWith(
-                              color: colors.textInverse,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                    Container(
+                      width: 34,
+                      height: 34,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.48),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        value: item.uploadProgress > 0
+                            ? item.uploadProgress
+                            : null,
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.48),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${(item.uploadProgress * 100).round()}%',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Gilroy',
+                        ),
                       ),
                     ),
                   ],
+                ),
+              ),
+            if (item.isVideo)
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -509,30 +608,42 @@ class _MediaTile extends StatelessWidget {
   Widget _buildMediaContent(BuildContext context, String? remoteUrl) {
     if (item.isImage) {
       if (_isLocalFile) {
-        return Image.file(File(item.path), fit: BoxFit.cover);
+        return Image.file(
+          File(item.path),
+          fit: BoxFit.cover,
+        );
       }
       if (remoteUrl != null) {
-        return Image.network(remoteUrl, fit: BoxFit.cover);
+        return _GroupImageLoader(url: remoteUrl);
       }
     }
 
     if (item.isVideo) {
-      final source = _isLocalFile ? item.path : remoteUrl;
-      if (source != null && source.isNotEmpty) {
-        return _VideoThumbnailPreview(videoSource: source);
+      final videoSource = _isLocalFile ? item.path : remoteUrl;
+      if (videoSource != null && videoSource.isNotEmpty) {
+        return _VideoThumbnailPreview(videoSource: videoSource);
       }
     }
 
     return Container(
-      color: context.appColors.surfaceElevated,
+      color: const Color(0xFF111827),
       alignment: Alignment.center,
       child: Icon(
         item.isVideo ? Icons.videocam_rounded : Icons.image_rounded,
-        color: context.appColors.textInverse,
+        color: Colors.white,
         size: 28,
       ),
     );
   }
+
+}
+
+String? _buildImageUrl(String path, String? baseUrl) {
+  if (baseUrl == null) return null;
+  final normalizedPath = path.startsWith('storage/')
+      ? path
+      : 'storage/${path.startsWith('/') ? path.substring(1) : path}';
+  return Uri.parse(baseUrl).resolve(normalizedPath).toString();
 }
 
 class _VideoThumbnailPreview extends StatelessWidget {
@@ -542,27 +653,199 @@ class _VideoThumbnailPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Uint8List?>(
-      future: VideoThumbnail.thumbnailData(
-        video: videoSource,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 720,
-        quality: 60,
-      ),
+    return _MemoizedVideoThumbnail(videoSource: videoSource);
+  }
+}
+
+class _MemoizedVideoThumbnail extends StatefulWidget {
+  final String videoSource;
+
+  const _MemoizedVideoThumbnail({required this.videoSource});
+
+  @override
+  State<_MemoizedVideoThumbnail> createState() =>
+      _MemoizedVideoThumbnailState();
+}
+
+class _MemoizedVideoThumbnailState extends State<_MemoizedVideoThumbnail> {
+  late final Future<File?> _thumbnailFuture =
+      ChatMediaPersistentCache.instance.getVideoThumbnailFile(widget.videoSource);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<File?>(
+      future: _thumbnailFuture,
       builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data != null) {
-          return Image.memory(snapshot.data!, fit: BoxFit.cover);
+        final file = snapshot.data;
+        if (file == null || !file.existsSync()) {
+          return const _VideoWavePlaceholder();
         }
-        return Container(
-          color: context.appColors.surfaceElevated,
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.videocam_rounded,
-            color: context.appColors.textInverse,
-            size: 30,
-          ),
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            const _VideoWavePlaceholder(),
+            Image.file(
+              file,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                size: 34,
+                color: Colors.white,
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _VideoWavePlaceholder extends StatelessWidget {
+  const _VideoWavePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: const Color(0xffFCFEFF)),
+        ShimmerWave(
+          duration: const Duration(milliseconds: 1650),
+          colors: const [
+            Color(0xffE7F3FF),
+            Color(0xffF7FCFF),
+            Color(0xffCFEFFF),
+            Color(0xffFFFFFF),
+            Color(0xffE7F3FF),
+          ],
+          stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
+          child: Container(color: const Color(0xffFCFEFF)),
+        ),
+        Center(
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xff89D2FF).withValues(alpha: 0.18),
+                  const Color(0xff89D2FF).withValues(alpha: 0.06),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImageWavePlaceholder extends StatelessWidget {
+  const _ImageWavePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: const Color(0xffEAF4FF)),
+        ShimmerWave(
+          duration: const Duration(milliseconds: 1650),
+          colors: const [
+            Color(0xffD6EFFF),
+            Color(0xffF8FDFF),
+            Color(0xffBFE6FF),
+            Color(0xffFFFFFF),
+            Color(0xffD6EFFF),
+          ],
+          stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
+          child: Container(color: const Color(0xffEAF4FF)),
+        ),
+        Center(
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xff5AAEFF).withValues(alpha: 0.26),
+                  const Color(0xff5AAEFF).withValues(alpha: 0.10),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupImageLoader extends StatefulWidget {
+  final String url;
+
+  const _GroupImageLoader({required this.url});
+
+  @override
+  State<_GroupImageLoader> createState() => _GroupImageLoaderState();
+}
+
+class _GroupImageLoaderState extends State<_GroupImageLoader> {
+  late final Future<File?> _cachedFileFuture =
+      ChatMediaPersistentCache.instance.getImageFile(widget.url);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const _ImageWavePlaceholder(),
+        FutureBuilder<File?>(
+          future: _cachedFileFuture,
+          builder: (context, snapshot) {
+            final file = snapshot.data;
+            if (file != null && file.existsSync()) {
+              return Image.file(
+                file,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.high,
+              );
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox.shrink();
+            }
+            return CachedNetworkImage(
+              imageUrl: widget.url,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 160),
+              fadeOutDuration: Duration.zero,
+              useOldImageOnUrlChange: true,
+              imageBuilder: (context, imageProvider) {
+                return Image(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                );
+              },
+              placeholder: (context, url) => const SizedBox.shrink(),
+              errorWidget: (context, error, stackTrace) {
+                debugPrint(
+                  'MediaGroupMessageBubble image error for ${widget.url}: $error',
+                );
+                return const _ImageWavePlaceholder();
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -582,35 +865,34 @@ class _StatusOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final textStyles = context.appTextStyles;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: colors.overlay.withValues(alpha: 0.42),
+        color: Colors.black.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isUploading)
-            Padding(
+            const Padding(
               padding: EdgeInsets.only(right: 5),
               child: SizedBox(
                 width: 10,
                 height: 10,
                 child: CircularProgressIndicator(
                   strokeWidth: 1.6,
-                  valueColor: AlwaysStoppedAnimation<Color>(colors.textInverse),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
             ),
           Text(
             time,
-            style: textStyles.bodySm.copyWith(
+            style: const TextStyle(
               fontSize: 12,
-              color: colors.textInverse,
+              color: Colors.white,
               fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
             ),
           ),
           if (isSender) ...[
@@ -618,9 +900,7 @@ class _StatusOverlay extends StatelessWidget {
             Icon(
               Icons.done_all,
               size: 16,
-              color: isRead
-                  ? colors.info
-                  : colors.textInverse.withValues(alpha: 0.7),
+              color: isRead ? const Color(0xFF7DD3FC) : Colors.white70,
             ),
           ],
         ],
