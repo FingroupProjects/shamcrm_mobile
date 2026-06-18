@@ -40,6 +40,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   );
 
   List<UserData> usersList = [];
+  List<UserData> initialUsersList = [];
   List<UserData> selectedUsersData = [];
   bool isLoading = false;
 
@@ -83,6 +84,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
       final loadedUsers = response.result ?? <UserData>[];
       setState(() {
         usersList = loadedUsers;
+        initialUsersList = loadedUsers;
         isLoading = false;
       });
       _syncSelectedUsers(notifyParent: false);
@@ -101,8 +103,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   }
 
   Future<List<UserData>> _searchUsers(String query) async {
+    final normalizedQuery = query.trim();
     final response = await _apiService.getAllUser(
-      search: query,
+      search: normalizedQuery.isEmpty ? null : normalizedQuery,
       page: 1,
       perPage: _pageSize,
     );
@@ -110,7 +113,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     if (mounted) {
       setState(() {
         usersList = result;
+        if (normalizedQuery.isEmpty) {
+          initialUsersList = result;
+        }
       });
+      _selectedUsersController.value = List<UserData>.from(selectedUsersData);
     }
     return [selectAllItem, ...result];
   }
@@ -119,8 +126,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     if (usersList.isEmpty) return;
 
     final selectedIds = widget.selectedUsers ?? const <String>[];
-    final nextSelected = usersList
-        .where((user) => selectedIds.contains(user.id.toString()))
+    final usersById = <int, UserData>{
+      for (final user in selectedUsersData) user.id: user,
+      for (final user in usersList) user.id: user,
+    };
+    final nextSelected = selectedIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .map((id) => usersById[id])
+        .whereType<UserData>()
         .toList();
 
     final currentIds = selectedUsersData.map((u) => u.id).toList()..sort();
@@ -160,6 +174,19 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     });
     _selectedUsersController.value = List<UserData>.from(nextSelected);
     widget.onSelectUsers(nextSelected);
+  }
+
+  void _handleDropdownVisibility(bool isVisible) {
+    if (!isVisible || initialUsersList.isEmpty) return;
+
+    final currentIds = usersList.map((user) => user.id).toList()..sort();
+    final initialIds = initialUsersList.map((user) => user.id).toList()..sort();
+    if (listEquals(currentIds, initialIds)) return;
+
+    setState(() {
+      usersList = List<UserData>.from(initialUsersList);
+    });
+    _selectedUsersController.value = List<UserData>.from(selectedUsersData);
   }
 
   List<UserData> _normalizeSelection(List<UserData> values) {
@@ -243,6 +270,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       futureRequest: _searchUsers,
                       futureRequestDelay: const Duration(milliseconds: 350),
                       closeDropDownOnClearFilterSearch: true,
+                      visibility: _handleDropdownVisibility,
                       items: usersList.isEmpty
                           ? const []
                           : [selectAllItem, ...usersList],
@@ -354,9 +382,20 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       ),
                       onListChanged: (values) {
                         final filteredValues = _normalizeSelection(values);
+                        final visibleUserIds =
+                            usersList.map((user) => user.id).toSet();
+                        final hiddenSelectedUsers = selectedUsersData
+                            .where(
+                              (user) => !visibleUserIds.contains(user.id),
+                            )
+                            .toList();
+                        final nextSelected = _mergeSelections(
+                          hiddenSelectedUsers,
+                          filteredValues,
+                        );
                         final currentIds =
                             selectedUsersData.map((u) => u.id).toList()..sort();
-                        final newIds = filteredValues.map((u) => u.id).toList()
+                        final newIds = nextSelected.map((u) => u.id).toList()
                           ..sort();
 
                         if (listEquals(currentIds, newIds)) {
@@ -364,10 +403,12 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         }
 
                         setState(() {
-                          selectedUsersData = filteredValues;
+                          selectedUsersData = nextSelected;
                         });
-                        widget.onSelectUsers(filteredValues);
-                        field.didChange(filteredValues);
+                        _selectedUsersController.value =
+                            List<UserData>.from(nextSelected);
+                        widget.onSelectUsers(nextSelected);
+                        field.didChange(nextSelected);
                       },
                     ),
             ),

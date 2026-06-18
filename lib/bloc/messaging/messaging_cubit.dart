@@ -45,12 +45,14 @@ class MessagingCubit extends Cubit<MessagingState> {
         chatType: chatType,
       );
 
+      final pendingMessages = _extractPendingMessages(currentCollection);
       _emitCollection(
         _createCollectionFromPage(
           page,
           searchQuery: normalizedSearch,
           isFromCache: false,
           previousPinnedMessages: currentCollection?.pinnedMessages,
+          pendingMessages: pendingMessages,
         ),
       );
     } catch (e) {
@@ -105,7 +107,10 @@ class MessagingCubit extends Cubit<MessagingState> {
       );
 
       final mergedMessages = _mergeOlderPage(
-        currentCollection.messages,
+        _mergeMessagesKeepingPending(
+          currentCollection.messages,
+          _extractPendingMessages(currentCollection),
+        ),
         page.data,
       );
 
@@ -147,7 +152,13 @@ class MessagingCubit extends Cubit<MessagingState> {
       );
 
       final currentMessages = currentCollection?.messages ?? const <Message>[];
-      final mergedMessages = _mergeLatestPage(currentMessages, page.data);
+      final mergedMessages = _mergeLatestPage(
+        _mergeMessagesKeepingPending(
+          currentMessages,
+          _extractPendingMessages(currentCollection),
+        ),
+        page.data,
+      );
 
       _emitCollection(
         (currentCollection ?? const MessagesCollection()).copyWith(
@@ -197,11 +208,12 @@ class MessagingCubit extends Cubit<MessagingState> {
 
   void showCachedMessages(List<Message> cachedMessages) {
     final normalizedMessages = _normalizeMessages(cachedMessages);
+    final sanitizedMessages = _sanitizeStalePendingUploads(normalizedMessages);
     _emitCollection(
       MessagesCollection(
-        messages: normalizedMessages,
+        messages: sanitizedMessages,
         pinnedMessages: _buildPinnedMessages(
-          normalizedMessages,
+          sanitizedMessages,
           previousPinnedMessages: _currentCollectionOrNull()?.pinnedMessages,
         ),
         isFromCache: true,
@@ -604,17 +616,93 @@ class MessagingCubit extends Cubit<MessagingState> {
     return _currentCollectionOrNull() ?? const MessagesCollection();
   }
 
+  List<Message> _extractPendingMessages(MessagesCollection? collection) {
+    if (collection == null) return const [];
+    return collection.messages
+        .where((message) => message.isUploading)
+        .toList(growable: false);
+  }
+
+  List<Message> _mergeMessagesKeepingPending(
+    List<Message> freshMessages,
+    List<Message> pendingMessages,
+  ) {
+    if (pendingMessages.isEmpty) return freshMessages;
+
+    final freshIds = freshMessages.map((message) => message.id).toSet();
+    final pendingToKeep = pendingMessages
+        .where((message) => !freshIds.contains(message.id))
+        .toList(growable: false);
+
+    if (pendingToKeep.isEmpty) return freshMessages;
+
+    final merged = <Message>[
+      ...pendingToKeep,
+      ...freshMessages,
+    ];
+
+    merged.sort((a, b) {
+      final aTime = DateTime.tryParse(a.createMessateTime) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = DateTime.tryParse(b.createMessateTime) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+
+    return merged;
+  }
+
+  List<Message> _sanitizeStalePendingUploads(List<Message> messages) {
+    if (messages.isEmpty) return messages;
+
+    final hasServerMedia = messages.any(
+      (message) =>
+          !message.isUploading &&
+          (message.type == 'image' ||
+              message.type == 'video' ||
+              message.type == 'media_group'),
+    );
+    if (!hasServerMedia) return messages;
+
+    final now = DateTime.now();
+    final kept = <Message>[];
+
+    for (final message in messages) {
+      if (!message.isUploading) {
+        kept.add(message);
+        continue;
+      }
+
+      final createdAt = _tryParseMessageDate(message.createMessateTime);
+      if (createdAt == null) {
+        continue;
+      }
+
+      final age = now.difference(createdAt).inMinutes;
+      if (age > 3) {
+        continue;
+      }
+
+      kept.add(message);
+    }
+
+    return kept;
+  }
+
   MessagesCollection _createCollectionFromPage(
     ChatMessagesPage page, {
     required String? searchQuery,
     required bool isFromCache,
     List<Message>? previousPinnedMessages,
+    List<Message> pendingMessages = const [],
   }) {
     final messages = _normalizeMessages(page.data);
+    final mergedMessages =
+        _mergeMessagesKeepingPending(messages, pendingMessages);
     return MessagesCollection(
-      messages: messages,
+      messages: mergedMessages,
       pinnedMessages: _buildPinnedMessages(
-        messages,
+        mergedMessages,
         previousPinnedMessages: previousPinnedMessages,
       ),
       isFromCache: isFromCache,
@@ -643,7 +731,8 @@ class MessagingCubit extends Cubit<MessagingState> {
 
   void _emitCollection(MessagesCollection collection) {
     final normalizedCollection = collection.copyWith(
-      messages: _normalizeMessages(collection.messages),
+      messages:
+          _sanitizeStalePendingUploads(_normalizeMessages(collection.messages)),
       pinnedMessages: _buildPinnedMessages(
         collection.messages,
         previousPinnedMessages: collection.pinnedMessages,
@@ -699,7 +788,8 @@ class MessagingCubit extends Cubit<MessagingState> {
 
   void _emitBaseCollectionState(MessagesCollection collection) {
     final normalizedCollection = collection.copyWith(
-      messages: _normalizeMessages(collection.messages),
+      messages:
+          _sanitizeStalePendingUploads(_normalizeMessages(collection.messages)),
       pinnedMessages: _buildPinnedMessages(
         collection.messages,
         previousPinnedMessages: collection.pinnedMessages,

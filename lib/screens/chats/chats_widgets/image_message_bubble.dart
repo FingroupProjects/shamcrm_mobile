@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -6,7 +9,10 @@ import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageMessageBubble extends StatefulWidget {
   final String time;
@@ -48,7 +54,6 @@ class ImageMessageBubble extends StatefulWidget {
 class _ImageMessageBubbleState extends State<ImageMessageBubble> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
-  String? _lastFailedUrl;
 
   @override
   void initState() {
@@ -66,8 +71,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        baseUrl =
-            'https://info1fingrouptj-back.shamcrm.com'; // Обновляем fallback URL
+        baseUrl = 'https://info1fingrouptj-back.shamcrm.com';
       });
       debugPrint('Error fetching baseUrl: $error');
     }
@@ -75,17 +79,14 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    // Исправление: Добавляем /storage к пути, если его нет в filePath
     final String normalizedFilePath = widget.filePath.startsWith('storage/')
         ? widget.filePath
         : 'storage/${widget.filePath.startsWith('/') ? widget.filePath.substring(1) : widget.filePath}';
 
-    // Формируем полный URL с помощью Uri для корректной обработки слешей
     final String? fullUrl = baseUrl != null
         ? Uri.parse(baseUrl!).resolve(normalizedFilePath).toString()
         : null;
 
-    // Отладка: Логируем URL
     debugPrint(
         'ImageMessageBubble: baseUrl=$baseUrl, filePath=${widget.filePath}, fullUrl=$fullUrl');
 
@@ -97,7 +98,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                   color: context.appColors.shadow.withValues(alpha: 0.18),
                   blurRadius: 5,
                   spreadRadius: 2,
-                  offset: Offset(0, -4),
+                  offset: const Offset(0, -4),
                 ),
               ]
             : [],
@@ -111,10 +112,6 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
               : CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            // ✅ Логика отображения имени отправителя:
-            // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
-            // - В корпоративных группах: показываем имя только для собеседника
-            // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
             if (widget.isLeadChat ||
                 widget.isGroupChat == true ||
                 !widget.isSender)
@@ -135,7 +132,8 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => FullImageScreenViewer(
-                            imagePath: fullUrl,
+                            imagePaths: [fullUrl],
+                            initialIndex: 0,
                             time: widget.time,
                             fileName: widget.fileName,
                             senderName:
@@ -155,56 +153,26 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                     decoration: BoxDecoration(
                       border: Border.all(
                           width: 1, color: context.appColors.borderSubtle),
-                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                      borderRadius:
+                          const BorderRadius.all(Radius.circular(12)),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              context.appColors.shadow.withValues(alpha: 0.1),
-                          offset: Offset(0, 4),
+                          color: context.appColors.shadow
+                              .withValues(alpha: 0.1),
+                          offset: const Offset(0, 4),
                           blurRadius: 6,
                         ),
                       ],
                     ),
-                    child: ClipRRect(
+                  child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: fullUrl != null
-                          ? Image.network(
-                              fullUrl,
+                          ? _ShimmerImageLoader(
+                              url: fullUrl,
                               width: 200,
                               height: 200,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return const _ImageLoadingPlaceholder(
-                                  width: 200,
-                                  height: 200,
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint(
-                                    'Error loading image: $error, StackTrace: $stackTrace');
-                                _lastFailedUrl = fullUrl;
-                                return _ImageErrorPlaceholder(
-                                  width: 200,
-                                  height: 200,
-                                  onRetry: () {
-                                    if (!mounted || _lastFailedUrl == null) {
-                                      return;
-                                    }
-                                    setState(() {});
-                                  },
-                                );
-                              },
                             )
-                          : Container(
-                              width: 200,
-                              height: 200,
-                              color: context.appColors.backgroundSecondary,
-                              child: Center(
-                                child: Text(AppLocalizations.of(context)!
-                                    .translate('loading')),
-                              ),
-                            ),
+                          : _buildUrlPending(context),
                     ),
                   ),
                   if (widget.reactions.isNotEmpty)
@@ -262,42 +230,65 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
       ),
     );
   }
+
+  Widget _buildUrlPending(BuildContext context) {
+    return _ShimmerBox(width: 200, height: 200);
+  }
 }
 
-class _ImageLoadingPlaceholder extends StatefulWidget {
+// ─────────────────────────────────────────────────────────────
+// Главный виджет загрузки с shimmer → плавное появление картинки
+// ─────────────────────────────────────────────────────────────
+class _ShimmerImageLoader extends StatefulWidget {
+  final String url;
   final double width;
   final double height;
 
-  const _ImageLoadingPlaceholder({
-    Key? key,
+  const _ShimmerImageLoader({
+    required this.url,
     required this.width,
     required this.height,
-  }) : super(key: key);
+  });
 
   @override
-  State<_ImageLoadingPlaceholder> createState() =>
-      _ImageLoadingPlaceholderState();
+  State<_ShimmerImageLoader> createState() => _ShimmerImageLoaderState();
 }
 
-class _ImageLoadingPlaceholderState extends State<_ImageLoadingPlaceholder>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
+class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
+  bool _loaded = false;
+  bool _error = false;
+  bool _minDisplayElapsed = false;
+  DateTime? _loadStart;
+  Future<File?>? _cachedFileFuture;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..repeat();
-    _animation = Tween<double>(begin: -1, end: 2).animate(_controller);
+    _cachedFileFuture = ChatMediaPersistentCache.instance.getImageFile(widget.url);
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void _onLoaded() {
+    if (!mounted || _loaded) return;
+    _loadStart ??= DateTime.now();
+    const minVisible = Duration(milliseconds: 420);
+    final elapsed = DateTime.now().difference(_loadStart!);
+    final remaining = minVisible - elapsed;
+
+    Future.delayed(remaining.isNegative ? Duration.zero : remaining, () {
+      if (!mounted) return;
+      setState(() {
+        _minDisplayElapsed = true;
+        _loaded = true;
+      });
+    });
+  }
+
+  void _onError() {
+    if (!mounted) return;
+    setState(() {
+      _error = true;
+      _loaded = true; // убираем shimmer, показываем заглушку
+    });
   }
 
   @override
@@ -305,49 +296,192 @@ class _ImageLoadingPlaceholderState extends State<_ImageLoadingPlaceholder>
     return SizedBox(
       width: widget.width,
       height: widget.height,
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment(_animation.value, 0),
-                end: Alignment(_animation.value + 1, 0),
-                colors: [
-                  context.appColors.backgroundSecondary,
-                  context.appColors.backgroundSecondary.withValues(alpha: 0.85),
-                  context.appColors.backgroundSecondary,
-                ],
-              ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedOpacity(
+            opacity: _loaded ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            child: _ShimmerBox(
+              width: widget.width,
+              height: widget.height,
             ),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: context.appColors.textSecondary,
-                ),
-              ),
+          ),
+          AnimatedOpacity(
+            opacity: (_loaded && !_error && _minDisplayElapsed) ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+            child: FutureBuilder<File?>(
+              future: _cachedFileFuture,
+              builder: (context, snapshot) {
+                final file = snapshot.data;
+                if (file != null && file.existsSync()) {
+                  _onLoaded();
+                  return Image.file(
+                    file,
+                    width: widget.width,
+                    height: widget.height,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.high,
+                    gaplessPlayback: true,
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox.shrink();
+                }
+
+                if (_error) {
+                  return const SizedBox.shrink();
+                }
+
+                return CachedNetworkImage(
+                  imageUrl: widget.url,
+                  width: widget.width,
+                  height: widget.height,
+                  fit: BoxFit.cover,
+                  fadeInDuration: const Duration(milliseconds: 140),
+                  fadeOutDuration: Duration.zero,
+                  useOldImageOnUrlChange: true,
+                  imageBuilder: (context, imageProvider) {
+                    _onLoaded();
+                    return Image(
+                      image: imageProvider,
+                      width: widget.width,
+                      height: widget.height,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                    );
+                  },
+                  placeholder: (context, url) => const SizedBox.shrink(),
+                  errorWidget: (context, error, stackTrace) {
+                    debugPrint('_ShimmerImageLoader error: $error');
+                    _onError();
+                    return const SizedBox.shrink();
+                  },
+                );
+              },
             ),
-          );
-        },
+          ),
+
+          // 3. Заглушка при ошибке
+          if (_error)
+            _ImageErrorFallback(
+              width: widget.width,
+              height: widget.height,
+              onRetry: () => setState(() {
+                _error = false;
+                _loaded = false;
+                _minDisplayElapsed = false;
+                _loadStart = null;
+              }),
+            ),
+        ],
       ),
     );
   }
 }
 
-class _ImageErrorPlaceholder extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────
+// Shimmer-волна (использует ShimmerWave как в дашборде)
+// ─────────────────────────────────────────────────────────────
+class _ShimmerBox extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const _ShimmerBox({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(0),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(color: const Color(0xffEAF4FF)),
+            ShimmerWave(
+              duration: const Duration(milliseconds: 1650),
+              colors: const [
+                Color(0xffD6EFFF),
+                Color(0xffF8FDFF),
+                Color(0xffBFE6FF),
+                Color(0xffFFFFFF),
+                Color(0xffD6EFFF),
+              ],
+              stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
+              child: Container(color: const Color(0xffEAF4FF)),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xff9BD7FF).withValues(alpha: 0.9),
+                  width: 1.1,
+                ),
+              ),
+            ),
+            IgnorePointer(
+              child: Center(
+                child: Container(
+                  width: math.min(width, height) * 0.30,
+                  height: math.min(width, height) * 0.30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xff5AAEFF).withValues(alpha: 0.26),
+                        const Color(0xff5AAEFF).withValues(alpha: 0.10),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.6, 1.0],
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.image_outlined,
+                    size: math.min(width, height) * 0.15,
+                    color: const Color(0xff1E2E52).withValues(alpha: 0.42),
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.18),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.02),
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Заглушка при ошибке загрузки
+// ─────────────────────────────────────────────────────────────
+class _ImageErrorFallback extends StatelessWidget {
   final double width;
   final double height;
   final VoidCallback onRetry;
 
-  const _ImageErrorPlaceholder({
-    Key? key,
+  const _ImageErrorFallback({
     required this.width,
     required this.height,
     required this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +495,8 @@ class _ImageErrorPlaceholder extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.refresh, color: context.appColors.textSecondary),
+              Icon(Icons.refresh_rounded,
+                  color: context.appColors.textSecondary, size: 26),
               const SizedBox(height: 6),
               Text(
                 AppLocalizations.of(context)!.translate('loading'),

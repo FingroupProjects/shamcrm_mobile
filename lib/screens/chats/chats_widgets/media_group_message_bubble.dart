@@ -1,14 +1,15 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
+import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
 
 class MediaGroupMessageBubble extends StatefulWidget {
   final List<Message> messages;
@@ -87,6 +88,11 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
                 .toList();
 
     final isUploading = widget.messages.any((message) => message.isUploading);
+    final viewerImagePaths = items
+        .where((item) => item.isImage && item.path.isNotEmpty)
+        .map((item) => _buildImageUrl(item.path, _baseUrl))
+        .whereType<String>()
+        .toList();
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -127,6 +133,7 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
               ),
             _MediaCollage(
               items: items,
+              viewerImagePaths: viewerImagePaths,
               time: widget.time,
               isSender: widget.isSender,
               isRead: widget.isRead,
@@ -160,6 +167,7 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
 
 class _MediaCollage extends StatelessWidget {
   final List<MessageMediaItem> items;
+  final List<String> viewerImagePaths;
   final String time;
   final bool isSender;
   final bool isRead;
@@ -170,6 +178,7 @@ class _MediaCollage extends StatelessWidget {
 
   const _MediaCollage({
     required this.items,
+    required this.viewerImagePaths,
     required this.time,
     required this.isSender,
     required this.isRead,
@@ -222,7 +231,7 @@ class _MediaCollage extends StatelessWidget {
   Widget _buildLayout(BuildContext context) {
     switch (items.length) {
       case 1:
-        return _tile(context, items[0], height: _singleHeight);
+      return _tile(context, items[0], height: _singleHeight);
       case 2:
         return SizedBox(
           height: _doubleHeight,
@@ -395,6 +404,7 @@ class _MediaCollage extends StatelessWidget {
       item: item,
       height: height,
       extraCount: extraCount,
+      viewerImagePaths: viewerImagePaths,
       baseUrl: baseUrl,
       isMenuOpen: isMenuOpen,
       isUploading: isUploading,
@@ -409,6 +419,7 @@ class _MediaTile extends StatelessWidget {
   final MessageMediaItem item;
   final double height;
   final int extraCount;
+  final List<String> viewerImagePaths;
   final String? baseUrl;
   final bool isMenuOpen;
   final bool isUploading;
@@ -420,6 +431,7 @@ class _MediaTile extends StatelessWidget {
     required this.item,
     required this.height,
     required this.extraCount,
+    required this.viewerImagePaths,
     required this.baseUrl,
     required this.isMenuOpen,
     required this.isUploading,
@@ -439,9 +451,34 @@ class _MediaTile extends StatelessWidget {
     return Uri.parse(baseUrl!).resolve(normalizedPath).toString();
   }
 
+  int _resolveInitialIndex(String? remoteUrl) {
+    if (remoteUrl == null || viewerImagePaths.isEmpty) {
+      return 0;
+    }
+
+    final exactMatchIndex =
+        viewerImagePaths.indexWhere((path) => path == remoteUrl);
+    if (exactMatchIndex >= 0) {
+      return exactMatchIndex;
+    }
+
+    final normalizedRemoteUrl = Uri.tryParse(remoteUrl)?.toString();
+    if (normalizedRemoteUrl == null) {
+      return 0;
+    }
+
+    final fallbackIndex = viewerImagePaths.indexWhere((path) {
+      final parsedPath = Uri.tryParse(path)?.toString();
+      return parsedPath == normalizedRemoteUrl || path.contains(remoteUrl);
+    });
+
+    return fallbackIndex >= 0 ? fallbackIndex : 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final remoteUrl = _buildRemoteUrl();
+    final initialIndex = _resolveInitialIndex(remoteUrl);
 
     return GestureDetector(
       onTap: item.isImage && !isMenuOpen && remoteUrl != null
@@ -449,8 +486,10 @@ class _MediaTile extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FullImageScreenViewer(
-                    imagePath: remoteUrl,
+                      builder: (context) => FullImageScreenViewer(
+                    imagePaths:
+                        viewerImagePaths.isNotEmpty ? viewerImagePaths : [remoteUrl],
+                    initialIndex: initialIndex,
                     time: time,
                     fileName: item.name,
                     senderName: !isSender ? senderName : '',
@@ -575,10 +614,7 @@ class _MediaTile extends StatelessWidget {
         );
       }
       if (remoteUrl != null) {
-        return Image.network(
-          remoteUrl,
-          fit: BoxFit.cover,
-        );
+        return _GroupImageLoader(url: remoteUrl);
       }
     }
 
@@ -599,6 +635,15 @@ class _MediaTile extends StatelessWidget {
       ),
     );
   }
+
+}
+
+String? _buildImageUrl(String path, String? baseUrl) {
+  if (baseUrl == null) return null;
+  final normalizedPath = path.startsWith('storage/')
+      ? path
+      : 'storage/${path.startsWith('/') ? path.substring(1) : path}';
+  return Uri.parse(baseUrl).resolve(normalizedPath).toString();
 }
 
 class _VideoThumbnailPreview extends StatelessWidget {
@@ -608,33 +653,199 @@ class _VideoThumbnailPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Uint8List?>(
-      future: VideoThumbnail.thumbnailData(
-        video: videoSource,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 720,
-        quality: 60,
-      ),
+    return _MemoizedVideoThumbnail(videoSource: videoSource);
+  }
+}
+
+class _MemoizedVideoThumbnail extends StatefulWidget {
+  final String videoSource;
+
+  const _MemoizedVideoThumbnail({required this.videoSource});
+
+  @override
+  State<_MemoizedVideoThumbnail> createState() =>
+      _MemoizedVideoThumbnailState();
+}
+
+class _MemoizedVideoThumbnailState extends State<_MemoizedVideoThumbnail> {
+  late final Future<File?> _thumbnailFuture =
+      ChatMediaPersistentCache.instance.getVideoThumbnailFile(widget.videoSource);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<File?>(
+      future: _thumbnailFuture,
       builder: (context, snapshot) {
-        final bytes = snapshot.data;
-        if (bytes == null || bytes.isEmpty) {
-          return Container(
-            color: const Color(0xFF111827),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.videocam_rounded,
-              color: Colors.white,
-              size: 30,
-            ),
-          );
+        final file = snapshot.data;
+        if (file == null || !file.existsSync()) {
+          return const _VideoWavePlaceholder();
         }
 
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            const _VideoWavePlaceholder(),
+            Image.file(
+              file,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            ),
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                size: 34,
+                color: Colors.white,
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _VideoWavePlaceholder extends StatelessWidget {
+  const _VideoWavePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: const Color(0xffFCFEFF)),
+        ShimmerWave(
+          duration: const Duration(milliseconds: 1650),
+          colors: const [
+            Color(0xffE7F3FF),
+            Color(0xffF7FCFF),
+            Color(0xffCFEFFF),
+            Color(0xffFFFFFF),
+            Color(0xffE7F3FF),
+          ],
+          stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
+          child: Container(color: const Color(0xffFCFEFF)),
+        ),
+        Center(
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xff89D2FF).withValues(alpha: 0.18),
+                  const Color(0xff89D2FF).withValues(alpha: 0.06),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImageWavePlaceholder extends StatelessWidget {
+  const _ImageWavePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: const Color(0xffEAF4FF)),
+        ShimmerWave(
+          duration: const Duration(milliseconds: 1650),
+          colors: const [
+            Color(0xffD6EFFF),
+            Color(0xffF8FDFF),
+            Color(0xffBFE6FF),
+            Color(0xffFFFFFF),
+            Color(0xffD6EFFF),
+          ],
+          stops: const [0.0, 0.32, 0.52, 0.68, 1.0],
+          child: Container(color: const Color(0xffEAF4FF)),
+        ),
+        Center(
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xff5AAEFF).withValues(alpha: 0.26),
+                  const Color(0xff5AAEFF).withValues(alpha: 0.10),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupImageLoader extends StatefulWidget {
+  final String url;
+
+  const _GroupImageLoader({required this.url});
+
+  @override
+  State<_GroupImageLoader> createState() => _GroupImageLoaderState();
+}
+
+class _GroupImageLoaderState extends State<_GroupImageLoader> {
+  late final Future<File?> _cachedFileFuture =
+      ChatMediaPersistentCache.instance.getImageFile(widget.url);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const _ImageWavePlaceholder(),
+        FutureBuilder<File?>(
+          future: _cachedFileFuture,
+          builder: (context, snapshot) {
+            final file = snapshot.data;
+            if (file != null && file.existsSync()) {
+              return Image.file(
+                file,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.high,
+              );
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox.shrink();
+            }
+            return CachedNetworkImage(
+              imageUrl: widget.url,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 160),
+              fadeOutDuration: Duration.zero,
+              useOldImageOnUrlChange: true,
+              imageBuilder: (context, imageProvider) {
+                return Image(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                );
+              },
+              placeholder: (context, url) => const SizedBox.shrink(),
+              errorWidget: (context, error, stackTrace) {
+                debugPrint(
+                  'MediaGroupMessageBubble image error for ${widget.url}: $error',
+                );
+                return const _ImageWavePlaceholder();
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 }

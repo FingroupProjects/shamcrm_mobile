@@ -21,7 +21,10 @@ class MessageCacheService {
 
   Future<void> cacheMessages(int chatId, List<Message> messages) async {
     try {
-      _memoryCache[chatId] = messages;
+      final persistentMessages = messages
+          .where((message) => !message.isUploading)
+          .toList(growable: false);
+      _memoryCache[chatId] = persistentMessages;
       _memoryCacheTime[chatId] = DateTime.now();
       final repository = _resolveRepository();
       if (repository == null) {
@@ -29,7 +32,7 @@ class MessageCacheService {
             'MessageCache: OfflineRuntime недоступен, сохраняем только в memory cache');
         return;
       }
-      await repository.saveMessages(chatId, messages);
+      await repository.saveMessages(chatId, persistentMessages);
     } catch (e) {
       debugPrint('MessageCache: cache error for chat=$chatId: $e');
     }

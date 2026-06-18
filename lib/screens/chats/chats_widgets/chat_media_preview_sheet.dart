@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 enum ChatMediaQuality { compressed, hd }
@@ -60,7 +63,8 @@ class _ChatMediaPickerSheet extends StatefulWidget {
 }
 
 class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
-  static const int _maxSelection = 50;
+  static const int _maxSelection = 10;
+  static const double _maxTotalSizeMb = 100.0;
   static const double _gridHorizontalPadding = 12;
   static const double _gridTopPadding = 6;
   static const double _gridBottomPadding = 12;
@@ -69,6 +73,7 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
   final List<AssetEntity> _assets = [];
   final Set<String> _selectedIds = <String>{};
   final List<AssetEntity> _selectedAssets = [];
+  final Map<String, int> _selectedSizes = <String, int>{};
   final ScrollController _scrollController = ScrollController();
   final Set<String> _dragVisitedIds = <String>{};
 
@@ -82,6 +87,9 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
   bool? _dragSelectionValue;
   AssetPathEntity? _recentAlbum;
   int _currentPage = 0;
+  String? _bannerMessage;
+  bool _bannerIsError = false;
+  Timer? _bannerTimer;
 
   @override
   void initState() {
@@ -92,6 +100,7 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
 
   @override
   void dispose() {
+    _bannerTimer?.cancel();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -138,7 +147,6 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
       _hasPermission = true;
       _currentPage = 0;
       _assets.clear();
-
       await _loadNextPage(initial: true);
     } on MissingPluginException {
       setState(() {
@@ -190,31 +198,44 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
     }
   }
 
-  void _toggleAsset(AssetEntity asset) {
-    _applyAssetSelection(asset, !_selectedIds.contains(asset.id));
+  Future<void> _toggleAsset(AssetEntity asset) async {
+    await _applyAssetSelection(asset, !_selectedIds.contains(asset.id));
   }
 
-  void _applyAssetSelection(AssetEntity asset, bool shouldSelect) {
+  Future<void> _applyAssetSelection(AssetEntity asset, bool shouldSelect) async {
     final assetId = asset.id;
     final isSelected = _selectedIds.contains(assetId);
-
     if (shouldSelect == isSelected) return;
 
     if (shouldSelect && _selectedIds.length >= _maxSelection) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Можно выбрать максимум 50 файлов')),
-      );
+      _showBanner('Можно отправить не более 10 файлов.');
+      return;
+    }
+
+    if (shouldSelect) {
+      final file = await asset.file;
+      if (file == null) return;
+      final size = await file.length();
+      final newTotal = _currentTotalBytes() + size;
+      if (newTotal > _maxTotalSizeMb * 1024 * 1024) {
+        _showBanner(
+          'Слишком большой объём. Выберите файлы до 100 МБ.',
+        );
+        return;
+      }
+
+      setState(() {
+        _selectedIds.add(assetId);
+        _selectedAssets.add(asset);
+        _selectedSizes[assetId] = size;
+      });
       return;
     }
 
     setState(() {
-      if (shouldSelect) {
-        _selectedIds.add(assetId);
-        _selectedAssets.add(asset);
-      } else {
-        _selectedIds.remove(assetId);
-        _selectedAssets.removeWhere((item) => item.id == assetId);
-      }
+      _selectedIds.remove(assetId);
+      _selectedAssets.removeWhere((item) => item.id == assetId);
+      _selectedSizes.remove(assetId);
     });
   }
 
@@ -256,7 +277,6 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
     if (column < 0 || column > 2 || row < 0) return null;
 
     if ((x % step) > tileSize || (y % step) > tileSize) return null;
-
     return row * 3 + column;
   }
 
@@ -267,6 +287,15 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
 
   Future<void> _submitSelection() async {
     if (_selectedAssets.isEmpty || _isSending) return;
+
+    final totalBytes = _currentTotalBytes();
+    final totalMb = totalBytes / (1024 * 1024);
+    if (totalMb > _maxTotalSizeMb) {
+      _showBanner(
+        'Слишком большой объём. Выберите файлы до 100 МБ.',
+      );
+      return;
+    }
 
     setState(() {
       _isSending = true;
@@ -309,183 +338,357 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
     }
   }
 
+  int _currentTotalBytes() => _selectedSizes.values.fold<int>(0, (sum, size) => sum + size);
+
+  void _showBanner(String message) {
+    _bannerTimer?.cancel();
+    setState(() {
+      _bannerMessage = message;
+      _bannerIsError = true;
+    });
+    _bannerTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      setState(() {
+        _bannerMessage = null;
+      });
+    });
+  }
+
+  Widget _buildBanner() {
+    final message = _bannerMessage;
+    if (message == null) return const SizedBox.shrink();
+
+    return Positioned(
+      left: 12,
+      right: 12,
+      top: 12,
+      child: Material(
+        color: Colors.transparent,
+        child: AnimatedOpacity(
+          opacity: 1,
+          duration: const Duration(milliseconds: 180),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: _bannerIsError ? const Color.fromARGB(255, 22, 105, 249) : const Color(0xff2AABEE),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 18,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _confirmDiscardSelection() async {
+    if (_selectedAssets.isEmpty) return true;
+
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Сбросить выбор?',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xff1E2E52),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Закрыть меню вложений и сбросить выбранные файлы?',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xff4A5A74),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xffD7DCE9)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Отмена',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff4A5A74),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: const Color(0xff4F40EC),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Сбросить',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return shouldDiscard ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    final isOverLimit = _currentTotalBytes() > _maxTotalSizeMb * 1024 * 1024;
 
-    return SafeArea(
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.88,
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
+    return PopScope(
+      canPop: _selectedAssets.isEmpty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldDiscard = await _confirmDiscardSelection();
+        if (shouldDiscard && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: SafeArea(
+        child: Stack(
           children: [
-            const SizedBox(height: 10),
             Container(
-              width: 42,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.borderSubtle,
-                borderRadius: BorderRadius.circular(99),
+          height: MediaQuery.of(context).size.height * 0.88,
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.borderSubtle,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-              child: Row(
-                children: [
-                  _CircleActionButton(
-                    icon: Icons.close_rounded,
-                    onTap: () => Navigator.pop(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  children: [
+                    _CircleActionButton(
+                      icon: Icons.close_rounded,
+                      onTap: () async {
+                        final shouldDiscard = await _confirmDiscardSelection();
+                        if (shouldDiscard && mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            _selectedIds.isEmpty
+                                ? 'Недавние'
+                                : 'Выбрано ${_selectedIds.length}',
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _quality == ChatMediaQuality.hd
+                                ? 'Хорошее качество'
+                                : 'Сжатое качество',
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _QualityToggle(
+                      quality: _quality,
+                      onChanged: (quality) {
+                        setState(() {
+                          _quality = quality;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: _buildBody(context)),
+              Padding(
+                padding:
+                    EdgeInsets.fromLTRB(12, 8, 12, bottomInset > 0 ? 10 : 16),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary.withValues(alpha: 0.96),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.shadow.withValues(alpha: 0.12),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                    border: Border.all(color: colors.borderSubtle),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Row(
                       children: [
-                        Text(
-                          _selectedIds.isEmpty
-                              ? 'Недавние'
-                              : 'Выбрано ${_selectedIds.length}',
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Gilroy',
+                        Expanded(
+                          child: _BottomPickerAction(
+                            icon: Icons.photo_library_rounded,
+                            label: 'Галерея',
+                            selected: true,
+                            onTap: () {},
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _quality == ChatMediaQuality.hd
-                              ? 'Хорошее качество'
-                              : 'Сжатое качество',
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Gilroy',
+                        Expanded(
+                          child: _BottomPickerAction(
+                            icon: Icons.camera_alt_rounded,
+                            label: 'Камера',
+                            onTap: () {
+                              Navigator.pop(
+                                context,
+                                ChatMediaPreviewResult(
+                                  action: ChatMediaPickerAction.openCameraPhoto,
+                                  quality: _quality,
+                                ),
+                              );
+                            },
                           ),
+                        ),
+                        Expanded(
+                          child: _BottomPickerAction(
+                            icon: Icons.videocam_rounded,
+                            label: 'Видео',
+                            onTap: () {
+                              Navigator.pop(
+                                context,
+                                ChatMediaPreviewResult(
+                                  action: ChatMediaPickerAction.openCameraVideo,
+                                  quality: _quality,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _BottomPickerAction(
+                            icon: Icons.insert_drive_file_rounded,
+                            label: 'Файл',
+                            onTap: () {
+                              Navigator.pop(
+                                context,
+                                ChatMediaPreviewResult(
+                                  action: ChatMediaPickerAction.openFilePicker,
+                                  quality: _quality,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: _BottomPickerAction(
+                            icon: Icons.location_on_rounded,
+                            label: 'Геопозиция',
+                            onTap: () {
+                              Navigator.pop(
+                                context,
+                                ChatMediaPreviewResult(
+                                  action:
+                                      ChatMediaPickerAction.openLocationPicker,
+                                  quality: _quality,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        _SendButton(
+                          enabled: _selectedIds.isNotEmpty && !_isSending,
+                          isLoading: _isSending,
+                          isWarning: isOverLimit,
+                          onTap: _submitSelection,
                         ),
                       ],
                     ),
                   ),
-                  _QualityToggle(
-                    quality: _quality,
-                    onChanged: (quality) {
-                      setState(() {
-                        _quality = quality;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _buildBody(context),
-            ),
-            Padding(
-              padding:
-                  EdgeInsets.fromLTRB(12, 8, 12, bottomInset > 0 ? 10 : 16),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary.withValues(alpha: 0.96),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.shadow.withValues(alpha: 0.12),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                  border: Border.all(color: colors.borderSubtle),
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _BottomPickerAction(
-                          icon: Icons.photo_library_rounded,
-                          label: 'Галерея',
-                          selected: true,
-                          onTap: () {},
-                        ),
-                      ),
-                      Expanded(
-                        child: _BottomPickerAction(
-                          icon: Icons.camera_alt_rounded,
-                          label: 'Камера',
-                          onTap: () {
-                            Navigator.pop(
-                              context,
-                              ChatMediaPreviewResult(
-                                action: ChatMediaPickerAction.openCameraPhoto,
-                                quality: _quality,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: _BottomPickerAction(
-                          icon: Icons.videocam_rounded,
-                          label: 'Видео',
-                          onTap: () {
-                            Navigator.pop(
-                              context,
-                              ChatMediaPreviewResult(
-                                action: ChatMediaPickerAction.openCameraVideo,
-                                quality: _quality,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: _BottomPickerAction(
-                          icon: Icons.insert_drive_file_rounded,
-                          label: 'Файл',
-                          onTap: () {
-                            Navigator.pop(
-                              context,
-                              ChatMediaPreviewResult(
-                                action: ChatMediaPickerAction.openFilePicker,
-                                quality: _quality,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: _BottomPickerAction(
-                          icon: Icons.location_on_rounded,
-                          label: 'Геопозиция',
-                          onTap: () {
-                            Navigator.pop(
-                              context,
-                              ChatMediaPreviewResult(
-                                action:
-                                    ChatMediaPickerAction.openLocationPicker,
-                                quality: _quality,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      _SendButton(
-                        enabled: _selectedIds.isNotEmpty && !_isSending,
-                        count: _selectedIds.length,
-                        onTap: _submitSelection,
-                      ),
-                    ],
-                  ),
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
+            _buildBanner(),
           ],
         ),
       ),
@@ -506,11 +709,7 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.sync_problem_rounded,
-                size: 48,
-                color: colors.warning,
-              ),
+              Icon(Icons.sync_problem_rounded, size: 48, color: colors.warning),
               const SizedBox(height: 16),
               Text(
                 'Встроенная галерея пока недоступна',
@@ -567,7 +766,8 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Нужен доступ к галерее',
+                'Нужен доступ к медиафайлам',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 18,
@@ -577,7 +777,7 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Разрешите доступ к фото и видео, чтобы выбрать медиа для отправки.',
+                'Разрешите доступ к фото и видео в настройках, чтобы выбрать вложения.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: colors.textSecondary,
@@ -588,8 +788,32 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
               ),
               const SizedBox(height: 18),
               ElevatedButton(
-                onPressed: PhotoManager.openSetting,
-                child: const Text('Открыть настройки'),
+                onPressed: () async {
+                  final permission = await PhotoManager.requestPermissionExtend();
+                  if (!mounted) return;
+
+                  if (permission.isAuth) {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    await _loadAssets();
+                    return;
+                  }
+
+                  final photos = await Permission.photos.request();
+                  final videos = await Permission.videos.request();
+
+                  if (photos.isGranted || videos.isGranted) {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    await _loadAssets();
+                    return;
+                  }
+
+                  await PhotoManager.openSetting();
+                },
+                child: const Text('Разрешить доступ'),
               ),
             ],
           ),
@@ -776,20 +1000,18 @@ class _CircleActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: context.appColors.borderSubtle,
-          ),
+    final colors = context.appColors;
+    return Material(
+      color: colors.backgroundSecondary,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(icon, color: colors.textPrimary, size: 22),
         ),
-        child: Icon(icon, color: context.appColors.textPrimary, size: 28),
       ),
     );
   }
@@ -808,58 +1030,46 @@ class _QualityToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     return Container(
-      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          _QualityItem(
-            label: 'SD',
-            selected: quality == ChatMediaQuality.compressed,
+          _toggleItem(
+            context,
+            label: 'Сжат.',
+            active: quality == ChatMediaQuality.compressed,
             onTap: () => onChanged(ChatMediaQuality.compressed),
           ),
-          _QualityItem(
+          _toggleItem(
+            context,
             label: 'HD',
-            selected: quality == ChatMediaQuality.hd,
+            active: quality == ChatMediaQuality.hd,
             onTap: () => onChanged(ChatMediaQuality.hd),
           ),
         ],
       ),
     );
   }
-}
 
-class _QualityItem extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _QualityItem({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _toggleItem(
+    BuildContext context, {
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
     final colors = context.appColors;
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF2AABEE) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : colors.textPrimary,
-            fontSize: 13,
+            color: active ? colors.textPrimary : colors.textSecondary,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             fontFamily: 'Gilroy',
           ),
@@ -872,8 +1082,8 @@ class _QualityItem extends StatelessWidget {
 class _BottomPickerAction extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
   final bool selected;
+  final VoidCallback onTap;
 
   const _BottomPickerAction({
     required this.icon,
@@ -887,27 +1097,26 @@ class _BottomPickerAction extends StatelessWidget {
     final colors = context.appColors;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 24,
-              color: selected ? const Color(0xFF2AABEE) : colors.textPrimary,
+              color: selected ? const Color(0xff4F40EC) : colors.textSecondary,
+              size: 22,
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                color: selected ? const Color(0xff4F40EC) : colors.textSecondary,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Gilroy',
-                color: selected ? const Color(0xFF2AABEE) : colors.textPrimary,
               ),
             ),
           ],
@@ -919,58 +1128,48 @@ class _BottomPickerAction extends StatelessWidget {
 
 class _SendButton extends StatelessWidget {
   final bool enabled;
-  final int count;
+  final bool isLoading;
+  final bool isWarning;
   final VoidCallback onTap;
 
   const _SendButton({
     required this.enabled,
-    required this.count,
+    required this.isLoading,
+    required this.isWarning,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(999),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: 52,
-        height: 52,
+      child: Container(
+        width: isLoading ? 44 : 92,
+        height: 44,
         decoration: BoxDecoration(
-          color: enabled
-              ? const Color(0xFF2AABEE)
-              : const Color(0xFF2AABEE).withValues(alpha: 0.35),
-          shape: BoxShape.circle,
+          color: isWarning
+              ? const Color(0xffF97316)
+              : enabled
+                  ? const Color(0xff4F40EC)
+                  : const Color(0xffD7DCE9),
+          borderRadius: BorderRadius.circular(999),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            const Icon(Icons.check_rounded, color: Colors.white, size: 28),
-            if (count > 0)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(99)),
-                  ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Color(0xFF2AABEE),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
+        alignment: Alignment.center,
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
+              )
+            : Image.asset(
+                'assets/icons/chats/send.png',
+                width: 18,
+                height: 18,
+                color: Colors.white,
               ),
-          ],
-        ),
       ),
     );
   }

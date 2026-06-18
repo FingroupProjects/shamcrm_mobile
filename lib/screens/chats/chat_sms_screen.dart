@@ -51,6 +51,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
+import 'package:crm_task_manager/services/chat_file_send_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_media_preview_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
@@ -86,7 +87,8 @@ class ChatSmsScreen extends StatefulWidget {
   State<ChatSmsScreen> createState() => _ChatSmsScreenState();
 }
 
-class _ChatSmsScreenState extends State<ChatSmsScreen> {
+class _ChatSmsScreenState extends State<ChatSmsScreen>
+    with WidgetsBindingObserver {
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
@@ -129,9 +131,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   String? _instagramResponseType; // direct | comment
   final Set<int> _expandedPostIds = {};
   final MessageReactionApiService _reactionApi = MessageReactionApiService();
+  final ChatFileSendService _chatFileSendService = ChatFileSendService();
   bool _isNearBottom = true;
   bool _isLoadingOlderFromScroll = false;
   final Set<int> _pendingScrollButtonMessageIds = <int>{};
+  final List<Message> _queuedSocketMessagesDuringSend = <Message>[];
 
   int get _pendingNewMessagesCount => _pendingScrollButtonMessageIds.length;
 
@@ -1035,6 +1039,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkPermissions();
     _getMyDisplayName();
     ChatUnreadCounterService.instance.markChatOpened(
@@ -1070,6 +1075,44 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
       // ✅ ШАГ 2: Параллельно инициализируем сервисы и загружаем свежие данные
       _initializeServicesOptimized();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      unawaited(_persistCurrentChatMessages());
+    }
+  }
+
+  bool get _isSendingFilesNow {
+    return context.read<ListenSenderFileCubit>().state;
+  }
+
+  Future<void> _persistCurrentChatMessages() async {
+    final currentState = _messagingCubit?.state;
+    if (currentState is MessagesCollectionState) {
+      await _cacheService.cacheMessages(widget.chatId, currentState.messages);
+    }
+  }
+
+  bool _canMutateMessagingCubit(MessagingCubit cubit) {
+    return mounted && !cubit.isClosed;
+  }
+
+  void _queueSocketMessageDuringSend(Message message) {
+    _queuedSocketMessagesDuringSend.add(message);
+  }
+
+  void _flushQueuedSocketMessages() {
+    if (!mounted || _queuedSocketMessagesDuringSend.isEmpty) return;
+    final cubit = context.read<MessagingCubit>();
+    for (final message in _queuedSocketMessagesDuringSend) {
+      cubit.mergeIncomingMessage(message);
+    }
+    _queuedSocketMessagesDuringSend.clear();
   }
 
   Future<void> _retryInitialization() async {
@@ -1379,7 +1422,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         chatType: widget.endPointInTab,
       );
 
-      // ✅ Сохраняем в кэш после успешной загрузки
       final state = messagingCubit.state;
       if (state is MessagesCollectionState && state.messages.isNotEmpty) {
         await _cacheService.cacheMessages(widget.chatId, state.messages);
@@ -3288,6 +3330,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         debugPrint(
             '✨ [SOCKET] Message object created: id=${msg.id}, isMyMsg=${msg.isMyMessage}, senderName="${msg.senderName}"');
 
+        if (_isSendingFilesNow && !msg.isMyMessage) {
+          debugPrint(
+              '⏸️ [SOCKET] chat.message queued during active send: id=${msg.id}');
+          _queueSocketMessageDuringSend(msg);
+          return;
+        }
+
         if (mounted) {
           debugPrint('📡 [SOCKET] Dispatching message to MessagingCubit...');
           context.read<MessagingCubit>().mergeIncomingMessage(msg);
@@ -3918,35 +3967,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
         value.endsWith('.hevc');
   }
 
-  Future<String> _prepareFileForSending(
-    PickedChatMedia item,
-    ChatMediaQuality quality,
-  ) async {
-    final originalPath = item.path;
-    if (originalPath == null || originalPath.isEmpty) {
-      throw StateError('Media path is missing for ${item.name}');
-    }
-
-    if (quality == ChatMediaQuality.hd || !item.isImage) {
-      return originalPath;
-    }
-
-    final targetDir = await getTemporaryDirectory();
-    final targetPath =
-        '${targetDir.path}/chat_${DateTime.now().microsecondsSinceEpoch}_${item.name}';
-
-    final compressedFile = await FlutterImageCompress.compressAndGetFile(
-      originalPath,
-      targetPath,
-      quality: 72,
-      minWidth: 1600,
-      minHeight: 1600,
-      keepExif: true,
-    );
-
-    return compressedFile?.path ?? originalPath;
-  }
-
   Future<void> _sendPickedFiles(
     List<PickedChatMedia> items, {
     required ChatMediaQuality quality,
@@ -3954,137 +3974,65 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     final messagingCubit = _messagingCubit ?? context.read<MessagingCubit>();
     final senderFileCubit = context.read<ListenSenderFileCubit>();
     final myName = await _getMyDisplayName();
-    final preparedPaths = <String>[];
-    final localMessageIds = <int>[];
-    final localMediaItems = <MessageMediaItem>[];
-    final fileSizes = <int>[];
-
-    for (final item in items) {
-      final preparedPath = await _prepareFileForSending(item, quality);
-      preparedPaths.add(preparedPath);
-      fileSizes.add(await File(preparedPath).length());
-      localMediaItems.add(
-        MessageMediaItem(
-          path: preparedPath,
-          name: item.name,
-          isImage: item.isImage,
-          isVideo: item.isVideo,
-        ),
-      );
-    }
-
-    final now = DateTime.now();
-    final chunkedMessageIds = <int, List<int>>{};
-    for (int start = 0; start < localMediaItems.length; start += 10) {
-      final chunk = localMediaItems.skip(start).take(10).toList();
-      final localMessageId = -(now.microsecondsSinceEpoch + start);
-      localMessageIds.add(localMessageId);
-      chunkedMessageIds[localMessageId] =
-          List<int>.generate(chunk.length, (index) => start + index);
-
-      final localMessage = Message(
-        id: localMessageId,
-        text: '${chunk.length} media',
-        type: 'media_group',
-        createMessateTime: now.toUtc().toIso8601String(),
-        isMyMessage: true,
-        senderName: myName,
-        isUploading: true,
-        mediaGroupId: 'local-${now.millisecondsSinceEpoch}-${start ~/ 10}',
-        mediaItems: chunk,
-      );
-
-      messagingCubit.addLocalMessage(localMessage);
-    }
-
-    _scrollToBottom(force: true);
-    await _playSound();
-
     try {
-      await widget.apiService.sendChatFiles(
-        widget.chatId,
-        preparedPaths,
-        responseType:
-            _isInstagramCommentChannel ? _instagramResponseType : null,
-        onSendProgress: (sent, total) {
-          if (total <= 0) return;
-
-          final totalFileBytes =
-              fileSizes.fold<int>(0, (sum, size) => sum + size);
-          if (totalFileBytes <= 0) return;
-
-          final payloadSent = (sent.clamp(0, total) / total) * totalFileBytes;
-          double consumed = 0;
-          final perFileProgress = <double>[];
-
-          for (final size in fileSizes) {
-            final fileStart = consumed;
-            final fileEnd = consumed + size;
-            double progress;
-            if (payloadSent <= fileStart) {
-              progress = 0;
-            } else if (payloadSent >= fileEnd) {
-              progress = 1;
-            } else {
-              progress = (payloadSent - fileStart) / size;
-            }
-            perFileProgress.add(progress.clamp(0, 1));
-            consumed = fileEnd;
-          }
-
-          final state = messagingCubit.state;
-          if (state is! MessagesCollectionState) return;
-
-          for (final entry in chunkedMessageIds.entries) {
-            final localMessageId = entry.key;
-            final indices = entry.value;
-            final existing = state.messages
+      await _chatFileSendService.sendPickedFiles(
+        items,
+        quality: quality,
+        context: ChatFileSendContext(
+          chatId: widget.chatId,
+          apiService: widget.apiService,
+          isInstagramCommentChannel: _isInstagramCommentChannel,
+          instagramResponseType: _instagramResponseType,
+          myDisplayName: myName,
+          onAddLocalMessage: (message) {
+            if (!mounted || messagingCubit.isClosed) return;
+            messagingCubit.addLocalMessage(message);
+            _scrollToBottom(force: true);
+          },
+          onUpdateLocalMessageProgress: (localMessageId, updatedItems) {
+            if (!mounted || messagingCubit.isClosed) return;
+            final currentState = messagingCubit.state;
+            if (currentState is! MessagesCollectionState) return;
+            final localMessage = currentState.messages
                 .where((message) => message.id == localMessageId)
                 .cast<Message?>()
-                .firstWhere(
-                  (message) => message != null,
-                  orElse: () => null,
-                );
-            if (existing == null) continue;
-
-            final updatedItems = <MessageMediaItem>[];
-            for (int i = 0; i < existing.mediaItems.length; i++) {
-              final globalIndex = indices[i];
-              updatedItems.add(
-                existing.mediaItems[i].copyWith(
-                  uploadProgress: perFileProgress[globalIndex],
-                ),
-              );
-            }
+                .firstWhere((message) => message != null, orElse: () => null);
+            if (localMessage == null) return;
             messagingCubit.mergeMessageUpdate(
-              existing.copyWith(mediaItems: updatedItems),
+              localMessage.copyWith(mediaItems: updatedItems),
             );
-          }
-        },
-      );
-      for (final localMessageId in localMessageIds) {
-        messagingCubit.removeMessageLocally(localMessageId);
-      }
-      senderFileCubit.updateValue(false);
-    } catch (e) {
-      senderFileCubit.updateValue(false);
-      final existingState = messagingCubit.state;
-      if (existingState is MessagesCollectionState) {
-        for (final localMessageId in localMessageIds) {
-          for (final message in existingState.messages) {
-            if (message.id == localMessageId) {
+          },
+          onFinalizeLocalMessages: (localMessageIds) {
+            if (!mounted || messagingCubit.isClosed) return;
+            final currentState = messagingCubit.state;
+            if (currentState is! MessagesCollectionState) return;
+            for (final localMessageId in localMessageIds) {
+              final localMessage = currentState.messages
+                  .where((message) => message.id == localMessageId)
+                  .cast<Message?>()
+                  .firstWhere((message) => message != null, orElse: () => null);
+              if (localMessage == null) continue;
               messagingCubit.mergeMessageUpdate(
-                message.copyWith(
+                localMessage.copyWith(
                   isUploading: false,
-                  mediaItems: message.mediaItems
+                  mediaItems: localMessage.mediaItems
                       .map((item) => item.copyWith(uploadProgress: 1))
                       .toList(),
                 ),
               );
-              break;
             }
-          }
-        }
+          },
+          onPersistState: _persistCurrentChatMessages,
+          onSentSound: _playSound,
+        ),
+      );
+      senderFileCubit.updateValue(false);
+      _flushQueuedSocketMessages();
+      unawaited(_persistCurrentChatMessages());
+    } catch (e) {
+      senderFileCubit.updateValue(false);
+      if (_canMutateMessagingCubit(messagingCubit)) {
+        _flushQueuedSocketMessages();
       }
       debugPrint('Ошибка пакетной отправки файлов: $e');
     }
@@ -4190,9 +4138,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen> {
     _searchDebounce?.cancel();
     _itemPositionsListener.itemPositions
         .removeListener(_handleVisiblePositionsChanged);
+
+    final currentState = _messagingCubit?.state;
+    if (currentState is MessagesCollectionState) {
+      unawaited(
+          _cacheService.cacheMessages(widget.chatId, currentState.messages));
+    }
+
     _messageController.dispose();
     socketClient.dispose();
     _focusNode.dispose();
+    WidgetsBinding.instance.removeObserver(this);
 
     // ✅ ШАГ 6: Обнуляем счетчик непрочитанных сообщений локально
     // Это скрывает счетчик до момента прихода нового сообщения от сервера
