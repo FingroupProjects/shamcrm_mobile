@@ -74,7 +74,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _openDemoRequest() async {
     final launched = await launchUrl(
       _demoUri,
-      mode: LaunchMode.externalApplication,
+      mode: LaunchMode.inAppBrowserView,
     );
 
     if (!launched && mounted) {

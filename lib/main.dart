@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
@@ -704,7 +703,6 @@ class _MyAppState extends State<MyApp> {
     }
     _deferredStartupInitialized = true;
 
-    unawaited(AppTrackingTransparency.requestTrackingAuthorization());
     unawaited(_initializeFirebaseMessaging());
     if (widget.isDomainChecked && widget.sessionValid) {
       unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());

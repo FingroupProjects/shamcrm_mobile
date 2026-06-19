@@ -77,15 +77,11 @@
 	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Для загрузки изображения с QR-кодом.</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>audio</string>
 		<string>remote-notification</string>
-		<string>voip</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>Launch Screen</string>

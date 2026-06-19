@@ -2,12 +2,37 @@ import AVFAudio
 import CallKit
 import Flutter
 import PushKit
+import StoreKit
 import UIKit
 import linphone
 
 private enum CallKitBranding {
     static let appName = "shamCRM"
     static let incomingFallbackHandle = "Входящий звонок"
+}
+
+private enum CallKitAvailabilityPolicy {
+    static var isAvailable: Bool {
+        !isChinaStorefrontOrRegion
+    }
+
+    private static var isChinaStorefrontOrRegion: Bool {
+        if #available(iOS 13.0, *) {
+            if SKPaymentQueue.default().storefront?.countryCode.uppercased() == "CHN" {
+                return true
+            }
+        }
+
+        if Locale.current.regionCode?.uppercased() == "CN" {
+            return true
+        }
+
+        if TimeZone.current.identifier.uppercased().contains("SHANGHAI") {
+            return true
+        }
+
+        return false
+    }
 }
 
 private struct NativeSipSnapshot: Codable {
@@ -604,7 +629,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private let methodChannel: FlutterMethodChannel
     private let eventChannel: FlutterEventChannel
     private let voipPushManager = IOSVoIPPushManager()
-    private let callKitManager = IOSCallKitManager()
+    private lazy var callKitManager: IOSCallKitManager? = {
+        guard CallKitAvailabilityPolicy.isAvailable else { return nil }
+        return IOSCallKitManager()
+    }()
 
     private var eventSink: FlutterEventSink?
     private var pendingEvents: [[String: Any]] = []
@@ -637,8 +665,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         eventChannel.setStreamHandler(self)
         methodChannel.setMethodCallHandler(handleMethodCall)
-        voipPushManager.delegate = self
-        callKitManager.delegate = self
+        if CallKitAvailabilityPolicy.isAvailable {
+            voipPushManager.delegate = self
+            callKitManager?.delegate = self
+        }
     }
 
     deinit {
@@ -651,7 +681,14 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         guard !initialized else { return }
         initialized = true
         updateAppVisibility(isForeground: UIApplication.shared.applicationState == .active)
-        voipPushManager.start()
+        if CallKitAvailabilityPolicy.isAvailable {
+            voipPushManager.start()
+        } else {
+            defaults.removeObject(forKey: Constants.voipTokenKey)
+            appendDiagnosticLog("callkit_disabled", [
+                "reason": "china_storefront_or_region",
+            ])
+        }
         setupAudioSessionObserversIfNeeded()
         _ = restoreRegistrationIfNeeded(reason: "runtime-init", emitRegisteringEvent: false)
         appendDiagnosticLog("runtime_ready", [
@@ -806,7 +843,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 result(false)
                 return
             }
-            callKitManager.reportCallConnected(callUUID: uuid)
+            callKitManager?.reportCallConnected(callUUID: uuid)
             snapshot.callUUID = uuid.uuidString
             snapshot.callState = "in_call"
             snapshot.message = "Call connected"
@@ -819,12 +856,16 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 return
             }
             let reason = callEndedReason(from: (call.arguments as? [String: Any])?["reason"] as? String)
-            callKitManager.reportCallEnded(callUUID: uuid, reason: reason)
+            callKitManager?.reportCallEnded(callUUID: uuid, reason: reason)
             handleCallEnded(reason: reason, callUUID: uuid, remoteIdentity: snapshot.remoteIdentity)
             result(true)
         case "endSystemCall":
             guard let uuid = resolvedCallUUID(from: call.arguments as? [String: Any]) else {
                 result(false)
+                return
+            }
+            guard let callKitManager else {
+                result(true)
                 return
             }
             callKitManager.requestEndCall(callUUID: uuid) { error in
@@ -1527,7 +1568,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 reportIncomingCall(payload: invitePayload)
             } else {
                 if let uuid = resolvedCallUUID(from: nil) {
-                    callKitManager.refreshIncomingCallDisplay(callUUID: uuid, payload: invitePayload)
+                    callKitManager?.refreshIncomingCallDisplay(callUUID: uuid, payload: invitePayload)
                 }
                 snapshot.callState = "incoming"
                 snapshot.message = message ?? "Incoming call received"
@@ -1561,7 +1602,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         case LinphoneCallStateConnected, LinphoneCallStateStreamsRunning:
             cancelIncomingInviteTimeout()
             if let uuid = resolvedCallUUID(from: nil) {
-                callKitManager.reportCallConnected(callUUID: uuid)
+                callKitManager?.reportCallConnected(callUUID: uuid)
             }
             deferredAction = nil
             pendingIncomingPayload = nil
@@ -1584,7 +1625,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 let endedReason: CXCallEndedReason =
                     previousCallState == "incoming" ? .unanswered :
                     (remotelyDeclined ? .remoteEnded : .failed)
-                callKitManager.reportCallEnded(callUUID: uuid, reason: endedReason)
+                callKitManager?.reportCallEnded(callUUID: uuid, reason: endedReason)
             }
             snapshot.callState = remotelyDeclined ? "ended" : "failed"
             snapshot.message = message ?? (remotelyDeclined ? "Call declined by remote party" : "Call failed")
@@ -1611,7 +1652,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             currentCall = nil
             let uuid = resolvedCallUUID(from: nil)
             if let uuid {
-                callKitManager.reportCallEnded(callUUID: uuid, reason: .remoteEnded)
+                callKitManager?.reportCallEnded(callUUID: uuid, reason: .remoteEnded)
                 handleCallEnded(reason: .remoteEnded, callUUID: uuid, remoteIdentity: remoteIdentity)
             } else {
                 snapshot.callState = "ended"
@@ -1758,6 +1799,15 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return
         }
 
+        guard let callKitManager else {
+            appendDiagnosticLog("callkit_report_skipped", [
+                "call_uuid": payload.uuid.uuidString,
+                "reason": "callkit_unavailable",
+            ])
+            completion?()
+            return
+        }
+
         callKitManager.reportIncomingCall(payload: payload) { [weak self] error in
             defer { completion?() }
             guard let self else { return }
@@ -1801,7 +1851,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             ])
 
             if self.callKitReportedForCurrentIncoming {
-                self.callKitManager.reportCallEnded(callUUID: payload.uuid, reason: .unanswered)
+                self.callKitManager?.reportCallEnded(callUUID: payload.uuid, reason: .unanswered)
             }
 
             self.pendingIncomingPayload = nil
