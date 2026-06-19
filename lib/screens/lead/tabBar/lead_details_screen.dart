@@ -1310,6 +1310,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _screenSurfaceElevated(context),
       _screenFieldBackground(context),
     ];
+    final backGradient = [
+      context.appColors.buttonPrimaryBg.withValues(alpha: 0.18),
+      context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+    ];
     final primaryText = _screenPrimaryText(context);
     final subtleBorder = _screenBorder(context);
 
@@ -1329,14 +1333,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           context,
           width: AppBarShell.orbSize,
           padding: EdgeInsets.zero,
-          gradientColors: appBarGradient,
+          gradientColors: backGradient,
           borderColor: subtleBorder,
           child: IconButton(
             onPressed: _handleBackNavigation,
             icon: Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 18,
-              color: primaryText,
+              color: context.appColors.buttonPrimaryBg,
             ),
           ),
         ),

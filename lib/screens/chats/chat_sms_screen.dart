@@ -22,6 +22,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/media_group_message
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/telegram_chat_app_bar.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
 import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
@@ -60,7 +61,6 @@ import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_context_menu.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {
@@ -93,8 +93,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   final TextEditingController _messageController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FocusNode _focusNode = FocusNode();
+  final FocusNode _searchFocusNode = FocusNode();
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
   late PusherChannelsClient socketClient;
@@ -2075,221 +2077,140 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           }
         },
         child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: context.appColors.surfacePrimary,
-            forceMaterialTransparency: false,
-            scrolledUnderElevation: 0,
-            elevation: 0,
-            centerTitle: false,
-            leadingWidth: 40,
-            leading: Transform.translate(
-              offset: const Offset(6, 0),
-              child: IconButton(
-                icon: Image.asset(
-                  'assets/icons/arrow-left.png',
-                  width: 40,
-                  height: 40,
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: IconButton(
-                  icon: _isSearching
-                      ? const Icon(Icons.close)
-                      : Image.asset('assets/icons/AppBar/search.png',
-                          width: 24, height: 24),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = !_isSearching;
-                      _searchQuery = null;
-                    });
-                    if (!_isSearching) {
-                      _searchDebounce?.cancel();
-                      context.read<MessagingCubit>().resetAndSearch(
-                            widget.chatId,
-                            search: null,
-                            chatType: widget.endPointInTab,
+          appBar: TelegramChatAppBar(
+            name: isSupportChat
+                ? AppLocalizations.of(context)!.translate('support_chat_name')
+                : (widget.chatItem.name.isNotEmpty
+                    ? widget.chatItem.name
+                    : AppLocalizations.of(context)!.translate('no_name')),
+            avatar: widget.chatItem.avatar,
+            isGroupChat: _isGroupChat == true,
+            isSearching: _isSearching,
+            isSupportChat: isSupportChat,
+            searchController: _searchController,
+            searchFocusNode: _searchFocusNode,
+            onBack: () => Navigator.pop(context),
+            onProfileTap: isSupportChat
+                ? null
+                : () async {
+                    if (_isRequestInProgress) return;
+                    setState(() => _isRequestInProgress = true);
+                    try {
+                      if (widget.endPointInTab == 'lead') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                UserProfileScreen(chatId: widget.chatId),
+                          ),
+                        );
+                      } else if (widget.endPointInTab == 'task') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                TaskByIdScreen(chatId: widget.chatId),
+                          ),
+                        );
+                      } else if (widget.endPointInTab == 'corporate') {
+                        try {
+                          final getChatById =
+                              await widget.apiService.getChatById(widget.chatId);
+                          if (getChatById.chatUsers.isNotEmpty &&
+                              getChatById.chatUsers.length == 2 &&
+                              getChatById.group == null) {
+                            final prefs = await SharedPreferences.getInstance();
+                            final userIdCheck = prefs.getString('userID') ?? '';
+                            final otherUsers = getChatById.chatUsers
+                                .where((user) =>
+                                    user.participant.id.toString() != userIdCheck)
+                                .toList();
+
+                            if (otherUsers.isNotEmpty) {
+                              final participant = otherUsers.first.participant;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ParticipantProfileScreen(
+                                    userId: participant.id.toString(),
+                                    image: participant.image,
+                                    name: participant.name,
+                                    email: participant.email,
+                                    phone: participant.phone,
+                                    login: participant.login,
+                                    lastSeen: participant.lastSeen.toString(),
+                                    buttonChat: false,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CorporateProfileScreen(
+                                    chatId: widget.chatId,
+                                    chatItem: widget.chatItem,
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CorporateProfileScreen(
+                                  chatId: widget.chatId,
+                                  chatItem: widget.chatItem,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint(
+                            'Ошибка при открытии профиля корпоративного чата: $e',
                           );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CorporateProfileScreen(
+                                chatId: widget.chatId,
+                                chatItem: widget.chatItem,
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isRequestInProgress = false);
+                      } else {
+                        _isRequestInProgress = false;
+                      }
                     }
                   },
-                ),
-              ),
-            ],
-            title: Transform.translate(
-              offset: const Offset(-12, 0),
-              child: _isSearching
-                  ? TextField(
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!
-                            .translate('search_appbar'),
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(
-                            color: context.appColors.textPrimary,
-                            fontFamily: 'Gilroy'),
-                      ),
-                      onChanged: _onSearchChanged,
-                    )
-                  : GestureDetector(
-                      onTap: isSupportChat
-                          ? null
-                          : () async {
-                              if (_isRequestInProgress) return;
-                              setState(() {
-                                _isRequestInProgress = true;
-                              });
-                              try {
-                                if (widget.endPointInTab == 'lead') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => UserProfileScreen(
-                                          chatId: widget.chatId),
-                                    ),
-                                  );
-                                } else if (widget.endPointInTab == 'task') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          TaskByIdScreen(chatId: widget.chatId),
-                                    ),
-                                  );
-                                } else if (widget.endPointInTab ==
-                                    'corporate') {
-                                  try {
-                                    final getChatById = await widget.apiService
-                                        .getChatById(widget.chatId);
-                                    if (getChatById.chatUsers.isNotEmpty &&
-                                        getChatById.chatUsers.length == 2 &&
-                                        getChatById.group == null) {
-                                      String userIdCheck = '';
-                                      SharedPreferences prefs =
-                                          await SharedPreferences.getInstance();
-                                      userIdCheck =
-                                          prefs.getString('userID') ?? '';
-                                      final otherUsers = getChatById.chatUsers
-                                          .where((user) =>
-                                              user.participant.id.toString() !=
-                                              userIdCheck)
-                                          .toList();
-
-                                      if (otherUsers.isNotEmpty) {
-                                        final participant =
-                                            otherUsers.first.participant;
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                ParticipantProfileScreen(
-                                              userId: participant.id.toString(),
-                                              image: participant.image,
-                                              name: participant.name,
-                                              email: participant.email,
-                                              phone: participant.phone,
-                                              login: participant.login,
-                                              lastSeen: participant.lastSeen
-                                                  .toString(),
-                                              buttonChat: false,
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        // Если не найден другой участник, открываем профиль группы
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                CorporateProfileScreen(
-                                              chatId: widget.chatId,
-                                              chatItem: widget.chatItem,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    } else {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CorporateProfileScreen(
-                                            chatId: widget.chatId,
-                                            chatItem: widget.chatItem,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    debugPrint(
-                                        "Ошибка при открытии профиля корпоративного чата: $e");
-                                    // В случае ошибки открываем профиль группы
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            CorporateProfileScreen(
-                                          chatId: widget.chatId,
-                                          chatItem: widget.chatItem,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        AppLocalizations.of(context)!
-                                            .translate('error'),
-                                        style: TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: context.appColors.textInverse,
-                                        ),
-                                      ),
-                                      backgroundColor: context.appColors.error,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } finally {
-                                setState(() {
-                                  _isRequestInProgress = false;
-                                });
-                              }
-                            },
-                      child: Row(
-                        children: [
-                          _buildAvatar(widget.chatItem.avatar),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              isSupportChat
-                                  ? AppLocalizations.of(context)!
-                                      .translate('support_chat_name')
-                                  : widget.chatItem.name.isEmpty
-                                      ? AppLocalizations.of(context)!
-                                          .translate('no_name')
-                                      : widget.chatItem.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: ChatSmsStyles.appBarTitleColor,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Gilroy',
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
+            onSearchToggle: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = null;
+                }
+              });
+                      if (!_isSearching) {
+                        _searchDebounce?.cancel();
+                        context.read<MessagingCubit>().resetAndSearch(
+                              widget.chatId,
+                              search: null,
+                      chatType: widget.endPointInTab,
+                    );
+              } else {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _searchFocusNode.requestFocus();
+                  }
+                });
+              }
+            },
+            onSearchChanged: _onSearchChanged,
           ),
           backgroundColor: context.appColors.backgroundSecondary,
           body: Column(
@@ -4146,8 +4067,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
 
     _messageController.dispose();
+    _searchController.dispose();
     socketClient.dispose();
     _focusNode.dispose();
+    _searchFocusNode.dispose();
     WidgetsBinding.instance.removeObserver(this);
 
     // ✅ ШАГ 6: Обнуляем счетчик непрочитанных сообщений локально

@@ -153,6 +153,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:new_version_plus/new_version_plus.dart';
 import 'package:provider/provider.dart';
 import 'bloc/cash_register_list/cash_register_list_bloc.dart';
@@ -165,6 +166,18 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = ApiService.navigatorKey;
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     ApiService.scaffoldMessengerKey;
+
+const String _telegramCrashBotToken = String.fromEnvironment(
+  'TELEGRAM_CRASH_BOT_TOKEN',
+  defaultValue: '8926264073:AAEF31-5Bvhnr2Xdz6GIpG5u_KyFbWpA5KM',
+);
+const String _telegramCrashChatId = String.fromEnvironment(
+  'TELEGRAM_CRASH_CHAT_ID',
+  defaultValue: '6833674360',
+);
+const Duration _telegramCrashDuplicateWindow = Duration(seconds: 2);
+
+final Map<String, DateTime> _recentCrashReports = <String, DateTime>{};
 
 void main() {
   runZonedGuarded(() async {
@@ -344,10 +357,24 @@ Future<void> _initializeCrashlytics() async {
 
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    unawaited(
+      _sendCrashToTelegram(
+        source: 'flutter_error',
+        error: errorDetails.exception,
+        stackTrace: errorDetails.stack,
+      ),
+    );
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    unawaited(
+      _sendCrashToTelegram(
+        source: 'platform_dispatcher',
+        error: error,
+        stackTrace: stack,
+      ),
+    );
     return true;
   };
 
@@ -355,19 +382,86 @@ Future<void> _initializeCrashlytics() async {
       .setCrashlyticsCollectionEnabled(!kDebugMode);
 }
 
+Future<void> _sendCrashToTelegram({
+  required String source,
+  required Object error,
+  required StackTrace? stackTrace,
+}) async {
+  if (_telegramCrashBotToken.isEmpty || _telegramCrashChatId.isEmpty) {
+    return;
+  }
+
+  final fingerprint = '$source|$error|${stackTrace?.toString() ?? ''}';
+  final now = DateTime.now();
+  _recentCrashReports.removeWhere(
+    (_, time) => now.difference(time) > const Duration(minutes: 1),
+  );
+
+  final lastReportedAt = _recentCrashReports[fingerprint];
+  if (lastReportedAt != null &&
+      now.difference(lastReportedAt) < _telegramCrashDuplicateWindow) {
+    return;
+  }
+  _recentCrashReports[fingerprint] = now;
+
+  final stackText = stackTrace?.toString().trim();
+  final rawMessage = StringBuffer()
+    ..writeln('🔴 Crash report')
+    ..writeln('Source: $source')
+    ..writeln('Time: ${now.toIso8601String()}')
+    ..writeln('Error: $error');
+
+  if (stackText != null && stackText.isNotEmpty) {
+    rawMessage
+      ..writeln('Stack:')
+      ..writeln(stackText);
+  }
+
+  final message = _truncateTelegramMessage(rawMessage.toString());
+
+  try {
+    await http.post(
+      Uri.parse(
+        'https://api.telegram.org/bot$_telegramCrashBotToken/sendMessage',
+      ),
+      body: {
+        'chat_id': _telegramCrashChatId,
+        'text': message,
+        'disable_web_page_preview': 'true',
+      },
+    ).timeout(const Duration(seconds: 5));
+  } catch (e, stackTrace) {
+    debugPrint('main: Telegram crash notify error: $e');
+    debugPrint('main: Telegram crash notify stackTrace: $stackTrace');
+  }
+}
+
+String _truncateTelegramMessage(String message) {
+  const maxLength = 3900;
+  if (message.length <= maxLength) {
+    return message;
+  }
+  return '${message.substring(0, maxLength)}\n\n... truncated';
+}
+
 Future<void> _recordFatalError(
   Object error,
   StackTrace stackTrace, {
   required String reason,
 }) async {
-  if (Firebase.apps.isEmpty) return;
-
   try {
-    await FirebaseCrashlytics.instance.setCustomKey('error_source', reason);
-    await FirebaseCrashlytics.instance.recordError(
-      error,
-      stackTrace,
-      fatal: true,
+    if (Firebase.apps.isNotEmpty) {
+      await FirebaseCrashlytics.instance.setCustomKey('error_source', reason);
+      await FirebaseCrashlytics.instance.recordError(
+        error,
+        stackTrace,
+        fatal: true,
+      );
+    }
+    await _sendCrashToTelegram(
+      source: reason,
+      error: error,
+      stackTrace: stackTrace,
     );
   } catch (_) {}
 }

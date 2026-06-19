@@ -145,6 +145,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         backgroundColor: context.appColors.surfacePrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
+          toolbarHeight: 72,
+          elevation: 0,
+          scrolledUnderElevation: 0,
           title: Text(
             AppLocalizations.of(context)!.translate('group_profile'),
             style: TextStyle(
@@ -158,8 +161,26 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
           ),
           backgroundColor: context.appColors.surfacePrimary,
           leading: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png',
-                width: 24, height: 24),
+            icon: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.appColors.backgroundSecondary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.shadow.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 16,
+                color: context.appColors.textPrimary,
+              ),
+            ),
             onPressed: () {
               Navigator.pop(context);
             },
@@ -177,11 +198,32 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         backgroundColor: context.appColors.backgroundSecondary,
         appBar: AppBar(
           forceMaterialTransparency: true,
+          toolbarHeight: 72,
+          elevation: 0,
+          scrolledUnderElevation: 0,
           title: null, // Убираем заголовок для support
           backgroundColor: context.appColors.surfacePrimary,
           leading: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png',
-                width: 24, height: 24),
+            icon: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.appColors.backgroundSecondary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: context.appColors.shadow.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 16,
+                color: context.appColors.textPrimary,
+              ),
+            ),
             onPressed: () {
               Navigator.pop(context);
             },
@@ -222,6 +264,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
       backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         forceMaterialTransparency: true,
+        toolbarHeight: 72,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('group_profile'),
           style: TextStyle(
@@ -233,8 +278,26 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
         ),
         backgroundColor: context.appColors.surfacePrimary,
         leading: IconButton(
-          icon:
-              Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: context.appColors.backgroundSecondary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: context.appColors.shadow.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: context.appColors.textPrimary,
+            ),
+          ),
           onPressed: () {
             Navigator.pop(context);
           },
