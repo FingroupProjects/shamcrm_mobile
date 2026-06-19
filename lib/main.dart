@@ -186,7 +186,7 @@ void main() {
 
       await _safeInitializeOfflineRuntime();
       await _safeInitializeFirebase();
-
+  
       final sessionValidation = await _validateApplicationSession(apiService);
 
       String? token;
