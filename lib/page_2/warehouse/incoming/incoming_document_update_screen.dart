@@ -91,10 +91,10 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
             if (mounted) {
               _tabController.index = 0;
               _showSnackBar(
-                AppLocalizations.of(context)!.translate('select_lead_first') ??
-                    'Пожайлуста заполните вкладку "Oсновное"',
-                false
-              );
+                  AppLocalizations.of(context)!
+                          .translate('select_lead_first') ??
+                      'Пожайлуста заполните вкладку "Oсновное"',
+                  false);
             }
           });
         }
@@ -313,10 +313,8 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => VariantSelectionBottomSheet(
-        existingItems: _items,
-        isService: false
-      ),
+      builder: (context) =>
+          VariantSelectionBottomSheet(existingItems: _items, isService: false),
     );
 
     if (result != null) {
@@ -486,30 +484,27 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
     if (_items.isEmpty) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
-            'Добавьте хотя бы один товар',
-        false
-      );
+          AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
+              'Добавьте хотя бы один товар',
+          false);
       cancelLoading();
       return;
     }
 
     if (_selectedStorage == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_storage') ??
-            'Выберите склад',
-        false
-      );
+          AppLocalizations.of(context)!.translate('select_storage') ??
+              'Выберите склад',
+          false);
       cancelLoading();
       return;
     }
 
     if (_selectedSupplier == null) {
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ??
-            'Выберите поставщика',
-        false
-      );
+          AppLocalizations.of(context)!.translate('select_supplier') ??
+              'Выберите поставщика',
+          false);
       cancelLoading();
       return;
     }
@@ -554,10 +549,9 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
         _tabController.animateTo(1);
       }
       _showSnackBar(
-        AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
-            'Заполните все обязательные поля',
-        false
-      );
+          AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
+              'Заполните все обязательные поля',
+          false);
       // Фокусируемся на первом товаре с ошибкой
       _focusFirstErrorItem();
       cancelLoading();
@@ -600,30 +594,30 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
     }
   }
 
-void _showSnackBar(String message, bool isSuccess) {
-  if (!mounted) return;
-  final colors = context.appColors;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: colors.surfacePrimary,
+  void _showSnackBar(String message, bool isSuccess) {
+    if (!mounted) return;
+    final colors = context.appColors;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: colors.surfacePrimary,
+          ),
         ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 3),
       ),
-      backgroundColor: isSuccess ? Colors.green : Colors.red,
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      duration: const Duration(seconds: 3),
-    ),
-  );
-}
+    );
+  }
 
   // ✅ НОВОЕ: Вычисляем общую сумму
   double get _totalAmount {
@@ -755,7 +749,7 @@ void _showSnackBar(String message, bool isSuccess) {
   }
 
   Widget _buildGoodsTab(AppLocalizations localizations) {
-        final colors = context.appColors; // ← добавь эту строку
+    final colors = context.appColors; // ← добавь эту строку
 
     return Column(
       children: [
@@ -849,72 +843,72 @@ void _showSnackBar(String message, bool isSuccess) {
     final total = _totalAmount;
 
     return AppBar(
-      backgroundColor: colors.surfacePrimary,
-      forceMaterialTransparency: true,
-      leadingWidth: 56,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
-        onPressed: () async {
-          if (_items.isNotEmpty) {
-            final shouldExit = await ConfirmExitDialog.show(context);
-            if (shouldExit && mounted) {
+        backgroundColor: colors.surfacePrimary,
+        forceMaterialTransparency: true,
+        leadingWidth: 56,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+          onPressed: () async {
+            if (_items.isNotEmpty) {
+              final shouldExit = await ConfirmExitDialog.show(context);
+              if (shouldExit && mounted) {
+                Navigator.pop(context);
+              }
+            } else {
               Navigator.pop(context);
             }
-          } else {
-            Navigator.pop(context);
-          }
-        },
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
+          },
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${localizations.translate('edit_incoming_document') ?? 'Редактировать приход'} №${widget.document.docNumber}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
               ),
             ),
-          ),
-          if (hasItems) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet_outlined,
-                    color: colors.buttonPrimaryBg,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    total.toStringAsFixed(0),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
+            if (hasItems) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
                       color: colors.buttonPrimaryBg,
+                      size: 18,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Text(
+                      total.toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        color: colors.buttonPrimaryBg,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
-        ],
-      ),
-      centerTitle: false
-    );
+        ),
+        centerTitle: false);
   }
 
   Widget _buildDateField(AppLocalizations localizations) {
@@ -1173,10 +1167,9 @@ void _showSnackBar(String message, bool isSuccess) {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                border: Border.all(color: colors.borderSubtle),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -1217,10 +1210,9 @@ void _showSnackBar(String message, bool isSuccess) {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                border: Border.all(color: colors.borderSubtle),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(

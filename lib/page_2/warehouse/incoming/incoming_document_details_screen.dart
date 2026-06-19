@@ -531,11 +531,11 @@ class _IncomingDocumentDetailsScreenState
                         AppLocalizations.of(context)!
                                 .translate('document_data_unavailable') ??
                             'Данные документа недоступны',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+                          color: context.appColors.textSecondary,
                         ),
                       ),
                     )
@@ -593,11 +593,11 @@ class _IncomingDocumentDetailsScreenState
         offset: const Offset(-10, 0),
         child: Text(
           "Приход №${widget.docNumber}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
       ),
@@ -614,6 +614,7 @@ class _IncomingDocumentDetailsScreenState
                         'assets/icons/edit.png',
                         width: 24,
                         height: 24,
+                        color: colors.iconPrimary,
                       ),
                       onPressed: () async {
                         if (_isLoading) return;
@@ -642,6 +643,7 @@ class _IncomingDocumentDetailsScreenState
                         'assets/icons/delete.png',
                         width: 24,
                         height: 24,
+                        color: colors.iconPrimary,
                       ),
                       onPressed: () {
                         if (_isLoading) return;
@@ -745,11 +747,11 @@ class _IncomingDocumentDetailsScreenState
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty') ??
                         'Нет товаров',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -818,21 +820,21 @@ class _IncomingDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
+                                      color: context.appColors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
+                                      color: context.appColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -847,21 +849,21 @@ class _IncomingDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: context.appColors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                 ),
                               ],
@@ -876,11 +878,11 @@ class _IncomingDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('price') ??
                                       'Цена',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: context.appColors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -890,11 +892,11 @@ class _IncomingDocumentDetailsScreenState
                                                   good.price ?? '0.00') ??
                                               0.00))
                                       .toStringAsFixed(2)),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -908,7 +910,7 @@ class _IncomingDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
+                          color: context.appColors.surfaceElevated,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -918,21 +920,21 @@ class _IncomingDocumentDetailsScreenState
                               AppLocalizations.of(context)!
                                       .translate('total') ??
                                   'Итого',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                color: context.appColors.textPrimary,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xff4CAF50),
+                                color: context.appColors.buttonPrimaryBg,
                               ),
                             ),
                           ],
@@ -980,12 +982,12 @@ class _IncomingDocumentDetailsScreenState
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: context.appColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child:
-            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+      child: Center(
+        child: Icon(Icons.image_not_supported,
+            size: 40, color: context.appColors.textSecondary),
       ),
     );
   }
@@ -1026,11 +1028,11 @@ class _IncomingDocumentDetailsScreenState
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textSecondary,
       ),
     );
   }
@@ -1038,11 +1040,11 @@ class _IncomingDocumentDetailsScreenState
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: context.appColors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

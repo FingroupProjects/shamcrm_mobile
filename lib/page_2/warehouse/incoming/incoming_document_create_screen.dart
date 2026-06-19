@@ -850,11 +850,11 @@ class _IncomingDocumentCreateScreenState
                   'Создать приход',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -869,9 +869,9 @@ class _IncomingDocumentCreateScreenState
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: Color(0xff4CAF50),
+                    color: colors.buttonPrimaryBg,
                     size: 18,
                   ),
                   const SizedBox(width: 6),
@@ -948,11 +948,11 @@ class _IncomingDocumentCreateScreenState
       children: [
         Text(
           _totalByCurrencyLabel(localizations),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -960,16 +960,16 @@ class _IncomingDocumentCreateScreenState
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),

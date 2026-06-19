@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
@@ -188,9 +189,10 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
       return;
     }
 
+    final colors = context.appColors;
     final selected = await showModalBottomSheet<WareHouse>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -204,18 +206,18 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xffD7DEE9),
+                  color: colors.borderSubtle,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Склад',
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -288,9 +290,10 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
   }
 
   Future<void> _openMainFilter() async {
+    final colors = context.appColors;
     final action = await showModalBottomSheet<_RmkFilterAction>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -305,17 +308,17 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xffD7DEE9),
+                    color: colors.borderSubtle,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Фильтр',
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -531,6 +534,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
       (sum, item) => sum + (item.customTotal ?? item.quantity * item.price),
     );
 
+    final colors = context.appColors;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -543,8 +547,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
           maxChildSize: 0.92,
           builder: (context, controller) {
             return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xffF8F9FB),
+              decoration: BoxDecoration(
+                color: colors.surfacePrimary,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
@@ -554,7 +558,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xffD7DEE9),
+                      color: colors.borderSubtle,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -562,11 +566,11 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Выбранные товары',
                             style: TextStyle(
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               fontFamily: 'Gilroy',
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -579,13 +583,13 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colors.surfaceElevated,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             '${items.length} шт',
-                            style: const TextStyle(
-                              color: Color(0xff1E2E52),
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontFamily: 'Gilroy',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -626,12 +630,12 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: colors.surfaceElevated,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xff1E2E52)
-                                  .withValues(alpha: 0.06),
+                              color:
+                                  colors.shadow.withValues(alpha: 0.06),
                               blurRadius: 18,
                               offset: const Offset(0, 6),
                             ),
@@ -639,10 +643,10 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Text(
+                            Text(
                               'Итого',
                               style: TextStyle(
-                                color: Color(0xff718096),
+                                color: colors.textSecondary,
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -651,8 +655,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                             const Spacer(),
                             Text(
                               _formatMoney(total),
-                              style: const TextStyle(
-                                color: Color(0xff1E2E52),
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontFamily: 'Gilroy',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
@@ -674,11 +678,12 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FB),
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         titleSpacing: 16,
         title: _isSearching
@@ -687,10 +692,10 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                 focusNode: _searchFocusNode,
                 onChanged: _onSearchChanged,
               )
-            : const Text(
+            : Text(
                 'Покупка товаров',
                 style: TextStyle(
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
                   fontSize: 20,
@@ -701,9 +706,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                 IconButton(
                   tooltip: 'Закрыть поиск',
                   style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                    foregroundColor: colors.iconPrimary,
+                    overlayColor: colors.iconPrimary.withValues(alpha: 0.08),
                   ),
                   icon: const Icon(
                     Icons.close,
@@ -718,9 +722,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                 IconButton(
                   tooltip: 'Поиск',
                   style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                    foregroundColor: colors.iconPrimary,
+                    overlayColor: colors.iconPrimary.withValues(alpha: 0.08),
                   ),
                   icon: Image.asset(
                     'assets/icons/AppBar/search.png',
@@ -732,9 +735,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                 IconButton(
                   tooltip: 'Фильтр',
                   style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                    foregroundColor: colors.iconPrimary,
+                    overlayColor: colors.iconPrimary.withValues(alpha: 0.08),
                   ),
                   icon: Image.asset(
                     'assets/icons/AppBar/filter.png',
@@ -746,9 +748,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                 IconButton(
                   tooltip: 'Сканер',
                   style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xff1E2E52),
-                    overlayColor:
-                        const Color(0xff1E2E52).withValues(alpha: 0.06),
+                    foregroundColor: colors.iconPrimary,
+                    overlayColor: colors.iconPrimary.withValues(alpha: 0.08),
                   ),
                   icon: Image.asset(
                     'assets/icons/AppBar/scanner.png',
@@ -782,7 +783,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
               return Column(
                 children: [
                   Container(
-                    color: const Color(0xffF8F9FB),
+                    color: colors.surfacePrimary,
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                     child: Column(
                       children: [
@@ -807,8 +808,8 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                   ),
                   Expanded(
                     child: RefreshIndicator(
-                      color: const Color(0xff1E2E52),
-                      backgroundColor: Colors.white,
+                      color: colors.textPrimary,
+                      backgroundColor: colors.surfacePrimary,
                       onRefresh: _handlePullRefresh,
                       child: CustomScrollView(
                         controller: _scrollController,
@@ -1019,9 +1020,10 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
   }
 
   Future<void> _pickStorage() async {
+    final colors = context.appColors;
     final selected = await showModalBottomSheet<WareHouse>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1035,18 +1037,18 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xffD7DEE9),
+                  color: colors.borderSubtle,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Склад',
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -1065,8 +1067,8 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                     final isSelected = storage.id == _selectedStorage?.id;
                     return Material(
                       color: isSelected
-                          ? const Color(0xffEEF4FF)
-                          : const Color(0xffF4F7FD),
+                          ? colors.surfaceElevated
+                          : colors.surfaceElevated,
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14),
@@ -1081,8 +1083,8 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                               Expanded(
                                 child: Text(
                                   storage.name,
-                                  style: const TextStyle(
-                                    color: Color(0xff1E2E52),
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
                                     fontFamily: 'Gilroy',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -1090,9 +1092,9 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                                 ),
                               ),
                               if (isSelected)
-                                const Icon(
+                                Icon(
                                   Icons.check_rounded,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.iconPrimary,
                                 ),
                             ],
                           ),
@@ -1306,19 +1308,20 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final selected = widget.selectedSupplier;
     final borderColor =
-        widget.showError ? const Color(0xffE45454) : const Color(0xffF4F7FD);
+        widget.showError ? const Color(0xffE45454) : colors.borderSubtle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Поставщик',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -1338,8 +1341,8 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
           excludeSelected: false,
           initialItem: selected,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor: colors.surfaceElevated,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(color: borderColor, width: 1.5),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(color: borderColor, width: 1.5),
@@ -1354,8 +1357,8 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -1364,8 +1367,8 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
                 if ((item.phone ?? '').trim().isNotEmpty)
                   Text(
                     item.phone!.trim(),
-                    style: const TextStyle(
-                      color: Color(0xff99A4BA),
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
                       fontFamily: 'Gilroy',
@@ -1377,27 +1380,27 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
           headerBuilder: (context, item, enabled) {
             return Text(
               item.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
           hintBuilder: (context, hint, enabled) {
-            return const Text(
+            return Text(
               'Выберите поставщика',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
           noResultFoundBuilder: (context, text) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
@@ -1405,7 +1408,7 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),

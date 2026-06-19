@@ -42,7 +42,7 @@ class _StorageWidgetState extends State<StorageWidget> {
         if (widget.selectedStorage != null) {
           try {
             selectedStorageData = currentState.storageList.firstWhere(
-                  (storage) => storage.id.toString() == widget.selectedStorage,
+              (storage) => storage.id.toString() == widget.selectedStorage,
             );
           } catch (e) {
             selectedStorageData = null;
@@ -101,8 +101,7 @@ class _StorageWidgetState extends State<StorageWidget> {
             if (widget.selectedStorage != null && storageList.isNotEmpty) {
               try {
                 selectedStorageData = storageList.firstWhere(
-                      (storage) =>
-                  storage.id.toString() == widget.selectedStorage,
+                  (storage) => storage.id.toString() == widget.selectedStorage,
                 );
               } catch (e) {
                 selectedStorageData = null;
@@ -142,7 +141,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                 closeDropDownOnClearFilterSearch: true,
                 items: state is StorageLoaded ? state.storageList : [],
                 searchHintText:
-                AppLocalizations.of(context)!.translate('search'),
+                    AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: !isLoading,
                 decoration: CustomDropdownDecoration(
@@ -160,7 +159,8 @@ class _StorageWidgetState extends State<StorageWidget> {
                   expandedBorderRadius: BorderRadius.circular(12),
                   listItemDecoration: ListItemDecoration(
                     splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.10),
-                    highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                    highlightColor:
+                        colors.buttonPrimaryBg.withValues(alpha: 0.12),
                     selectedColor: colors.surfaceElevated,
                   ),
                   searchFieldDecoration: SearchFieldDecoration(
@@ -187,12 +187,11 @@ class _StorageWidgetState extends State<StorageWidget> {
                     ),
                     prefixIcon: Icon(Icons.search,
                         size: 22, color: colors.textSecondary),
-                    suffixIcon: (onClear) =>
-                        IconButton(
-                          onPressed: onClear,
-                          icon: Icon(Icons.close,
-                              size: 20, color: colors.textSecondary),
-                        ),
+                    suffixIcon: (onClear) => IconButton(
+                      onPressed: onClear,
+                      icon: Icon(Icons.close,
+                          size: 20, color: colors.textSecondary),
+                    ),
                   ),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -210,14 +209,14 @@ class _StorageWidgetState extends State<StorageWidget> {
                 },
                 headerBuilder: (context, selectedItem, enabled) {
                   if (isLoading) {
-                    return const Center(
+                    return Center(
                       child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xff1E2E52)),
+                              colors.buttonPrimaryBg),
                         ),
                       ),
                     );
@@ -235,14 +234,14 @@ class _StorageWidgetState extends State<StorageWidget> {
                 },
                 hintBuilder: (context, hint, enabled) {
                   if (isLoading) {
-                    return const Center(
+                    return Center(
                       child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xff1E2E52)),
+                              colors.buttonPrimaryBg),
                         ),
                       ),
                     );
@@ -260,13 +259,13 @@ class _StorageWidgetState extends State<StorageWidget> {
                 },
                 noResultFoundBuilder: (context, text) {
                   if (isLoading) {
-                    return const Center(
+                    return Center(
                       child: Padding(
-                        padding: EdgeInsets.all(20.0),
+                        padding: const EdgeInsets.all(20.0),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xff1E2E52)),
+                              colors.buttonPrimaryBg),
                         ),
                       ),
                     );
@@ -287,7 +286,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                 },
                 excludeSelected: false,
                 initialItem: (state is StorageLoaded &&
-                    state.storageList.contains(selectedStorageData))
+                        state.storageList.contains(selectedStorageData))
                     ? selectedStorageData
                     : null,
                 // ✅ FIX: Don't validate while data is loading or on initial load
