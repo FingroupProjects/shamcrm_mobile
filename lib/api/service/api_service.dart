@@ -2604,6 +2604,33 @@ class ApiService {
   }
 
 //_________________________________ END___API__LOGIN____________________________________________//
+  Future<bool> checkUserAccess(int userId) async {
+    final response = await _postRequest(
+      '/check-access/$userId',
+      {'id': userId},
+    );
+
+    if (response.statusCode == 200) {
+      final decodedJson = json.decode(response.body);
+      final result = decodedJson['result'];
+
+      if (result is bool) {
+        return result;
+      }
+
+      if (result is num) {
+        return result != 0;
+      }
+
+      if (result is String) {
+        final normalized = result.toLowerCase().trim();
+        return normalized == 'true' || normalized == '1';
+      }
+    }
+
+    throw Exception('Не удалось проверить доступ пользователя');
+  }
+
   Future<ForgotPinResponse> forgotPin(LoginModel loginModel) async {
     try {
       final organizationId = await getSelectedOrganization();

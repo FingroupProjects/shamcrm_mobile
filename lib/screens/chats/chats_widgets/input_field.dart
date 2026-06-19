@@ -244,9 +244,9 @@ class _InputFieldState extends State<InputField>
         left: offset.dx + 8,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width - 8),
         top: offset.dy - 220,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Material(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Material(
             color: context.appColors.overlay.withValues(alpha: 0.0),
             child: Container(
               decoration: BoxDecoration(
@@ -344,9 +344,9 @@ class _InputFieldState extends State<InputField>
         left: offset.dx + 8,
         right: MediaQuery.of(context).size.width - (offset.dx + size.width - 8),
         top: offset.dy - 70,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Material(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Material(
             color: context.appColors.overlay.withValues(alpha: 0.0),
             child: Container(
               decoration: BoxDecoration(
@@ -900,7 +900,8 @@ class _InputFieldState extends State<InputField>
                                     fontWeight: FontWeight.w400,
                                     height: 1.3,
                                   ),
-                                  fillColor: context.appColors.overlay.withValues(alpha: 0.0),
+                                  fillColor: context.appColors.overlay
+                                      .withValues(alpha: 0.0),
                                   borderRadius: ChatSmsStyles.inputBorderRadius,
                                   contentPadding: EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -928,26 +929,30 @@ class _InputFieldState extends State<InputField>
                               ),
 
                               // Динамическая кнопка (голос/отправить)
-                              AnimatedSwitcher(
-                                duration: Duration(milliseconds: 250),
-                                transitionBuilder: (Widget child,
-                                    Animation<double> animation) {
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: ScaleTransition(
-                                      scale: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: _hasText
-                                    ? _buildSendButton(messagingCubit,
-                                        editingMessage, replyMsgId)
-                                    : SizedBox(
-                                        key: ValueKey('voice_placeholder'),
-                                        width: 36,
-                                        height: 36,
+                              SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: AnimatedSwitcher(
+                                  duration: Duration(milliseconds: 250),
+                                  transitionBuilder: (Widget child,
+                                      Animation<double> animation) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: ScaleTransition(
+                                        scale: animation,
+                                        child: child,
                                       ),
+                                    );
+                                  },
+                                  child: _hasText
+                                      ? _buildSendButton(messagingCubit,
+                                          editingMessage, replyMsgId)
+                                      : SizedBox(
+                                          key: ValueKey('voice_placeholder'),
+                                          width: 36,
+                                          height: 36,
+                                        ),
+                                ),
                               ),
 
                               SizedBox(width: 4),
@@ -994,8 +999,9 @@ class _InputFieldState extends State<InputField>
           )
         : Material(
             key: ValueKey('send'),
+            borderRadius: BorderRadius.circular(18),
             color: context.appColors.overlay.withValues(alpha: 0.0),
-            child: InkWell(
+            child: InkResponse(
               onTap: () {
                 if (widget.messageController.text.isNotEmpty) {
                   if (editingMessage != null) {
@@ -1018,11 +1024,12 @@ class _InputFieldState extends State<InputField>
                 }
               },
               borderRadius: BorderRadius.circular(18),
-              child: Ink(
+              containedInkWell: true,
+              child: Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: context.appColors.fieldBg,
+                  color: context.appColors.buttonPrimaryBg,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Center(
@@ -1030,6 +1037,7 @@ class _InputFieldState extends State<InputField>
                     'assets/icons/chats/send.png',
                     width: 18,
                     height: 18,
+                    color: context.appColors.buttonPrimaryFg,
                   ),
                 ),
               ),

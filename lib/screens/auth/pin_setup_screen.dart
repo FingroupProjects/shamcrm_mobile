@@ -19,10 +19,12 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PinSetupScreen extends StatefulWidget {
   const PinSetupScreen({super.key});
@@ -551,6 +553,28 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
 
       final prefs = await SharedPreferences.getInstance();
+      final userId = int.tryParse(
+        prefs.getString('userID') ?? prefs.getString('user_id') ?? '',
+      );
+
+      if (userId != null) {
+        try {
+          final hasAccess = await apiService.checkUserAccess(userId);
+          if (!hasAccess) {
+            debugPrint('PinSetupScreen: ⛔ Аккаунт пользователя заблокирован');
+            if (!mounted) return;
+            _showBlockedAccountSnackBar();
+            _triggerErrorEffect();
+            return;
+          }
+        } catch (e) {
+          debugPrint('PinSetupScreen: Ошибка проверки доступа: $e');
+        }
+      } else {
+        debugPrint(
+            'PinSetupScreen: Не удалось определить user_id для проверки');
+      }
+
       await prefs.setString('user_pin', _pin);
 
       debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
@@ -591,6 +615,102 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     } else {
       debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
       _triggerErrorEffect();
+    }
+  }
+
+  void _showBlockedAccountSnackBar() {
+    const accentColor = Color.fromARGB(255, 33, 41, 188);
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          elevation: 8,
+          backgroundColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          duration: const Duration(minutes: 1),
+          content: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.red.withValues(alpha: 0.26),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text:
+                              'Ваш аккаунт заблокирован. Пожалуйста, обратитесь к тех поддержке ',
+                        ),
+                        TextSpan(
+                          text: '@shamcrm_uz',
+                          style: const TextStyle(
+                            color: accentColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = _openSupportTelegram,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+  }
+
+  Future<void> _openSupportTelegram() async {
+    const username = 'shamcrm_uz';
+    final telegramUri = Uri.parse('tg://resolve?domain=$username');
+    final webUri = Uri.parse('https://t.me/$username');
+
+    final openedTelegram = await launchUrl(
+      telegramUri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!openedTelegram) {
+      await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
   }
 
