@@ -59,6 +59,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _isSearching = false;
   bool _isManager = false;
   final TextEditingController _searchController = TextEditingController();
+  bool _canReadLeadStatus = false;
   bool _canCreateLeadStatus = false;
   bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
@@ -135,7 +136,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _shouldShowLoader = false;
   bool _skipNextTabListener = false;
   int? _skipNextTabListenerIndex;
-  bool _didRequestLeadStatuses = false;
   PusherChannelsClient? _leadSocketClient;
   final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
 
@@ -242,7 +242,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         });
 
         // Просто загружаем статусы, listener будет создан в BlocListener
-        _requestLeadStatuses(forceRefresh: true);
+        context.read<LeadBloc>().add(FetchLeadStatuses());
       }
     });
 
@@ -364,126 +364,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 
-  bool _sameLeadTabs(List<Map<String, dynamic>> nextTabs) {
-    if (_tabTitles.length != nextTabs.length) return false;
-    for (var i = 0; i < nextTabs.length; i++) {
-      if (_tabTitles[i]['id'] != nextTabs[i]['id'] ||
-          _tabTitles[i]['title'] != nextTabs[i]['title']) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void _applyLeadLoadedState(LeadLoaded state) {
-    if (!mounted) return;
-
-    final nextTabs = state.leadStatuses
-        .map((status) => {
-              'id': status.id,
-              'title': status.title,
-              'leads_count': status.leadsCount,
-            })
-        .toList();
-
-    if (_sameLeadTabs(nextTabs) &&
-        _tabController.length == nextTabs.length &&
-        nextTabs.isNotEmpty) {
-      return;
-    }
-
-    setState(() {
-      _tabTitles = nextTabs;
-      _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
-      _isSwitchingFunnel = false;
-
-      if (_tabTitles.isNotEmpty) {
-        final needNewController = _tabController.length != _tabTitles.length;
-        if (needNewController) {
-          final savedTabIndex = _currentTabIndex;
-          if (_tabController.length > 0) {
-            _tabController.dispose();
-          }
-          _tabController =
-              TabController(length: _tabTitles.length, vsync: this);
-          _tabController.addListener(() {
-            if (!_tabController.indexIsChanging) {
-              if (_skipNextTabListener &&
-                  _skipNextTabListenerIndex == _tabController.index) {
-                setState(() {
-                  _skipNextTabListener = false;
-                  _skipNextTabListenerIndex = null;
-                  _currentTabIndex = _tabController.index;
-                });
-                return;
-              }
-
-              setState(() {
-                _currentTabIndex = _tabController.index;
-              });
-            }
-          });
-
-          if (savedTabIndex < _tabTitles.length && savedTabIndex >= 0) {
-            _tabController.index = savedTabIndex;
-          } else {
-            _tabController.index = 0;
-            _currentTabIndex = 0;
-          }
-        } else if (_currentTabIndex >= _tabTitles.length) {
-          _currentTabIndex = 0;
-          _tabController.index = 0;
-        }
-      } else {
-        if (_tabController.length > 0) {
-          _tabController.dispose();
-        }
-        _tabController = TabController(length: 0, vsync: this);
-        _currentTabIndex = 0;
-      }
-    });
-
-    _didRequestLeadStatuses = false;
-  }
-
-  Future<void> _handleLeadBlocState(LeadState state) async {
-    if ((state is LeadDataLoaded ||
-            state is LeadLoaded ||
-            state is LeadError) &&
-        mounted &&
-        (_isFilterLoading || _shouldShowLoader)) {
-      _resetLeadLoaderFlags();
-    }
-
-    if (state is LeadLoaded) {
-      await LeadCache.cacheLeadStatuses(state.leadStatuses);
-      _applyLeadLoadedState(state);
-    } else if (state is LeadError) {
-      if (state.message.contains(
-        AppLocalizations.of(context)!.translate('unauthorized_access'),
-      )) {
-        await AppLogoutService.logoutAndReset(
-          context: context,
-          restartApp: false,
-        );
-      } else if (kDebugMode) {
-        debugPrint('LeadScreen: Error state - ${state.message}');
-      }
-
-      _didRequestLeadStatuses = false;
-    } else if (state is LeadLoaded) {
-      _didRequestLeadStatuses = false;
-    }
-  }
-
-  void _requestLeadStatuses({bool forceRefresh = false}) {
-    if (!mounted) return;
-    if (_didRequestLeadStatuses && !forceRefresh) return;
-
-    _didRequestLeadStatuses = true;
-    context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: forceRefresh));
-  }
-
   Future<void> _handleLeadCreatedSocketEvent(dynamic rawData) async {
     try {
       final payload = _decodeSocketPayload(rawData);
@@ -603,12 +483,21 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _initialDaysWithoutActivity = null;
           _initialNumberOfDaysDeal = null;
           _initialDirectoryValues.clear();
+
+          _tabTitles.clear();
+          _tabKeys.clear();
+          _currentTabIndex = 0;
+
+          if (_tabController.length > 0) {
+            _tabController.dispose();
+          }
+          _tabController = TabController(length: 0, vsync: this);
         });
       }
 
       final leadBloc = BlocProvider.of<LeadBloc>(context);
       await leadBloc.clearAllCountsAndCache();
-      _requestLeadStatuses(forceRefresh: true);
+      leadBloc.add(FetchLeadStatuses(forceRefresh: true));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -632,18 +521,21 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           ),
         );
 
-        _requestLeadStatuses(forceRefresh: false);
+        final leadBloc = BlocProvider.of<LeadBloc>(context);
+        leadBloc.add(FetchLeadStatuses(forceRefresh: false));
       }
     }
   }
 
   Future<void> _checkPermissions() async {
+    final canRead = await _apiService.hasPermission('leadStatus.read');
     final canCreate = await _apiService.hasPermission('leadStatus.create');
     final canUpdate = await _apiService.hasPermission('leadStatus.update');
     final canDelete = await _apiService.hasPermission('leadStatus.delete');
     final canAddLead = await _apiService.hasPermission('lead.create');
     if (mounted) {
       setState(() {
+        _canReadLeadStatus = canRead;
         _canCreateLeadStatus = canCreate;
         _canUpdateLeadStatus = canUpdate;
         _canDeleteLeadStatus = canDelete;
@@ -652,12 +544,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       });
     }
 
-    if (mounted) {
+    if (mounted && canRead) {
       final leadState = context.read<LeadBloc>().state;
       if (leadState is LeadInitial ||
           (leadState is LeadLoaded && _tabTitles.isEmpty)) {
-        _requestLeadStatuses();
+        context.read<LeadBloc>().add(FetchLeadStatuses());
       }
+    } else if (mounted && !canRead) {
+      _resetLeadLoaderFlags();
     }
 
     try {
@@ -804,7 +698,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       });
     }
 
-    _requestLeadStatuses(forceRefresh: true);
+    final leadBloc = BlocProvider.of<LeadBloc>(context);
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
   }
 
   Future<void> _handleManagerSelected(Map managers) async {
@@ -1046,7 +941,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                 TabController(length: 0, vsync: this);
                           });
                         }
-                        _requestLeadStatuses();
+                        context.read<LeadBloc>().add(FetchLeadStatuses());
                       } catch (e) {
                         setState(() => _isSwitchingFunnel = false);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -1113,402 +1008,388 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       providers: [
         BlocProvider.value(value: context.read<SalesFunnelBloc>()),
       ],
-      child: BlocListener<LeadBloc, LeadState>(
-        listener: (context, state) => _handleLeadBlocState(state),
-        child: Scaffold(
-          backgroundColor: context.appColors.surfacePrimary,
-          appBar: AppBar(
-            forceMaterialTransparency: true,
-            title: CustomAppBar(
-              SearchIconKey: keySearchIcon,
-              menuIconKey: keyMenuIcon,
-              title: '',
-              titleWidget: isClickAvatarIcon
-                  ? Text(
-                      localizations!.translate('appbar_settings'),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                    )
-                  : _buildTitleWidget(context),
-              onClickProfileAvatar: () {
-                //print('LeadScreen: Profile avatar clicked, isClickAvatarIcon: $isClickAvatarIcon');
+      child: Scaffold(
+        backgroundColor: context.appColors.surfacePrimary,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          title: CustomAppBar(
+            SearchIconKey: keySearchIcon,
+            menuIconKey: keyMenuIcon,
+            title: '',
+            titleWidget: isClickAvatarIcon
+                ? Text(
+                    localizations!.translate('appbar_settings'),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: context.appColors.buttonPrimaryBg,
+                    ),
+                  )
+                : _buildTitleWidget(context),
+            onClickProfileAvatar: () {
+              //print('LeadScreen: Profile avatar clicked, isClickAvatarIcon: $isClickAvatarIcon');
+              if (mounted) {
+                setState(() {
+                  isClickAvatarIcon = !isClickAvatarIcon;
+                });
+              }
+            },
+            onChangedSearchInput: (String value) {
+              //print('LeadScreen: Search input changed: $value');
+              if (value.isNotEmpty) {
                 if (mounted) {
                   setState(() {
-                    isClickAvatarIcon = !isClickAvatarIcon;
+                    _isSearching = true;
                   });
                 }
-              },
-              onChangedSearchInput: (String value) {
-                //print('LeadScreen: Search input changed: $value');
-                if (value.isNotEmpty) {
-                  if (mounted) {
-                    setState(() {
-                      _isSearching = true;
-                    });
-                  }
-                  //print('LeadScreen: Search mode activated');
+                //print('LeadScreen: Search mode activated');
+              }
+              _onSearch(value);
+            },
+            onManagersLeadSelected: _handleManagerSelected,
+            initialManagersLead: _initialSelectedManagers,
+            initialManagersLeadRegions: _initialSelectedRegions,
+            initialManagersLeadState: _initialSelectedState,
+            initialManagersLeadCities: _initialSelectedCities,
+            initialManagersLeadSources: _initialSelectedSources,
+            initialManagersLeadChannels: _initialSelectedChannels,
+            initialManagersLeadAdvertisingCampaigns:
+                _initialSelectedAdvertisingCampaigns,
+            initialManagersLeadReasonForRefusalIds: _initialReasonForRefusalIds,
+            initialManagerLeadStatuses: _initialSelStatus,
+            initialManagerLeadFromDate: _initialFromDate,
+            initialManagerLeadToDate: _initialToDate,
+            initialManagerLeadHasSuccessDeals: _initialHasSuccessDeals,
+            initialManagerLeadHasInProgressDeals: _initialHasInProgressDeals,
+            initialManagerLeadHasFailureDeals: _initialHasFailureDeals,
+            initialManagerLeadHasNotices: _initialHasNotices,
+            initialManagerLeadHasContact: _initialHasContact,
+            initialManagerLeadHasChat: _initialHasChat,
+            initialManagerLeadHasNoReplies: _initialHasNoReplies,
+            initialManagerLeadHasUnreadMessages: _initialHasUnreadMessages,
+            initialManagerLeadHasDeal: _initialHasDeal,
+            initialManagerLeadHasOrders: _initialHasOrders,
+            initialManagerLeadDaysWithoutActivity: _initialDaysWithoutActivity,
+            initialManagerLeadNumberOfDaysDeal: _initialNumberOfDaysDeal,
+            initialDirectoryValuesLead: _initialDirectoryValues,
+            initialLeadCustomFields: _initialCustomFieldFilters,
+            onLeadResetFilters: _resetFilters,
+            textEditingController: textEditingController,
+            focusNode: focusNode,
+            showMenuIcon: _showCustomTabBar,
+            showFilterIconOnSelectLead: !_showCustomTabBar,
+            hasActiveLeadFilters: _hasActiveFilters(),
+            showFilterTaskIcon: false,
+            showMyTaskIcon: true,
+            showCallCenter: true,
+            showFilterIconDeal: false,
+            showEvent: true,
+            clearButtonClick: (value) {
+              if (value == false) {
+                if (mounted) {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _lastSearchQuery = '';
+                  });
                 }
-                _onSearch(value);
-              },
-              onManagersLeadSelected: _handleManagerSelected,
-              initialManagersLead: _initialSelectedManagers,
-              initialManagersLeadRegions: _initialSelectedRegions,
-              initialManagersLeadState: _initialSelectedState,
-              initialManagersLeadCities: _initialSelectedCities,
-              initialManagersLeadSources: _initialSelectedSources,
-              initialManagersLeadChannels: _initialSelectedChannels,
-              initialManagersLeadAdvertisingCampaigns:
-                  _initialSelectedAdvertisingCampaigns,
-              initialManagersLeadReasonForRefusalIds:
-                  _initialReasonForRefusalIds,
-              initialManagerLeadStatuses: _initialSelStatus,
-              initialManagerLeadFromDate: _initialFromDate,
-              initialManagerLeadToDate: _initialToDate,
-              initialManagerLeadHasSuccessDeals: _initialHasSuccessDeals,
-              initialManagerLeadHasInProgressDeals: _initialHasInProgressDeals,
-              initialManagerLeadHasFailureDeals: _initialHasFailureDeals,
-              initialManagerLeadHasNotices: _initialHasNotices,
-              initialManagerLeadHasContact: _initialHasContact,
-              initialManagerLeadHasChat: _initialHasChat,
-              initialManagerLeadHasNoReplies: _initialHasNoReplies,
-              initialManagerLeadHasUnreadMessages: _initialHasUnreadMessages,
-              initialManagerLeadHasDeal: _initialHasDeal,
-              initialManagerLeadHasOrders: _initialHasOrders,
-              initialManagerLeadDaysWithoutActivity:
-                  _initialDaysWithoutActivity,
-              initialManagerLeadNumberOfDaysDeal: _initialNumberOfDaysDeal,
-              initialDirectoryValuesLead: _initialDirectoryValues,
-              initialLeadCustomFields: _initialCustomFieldFilters,
-              onLeadResetFilters: _resetFilters,
-              textEditingController: textEditingController,
-              focusNode: focusNode,
-              showMenuIcon: _showCustomTabBar,
-              showFilterIconOnSelectLead: !_showCustomTabBar,
-              hasActiveLeadFilters: _hasActiveFilters(),
-              showFilterTaskIcon: false,
-              showMyTaskIcon: true,
-              showCallCenter: true,
-              showFilterIconDeal: false,
-              showEvent: true,
-              clearButtonClick: (value) {
-                if (value == false) {
-                  if (mounted) {
-                    setState(() {
-                      _isSearching = false;
-                      _searchController.clear();
-                      _lastSearchQuery = '';
-                    });
-                  }
-                  if (_searchController.text.isEmpty) {
-                    if (_selectedManagers.isEmpty &&
-                        _selectedRegions.isEmpty &&
-                        _selectedState == null &&
-                        _selectedCities.isEmpty &&
-                        _selectedSources.isEmpty &&
-                        _selectedChannels.isEmpty &&
-                        _selectedAdvertisingCampaigns.isEmpty &&
-                        _selectedReasonForRefusalIds.isEmpty &&
-                        _selectedStatuses == null &&
-                        _fromDate == null &&
-                        _toDate == null &&
-                        _hasSuccessDeals == false &&
-                        _hasInProgressDeals == false &&
-                        _hasFailureDeals == false &&
-                        _hasNotices == false &&
-                        _hasContact == false &&
-                        _hasChat == false &&
-                        _hasNoReplies == false &&
-                        _hasUnreadMessages == false &&
-                        _hasDeal == false &&
-                        _hasOrders == false &&
-                        _directoryValues.isEmpty &&
-                        !_hasActiveCustomFieldFilters) {
-                      if (mounted) {
-                        setState(() {
-                          _showCustomTabBar = true;
-                        });
-                      }
-                      _requestLeadStatuses();
-                    } else {
-                      final currentStatusId =
-                          _tabTitles[_currentTabIndex]['id'];
-                      final taskBloc = BlocProvider.of<LeadBloc>(context);
-                      taskBloc.add(FetchLeads(
-                        currentStatusId,
-                        managerIds: _selectedManagers.isNotEmpty
-                            ? _selectedManagers
-                                .map((manager) => manager.id)
-                                .toList()
-                            : null,
-                        regionsIds: _selectedRegions.isNotEmpty
-                            ? _selectedRegions
-                                .map((region) => region.id)
-                                .toList()
-                            : null,
-                        regionId: _selectedState?.id,
-                        cityIds: _selectedCities.isNotEmpty
-                            ? _selectedCities.map((city) => city.id).toList()
-                            : null,
-                        sourcesIds: _selectedSources.isNotEmpty
-                            ? _selectedSources
-                                .map((source) => source.id)
-                                .toList()
-                            : null,
-                        channelIds: _selectedChannels.isNotEmpty
-                            ? _selectedChannels
-                                .map((channel) => channel.id)
-                                .toList()
-                            : null,
-                        advertisingCampaignIds:
-                            _selectedAdvertisingCampaigns.isNotEmpty
-                                ? _selectedAdvertisingCampaigns
-                                    .map((campaign) => campaign.id)
-                                    .toList()
-                                : null,
-                        reasonForRefusalIds:
-                            _selectedReasonForRefusalIds.isNotEmpty
-                                ? _selectedReasonForRefusalIds
-                                : null,
-                        statusIds: _selectedStatuses,
-                        fromDate: _fromDate,
-                        toDate: _toDate,
-                        hasSuccessDeals: _hasSuccessDeals,
-                        hasInProgressDeals: _hasInProgressDeals,
-                        hasFailureDeals: _hasFailureDeals,
-                        hasNotices: _hasNotices,
-                        hasContact: _hasContact,
-                        hasChat: _hasChat,
-                        hasNoReplies: _hasNoReplies,
-                        hasUnreadMessages: _hasUnreadMessages,
-                        hasDeal: _hasDeal,
-                        hasOrders: _hasOrders,
-                        daysWithoutActivity: _daysWithoutActivity,
-                        numberOfDaysDeal: _numberOfDaysDeal,
-                        directoryValues: _directoryValues,
-                        customFieldFilters: _selectedCustomFieldFilters,
-                        salesFunnelId: _selectedFunnel?.id,
-                      ));
+                if (_searchController.text.isEmpty) {
+                  if (_selectedManagers.isEmpty &&
+                      _selectedRegions.isEmpty &&
+                      _selectedState == null &&
+                      _selectedCities.isEmpty &&
+                      _selectedSources.isEmpty &&
+                      _selectedChannels.isEmpty &&
+                      _selectedAdvertisingCampaigns.isEmpty &&
+                      _selectedReasonForRefusalIds.isEmpty &&
+                      _selectedStatuses == null &&
+                      _fromDate == null &&
+                      _toDate == null &&
+                      _hasSuccessDeals == false &&
+                      _hasInProgressDeals == false &&
+                      _hasFailureDeals == false &&
+                      _hasNotices == false &&
+                      _hasContact == false &&
+                      _hasChat == false &&
+                      _hasNoReplies == false &&
+                      _hasUnreadMessages == false &&
+                      _hasDeal == false &&
+                      _hasOrders == false &&
+                      _directoryValues.isEmpty &&
+                      !_hasActiveCustomFieldFilters) {
+                    if (mounted) {
+                      setState(() {
+                        _showCustomTabBar = true;
+                      });
                     }
-                  } else if (_selectedManagerIds != null &&
-                      _selectedManagerIds!.isNotEmpty) {
+                    final taskBloc = BlocProvider.of<LeadBloc>(context);
+                    taskBloc.add(FetchLeadStatuses());
+                  } else {
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                     final taskBloc = BlocProvider.of<LeadBloc>(context);
                     taskBloc.add(FetchLeads(
                       currentStatusId,
-                      managerIds: _selectedManagerIds,
-                      query: _searchController.text.isNotEmpty
-                          ? _searchController.text
+                      managerIds: _selectedManagers.isNotEmpty
+                          ? _selectedManagers
+                              .map((manager) => manager.id)
+                              .toList()
                           : null,
+                      regionsIds: _selectedRegions.isNotEmpty
+                          ? _selectedRegions.map((region) => region.id).toList()
+                          : null,
+                      regionId: _selectedState?.id,
+                      cityIds: _selectedCities.isNotEmpty
+                          ? _selectedCities.map((city) => city.id).toList()
+                          : null,
+                      sourcesIds: _selectedSources.isNotEmpty
+                          ? _selectedSources.map((source) => source.id).toList()
+                          : null,
+                      channelIds: _selectedChannels.isNotEmpty
+                          ? _selectedChannels
+                              .map((channel) => channel.id)
+                              .toList()
+                          : null,
+                      advertisingCampaignIds:
+                          _selectedAdvertisingCampaigns.isNotEmpty
+                              ? _selectedAdvertisingCampaigns
+                                  .map((campaign) => campaign.id)
+                                  .toList()
+                              : null,
+                      reasonForRefusalIds:
+                          _selectedReasonForRefusalIds.isNotEmpty
+                              ? _selectedReasonForRefusalIds
+                              : null,
+                      statusIds: _selectedStatuses,
+                      fromDate: _fromDate,
+                      toDate: _toDate,
+                      hasSuccessDeals: _hasSuccessDeals,
+                      hasInProgressDeals: _hasInProgressDeals,
+                      hasFailureDeals: _hasFailureDeals,
+                      hasNotices: _hasNotices,
+                      hasContact: _hasContact,
+                      hasChat: _hasChat,
+                      hasNoReplies: _hasNoReplies,
+                      hasUnreadMessages: _hasUnreadMessages,
+                      hasDeal: _hasDeal,
+                      hasOrders: _hasOrders,
+                      daysWithoutActivity: _daysWithoutActivity,
+                      numberOfDaysDeal: _numberOfDaysDeal,
                       directoryValues: _directoryValues,
                       customFieldFilters: _selectedCustomFieldFilters,
                       salesFunnelId: _selectedFunnel?.id,
                     ));
                   }
+                } else if (_selectedManagerIds != null &&
+                    _selectedManagerIds!.isNotEmpty) {
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  final taskBloc = BlocProvider.of<LeadBloc>(context);
+                  taskBloc.add(FetchLeads(
+                    currentStatusId,
+                    managerIds: _selectedManagerIds,
+                    query: _searchController.text.isNotEmpty
+                        ? _searchController.text
+                        : null,
+                    directoryValues: _directoryValues,
+                    customFieldFilters: _selectedCustomFieldFilters,
+                    salesFunnelId: _selectedFunnel?.id,
+                  ));
                 }
-              },
-              clearButtonClickFiltr: (value) {},
-            ),
+              }
+            },
+            clearButtonClickFiltr: (value) {},
           ),
-          body: isClickAvatarIcon
-              ? ProfileScreen()
-              : Column(
-                  children: [
-                    const SizedBox(height: 15),
-                    if (!_isSearching &&
-                        _selectedManagerIds == null &&
-                        _showCustomTabBar)
-                      _buildCustomTabBar(),
-                    Expanded(
-                      child: _isSearching || _selectedManagerIds != null
-                          ? _buildManagerView()
-                          : _buildTabBarView(),
-                    ),
-                  ],
-                ),
-          floatingActionButton: _tabTitles.isNotEmpty &&
-                  _hasPermissionToAddLead &&
-                  !isClickAvatarIcon
-              ? FloatingActionButton(
-                  key: keyFloatingActionButton,
-                  onPressed: () {
-                    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-                    if (_isSwitch) {
-                      showModalBottomSheet(
-                        backgroundColor: context.appColors.surfacePrimary,
-                        context: context,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(20)),
-                        ),
-                        builder: (BuildContext context) {
-                          return Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('add_for_current_status'),
-                                  style: TextStyle(
-                                    color: context.appColors.buttonPrimaryBg,
-                                    fontSize: 20,
-                                    fontFamily: "Gilroy",
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Divider(
-                                    color: context.appColors.buttonPrimaryBg),
-                                ListTile(
-                                  title: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        AppLocalizations.of(context)!
-                                            .translate('new_lead_in_switch'),
-                                        style: TextStyle(
-                                          color:
-                                              context.appColors.buttonPrimaryBg,
-                                          fontSize: 16,
-                                          fontFamily: "Gilroy",
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.add,
-                                        color:
-                                            context.appColors.buttonPrimaryBg,
-                                        size: 25,
-                                      ),
-                                    ],
-                                  ),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => LeadAddScreen(
-                                            statusId: currentStatusId),
-                                      ),
-                                    ).then((_) => context.read<LeadBloc>().add(
-                                          FetchLeads(
-                                            currentStatusId,
-                                            salesFunnelId: _selectedFunnel?.id,
-                                            advertisingCampaignIds:
-                                                _selectedAdvertisingCampaigns
-                                                        .isNotEmpty
-                                                    ? _selectedAdvertisingCampaigns
-                                                        .map((campaign) =>
-                                                            campaign.id)
-                                                        .toList()
-                                                    : null,
-                                            reasonForRefusalIds:
-                                                _selectedReasonForRefusalIds
-                                                        .isNotEmpty
-                                                    ? _selectedReasonForRefusalIds
-                                                    : null,
-                                          ),
-                                        ));
-                                  },
-                                ),
-                                ListTile(
-                                  title: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        AppLocalizations.of(context)!
-                                            .translate('import_contact'),
-                                        style: TextStyle(
-                                          color:
-                                              context.appColors.buttonPrimaryBg,
-                                          fontSize: 16,
-                                          fontFamily: "Gilroy",
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.contacts,
-                                        color:
-                                            context.appColors.buttonPrimaryBg,
-                                        size: 25,
-                                      ),
-                                    ],
-                                  ),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ContactsScreen(
-                                            statusId: currentStatusId),
-                                      ),
-                                    ).then((_) => context.read<LeadBloc>().add(
-                                          FetchLeads(
-                                            currentStatusId,
-                                            salesFunnelId: _selectedFunnel?.id,
-                                            advertisingCampaignIds:
-                                                _selectedAdvertisingCampaigns
-                                                        .isNotEmpty
-                                                    ? _selectedAdvertisingCampaigns
-                                                        .map((campaign) =>
-                                                            campaign.id)
-                                                        .toList()
-                                                    : null,
-                                            reasonForRefusalIds:
-                                                _selectedReasonForRefusalIds
-                                                        .isNotEmpty
-                                                    ? _selectedReasonForRefusalIds
-                                                    : null,
-                                          ),
-                                        ));
-                                  },
-                                ),
-                                SizedBox(height: 10),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              LeadAddScreen(statusId: currentStatusId),
-                        ),
-                      ).then((_) => context.read<LeadBloc>().add(
-                            FetchLeads(
-                              currentStatusId,
-                              salesFunnelId: _selectedFunnel?.id,
-                              advertisingCampaignIds:
-                                  _selectedAdvertisingCampaigns.isNotEmpty
-                                      ? _selectedAdvertisingCampaigns
-                                          .map((campaign) => campaign.id)
-                                          .toList()
-                                      : null,
-                              reasonForRefusalIds:
-                                  _selectedReasonForRefusalIds.isNotEmpty
-                                      ? _selectedReasonForRefusalIds
-                                      : null,
-                            ),
-                          ));
-                    }
-                  },
-                  backgroundColor: context.appColors.buttonPrimaryBg,
-                  child: Image.asset(
-                    'assets/icons/tabBar/add.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                )
-              : null,
         ),
+        body: isClickAvatarIcon
+            ? ProfileScreen()
+            : Column(
+                children: [
+                  const SizedBox(height: 15),
+                  if (!_isSearching &&
+                      _selectedManagerIds == null &&
+                      _showCustomTabBar)
+                    _buildCustomTabBar(),
+                  Expanded(
+                    child: _isSearching || _selectedManagerIds != null
+                        ? _buildManagerView()
+                        : _buildTabBarView(),
+                  ),
+                ],
+              ),
+        floatingActionButton: _tabTitles.isNotEmpty &&
+                _hasPermissionToAddLead &&
+                !isClickAvatarIcon
+            ? FloatingActionButton(
+                key: keyFloatingActionButton,
+                onPressed: () {
+                  final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+                  if (_isSwitch) {
+                    showModalBottomSheet(
+                      backgroundColor: context.appColors.surfacePrimary,
+                      context: context,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (BuildContext context) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .translate('add_for_current_status'),
+                                style: TextStyle(
+                                  color: context.appColors.buttonPrimaryBg,
+                                  fontSize: 20,
+                                  fontFamily: "Gilroy",
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Divider(color: context.appColors.buttonPrimaryBg),
+                              ListTile(
+                                title: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('new_lead_in_switch'),
+                                      style: TextStyle(
+                                        color: context.appColors.buttonPrimaryBg,
+                                        fontSize: 16,
+                                        fontFamily: "Gilroy",
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.add,
+                                      color: context.appColors.buttonPrimaryBg,
+                                      size: 25,
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LeadAddScreen(
+                                          statusId: currentStatusId),
+                                    ),
+                                  ).then((_) => context.read<LeadBloc>().add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      ));
+                                },
+                              ),
+                              ListTile(
+                                title: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('import_contact'),
+                                      style: TextStyle(
+                                        color: context.appColors.buttonPrimaryBg,
+                                        fontSize: 16,
+                                        fontFamily: "Gilroy",
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.contacts,
+                                      color: context.appColors.buttonPrimaryBg,
+                                      size: 25,
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ContactsScreen(
+                                          statusId: currentStatusId),
+                                    ),
+                                  ).then((_) => context.read<LeadBloc>().add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      ));
+                                },
+                              ),
+                              SizedBox(height: 10),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            LeadAddScreen(statusId: currentStatusId),
+                      ),
+                    ).then((_) => context.read<LeadBloc>().add(
+                          FetchLeads(
+                            currentStatusId,
+                            salesFunnelId: _selectedFunnel?.id,
+                            advertisingCampaignIds:
+                                _selectedAdvertisingCampaigns.isNotEmpty
+                                    ? _selectedAdvertisingCampaigns
+                                        .map((campaign) => campaign.id)
+                                        .toList()
+                                    : null,
+                            reasonForRefusalIds:
+                                _selectedReasonForRefusalIds.isNotEmpty
+                                    ? _selectedReasonForRefusalIds
+                                    : null,
+                          ),
+                        ));
+                  }
+                },
+                backgroundColor: context.appColors.buttonPrimaryBg,
+                child: Image.asset(
+                  'assets/icons/tabBar/add.png',
+                  width: 24,
+                  height: 24,
+                ),
+              )
+            : null,
       ),
     );
   }
@@ -1742,6 +1623,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               );
             }
 
+            if (!_canReadLeadStatus) {
+              return Center(
+                child: Text(
+                  'Нет доступа к статусам лидов',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textSecondary,
+                  ),
+                ),
+              );
+            }
+
             if (_tabTitles.isEmpty) {
               return Center(
                 child: Column(
@@ -1759,7 +1654,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () {
-                        _requestLeadStatuses();
+                        context.read<LeadBloc>().add(FetchLeadStatuses());
                       },
                       child: Text('Повторить'),
                     ),
@@ -1813,7 +1708,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      _requestLeadStatuses();
+      context.read<LeadBloc>().add(FetchLeadStatuses());
       if (mounted) {
         setState(() {
           navigateToEnd = true;
@@ -1861,8 +1756,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading:
-                  Icon(Icons.delete, color: context.appColors.textSecondary),
+              leading: Icon(Icons.delete, color: context.appColors.textSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
@@ -2032,7 +1926,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         await LeadCache.clearCache();
       }
 
-      _requestLeadStatuses();
+      context.read<LeadBloc>().add(FetchLeadStatuses());
     }
   }
 
@@ -2063,6 +1957,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         }
         if (state is LeadLoaded) {
           if (!_permissionsInitialized) {
+            return;
+          }
+
+          if (!_canReadLeadStatus) {
+            if (mounted) {
+              setState(() {
+                _tabTitles.clear();
+                _tabKeys.clear();
+                _currentTabIndex = 0;
+              });
+            }
             return;
           }
 
@@ -2335,28 +2240,26 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         builder: (context) {
           final state = context.watch<LeadBloc>().state;
 
-          if (state is LeadLoaded && _tabTitles.isEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _tabTitles.isEmpty) {
-                _applyLeadLoadedState(state);
-              }
-            });
-          }
-
           if (_tabTitles.isEmpty) {
-            if (state is LeadLoaded && _permissionsInitialized) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _tabTitles.isEmpty && !_didRequestLeadStatuses) {
-                  _requestLeadStatuses(forceRefresh: true);
-                }
-              });
-            }
-
             if (!_permissionsInitialized || state is LeadLoading) {
               return const Center(
                 child: PlayStoreImageLoading(
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),
+                ),
+              );
+            }
+
+            if (!_canReadLeadStatus) {
+              return Center(
+                child: Text(
+                  'Нет доступа к статусам лидов',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textSecondary,
+                  ),
                 ),
               );
             }
@@ -2393,7 +2296,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () {
-                        _requestLeadStatuses();
+                        context.read<LeadBloc>().add(FetchLeadStatuses());
                       },
                       child: const Text('Обновить'),
                     ),
