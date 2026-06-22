@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
@@ -49,16 +50,20 @@ class _MovementScreenState extends State<MovementScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _movementBloc = context.read<MovementBloc>()..add(const FetchMovements(forceRefresh: true));
+    _movementBloc = context.read<MovementBloc>()
+      ..add(const FetchMovements(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
   // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
-      final create = await _apiService.hasPermission('movement_document.create');
-      final update = await _apiService.hasPermission('movement_document.update');
-      final delete = await _apiService.hasPermission('movement_document.delete');
+      final create =
+          await _apiService.hasPermission('movement_document.create');
+      final update =
+          await _apiService.hasPermission('movement_document.update');
+      final delete =
+          await _apiService.hasPermission('movement_document.delete');
 
       if (mounted) {
         setState(() {
@@ -199,6 +204,7 @@ class _MovementScreenState extends State<MovementScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return PopScope(
       canPop: true,
@@ -213,45 +219,87 @@ class _MovementScreenState extends State<MovementScreen> {
         child: Scaffold(
           // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
           floatingActionButton: _hasCreatePermission
-            ? FloatingActionButton(
-                onPressed: () async {
-                  if (!mounted) return;
+              ? FloatingActionButton(
+                  onPressed: () async {
+                    if (!mounted) return;
 
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CreateMovementDocumentScreen(
-                          organizationId: widget.organizationId),
-                    ),
-                  );
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateMovementDocumentScreen(
+                            organizationId: widget.organizationId),
+                      ),
+                    );
 
-                  if (mounted && result == true) {
-                    _movementBloc.add(const FetchMovements(forceRefresh: true));
-                  }
-                },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
-              )
-            : null,
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          automaticallyImplyLeading: !_selectionMode,
-          forceMaterialTransparency: true,
-          title: _selectionMode
-              ? BlocBuilder<MovementBloc, MovementState>(
-                  builder: (context, state) {
-                    if (state is MovementLoaded) {
-                      bool showApprove = state.selectedData!.any(
-                          (doc) => doc.approved == 0 && doc.deletedAt == null);
-                      bool showDisapprove = state.selectedData!.any(
-                          (doc) => doc.approved == 1 && doc.deletedAt == null);
-                      // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
-                      bool showDelete = _hasDeletePermission &&
-                          state.selectedData!
-                              .any((doc) => doc.deletedAt == null);
-                      bool showRestore = state.selectedData!
-                          .any((doc) => doc.deletedAt != null);
-                      _isRefreshing = false;
+                    if (mounted && result == true) {
+                      _movementBloc
+                          .add(const FetchMovements(forceRefresh: true));
+                    }
+                  },
+                  backgroundColor: colors.buttonPrimaryBg,
+                  child: Icon(Icons.add, color: colors.buttonPrimaryFg),
+                )
+              : null,
+          backgroundColor: colors.surfacePrimary,
+          appBar: AppBar(
+            automaticallyImplyLeading: !_selectionMode,
+            forceMaterialTransparency: true,
+            title: _selectionMode
+                ? BlocBuilder<MovementBloc, MovementState>(
+                    builder: (context, state) {
+                      if (state is MovementLoaded) {
+                        bool showApprove = state.selectedData!.any((doc) =>
+                            doc.approved == 0 && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) =>
+                            doc.approved == 1 && doc.deletedAt == null);
+                        // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                        bool showDelete = _hasDeletePermission &&
+                            state.selectedData!
+                                .any((doc) => doc.deletedAt == null);
+                        bool showRestore = state.selectedData!
+                            .any((doc) => doc.deletedAt != null);
+                        _isRefreshing = false;
+
+                        return AppBarSelectionMode(
+                          title: localizations?.translate('appbar_movement') ??
+                              'Перемещение',
+                          onDismiss: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _movementBloc.add(UnselectAllDocuments());
+                          },
+                          onApprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _movementBloc.add(MassApproveMovementDocuments());
+                          },
+                          onDisapprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _movementBloc
+                                .add(MassDisapproveMovementDocuments());
+                          },
+                          onDelete: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _movementBloc.add(MassDeleteMovementDocuments());
+                          },
+                          onRestore: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _movementBloc.add(MassRestoreMovementDocuments());
+                          },
+                          showApprove: showApprove,
+                          showDelete: showDelete,
+                          showDisapprove: showDisapprove,
+                          showRestore: showRestore,
+                        );
+                      }
 
                       return AppBarSelectionMode(
                         title: localizations?.translate('appbar_movement') ??
@@ -262,549 +310,570 @@ class _MovementScreenState extends State<MovementScreen> {
                           });
                           _movementBloc.add(UnselectAllDocuments());
                         },
-                        onApprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _movementBloc.add(MassApproveMovementDocuments());
-                        },
-                        onDisapprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _movementBloc.add(MassDisapproveMovementDocuments());
-                        },
-                        onDelete: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _movementBloc.add(MassDeleteMovementDocuments());
-                        },
-                        onRestore: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _movementBloc.add(MassRestoreMovementDocuments());
-                        },
-                        showApprove: showApprove,
-                        showDelete: showDelete,
-                        showDisapprove: showDisapprove,
-                        showRestore: showRestore,
                       );
-                    }
+                    },
+                  )
+                : CustomAppBarPage2(
+                    title: localizations?.translate('appbar_movement') ??
+                        'Перемещение',
+                    showSearchIcon: true,
+                    showFilterIcon: false,
+                    showFilterOrderIcon: false,
+                    showFilterIncomeIcon: false,
+                    showFilterIncomingIcon: true,
+                    onFilterIncomingSelected: _onFilterSelected,
+                    onIncomingResetFilters: _onResetFilters,
+                    onChangedSearchInput: _onSearch,
+                    textEditingController: _searchController,
+                    focusNode: _focusNode,
+                    clearButtonClick: (value) {
+                      if (!mounted) return;
 
-                    return AppBarSelectionMode(
-                      title: localizations?.translate('appbar_movement') ??
-                          'Перемещение',
-                      onDismiss: () {
+                      if (!value) {
                         setState(() {
-                          _selectionMode = false;
+                          _isSearching = false;
+                          _searchController.clear();
+                          _search = null;
                         });
-                        _movementBloc.add(UnselectAllDocuments());
-                      },
-                    );
-                  },
-                )
-              : CustomAppBarPage2(
-                  title: localizations?.translate('appbar_movement') ??
-                      'Перемещение',
-                  showSearchIcon: true,
-                  showFilterIcon: false,
-                  showFilterOrderIcon: false,
-                  showFilterIncomeIcon: false,
-                  showFilterIncomingIcon: true,
-                  onFilterIncomingSelected: _onFilterSelected,
-                  onIncomingResetFilters: _onResetFilters,
-                  onChangedSearchInput: _onSearch,
-                  textEditingController: _searchController,
-                  focusNode: _focusNode,
-                  clearButtonClick: (value) {
-                    if (!mounted) return;
+                        _movementBloc.add(FetchMovements(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: null,
+                        ));
+                      }
+                    },
+                    onClickProfileAvatar: () {},
+                    clearButtonClickFiltr: (bool p1) {},
+                    currentFilters: _currentFilters,
+                  ),
+          ),
+          body: MultiBlocListener(
+            listeners: [
+              BlocListener<MovementBloc, MovementState>(
+                listener: (context, state) {
+                  if (!mounted) return;
 
-                    if (!value) {
+                  if (state is MovementLoaded) {
+                    if (mounted) {
                       setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                        _search = null;
+                        _hasReachedMax = state.hasReachedMax;
+                        _isInitialLoad = false;
+                        _isLoadingMore = false;
+                        _isRefreshing = false;
                       });
-                      _movementBloc.add(FetchMovements(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: null,
-                      ));
                     }
-                  },
-                  onClickProfileAvatar: () {},
-                  clearButtonClickFiltr: (bool p1) {},
-                  currentFilters: _currentFilters,
-                ),
-        ),
-        body: MultiBlocListener(
-          listeners: [
-            BlocListener<MovementBloc, MovementState>(
-              listener: (context, state) {
-                if (!mounted) return;
+                  } else if (state is MovementError) {
+                    if (mounted) {
+                      setState(() {
+                        _isInitialLoad = false;
+                        _isLoadingMore = false;
+                        _isRefreshing = false;
+                      });
 
-                if (state is MovementLoaded) {
-                  if (mounted) {
-                    setState(() {
-                      _hasReachedMax = state.hasReachedMax;
-                      _isInitialLoad = false;
-                      _isLoadingMore = false;
-                      _isRefreshing = false;
-                    });
-                  }
-                } else if (state is MovementError) {
-                  if (mounted) {
-                    setState(() {
-                      _isInitialLoad = false;
-                      _isLoadingMore = false;
-                      _isRefreshing = false;
-                    });
-
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          final localizations = AppLocalizations.of(context)!;
-                          showSimpleErrorDialog(
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            final localizations = AppLocalizations.of(context)!;
+                            showSimpleErrorDialog(
                               context,
                               localizations.translate('error') ?? 'Ошибка',
                               state.message,
-                            errorDialogEnum: ErrorDialogEnum.goodsMovementDelete,
-                          );
-                          return;
+                              errorDialogEnum:
+                                  ErrorDialogEnum.goodsMovementDelete,
+                            );
+                            return;
+                          }
+                          _showSnackBar(state.message, false);
                         }
-                        _showSnackBar(state.message, false);
-                      }
-                    });
-                  }
-                } else if (state is MovementCreateSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc
-                            .add(const FetchMovements(forceRefresh: true));
-                      }
-                    });
-                  }
-                } else if (state is MovementCreateError) {
-                  if (mounted) {
-                    // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                    _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
+                      });
+                    }
+                  } else if (state is MovementCreateSuccess) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          _movementBloc
+                              .add(const FetchMovements(forceRefresh: true));
+                        }
+                      });
+                    }
+                  } else if (state is MovementCreateError) {
+                    if (mounted) {
+                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                      _movementBloc.add(FetchMovements(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
                               context,
                               localizations?.translate('error') ?? 'Ошибка',
                               state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementUpdate,
-                          );
-                          return;
+                              errorDialogEnum:
+                                  ErrorDialogEnum.goodsMovementUpdate,
+                            );
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                      }
-                    });
-                  }
-                } else if (state is MovementUpdateSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementUpdateError) {
-                  if (mounted) {
-                    // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                    _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementUpdate
-                          );
-                          return;
+                      });
+                    }
+                  } else if (state is MovementUpdateSuccess) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                      }
-                    });
-                  }
-                } else if (state is MovementDeleteSuccess) {
-                  debugPrint("MovementScreen.Bloc.State.MovementDeleteSuccess: ${_movementBloc.state}");
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        setState(() {
-                          _isRefreshing = true;
-                        });
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementDeleteError) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete
-                          );
-                          _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
-                          return;
+                      });
+                    }
+                  } else if (state is MovementUpdateError) {
+                    if (mounted) {
+                      // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                      _movementBloc.add(FetchMovements(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementUpdate);
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                      }
-                    });
-                  }
-                } else if (state is MovementRestoreSuccess) {
-                  debugPrint("MovementScreen.Bloc.State.MovementRestoreSuccess: ${_movementBloc.state}");
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                        setState(() {
-                          _isRefreshing = true;
-                        });
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementRestoreError) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementRestore
-                          );
-                          _movementBloc.add(FetchMovements(forceRefresh: true, filters: _currentFilters, search: _search));
-                          return;
+                      });
+                    }
+                  } else if (state is MovementDeleteSuccess) {
+                    debugPrint(
+                        "MovementScreen.Bloc.State.MovementDeleteSuccess: ${_movementBloc.state}");
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          setState(() {
+                            _isRefreshing = true;
+                          });
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
                         }
-                        showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                      }
-                    });
-                  }
-                } else if (state is MovementApproveMassSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: true);
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementApproveMassError) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementApprove
-                          );
-                          return;
+                      });
+                    }
+                  } else if (state is MovementDeleteError) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementDelete);
+                            _movementBloc.add(FetchMovements(
+                                forceRefresh: true,
+                                filters: _currentFilters,
+                                search: _search));
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
                         }
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: false
-                        );
-                      }
-                    });
-                  }
-                } else if (state is MovementDisapproveMassSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: true);
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementDisapproveMassError) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message
-                              , errorDialogEnum: ErrorDialogEnum.goodsMovementUnapprove
-                          );
-                          return;
+                      });
+                    }
+                  } else if (state is MovementRestoreSuccess) {
+                    debugPrint(
+                        "MovementScreen.Bloc.State.MovementRestoreSuccess: ${_movementBloc.state}");
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          setState(() {
+                            _isRefreshing = true;
+                          });
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
                         }
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: false);
-                      }
-                    });
-                  }
-                } else if (state is MovementDeleteMassSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: true);
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementDeleteMassError) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementDelete
-                          );
-                          return;
+                      });
+                    }
+                  } else if (state is MovementRestoreError) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementRestore);
+                            _movementBloc.add(FetchMovements(
+                                forceRefresh: true,
+                                filters: _currentFilters,
+                                search: _search));
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
                         }
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: false);
-                      }
-                    });
-                  }
-                } else if (state is MovementRestoreMassSuccess) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: true);
-                        _movementBloc.add(FetchMovements(
-                            forceRefresh: true,
-                            filters: _currentFilters,
-                            search: _search));
-                      }
-                    });
-                  }
-                } else if (state is MovementRestoreMassError) {
-                  if (mounted) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && context.mounted) {
-                        if (state.statusCode == 409) {
-                          showSimpleErrorDialog(
-                              context,
-                              localizations?.translate('error') ?? 'Ошибка',
-                              state.message,
-                              errorDialogEnum: ErrorDialogEnum.goodsMovementRestore
-                          );
-                          return;
+                      });
+                    }
+                  } else if (state is MovementApproveMassSuccess) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
                         }
-                        showCustomSnackBar(
-                            context: context,
-                            message: state.message,
-                            isSuccess: false);
-                      }
-                    });
+                      });
+                    }
+                  } else if (state is MovementApproveMassError) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementApprove);
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
+                        }
+                      });
+                    }
+                  } else if (state is MovementDisapproveMassSuccess) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
+                        }
+                      });
+                    }
+                  } else if (state is MovementDisapproveMassError) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementUnapprove);
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
+                        }
+                      });
+                    }
+                  } else if (state is MovementDeleteMassSuccess) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
+                        }
+                      });
+                    }
+                  } else if (state is MovementDeleteMassError) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementDelete);
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
+                        }
+                      });
+                    }
+                  } else if (state is MovementRestoreMassSuccess) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: true);
+                          _movementBloc.add(FetchMovements(
+                              forceRefresh: true,
+                              filters: _currentFilters,
+                              search: _search));
+                        }
+                      });
+                    }
+                  } else if (state is MovementRestoreMassError) {
+                    if (mounted) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && context.mounted) {
+                          if (state.statusCode == 409) {
+                            showSimpleErrorDialog(
+                                context,
+                                localizations?.translate('error') ?? 'Ошибка',
+                                state.message,
+                                errorDialogEnum:
+                                    ErrorDialogEnum.goodsMovementRestore);
+                            return;
+                          }
+                          showCustomSnackBar(
+                              context: context,
+                              message: state.message,
+                              isSuccess: false);
+                        }
+                      });
+                    }
                   }
-                }
-              },
-            ),
-          ],
-          child: BlocBuilder<MovementBloc, MovementState>(
-            builder: (context, state) {
-              
-              debugPrint("MovementScreen.Bloc.State.Build: ${_movementBloc.state}");
-              
-              // ИЗМЕНЕНО: Loading з _isInitialLoad
-              if (_isInitialLoad || state is MovementLoading || state is MovementDeleteLoading ||
-                  state is MovementRestoreLoading || state is MovementCreateLoading ||
-                  state is MovementApproveMassLoading || state is MovementDisapproveMassLoading ||
-                  state is MovementDeleteMassLoading || state is MovementRestoreMassLoading ||
-              _isRefreshing) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                );
-              }
+                },
+              ),
+            ],
+            child: BlocBuilder<MovementBloc, MovementState>(
+              builder: (context, state) {
+                debugPrint(
+                    "MovementScreen.Bloc.State.Build: ${_movementBloc.state}");
 
-              final List<IncomingDocument> currentData =
-                  state is MovementLoaded ? state.data : [];
-
-              if (currentData.isEmpty && state is MovementLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations?.translate('nothing_found') ??
-                            'Ничего не найдено')
-                        : (localizations?.translate('no_movements') ??
-                            'Нет документов перемещения'),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                // ИЗМЕНЕНО: Loading з _isInitialLoad
+                if (_isInitialLoad ||
+                    state is MovementLoading ||
+                    state is MovementDeleteLoading ||
+                    state is MovementRestoreLoading ||
+                    state is MovementCreateLoading ||
+                    state is MovementApproveMassLoading ||
+                    state is MovementDisapproveMassLoading ||
+                    state is MovementDeleteMassLoading ||
+                    state is MovementRestoreMassLoading ||
+                    _isRefreshing) {
+                  return Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: const Duration(milliseconds: 1000),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
-                  itemBuilder: (context, index) {
-                    if (index >= currentData.length) {
-                      return _isLoadingMore
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: const Duration(milliseconds: 1000),
+                final List<IncomingDocument> currentData =
+                    state is MovementLoaded ? state.data : [];
+
+                if (currentData.isEmpty && state is MovementLoaded) {
+                  return Center(
+                    child: Text(
+                      _isSearching
+                          ? (localizations?.translate('nothing_found') ??
+                              'Ничего не найдено')
+                          : (localizations?.translate('no_movements') ??
+                              'Нет документов перемещения'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  color: colors.buttonPrimaryBg,
+                  backgroundColor: colors.surfacePrimary,
+                  onRefresh: _onRefresh,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
+                    itemBuilder: (context, index) {
+                      if (index >= currentData.length) {
+                        return _isLoadingMore
+                            ? Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: PlayStoreImageLoading(
+                                    size: 80.0,
+                                    duration:
+                                        const Duration(milliseconds: 1000),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink();
+                      }
+
+                      // НОВОЕ: Dismissible только влево - delete або restore в зависимости от состояния
+                      return _hasDeletePermission
+                          ? Dismissible(
+                              key: Key(currentData[index].id.toString()),
+                              // Свайп только справа налево для обоих действий
+                              direction: DismissDirection.endToStart,
+
+                              background: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: currentData[index].deletedAt == null
+                                      ? Colors.red
+                                      : const Color(0xFF2196F3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.centerRight,
+                                child: Icon(
+                                  currentData[index].deletedAt == null
+                                      ? Icons.delete
+                                      : Icons.restore_from_trash,
+                                  color: colors.buttonPrimaryFg,
+                                  size: 24,
                                 ),
                               ),
+
+                              confirmDismiss: (direction) async {
+                                final isDeleted =
+                                    currentData[index].deletedAt != null;
+                                final docNumber =
+                                    currentData[index].docNumber ?? 'N/A';
+
+                                if (isDeleted) {
+                                  return await DocumentConfirmDialog
+                                      .showRestoreConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                } else {
+                                  return await DocumentConfirmDialog
+                                      .showDeleteConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                }
+                              },
+                              onDismissed: (direction) {
+                                final isDeleted =
+                                    currentData[index].deletedAt != null;
+
+                                if (isDeleted) {
+                                  // RESTORE - для удалённых документов
+                                  debugPrint(
+                                      "♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                                  _movementBloc.add(RestoreMovementDocument(
+                                    currentData[index].id!,
+                                    localizations!,
+                                  ));
+                                } else {
+                                  // DELETE - для активных документов
+                                  debugPrint(
+                                      "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                                  _movementBloc.add(DeleteMovementDocument(
+                                    currentData[index].id!,
+                                    localizations!,
+                                    shouldReload: true,
+                                  ));
+                                }
+                              },
+
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _buildMovementCard(
+                                    currentData, index, state),
+                              ),
                             )
-                          : const SizedBox.shrink();
-                    }
-
-                    // НОВОЕ: Dismissible только влево - delete або restore в зависимости от состояния
-                    return _hasDeletePermission
-                        ? Dismissible(
-                      key: Key(currentData[index].id.toString()),
-                      // Свайп только справа налево для обоих действий
-                      direction: DismissDirection.endToStart,
-
-                      background: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.centerRight,
-                        child: Icon(
-                          currentData[index].deletedAt == null 
-                              ? Icons.delete 
-                              : Icons.restore_from_trash,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-
-                      confirmDismiss: (direction) async {
-                        final isDeleted = currentData[index].deletedAt != null;
-                        final docNumber = currentData[index].docNumber ?? 'N/A';
-
-                        if (isDeleted) {
-                          return await DocumentConfirmDialog.showRestoreConfirmation(
-                            context,
-                            docNumber,
-                          );
-                        } else {
-                          return await DocumentConfirmDialog.showDeleteConfirmation(
-                            context,
-                            docNumber,
-                          );
-                        }
-                      },
-                      onDismissed: (direction) {
-                        final isDeleted = currentData[index].deletedAt != null;
-                        
-                        if (isDeleted) {
-                          // RESTORE - для удалённых документов
-                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
-                          _movementBloc.add(RestoreMovementDocument(
-                            currentData[index].id!,
-                            localizations!,
-                          ));
-                        } else {
-                          // DELETE - для активных документов
-                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                          _movementBloc.add(DeleteMovementDocument(
-                            currentData[index].id!,
-                            localizations!,
-                            shouldReload: true,
-                          ));
-                        }
-                      },
-
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildMovementCard(currentData, index, state),
-                      ),
-                    )
-                        : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _buildMovementCard(currentData, index, state),
-                    );
-                  },
-                ),
-              );
-            },
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child:
+                                  _buildMovementCard(currentData, index, state),
+                            );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 
-  Widget _buildMovementCard(List<IncomingDocument> currentData, int index, MovementState state) {
+  Widget _buildMovementCard(
+      List<IncomingDocument> currentData, int index, MovementState state) {
     return MovementCard(
       document: currentData[index],
       onTap: () {

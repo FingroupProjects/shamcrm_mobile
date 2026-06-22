@@ -78,7 +78,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Для загрузки изображения с QR-кодом.</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Это приложение использует ваш идентификатор для предоставления персонализированных уведомлений.</string>
+	<string>Мы запрашиваем разрешение, чтобы показывать персонализированные функции и корректно измерять эффективность рекламы и аналитики.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

@@ -13,6 +13,7 @@ import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart'
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/page_2/widgets/dual_storage_widget.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -468,16 +469,17 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
+    final colors = context.appColors;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.textPrimary,
           ),
         ),
         backgroundColor: isSuccess ? Colors.green : Colors.red,
@@ -494,6 +496,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return WillPopScope(
       onWillPop: () async {
@@ -505,7 +508,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: _buildAppBar(localizations),
           body: BlocListener<MovementBloc, MovementState>(
             listener: (context, state) {
@@ -520,12 +523,12 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.surfacePrimary,
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: const Color(0xff4759FF),
-                      unselectedLabelColor: const Color(0xff99A4BA),
-                      indicatorColor: const Color(0xff4759FF),
+                      labelColor: colors.buttonPrimaryBg,
+                      unselectedLabelColor: colors.textSecondary,
+                      indicatorColor: colors.buttonPrimaryBg,
                       indicatorWeight: 3,
                       labelStyle: const TextStyle(
                         fontSize: 16,
@@ -599,6 +602,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
   }
 
   Widget _buildGoodsTab(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Column(
       children: [
         Expanded(
@@ -618,11 +622,11 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Text(
                         localizations.translate('no_goods_added'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -641,10 +645,10 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -654,7 +658,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
           child: ElevatedButton(
             onPressed: _openVariantSelection,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -665,15 +669,15 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
+                Icon(Icons.add, color: colors.buttonPrimaryFg, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   localizations.translate('add_good'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
               ],
@@ -685,14 +689,14 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -711,11 +715,11 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
               '${localizations.translate('edit_movement')} №${widget.document.docNumber}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -751,14 +755,15 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _updateDocument,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff4759FF),
-          disabledBackgroundColor: const Color(0xffE5E7EB),
+          backgroundColor: colors.buttonPrimaryBg,
+          disabledBackgroundColor: colors.borderSubtle,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -776,16 +781,16 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.save_outlined,
-                      color: Colors.white, size: 18),
+                  Icon(Icons.save_outlined,
+                      color: colors.buttonPrimaryFg, size: 18),
                   const SizedBox(width: 6),
                   Text(
                     localizations.translate('save'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: colors.buttonPrimaryFg,
                     ),
                   ),
                 ],
@@ -814,6 +819,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
 
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
+    final colors = context.appColors;
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final quantityController = _quantityControllers[variantId];
@@ -829,12 +835,12 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -851,11 +857,11 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -866,21 +872,21 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                      child: Icon(Icons.close,
+                          color: colors.textSecondary, size: 18),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
               if (!isCollapsed) ...[
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                Divider(height: 1, color: colors.borderSubtle),
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
@@ -891,11 +897,11 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                         Text(
                           AppLocalizations.of(context)?.translate('quantity') ??
                               'Кол-во',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -912,11 +918,11 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                             QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
@@ -936,11 +942,11 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                           Text(
                             AppLocalizations.of(context)?.translate('unit') ??
                                 'Ед.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -950,24 +956,23 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfacePrimary,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                border: Border.all(color: colors.borderSubtle),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: item['selectedUnit'],
                                   isDense: true,
                                   isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down,
-                                      size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
+                                  dropdownColor: colors.surfacePrimary,
+                                  icon: Icon(Icons.arrow_drop_down,
+                                      size: 16, color: colors.buttonPrimaryBg),
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
@@ -994,19 +999,18 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfacePrimary,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                border: Border.all(color: colors.borderSubtle),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),

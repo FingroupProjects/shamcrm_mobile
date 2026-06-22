@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -346,12 +347,12 @@ class _MovementDocumentDetailsScreenState
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Center(
+        child:  Center(
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
+              color: context.appColors.textPrimary,
               strokeWidth: 2,
             ),
           ),
@@ -406,7 +407,7 @@ class _MovementDocumentDetailsScreenState
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -417,8 +418,8 @@ class _MovementDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style:  TextStyle(
+                    color: context.appColors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -432,8 +433,8 @@ class _MovementDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style:  TextStyle(
+                      color: context.appColors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -447,7 +448,7 @@ class _MovementDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -468,7 +469,7 @@ class _MovementDocumentDetailsScreenState
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         body: _isLoading
             ? Center(
                 child: PlayStoreImageLoading(
@@ -482,11 +483,11 @@ class _MovementDocumentDetailsScreenState
                       AppLocalizations.of(context)!
                               .translate('document_data_unavailable') ??
                           'Данные документа недоступны',
-                      style: const TextStyle(
+                      style:  TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: context.appColors.textSecondary,
                       ),
                     ),
                   )
@@ -514,12 +515,13 @@ class _MovementDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     // ИЗМЕНЕНО: Показываем кнопки только если есть права И документ не удалён
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -533,6 +535,7 @@ class _MovementDocumentDetailsScreenState
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.iconPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -542,11 +545,11 @@ class _MovementDocumentDetailsScreenState
         offset: const Offset(-10, 0),
         child: Text(
           "${AppLocalizations.of(context)!.translate('transfer') ?? 'Перемещение'} №${widget.docNumber}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -564,6 +567,7 @@ class _MovementDocumentDetailsScreenState
                         'assets/icons/edit.png',
                         width: 24,
                         height: 24,
+                        color: colors.iconPrimary,
                       ),
                       onPressed: () async {
                         if (_isLoading) return;
@@ -593,6 +597,7 @@ class _MovementDocumentDetailsScreenState
                         'assets/icons/delete.png',
                         width: 24,
                         height: 24,
+                        color: colors.buttonDangerBg,
                       ),
                       onPressed: () {
                         if (_isLoading) return;
@@ -655,7 +660,7 @@ class _MovementDocumentDetailsScreenState
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
@@ -695,11 +700,11 @@ class _MovementDocumentDetailsScreenState
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty') ??
                         'Нет товаров',
-                    style: const TextStyle(
+                    style:  TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -750,7 +755,8 @@ class _MovementDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context)
+                            .copyWith(fontSize: 14),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -767,21 +773,21 @@ class _MovementDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style: const TextStyle(
+                                    style:  TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
+                                      color: context.appColors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style: const TextStyle(
+                                    style:  TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
+                                      color: context.appColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -796,21 +802,21 @@ class _MovementDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
+                                  style:  TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: context.appColors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style: const TextStyle(
+                                  style:  TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: context.appColors.textPrimary,
                                   ),
                                 ),
                               ],
@@ -827,7 +833,7 @@ class _MovementDocumentDetailsScreenState
                           //           fontSize: 10,
                           //           fontFamily: 'Gilroy',
                           //           fontWeight: FontWeight.w400,
-                          //           color: Color(0xff99A4BA),
+                          //           color: context.appColors.textSecondary,
                           //         ),
                           //       ),
                           //       const SizedBox(height: 2),
@@ -837,7 +843,7 @@ class _MovementDocumentDetailsScreenState
                           //           fontSize: 12,
                           //           fontFamily: 'Gilroy',
                           //           fontWeight: FontWeight.w600,
-                          //           color: Color(0xff1E2E52),
+                          //           color: context.appColors.textPrimary,
                           //         ),
                           //         overflow: TextOverflow.ellipsis,
                           //       ),
@@ -862,7 +868,7 @@ class _MovementDocumentDetailsScreenState
                       //           fontSize: 12,
                       //           fontFamily: 'Gilroy',
                       //           fontWeight: FontWeight.w500,
-                      //           color: Color(0xff1E2E52),
+                      //           color: context.appColors.textPrimary,
                       //         ),
                       //       ),
                       //       const SizedBox(width: 8),
@@ -920,12 +926,12 @@ class _MovementDocumentDetailsScreenState
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: context.appColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child:
-            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+      child:  Center(
+        child: Icon(Icons.image_not_supported,
+            size: 40, color: context.appColors.textSecondary),
       ),
     );
   }
@@ -970,11 +976,11 @@ class _MovementDocumentDetailsScreenState
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style:  TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textSecondary,
       ),
     );
   }
@@ -982,11 +988,11 @@ class _MovementDocumentDetailsScreenState
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: const TextStyle(
+      style:  TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: context.appColors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

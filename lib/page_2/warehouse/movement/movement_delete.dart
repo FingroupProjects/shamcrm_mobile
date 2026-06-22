@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/movement/movement_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -10,37 +11,40 @@ import '../../money/widgets/error_dialog.dart';
 
 class MovementDeleteDocumentDialog extends StatefulWidget {
   final int documentId;
-  
+
   const MovementDeleteDocumentDialog({super.key, required this.documentId});
 
   @override
-  State<MovementDeleteDocumentDialog> createState() => _MovementDeleteDocumentDialogState();
+  State<MovementDeleteDocumentDialog> createState() =>
+      _MovementDeleteDocumentDialogState();
 }
 
-class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDialog> {
+class _MovementDeleteDocumentDialogState
+    extends State<MovementDeleteDocumentDialog> {
   bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return BlocListener<MovementBloc, MovementState>(
       listener: (context, state) {
         if (!mounted) return;
 
         if (state is MovementDeleteSuccess) {
           setState(() => _isDeleting = false);
-          
+
           // Успешное сообщение
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -48,19 +52,20 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: colors.buttonPrimaryBg,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
           );
-          
+
           // Закрываем диалог и экран деталей
           Navigator.of(context).pop();
           Navigator.of(context).pop(true);
-          
+
           // Обновляем список документов
-          context.read<MovementBloc>().add(const FetchMovements(forceRefresh: true));
-          
+          context
+              .read<MovementBloc>()
+              .add(const FetchMovements(forceRefresh: true));
         } else if (state is MovementDeleteError) {
           setState(() => _isDeleting = false);
           if (state.statusCode == 409) {
@@ -77,11 +82,11 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
             SnackBar(
               content: Text(
                 state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -89,7 +94,7 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             ),
@@ -97,26 +102,26 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
             localizations.translate('delete_document') ?? 'Удалить документ',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
         content: Text(
           localizations.translate('delete_document_confirm') ??
               'Вы уверены, что хотите удалить этот документ?',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -131,26 +136,27 @@ class _MovementDeleteDocumentDialogState extends State<MovementDeleteDocumentDia
                       Navigator.of(context).pop();
                     }
                   },
-                  buttonColor: Colors.grey,
-                  textColor: Colors.white,
+                  buttonColor: colors.surfaceElevated,
+                  textColor: colors.textPrimary,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: CustomButton(
-                  buttonText: _isDeleting 
-                    ? (localizations.translate('deleting') ?? 'Удаление...') 
-                    : (localizations.translate('delete') ?? 'Удалить'),
-                  onPressed: _isDeleting 
-                      ? () {} 
+                  buttonText: _isDeleting
+                      ? (localizations.translate('deleting') ?? 'Удаление...')
+                      : (localizations.translate('delete') ?? 'Удалить'),
+                  onPressed: _isDeleting
+                      ? () {}
                       : () {
                           setState(() => _isDeleting = true);
                           context.read<MovementBloc>().add(
-                            DeleteMovementDocument(widget.documentId, localizations),
-                          );
+                                DeleteMovementDocument(
+                                    widget.documentId, localizations),
+                              );
                         },
-                  buttonColor: const Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonDangerBg,
+                  textColor: colors.buttonDangerFg,
                 ),
               ),
             ],

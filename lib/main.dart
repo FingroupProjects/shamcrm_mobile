@@ -187,6 +187,7 @@ void main() {
       final apiService = ApiService();
       final authService = AuthService();
 
+      await _requestTrackingAuthorizationIfNeeded();
       await _safeInitializeOfflineRuntime();
       await _safeInitializeFirebase();
 
@@ -232,6 +233,22 @@ void main() {
   }, (error, stackTrace) async {
     await _recordFatalError(error, stackTrace, reason: 'zone');
   });
+}
+
+Future<void> _requestTrackingAuthorizationIfNeeded() async {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+    return;
+  }
+
+  try {
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      await AppTrackingTransparency.requestTrackingAuthorization();
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: tracking authorization error: $e');
+    debugPrint('main: tracking authorization stackTrace: $stackTrace');
+  }
 }
 
 Future<void> _safeInitializeOfflineRuntime() async {
@@ -708,7 +725,6 @@ class _MyAppState extends State<MyApp> {
     }
     _deferredStartupInitialized = true;
 
-    unawaited(AppTrackingTransparency.requestTrackingAuthorization());
     unawaited(_initializeFirebaseMessaging());
     if (widget.isDomainChecked && widget.sessionValid) {
       unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());

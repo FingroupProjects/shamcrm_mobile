@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_state.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,6 +53,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return BlocListener<StorageBloc, StorageState>(
       listener: (context, state) {
@@ -60,11 +62,11 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             SnackBar(
               content: Text(
                 localizations.translate(state.message) ?? state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -72,7 +74,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: const Duration(seconds: 3),
@@ -211,17 +213,18 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
     required Function(WareHouse?) onChanged,
   }) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -232,15 +235,15 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
           overlayHeight: 400,
           enabled: !isLoading,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor: colors.surfaceElevated,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: hasError ? Colors.red : const Color(0xffF4F7FD),
+              color: hasError ? colors.error : colors.borderSubtle,
               width: hasError ? 2 : 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.borderSubtle,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -248,8 +251,8 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item.name ?? '',
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -266,8 +269,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               );
@@ -275,11 +277,11 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
 
             return Text(
               selectedItem?.name ?? hint,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
@@ -291,8 +293,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               );
@@ -300,11 +301,11 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
 
             return Text(
               hint,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textSecondary,
               ),
             );
           },
@@ -315,8 +316,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                   padding: EdgeInsets.all(20.0),
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               );
@@ -326,10 +326,10 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
                 padding: const EdgeInsets.all(20.0),
                 child: Text(
                   localizations.translate('no_results') ?? 'Нет результатов',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),

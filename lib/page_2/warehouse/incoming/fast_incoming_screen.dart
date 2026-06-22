@@ -547,127 +547,126 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
           maxChildSize: 0.92,
           builder: (context, controller) {
             return Container(
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.borderSubtle,
-                      borderRadius: BorderRadius.circular(999),
+              color: colors.surfacePrimary,
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.borderSubtle,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Выбранные товары',
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontFamily: 'Gilroy',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            '${items.length} шт',
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.separated(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return _RmkSelectedCartCard(
-                          item: item,
-                          onTap: () async {
-                            Navigator.pop(context);
-                            final good =
-                                await _repository.getGoodById(item.goodId);
-                            if (!mounted || good == null) return;
-                            await _openQuantityScreen(good);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  colors.shadow.withValues(alpha: 0.06),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Итого',
-                              style: TextStyle(
-                                color: colors.textSecondary,
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              _formatMoney(total),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Выбранные товары',
                               style: TextStyle(
                                 color: colors.textPrimary,
                                 fontFamily: 'Gilroy',
                                 fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${items.length} шт',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontFamily: 'Gilroy',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: controller,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return _RmkSelectedCartCard(
+                            item: item,
+                            onTap: () async {
+                              Navigator.pop(context);
+                              final good =
+                                  await _repository.getGoodById(item.goodId);
+                              if (!mounted || good == null) return;
+                              await _openQuantityScreen(good);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.shadow.withValues(alpha: 0.06),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Итого',
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                _formatMoney(total),
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -709,9 +708,9 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                     foregroundColor: colors.iconPrimary,
                     overlayColor: colors.iconPrimary.withValues(alpha: 0.08),
                   ),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
-                    color: Color(0xff1E2E52),
+                    color: colors.iconPrimary,
                     size: 24,
                   ),
                   onPressed: _toggleSearch,
@@ -729,6 +728,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                     'assets/icons/AppBar/search.png',
                     width: 24,
                     height: 24,
+                    color: colors.iconPrimary,
                   ),
                   onPressed: _toggleSearch,
                 ),
@@ -742,6 +742,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                     'assets/icons/AppBar/filter.png',
                     width: 24,
                     height: 24,
+                    color: colors.iconPrimary,
                   ),
                   onPressed: _openMainFilter,
                 ),
@@ -755,6 +756,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                     'assets/icons/AppBar/scanner.png',
                     width: 24,
                     height: 24,
+                    color: colors.iconPrimary,
                   ),
                   onPressed: _scanBarcode,
                 ),
@@ -1140,18 +1142,19 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xffF8F9FB),
+        backgroundColor: colors.surfacePrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           elevation: 0,
-          title: const Text(
+          title: Text(
             'Готово',
             style: TextStyle(
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
               fontSize: 20,
@@ -1237,17 +1240,18 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                   height: 52,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff1E2E52),
-                      foregroundColor: Colors.white,
+                      backgroundColor: colors.buttonPrimaryBg,
+                      foregroundColor: colors.buttonPrimaryFg,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: _submit,
-                    child: const Text(
+                    child: Text(
                       'Создать приход',
                       style: TextStyle(
+                        color: colors.buttonPrimaryFg,
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -1347,8 +1351,24 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(color: borderColor, width: 1.5),
             expandedBorderRadius: BorderRadius.circular(12),
-            searchFieldDecoration: const SearchFieldDecoration(
+            searchFieldDecoration: SearchFieldDecoration(
               autoFocus: false,
+              fillColor: colors.surfaceElevated,
+              hintStyle: TextStyle(color: colors.textSecondary),
+              textStyle: TextStyle(color: colors.textPrimary),
+              prefixIcon: Icon(
+                Icons.search,
+                size: 20,
+                color: colors.iconSecondary,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colors.buttonPrimaryBg),
+              ),
             ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -1395,7 +1415,7 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: colors.textPrimary,
+                color: colors.textSecondary,
               ),
             );
           },
@@ -1532,14 +1552,15 @@ class _RmkFilterOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA);
+    final colors = context.appColors;
+    final color = isActive ? colors.buttonPrimaryBg : colors.iconSecondary;
     return Material(
-      color: const Color(0xffF4F7FD),
+      color: colors.surfaceElevated,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        splashColor: const Color(0xff1E2E52).withValues(alpha: 0.06),
-        highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.04),
+        splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.06),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.04),
         onTap: isLoading ? null : onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 54),
@@ -1565,8 +1586,8 @@ class _RmkFilterOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xff718096),
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1577,8 +1598,8 @@ class _RmkFilterOptionTile extends StatelessWidget {
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontFamily: 'Gilroy',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1587,9 +1608,9 @@ class _RmkFilterOptionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_right_rounded,
-                color: Color(0xff99A4BA),
+                color: colors.iconSecondary,
                 size: 22,
               ),
             ],
@@ -1619,6 +1640,7 @@ class _DoneButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final isEnabled = count > 0 && !isLoading;
     return Row(
       children: [
@@ -1627,10 +1649,9 @@ class _DoneButton extends StatelessWidget {
             height: 52,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isEnabled
-                    ? const Color(0xff1E2E52)
-                    : const Color(0xffCBD5E0),
-                foregroundColor: Colors.white,
+                backgroundColor:
+                    isEnabled ? colors.buttonPrimaryBg : colors.borderSubtle,
+                foregroundColor: colors.buttonPrimaryFg,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1638,19 +1659,20 @@ class _DoneButton extends StatelessWidget {
               ),
               onPressed: isEnabled ? onTap : null,
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.buttonPrimaryFg),
                       ),
                     )
                   : Text(
                       'Готово · ${_formatMoney(total)} $currencyTitle',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -1666,16 +1688,14 @@ class _DoneButton extends StatelessWidget {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  isEnabled ? Colors.white : const Color(0xffE2E8F0),
-              foregroundColor: const Color(0xff1E2E52),
+                  isEnabled ? colors.surfaceElevated : colors.surfaceElevated,
+              foregroundColor: colors.iconPrimary,
               elevation: 0,
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isEnabled
-                      ? const Color(0xffD9E2F1)
-                      : const Color(0xffE2E8F0),
+                  color: colors.borderSubtle,
                 ),
               ),
             ),
@@ -1687,9 +1707,7 @@ class _DoneButton extends StatelessWidget {
                 Icon(
                   Icons.receipt_long_rounded,
                   size: 22,
-                  color: isEnabled
-                      ? const Color(0xff1E2E52)
-                      : const Color(0xff99A4BA),
+                  color: isEnabled ? colors.iconPrimary : colors.iconSecondary,
                 ),
                 if (count > 0)
                   Positioned(
@@ -1702,14 +1720,14 @@ class _DoneButton extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xff1E2E52),
+                        color: colors.buttonPrimaryBg,
                         borderRadius: BorderRadius.circular(999),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.buttonPrimaryFg,
                           fontFamily: 'Gilroy',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -1782,22 +1800,21 @@ class _CategoryStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Material(
-      color: isSelected ? const Color(0xff1E2E52) : Colors.white,
+      color: isSelected ? colors.buttonPrimaryBg : colors.surfacePrimary,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        splashColor: const Color(0xff1E2E52).withValues(alpha: 0.08),
-        highlightColor: const Color(0xff1E2E52).withValues(alpha: 0.04),
+        splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.04),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xff1E2E52)
-                  : const Color(0xffD9E2F1),
+              color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
             ),
           ),
           child: Center(
@@ -1806,7 +1823,7 @@ class _CategoryStatusChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xff1E2E52),
+                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -1830,9 +1847,10 @@ class _RmkSelectedCartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final total = item.customTotal ?? item.quantity * item.price;
     return Material(
-      color: Colors.white,
+      color: colors.surfacePrimary,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -1840,9 +1858,9 @@ class _RmkSelectedCartCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xffE7EDF6)),
+            border: Border.all(color: colors.borderSubtle),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1857,8 +1875,8 @@ class _RmkSelectedCartCard extends StatelessWidget {
                       item.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontFamily: 'Gilroy',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1887,10 +1905,10 @@ class _RmkSelectedCartCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
+                  Text(
                     'Сумма',
                     style: TextStyle(
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                       fontFamily: 'Gilroy',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1899,8 +1917,8 @@ class _RmkSelectedCartCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _formatMoney(total),
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -1969,10 +1987,11 @@ class _RmkMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
       ),
       child: RichText(
@@ -1980,8 +1999,8 @@ class _RmkMetaChip extends StatelessWidget {
           children: [
             TextSpan(
               text: '$label: ',
-              style: const TextStyle(
-                color: Color(0xff718096),
+              style: TextStyle(
+                color: colors.textSecondary,
                 fontFamily: 'Gilroy',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -1989,8 +2008,8 @@ class _RmkMetaChip extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -2016,54 +2035,55 @@ class _AppBarSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return SizedBox(
       height: 42,
       child: TextSelectionTheme(
-        data: const TextSelectionThemeData(
-          cursorColor: Color(0xff1E2E52),
-          selectionColor: Color(0x331E2E52),
-          selectionHandleColor: Color(0xff1E2E52),
+        data: TextSelectionThemeData(
+          cursorColor: colors.buttonPrimaryBg,
+          selectionColor: colors.buttonPrimaryBg.withValues(alpha: 0.2),
+          selectionHandleColor: colors.buttonPrimaryBg,
         ),
         child: TextField(
           controller: controller,
           focusNode: focusNode,
           onChanged: onChanged,
           autofocus: true,
-          cursorColor: const Color(0xff1E2E52),
+          cursorColor: colors.buttonPrimaryBg,
           textInputAction: TextInputAction.search,
-          style: const TextStyle(
-            color: Color(0xff1E2E52),
+          style: TextStyle(
+            color: colors.textPrimary,
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             hintText: 'Поиск',
-            hintStyle: const TextStyle(
-              color: Color(0xff99A4BA),
+            hintStyle: TextStyle(
+              color: colors.textSecondary,
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
             ),
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.search,
               size: 21,
-              color: Color(0xff99A4BA),
+              color: colors.iconSecondary,
             ),
             prefixIconConstraints: const BoxConstraints(
               minWidth: 42,
               minHeight: 42,
             ),
             filled: true,
-            fillColor: const Color(0xffF4F7FD),
+            fillColor: colors.surfaceElevated,
             contentPadding: EdgeInsets.zero,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+              borderSide: BorderSide(color: colors.borderSubtle),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xffF4F7FD)),
+              borderSide: BorderSide(color: colors.buttonPrimaryBg),
             ),
           ),
         ),
@@ -2085,13 +2105,13 @@ class _FinishSummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Row(
       children: [
         Text(
           title,
           style: TextStyle(
-            color:
-                isPrimary ? const Color(0xff1E2E52) : const Color(0xff718096),
+            color: isPrimary ? colors.textPrimary : colors.textSecondary,
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -2100,8 +2120,8 @@ class _FinishSummaryRow extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: const TextStyle(
-            color: Color(0xff1E2E52),
+          style: TextStyle(
+            color: colors.textPrimary,
             fontFamily: 'Gilroy',
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -2125,20 +2145,23 @@ class _FinishAmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xffE2E8F0)),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
               'Оплачено',
               style: TextStyle(
-                color: Color(0xff718096),
+                color: colors.textSecondary,
                 fontFamily: 'Gilroy',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -2146,7 +2169,7 @@ class _FinishAmountField extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 170,
+            width: 210,
             child: TextField(
               controller: controller,
               keyboardType:
@@ -2156,19 +2179,20 @@ class _FinishAmountField extends StatelessWidget {
               ],
               textAlign: TextAlign.right,
               onChanged: (_) => onChanged(),
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontFamily: 'Gilroy',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
                 isDense: true,
+                alignLabelWithHint: true,
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+                contentPadding: const EdgeInsets.symmetric(vertical: 6),
                 suffixText: currencyTitle,
-                suffixStyle: const TextStyle(
-                  color: Color(0xff1E2E52),
+                suffixStyle: TextStyle(
+                  color: colors.textPrimary,
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -2197,21 +2221,22 @@ class _FinishSelectField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
         Material(
-          color: const Color(0xffF4F7FD),
+          color: colors.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -2225,17 +2250,19 @@ class _FinishSelectField extends StatelessWidget {
                   Expanded(
                     child: Text(
                       value ?? hint,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: value == null
+                            ? colors.textSecondary
+                            : colors.textPrimary,
                       ),
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xff99A4BA),
+                    color: colors.iconSecondary,
                     size: 22,
                   ),
                 ],
