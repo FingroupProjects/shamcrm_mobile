@@ -33,6 +33,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_histo
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_unite_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_sms_modal.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
@@ -340,6 +341,25 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       setState(() {
         _normalizedContactPhones.add(normalizedPhone);
       });
+    }
+  }
+
+  Future<void> _openLeadUniteDialog() async {
+    if (currentLead == null) return;
+
+    final merged = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => LeadUniteDialog(
+        currentLeadId: currentLead!.id,
+      ),
+    );
+
+    if (merged == true && mounted) {
+      setState(() {
+        _statusChangedFromDetails = true;
+      });
+      Navigator.pop(context, _buildNavigationResult());
     }
   }
 
@@ -1011,39 +1031,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
               style: const TextStyle(
-
                 fontFamily: 'Gilroy',
-
                 fontSize: 15,
-
                 fontWeight: FontWeight.w500,
-
                 color: Colors.white,
-
               ),
-
             ),
-
             backgroundColor: Colors.green,
-
             behavior: SnackBarBehavior.floating,
-
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
-
           ),
-
         );
       },
       child: Text(
@@ -1259,6 +1264,17 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         ),
       ),
       actions: [
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints(),
+          tooltip: AppLocalizations.of(context)!.translate('lead_merge_button'),
+          icon: Icon(
+            Icons.call_merge,
+            size: 28,
+            color: const Color(0xff1E2E52),
+          ),
+          onPressed: currentLead == null ? null : _openLeadUniteDialog,
+        ),
         IconButton(
           key: keyLeadHistory,
           padding: EdgeInsets.zero,
@@ -1880,39 +1896,26 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-
                 SnackBar(
-
                   content: Text(
-
-                    AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                    AppLocalizations.of(context)
+                            ?.translate('copied_to_clipboard') ??
+                        'Скопировано',
                     style: const TextStyle(
-
                       fontFamily: 'Gilroy',
-
                       fontSize: 15,
-
                       fontWeight: FontWeight.w500,
-
                       color: Colors.white,
-
                     ),
-
                   ),
-
                   backgroundColor: Colors.green,
-
                   behavior: SnackBarBehavior.floating,
-
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
-
                 ),
-
               );
             },
             child: Text(
@@ -1936,39 +1939,25 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: value));
           ScaffoldMessenger.of(context).showSnackBar(
-
             SnackBar(
-
               content: Text(
-
-                AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+                AppLocalizations.of(context)
+                        ?.translate('copied_to_clipboard') ??
+                    'Скопировано',
                 style: const TextStyle(
-
                   fontFamily: 'Gilroy',
-
                   fontSize: 15,
-
                   fontWeight: FontWeight.w500,
-
                   color: Colors.white,
-
                 ),
-
               ),
-
               backgroundColor: Colors.green,
-
               behavior: SnackBarBehavior.floating,
-
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 2),
-
             ),
-
           );
         },
         child: Text(
@@ -2027,39 +2016,24 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: value));
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ?? 'Скопировано',
-
+              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
+                  'Скопировано',
               style: const TextStyle(
-
                 fontFamily: 'Gilroy',
-
                 fontSize: 15,
-
                 fontWeight: FontWeight.w500,
-
                 color: Colors.white,
-
               ),
-
             ),
-
             backgroundColor: Colors.green,
-
             behavior: SnackBarBehavior.floating,
-
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
-
           ),
-
         );
       },
       child: Text(

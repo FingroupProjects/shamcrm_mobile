@@ -141,6 +141,7 @@ import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
 import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -183,9 +184,10 @@ void main() {
       final apiService = ApiService();
       final authService = AuthService();
 
+      await _requestTrackingAuthorizationIfNeeded();
       await _safeInitializeOfflineRuntime();
       await _safeInitializeFirebase();
-  
+
       final sessionValidation = await _validateApplicationSession(apiService);
 
       String? token;
@@ -227,6 +229,22 @@ void main() {
   }, (error, stackTrace) async {
     await _recordFatalError(error, stackTrace, reason: 'zone');
   });
+}
+
+Future<void> _requestTrackingAuthorizationIfNeeded() async {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+    return;
+  }
+
+  try {
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      await AppTrackingTransparency.requestTrackingAuthorization();
+    }
+  } catch (e, stackTrace) {
+    debugPrint('main: tracking authorization error: $e');
+    debugPrint('main: tracking authorization stackTrace: $stackTrace');
+  }
 }
 
 Future<void> _safeInitializeOfflineRuntime() async {

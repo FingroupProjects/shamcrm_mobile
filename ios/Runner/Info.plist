@@ -77,6 +77,8 @@
 	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Для загрузки изображения с QR-кодом.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Мы запрашиваем разрешение, чтобы показывать персонализированные функции и корректно измерять эффективность рекламы и аналитики.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

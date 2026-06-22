@@ -14,6 +14,10 @@ class LeadRadioGroupWidget extends StatefulWidget {
   final bool showDebt;
   final bool alwaysRefreshFromServer;
   final bool clearCacheBeforeRefresh;
+  final List<int> excludedLeadIds;
+  final String? labelText;
+  final String? hintText;
+  final String? searchHintText;
 
   const LeadRadioGroupWidget({
     super.key,
@@ -22,6 +26,10 @@ class LeadRadioGroupWidget extends StatefulWidget {
     this.showDebt = false,
     this.alwaysRefreshFromServer = false,
     this.clearCacheBeforeRefresh = false,
+    this.excludedLeadIds = const [],
+    this.labelText,
+    this.hintText,
+    this.searchHintText,
   });
 
   @override
@@ -34,6 +42,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   LeadData? selectedLeadData;
   bool _isInitialized = false;
   bool _initialLeadSet = false;
+
+  bool _isExcluded(int leadId) => widget.excludedLeadIds.contains(leadId);
 
   void _reloadLeads() {
     if (widget.alwaysRefreshFromServer && mounted) {
@@ -162,7 +172,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         showDebt: widget.showDebt,
         search: query,
       );
-      final items = response.result ?? <LeadData>[];
+      final items = (response.result ?? <LeadData>[])
+          .where((lead) => !_isExcluded(lead.id))
+          .toList();
       final pagination = response.pagination;
 
       return CustomDropdownPaginatedResponse<LeadData>(
@@ -184,7 +196,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.translate('lead'),
+          widget.labelText ?? AppLocalizations.of(context)!.translate('lead'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -202,7 +214,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
 
             // SUCCESS → fresh data
             if (state is GetAllLeadSuccess) {
-              leadsList = state.dataLead.result ?? [];
+              leadsList = (state.dataLead.result ?? [])
+                  .where((lead) => !_isExcluded(lead.id))
+                  .toList();
               _isInitialized = true;
               _updateSelectedLeadData();
             }
@@ -233,7 +247,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: leadsList,
-                  searchHintText:
+                  searchHintText: widget.searchHintText ??
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: !isStillLoading,
@@ -330,7 +344,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
                     }
 
                     return Text(
-                      AppLocalizations.of(context)!.translate('select_lead'),
+                      widget.hintText ??
+                          AppLocalizations.of(context)!
+                              .translate('select_lead'),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

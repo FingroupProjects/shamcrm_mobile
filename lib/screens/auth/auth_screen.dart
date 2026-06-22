@@ -5,7 +5,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../bloc/auth_domain/domain_bloc.dart';
 import '../../bloc/auth_domain/domain_event.dart';
 import '../../bloc/auth_domain/domain_state.dart';
@@ -22,7 +21,6 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  static final Uri _demoUri = Uri.parse('https://shamcrm.com/');
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _showManualInput = false;
@@ -68,24 +66,6 @@ class _AuthScreenState extends State<AuthScreen> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  Future<void> _openDemoRequest() async {
-    final launched = await launchUrl(
-      _demoUri,
-      mode: LaunchMode.inAppBrowserView,
-    );
-
-    if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)?.translate('site_open_failed') ??
-                'Не удалось открыть сайт',
-          ),
-        ),
-      );
     }
   }
 
@@ -247,8 +227,6 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 28),
-                        _buildDemoCard(localizations),
                       ],
                     ),
                   ),
@@ -560,8 +538,6 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 28),
-                          _buildDemoCard(localizations),
                         ],
                       ),
                     ),
@@ -597,41 +573,5 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacementNamed(context, '/pin_setup');
       }
     }
-  }
-
-  Widget _buildDemoCard(AppLocalizations localizations) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      children: [
-        Text(
-          localizations.translate('auth_signup_prompt'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff6E7B96),
-          ),
-        ),
-        InkWell(
-          onTap: _openDemoRequest,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-            child: Text(
-              localizations.translate('auth_signup_cta'),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gilroy',
-                color: Color(0xff4F40EC),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

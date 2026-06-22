@@ -2716,6 +2716,41 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> uniteLead(
+    int leadId, {
+    required int unitedLeadId,
+  }) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
+      final path = await _appendQueryParams('/lead/unite/$leadId');
+      final response = await _postRequest(
+        path,
+        {
+          'lead_id': unitedLeadId,
+          'organization_id': organizationId ?? '1',
+          'sales_funnel_id': salesFunnelId ?? '1',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Не удалось объединить лид';
+        throw Exception(message);
+      }
+
+      throw Exception('Не удалось объединить лид');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> acceptLead(int leadId) async {
     try {
       final path = await _appendQueryParams('/lead/accept/$leadId');

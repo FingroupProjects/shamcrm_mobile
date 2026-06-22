@@ -204,6 +204,14 @@ class _LeadCardState extends State<LeadCard>
           final newStatusId = result['newStatusId'] as int? ?? widget.statusId;
           context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
           widget.onStatusUpdated();
+          if (newStatusId == widget.statusId) {
+            context.read<LeadBloc>().add(
+                  FetchLeads(
+                    widget.statusId,
+                    ignoreCache: true,
+                  ),
+                );
+          }
           widget.onStatusId(newStatusId);
         } else {
           context.read<LeadBloc>().add(
