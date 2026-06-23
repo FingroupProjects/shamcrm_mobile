@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -46,6 +47,7 @@ class WriteOffCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return GestureDetector(
       onTap: onTap,
@@ -53,9 +55,13 @@ class WriteOffCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected ? colors.surfaceElevated : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+                color: colors.shadow.withValues(alpha: 0.08), blurRadius: 4)
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -70,11 +76,11 @@ class WriteOffCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           '№${document.docNumber ?? ''}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -100,31 +106,31 @@ class WriteOffCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('date') ?? 'Дата'} ${document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('storage') ?? 'Склад'}: ${document.storage?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('total_quantity') ?? 'Общее количество'}: ${document.totalQuantity}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   // if (document.comment != null && document.comment!.isNotEmpty) ...[
@@ -151,7 +157,7 @@ class WriteOffCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   size: 24,
                 ),
               ),

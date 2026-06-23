@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/api_exception_model.dart';
@@ -203,18 +204,19 @@ class _WriteOffDocumentDetailsScreenState
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
+    final colors = context.appColors;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.buttonPrimaryFg,
           ),
         ),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        backgroundColor: isSuccess ? colors.buttonPrimaryBg : colors.error,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -371,20 +373,21 @@ class _WriteOffDocumentDetailsScreenState
   }
 
   Widget _buildActionButton() {
+    final colors = context.appColors;
     if (_isButtonLoading) {
       return Container(
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.buttonPrimaryFg,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
               strokeWidth: 2,
             ),
           ),
@@ -401,7 +404,7 @@ class _WriteOffDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('restore_document') ??
             'Восстановить',
         icon: Icons.restore,
-        color: const Color(0xFF2196F3),
+        color: colors.buttonPrimaryBg,
         onPressed: _restoreDocument,
       );
     }
@@ -430,17 +433,18 @@ class _WriteOffDocumentDetailsScreenState
       text: AppLocalizations.of(context)!.translate('unapprove_document') ??
           'Отменить проведение',
       icon: Icons.cancel_outlined,
-      color: const Color(0xFFFFA500),
+      color: colors.error,
       onPressed: _unApproveDocument,
     );
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -451,8 +455,8 @@ class _WriteOffDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -466,8 +470,8 @@ class _WriteOffDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -481,7 +485,7 @@ class _WriteOffDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -494,6 +498,7 @@ class _WriteOffDocumentDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return PopScope(
       onPopInvoked: (didPop) {
         if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
@@ -502,7 +507,7 @@ class _WriteOffDocumentDetailsScreenState
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         body: _isLoading
             ? Center(
                 child: PlayStoreImageLoading(
@@ -516,11 +521,11 @@ class _WriteOffDocumentDetailsScreenState
                       AppLocalizations.of(context)!
                               .translate('document_data_unavailable') ??
                           'Данные документа недоступны',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   )
@@ -548,39 +553,51 @@ class _WriteOffDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     // ИЗМЕНЕНО: showActions с правами
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
-      leadingWidth: 40,
+      leadingWidth: 56,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
+        padding: const EdgeInsets.only(left: 12, top: 6, bottom: 6),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.borderSubtle),
+          ),
           child: IconButton(
+            splashRadius: 22,
             icon: Image.asset(
               'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
+              color: colors.textPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
       ),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colors.borderSubtle),
+        ),
         child: Text(
           "${AppLocalizations.of(context)!.translate('write_off') ?? 'Списание'} №${widget.docNumber}",
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: 18,
             fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            fontWeight: FontWeight.w700,
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -591,56 +608,78 @@ class _WriteOffDocumentDetailsScreenState
                 children: [
                   // НОВОЕ: Edit только с update-правом
                   if (widget.hasUpdatePermission)
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Image.asset(
-                        'assets/icons/edit.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                      onPressed: () async {
-                        if (_isLoading) return;
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EditWriteOffDocumentScreen(
-                              document: currentDocument!,
-                            ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.borderSubtle),
+                        ),
+                        child: IconButton(
+                          splashRadius: 22,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Image.asset(
+                            'assets/icons/edit.png',
+                            width: 22,
+                            height: 22,
+                            color: colors.textPrimary,
                           ),
-                        );
+                          onPressed: () async {
+                            if (_isLoading) return;
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditWriteOffDocumentScreen(
+                                  document: currentDocument!,
+                                ),
+                              ),
+                            );
 
-                        if (result == true) {
-                          _fetchDocumentDetails();
-                          if (widget.onDocumentUpdated != null) {
-                            widget.onDocumentUpdated!();
-                          }
-                        }
-                      },
+                            if (result == true) {
+                              _fetchDocumentDetails();
+                              if (widget.onDocumentUpdated != null) {
+                                widget.onDocumentUpdated!();
+                              }
+                            }
+                          },
+                        ),
+                      ),
                     ),
                   // НОВОЕ: Delete только с delete-правом
                   if (widget.hasDeletePermission)
-                    IconButton(
-                      padding: const EdgeInsets.only(right: 8),
-                      constraints: const BoxConstraints(),
-                      icon: Image.asset(
-                        'assets/icons/delete.png',
-                        width: 24,
-                        height: 24,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: colors.borderSubtle),
                       ),
-                      onPressed: () {
-                        if (_isLoading) return;
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return BlocProvider.value(
-                              value: BlocProvider.of<WriteOffBloc>(context),
-                              child: WriteOffDeleteDocumentDialog(
-                                  documentId: widget.documentId),
-                            );
-                          },
-                        );
-                      },
+                      child: IconButton(
+                        splashRadius: 22,
+                        padding: const EdgeInsets.only(right: 0),
+                        constraints: const BoxConstraints(),
+                        icon: Image.asset(
+                          'assets/icons/delete.png',
+                          width: 22,
+                          height: 22,
+                          color: colors.error,
+                        ),
+                        onPressed: () {
+                          if (_isLoading) return;
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return BlocProvider.value(
+                                value: BlocProvider.of<WriteOffBloc>(context),
+                                child: WriteOffDeleteDocumentDialog(
+                                    documentId: widget.documentId),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
                 ],
               ),
@@ -668,6 +707,7 @@ class _WriteOffDocumentDetailsScreenState
 
   Widget _buildDetailItem(String label, String value) {
     if (label == AppLocalizations.of(context)!.translate('comment')) {
+      final colors = context.appColors;
       return GestureDetector(
         onTap: () {
           if (value.isNotEmpty) {
@@ -689,7 +729,7 @@ class _WriteOffDocumentDetailsScreenState
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
@@ -712,6 +752,7 @@ class _WriteOffDocumentDetailsScreenState
   }
 
   Widget _buildGoodsList(List<DocumentGood> goods) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -729,11 +770,11 @@ class _WriteOffDocumentDetailsScreenState
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty') ??
                         'Нет товаров',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -759,7 +800,7 @@ class _WriteOffDocumentDetailsScreenState
         good.good?.unit ?? Unit(id: null, name: '', shortName: '');
     final amount = selectedUnit.amount ?? 1.0;
     final unitShortName = selectedUnit.shortName ?? selectedUnit.name ?? '';
-
+    final colors = context.appColors;
     debugPrint("selectedUnit: $selectedUnit");
 
     return GestureDetector(
@@ -784,7 +825,8 @@ class _WriteOffDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context)
+                            .copyWith(fontSize: 14),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -801,21 +843,21 @@ class _WriteOffDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -830,21 +872,21 @@ class _WriteOffDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ],
@@ -861,7 +903,7 @@ class _WriteOffDocumentDetailsScreenState
                           //           fontSize: 10,
                           //           fontFamily: 'Gilroy',
                           //           fontWeight: FontWeight.w400,
-                          //           color: Color(0xff99A4BA),
+                          //           color: colors.textSecondary,
                           //         ),
                           //       ),
                           //       const SizedBox(height: 2),
@@ -871,7 +913,7 @@ class _WriteOffDocumentDetailsScreenState
                           //           fontSize: 12,
                           //           fontFamily: 'Gilroy',
                           //           fontWeight: FontWeight.w600,
-                          //           color: Color(0xff1E2E52),
+                          //           color: colors.textPrimary,
                           //         ),
                           //         overflow: TextOverflow.ellipsis,
                           //       ),
@@ -896,7 +938,7 @@ class _WriteOffDocumentDetailsScreenState
                       //           fontSize: 12,
                       //           fontFamily: 'Gilroy',
                       //           fontWeight: FontWeight.w500,
-                      //           color: Color(0xff1E2E52),
+                      //           color: colors.textPrimary,
                       //         ),
                       //       ),
                       //       const SizedBox(width: 8),
@@ -950,6 +992,7 @@ class _WriteOffDocumentDetailsScreenState
   }
 
   Widget _buildPlaceholderImage() {
+    final colors = context.appColors;
     return Container(
       width: 100,
       height: 100,
@@ -957,9 +1000,9 @@ class _WriteOffDocumentDetailsScreenState
         color: Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child:
-            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+      child: Center(
+        child: Icon(Icons.image_not_supported,
+            size: 40, color: colors.textSecondary),
       ),
     );
   }
@@ -1001,25 +1044,27 @@ class _WriteOffDocumentDetailsScreenState
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    final colors = context.appColors;
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: colors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

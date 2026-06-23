@@ -16,6 +16,7 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -874,25 +875,37 @@ class _SupplierReturnDocumentCreateScreenState
   AppBar _buildAppBar(AppLocalizations localizations) {
     final hasItems = _items.isNotEmpty;
     final total = _totalAmount;
+    final colors = context.appColors;
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
-        onPressed: () async {
-          if (_items.isNotEmpty) {
-            final shouldExit = await ConfirmExitDialog.show(context);
-            if (shouldExit && mounted) {
-              Navigator.pop(context);
-            }
-          } else {
-            Navigator.pop(context);
-          }
-        },
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12, top: 6, bottom: 6),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.borderSubtle),
+          ),
+          child: IconButton(
+            splashRadius: 22,
+            icon:
+                Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 20),
+            onPressed: () async {
+              if (_items.isNotEmpty) {
+                final shouldExit = await ConfirmExitDialog.show(context);
+                if (shouldExit && mounted) {
+                  Navigator.pop(context);
+                }
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ),
       ),
       title: Row(
         children: [
@@ -902,11 +915,11 @@ class _SupplierReturnDocumentCreateScreenState
                   'Создать возврат поставщику',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
@@ -915,7 +928,7 @@ class _SupplierReturnDocumentCreateScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xff4CAF50).withOpacity(0.1),
+                color: colors.buttonPrimaryBg.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -929,11 +942,11 @@ class _SupplierReturnDocumentCreateScreenState
                   const SizedBox(width: 6),
                   Text(
                     total.toStringAsFixed(0),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
-                      color: Color(0xff4CAF50),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                 ],

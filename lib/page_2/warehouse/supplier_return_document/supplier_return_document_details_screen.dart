@@ -9,6 +9,7 @@ import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_delete_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_edit_screen.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -611,39 +612,51 @@ class _SupplierReturnDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     // ИЗМЕНЕНО: showActions с правами
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
-      leadingWidth: 40,
+      leadingWidth: 56,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 0),
-        child: Transform.translate(
-          offset: const Offset(0, -2),
+        padding: const EdgeInsets.only(left: 12, top: 6, bottom: 6),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.borderSubtle),
+          ),
           child: IconButton(
+            splashRadius: 22,
             icon: Image.asset(
               'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
+              color: colors.textPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
       ),
-      title: Transform.translate(
-        offset: const Offset(-10, 0),
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colors.borderSubtle),
+        ),
         child: Text(
           "${AppLocalizations.of(context)!.translate('supplier_return') ?? 'Возврат от поставщика'} №${widget.docNumber}",
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: 18,
             fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            fontWeight: FontWeight.w700,
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -654,58 +667,80 @@ class _SupplierReturnDocumentDetailsScreenState
                 children: [
                   // НОВОЕ: Edit только с update-правом
                   if (widget.hasUpdatePermission)
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Image.asset(
-                        'assets/icons/edit.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                      onPressed: () async {
-                        if (_isLoading) return;
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                SupplierReturnDocumentEditScreen(
-                              document: currentDocument!,
-                            ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.borderSubtle),
+                        ),
+                        child: IconButton(
+                          splashRadius: 22,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Image.asset(
+                            'assets/icons/edit.png',
+                            width: 22,
+                            height: 22,
+                            color: colors.textPrimary,
                           ),
-                        );
+                          onPressed: () async {
+                            if (_isLoading) return;
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    SupplierReturnDocumentEditScreen(
+                                  document: currentDocument!,
+                                ),
+                              ),
+                            );
 
-                        if (result == true) {
-                          _fetchDocumentDetails();
-                          if (widget.onDocumentUpdated != null) {
-                            widget.onDocumentUpdated!();
-                          }
-                        }
-                      },
+                            if (result == true) {
+                              _fetchDocumentDetails();
+                              if (widget.onDocumentUpdated != null) {
+                                widget.onDocumentUpdated!();
+                              }
+                            }
+                          },
+                        ),
+                      ),
                     ),
                   // НОВОЕ: Delete только с delete-правом
                   if (widget.hasDeletePermission)
-                    IconButton(
-                      padding: const EdgeInsets.only(right: 8),
-                      constraints: const BoxConstraints(),
-                      icon: Image.asset(
-                        'assets/icons/delete.png',
-                        width: 24,
-                        height: 24,
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: colors.borderSubtle),
                       ),
-                      onPressed: () {
-                        if (_isLoading) return;
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return BlocProvider.value(
-                              value:
-                                  BlocProvider.of<SupplierReturnBloc>(context),
-                              child: SupplierReturnDeleteDocumentDialog(
-                                  documentId: widget.documentId),
-                            );
-                          },
-                        );
-                      },
+                      child: IconButton(
+                        splashRadius: 22,
+                        padding: const EdgeInsets.only(right: 0),
+                        constraints: const BoxConstraints(),
+                        icon: Image.asset(
+                          'assets/icons/delete.png',
+                          width: 22,
+                          height: 22,
+                          color: colors.error,
+                        ),
+                        onPressed: () {
+                          if (_isLoading) return;
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return BlocProvider.value(
+                                value: BlocProvider.of<SupplierReturnBloc>(
+                                    context),
+                                child: SupplierReturnDeleteDocumentDialog(
+                                    documentId: widget.documentId),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
                 ],
               ),
@@ -850,7 +885,8 @@ class _SupplierReturnDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context).copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context)
+                            .copyWith(fontSize: 14),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),

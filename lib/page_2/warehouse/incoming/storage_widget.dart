@@ -146,7 +146,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                 enabled: !isLoading,
                 decoration: CustomDropdownDecoration(
                   closedFillColor: colors.surfaceElevated,
-                  expandedFillColor: colors.surfacePrimary,
+                  expandedFillColor: colors.surfaceElevated,
                   closedBorder: Border.all(
                     color: colors.borderSubtle,
                     width: 1,

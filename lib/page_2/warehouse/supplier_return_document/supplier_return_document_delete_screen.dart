@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/suppl
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,29 +15,33 @@ class SupplierReturnDeleteDocumentDialog extends StatefulWidget {
   SupplierReturnDeleteDocumentDialog({required this.documentId});
 
   @override
-  _SupplierReturnDeleteDocumentDialogState createState() => _SupplierReturnDeleteDocumentDialogState();
+  _SupplierReturnDeleteDocumentDialogState createState() =>
+      _SupplierReturnDeleteDocumentDialogState();
 }
 
-class _SupplierReturnDeleteDocumentDialogState extends State<SupplierReturnDeleteDocumentDialog> {
+class _SupplierReturnDeleteDocumentDialogState
+    extends State<SupplierReturnDeleteDocumentDialog> {
   bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<SupplierReturnBloc, SupplierReturnState>(
       listener: (context, state) {
         // Проверяем, что виджет все еще активен
         if (!mounted) return;
-        
+
         if (state is SupplierReturnDeleteError) {
           setState(() {
             _isDeleting = false;
           });
-          
+
           // Дополнительная проверка перед показом SnackBar
           if (mounted && context.mounted) {
-            if (state.statusCode  == 409) {
+            if (state.statusCode == 409) {
               final localizations = AppLocalizations.of(context)!;
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              showSimpleErrorDialog(context,
+                  localizations.translate('error') ?? 'Ошибка', state.message);
               return;
             }
             ScaffoldMessenger.of(context).showSnackBar(
@@ -47,7 +52,7 @@ class _SupplierReturnDeleteDocumentDialogState extends State<SupplierReturnDelet
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -55,7 +60,7 @@ class _SupplierReturnDeleteDocumentDialogState extends State<SupplierReturnDelet
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: Duration(seconds: 3),
@@ -75,77 +80,89 @@ class _SupplierReturnDeleteDocumentDialogState extends State<SupplierReturnDelet
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
-            AppLocalizations.of(context)!.translate('delete_supplier_return_document') ?? 'Удалить документ возврата поставщику',
+            AppLocalizations.of(context)!
+                    .translate('delete_supplier_return_document') ??
+                'Удалить документ возврата поставщику',
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
-        content: _isDeleting 
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context)!.translate('deleting') ?? 'Удаление...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
-                  ),
-                ),
-              ],
-            )
-          : Text(
-              AppLocalizations.of(context)!.translate('confirm_delete_supplier_return_document') ?? 'Вы уверены, что хотите удалить этот документ возврата поставщику?',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-        actions: _isDeleting 
-          ? [] // Скрываем кнопки во время удаления
-          : [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+        content: _isDeleting
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      buttonColor: Colors.red,
-                      textColor: Colors.white,
-                    ),
+                  CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                   ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: CustomButton(
-                      buttonText: AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
-                      onPressed: () {
-                        final localizations = AppLocalizations.of(context)!;
-                        context.read<SupplierReturnBloc>().add(DeleteSupplierReturn(widget.documentId));
-                      },
-                      buttonColor: Color(0xff1E2E52),
-                      textColor: Colors.white,
+                  SizedBox(height: 16),
+                  Text(
+                    AppLocalizations.of(context)!.translate('deleting') ??
+                        'Удаление...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
+              )
+            : Text(
+                AppLocalizations.of(context)!
+                        .translate('confirm_delete_supplier_return_document') ??
+                    'Вы уверены, что хотите удалить этот документ возврата поставщику?',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: colors.textPrimary,
+                ),
               ),
-            ],
+        actions: _isDeleting
+            ? [] // Скрываем кнопки во время удаления
+            : [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('close') ??
+                                'Отмена',
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        buttonColor: colors.error,
+                        textColor: colors.buttonPrimaryFg,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: CustomButton(
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('delete') ??
+                                'Удалить',
+                        onPressed: () {
+                          final localizations = AppLocalizations.of(context)!;
+                          context
+                              .read<SupplierReturnBloc>()
+                              .add(DeleteSupplierReturn(widget.documentId));
+                        },
+                        buttonColor: colors.buttonPrimaryBg,
+                        textColor: colors.buttonPrimaryFg,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
       ),
     );
   }

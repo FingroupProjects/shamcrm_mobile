@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc/expense_article_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc/expense_article_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc/expense_article_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,7 @@ class _ArticleWidgetState extends State<ArticleWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<ExpenseArticleBloc, ExpenseArticleState>(
       listener: (context, state) {
         if (state is ArticleError) {
@@ -48,7 +50,7 @@ class _ArticleWidgetState extends State<ArticleWidget> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -59,7 +61,7 @@ class _ArticleWidgetState extends State<ArticleWidget> {
       child: BlocBuilder<ExpenseArticleBloc, ExpenseArticleState>(
         builder: (context, state) {
           final isLoading = state is ArticleLoading;
-          
+
           // Обновляем данные при успешной загрузке
           if (state is ArticleLoaded) {
             List<ArticleGood> articleList = state.articleList;
@@ -67,7 +69,7 @@ class _ArticleWidgetState extends State<ArticleWidget> {
             if (widget.selectedArticle != null && articleList.isNotEmpty) {
               try {
                 selectedArticleData = articleList.firstWhere(
-                      (article) => article.id.toString() == widget.selectedArticle,
+                  (article) => article.id.toString() == widget.selectedArticle,
                 );
               } catch (e) {
                 selectedArticleData = null;
@@ -75,7 +77,8 @@ class _ArticleWidgetState extends State<ArticleWidget> {
             }
 
             if (articleList.length == 1 &&
-                (widget.selectedArticle == null || selectedArticleData == null) &&
+                (widget.selectedArticle == null ||
+                    selectedArticleData == null) &&
                 _autoSelectedArticleId != articleList.first.id.toString()) {
               final singleArticle = articleList.first;
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -99,7 +102,7 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -108,28 +111,68 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                   closeDropDownOnClearFilterSearch: true,
                   items: state is ArticleLoaded ? state.articleList : [],
                   searchHintText:
-                  AppLocalizations.of(context)!.translate('search'),
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: !isLoading, // ← Блокируем при загрузке
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: colors.surfaceElevated,
+                    expandedFillColor: colors.surfaceElevated,
                     closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.borderSubtle,
                       width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.borderSubtle,
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    listItemDecoration: ListItemDecoration(
+                      splashColor:
+                          colors.buttonPrimaryBg.withValues(alpha: 0.10),
+                      highlightColor:
+                          colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                      selectedColor: colors.surfaceElevated,
+                    ),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: colors.surfaceElevated,
+                      hintStyle: TextStyle(
+                        color: colors.textSecondary,
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      textStyle: TextStyle(
+                        color: colors.textPrimary,
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 20,
+                        color: colors.textSecondary,
+                      ),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(Icons.close,
+                            size: 18, color: colors.textSecondary),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.borderSubtle),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                      ),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name ?? '',
                       style: TextStyle(
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
@@ -147,12 +190,13 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff1E2E52)),
                           ),
                         ),
                       );
                     }
-                    
+
                     return Text(
                       selectedItem?.name ??
                           AppLocalizations.of(context)!
@@ -161,7 +205,7 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
@@ -174,19 +218,20 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff1E2E52)),
                           ),
                         ),
                       );
                     }
-                    
+
                     return Text(
                       AppLocalizations.of(context)!.translate('select_article'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
@@ -198,7 +243,8 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                           padding: EdgeInsets.all(20.0),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xff1E2E52)),
                           ),
                         ),
                       );
@@ -208,10 +254,10 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
                           AppLocalizations.of(context)!.translate('no_results'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -219,12 +265,13 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                   },
                   excludeSelected: false,
                   initialItem: (state is ArticleLoaded &&
-                      state.articleList.contains(selectedArticleData))
+                          state.articleList.contains(selectedArticleData))
                       ? selectedArticleData
                       : null,
                   validator: (value) {
                     if (value == null) {
-                      return AppLocalizations.of(context)!.translate('field_required_project');
+                      return AppLocalizations.of(context)!
+                          .translate('field_required_project');
                     }
                     return null;
                   },

@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bot
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -391,16 +392,16 @@ class CreateWriteOffDocumentScreenState
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
-
+    final colors = context.appColors;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.buttonPrimaryFg,
           ),
         ),
         backgroundColor: isSuccess ? Colors.green : Colors.red,
@@ -417,6 +418,7 @@ class CreateWriteOffDocumentScreenState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return WillPopScope(
       onWillPop: () async {
@@ -430,7 +432,7 @@ class CreateWriteOffDocumentScreenState
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: _buildAppBar(localizations),
           body: BlocListener<WriteOffBloc, WriteOffState>(
             listener: (context, state) {
@@ -445,19 +447,19 @@ class CreateWriteOffDocumentScreenState
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: const Color(0xff4759FF),
-                      unselectedLabelColor: const Color(0xff99A4BA),
-                      indicatorColor: const Color(0xff4759FF),
+                      labelColor: colors.buttonPrimaryBg,
+                      unselectedLabelColor: colors.textSecondary,
+                      indicatorColor: colors.buttonPrimaryBg,
                       indicatorWeight: 3,
-                      labelStyle: const TextStyle(
+                      labelStyle: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                       ),
-                      unselectedLabelStyle: const TextStyle(
+                      unselectedLabelStyle: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
@@ -489,41 +491,72 @@ class CreateWriteOffDocumentScreenState
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
-        onPressed: () async {
-          if (_items.isNotEmpty) {
-            final shouldExit = await ConfirmExitDialog.show(context);
-            if (shouldExit && mounted) {
-              Navigator.pop(context);
-            }
-          } else {
-            Navigator.pop(context);
-          }
-        },
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12, top: 6, bottom: 6),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.borderSubtle),
+          ),
+          child: IconButton(
+            splashRadius: 22,
+            icon:
+                Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 20),
+            onPressed: () async {
+              if (_items.isNotEmpty) {
+                final shouldExit = await ConfirmExitDialog.show(context);
+                if (shouldExit && mounted) {
+                  Navigator.pop(context);
+                }
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ),
       ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              localizations.translate('create_write_off') ?? 'Создать списание',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: colors.borderSubtle),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: colors.buttonPrimaryBg,
+                shape: BoxShape.circle,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                localizations.translate('create_write_off') ??
+                    'Создать списание',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       centerTitle: false,
     );
@@ -558,6 +591,7 @@ class CreateWriteOffDocumentScreenState
   }
 
   Widget _buildGoodsTab(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Column(
       children: [
         Expanded(
@@ -578,11 +612,11 @@ class CreateWriteOffDocumentScreenState
                       child: Text(
                         localizations.translate('no_goods_added') ??
                             'Товары не добавлены',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -601,10 +635,10 @@ class CreateWriteOffDocumentScreenState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.buttonPrimaryFg,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -614,7 +648,7 @@ class CreateWriteOffDocumentScreenState
           child: ElevatedButton(
             onPressed: _openVariantSelection,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -625,15 +659,15 @@ class CreateWriteOffDocumentScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
+                Icon(Icons.add, color: colors.buttonPrimaryFg, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   localizations.translate('add_good') ?? 'Добавить товар',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
               ],
@@ -671,6 +705,7 @@ class CreateWriteOffDocumentScreenState
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Row(
       children: [
         // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
@@ -696,7 +731,7 @@ class CreateWriteOffDocumentScreenState
                           Icons.check_circle_outline,
                           size: 18,
                           color: _isLoading
-                              ? const Color(0xff99A4BA)
+                              ? colors.textSecondary
                               : const Color(0xff4CAF50),
                         ),
                         const SizedBox(width: 6),
@@ -708,7 +743,7 @@ class CreateWriteOffDocumentScreenState
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: _isLoading
-                                ? const Color(0xff99A4BA)
+                                ? colors.textSecondary
                                 : const Color(0xff4CAF50),
                           ),
                         ),
@@ -727,35 +762,36 @@ class CreateWriteOffDocumentScreenState
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                disabledBackgroundColor: const Color(0xffE5E7EB),
+                backgroundColor: colors.buttonPrimaryBg,
+                disabledBackgroundColor: colors.borderSubtle,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.buttonPrimaryFg),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
+                        Icon(Icons.save_outlined,
+                            color: colors.buttonPrimaryFg, size: 18),
+                        SizedBox(width: 6),
                         Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                           ),
                         ),
                       ],
@@ -792,7 +828,7 @@ class CreateWriteOffDocumentScreenState
     final quantityController = _quantityControllers[variantId];
     final quantityFocusNode = _quantityFocusNodes[variantId];
     final isCollapsed = _collapsedItems[variantId] ?? false;
-
+    final colors = context.appColors;
     return FadeTransition(
       opacity: animation,
       child: SizeTransition(
@@ -801,12 +837,12 @@ class CreateWriteOffDocumentScreenState
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.buttonPrimaryFg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -823,11 +859,11 @@ class CreateWriteOffDocumentScreenState
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -838,14 +874,14 @@ class CreateWriteOffDocumentScreenState
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                      child: Icon(Icons.close,
+                          color: colors.textSecondary, size: 18),
                     ),
                   ],
                 ),
@@ -863,11 +899,11 @@ class CreateWriteOffDocumentScreenState
                         Text(
                           AppLocalizations.of(context)!.translate('quantity') ??
                               'Кол-во',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -884,11 +920,11 @@ class CreateWriteOffDocumentScreenState
                             QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
@@ -908,11 +944,11 @@ class CreateWriteOffDocumentScreenState
                           Text(
                             AppLocalizations.of(context)!.translate('unit') ??
                                 'Ед.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -932,14 +968,14 @@ class CreateWriteOffDocumentScreenState
                                   value: item['selectedUnit'],
                                   isDense: true,
                                   isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down,
-                                      size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
+                                  dropdownColor: colors.surfacePrimary,
+                                  icon: Icon(Icons.arrow_drop_down,
+                                      size: 16, color: colors.buttonPrimaryBg),
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
@@ -974,11 +1010,11 @@ class CreateWriteOffDocumentScreenState
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),

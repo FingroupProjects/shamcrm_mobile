@@ -1,4 +1,6 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -61,17 +63,20 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
 
     // Приоритет: сначала проверяем deleted_at
     if (doc.deletedAt != null) {
-      return Colors.red; // Красный цвет для удаленных документов
+      return const Color(0xFFDC2626);
     }
 
     // Затем проверяем approved
-    return doc.approved == 1 ? Colors.green : Colors.orange;
+    return doc.approved == 1
+        ? const Color(0xFF16A34A)
+        : const Color(0xFFF59E0B);
   }
 
   @override
   Widget build(BuildContext context) {
     final doc = widget.document;
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return GestureDetector(
       onTap: () {
@@ -97,10 +102,14 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: widget.isSelected
-              ? const Color(0xFFDDE8F5)
-              : const Color(0xFFE9EDF5),
+              ? colors.surfaceElevated
+              : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+                color: colors.shadow.withValues(alpha: 0.08), blurRadius: 4)
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -115,11 +124,11 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                       Expanded(
                         child: Text(
                           '№${doc.docNumber ?? 'N/A'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -145,31 +154,31 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('date') ?? 'Дата'} ${_formatDate(doc.date)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('supplier') ?? 'Поставщик'}: ${doc.model?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('storage') ?? 'Склад'}: ${doc.storage?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -178,22 +187,22 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                       Expanded(
                         child: Text(
                           '${localizations.translate('author') ?? 'Автор'}: ${doc.author?.name ?? 'N/A'}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),
                       // show price from documentGoods
                       Text(
                         '${localizations.translate('total') ?? 'Итого'} ${parseNumberToString(doc.totalSum.toStringAsFixed(2))}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -203,11 +212,11 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         '${localizations.translate('comment') ?? 'Примечание'}: ${doc.comment}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -221,7 +230,7 @@ class _SupplierReturnCardState extends State<SupplierReturnCard> {
                   widget.isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   size: 24,
                 ),
               ),
