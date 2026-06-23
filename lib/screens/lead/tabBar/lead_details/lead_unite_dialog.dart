@@ -136,7 +136,7 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                       child: Text(
                         localizations.translate('lead_merge_title'),
                         style: const TextStyle(
-                          fontSize: 28,
+                          fontSize: 24,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
                           color: Color(0xff1E2E52),
@@ -146,6 +146,21 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                   ],
                 ),
                 const SizedBox(height: 18),
+                LeadRadioGroupWidget(
+                  excludedLeadIds: [widget.currentLeadId],
+                  labelText: localizations.translate('lead_list'),
+                  hintText: localizations.translate('lead_merge_placeholder'),
+                  searchHintText: localizations.translate('search'),
+                  onSelectLead: (lead) {
+                    setState(() {
+                      _selectedLead = lead;
+                    });
+                  },
+                ),
+                 const SizedBox(height: 18),
+                const Divider(height: 1, color: Color(0xffE7EAF3)),
+                                const SizedBox(height: 18),
+
                 Row(
                   children: [
                     Expanded(
@@ -171,20 +186,8 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                const Divider(height: 1, color: Color(0xffE7EAF3)),
-                const SizedBox(height: 18),
-                LeadRadioGroupWidget(
-                  excludedLeadIds: [widget.currentLeadId],
-                  labelText: localizations.translate('lead_list'),
-                  hintText: localizations.translate('lead_merge_placeholder'),
-                  searchHintText: localizations.translate('search'),
-                  onSelectLead: (lead) {
-                    setState(() {
-                      _selectedLead = lead;
-                    });
-                  },
-                ),
+               
+                
                 const SizedBox(height: 4),
               ],
             ),
