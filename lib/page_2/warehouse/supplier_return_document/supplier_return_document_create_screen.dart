@@ -534,7 +534,8 @@ class _SupplierReturnDocumentCreateScreenState
         // Проверка количества
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            !WarehouseValidationHelper.isPositiveQuantity(
+                quantityController.text)) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -581,7 +582,8 @@ class _SupplierReturnDocumentCreateScreenState
           final unitId = item['unit_id'];
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
             'unit_id': unitId, // Может быть null
           };
@@ -1259,7 +1261,8 @@ class _SupplierReturnDocumentCreateScreenState
                           hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

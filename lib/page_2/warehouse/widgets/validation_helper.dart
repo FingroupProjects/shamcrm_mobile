@@ -2,11 +2,25 @@ import 'package:flutter/material.dart';
 
 /// Утилита для фокуса на первом товаре с ошибкой валидации в документах склада
 class WarehouseValidationHelper {
+  static double? parseFlexibleDecimal(dynamic value) {
+    if (value == null) return null;
+
+    final normalized = value.toString().trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return null;
+
+    return double.tryParse(normalized);
+  }
+
+  static bool isPositiveQuantity(dynamic value) {
+    final parsed = parseFlexibleDecimal(value);
+    return parsed != null && parsed > 0;
+  }
+
   /// Фокусируется на первом товаре с ошибкой валидации
-  /// 
+  ///
   /// Находит первый товар с ошибкой (quantity или price), разворачивает его карточку,
   /// переключает на вкладку "Товары" если нужно, прокручивает к товару и устанавливает фокус.
-  /// 
+  ///
   /// Параметры:
   /// - [items] - список товаров с ключом 'variantId'
   /// - [quantityErrors] - карта ошибок валидации количества
@@ -37,7 +51,7 @@ class WarehouseValidationHelper {
 
     for (int i = 0; i < items.length; i++) {
       final variantId = items[i]['variantId'] as int;
-      
+
       // Приоритет у ошибки количества (первое поле)
       if (quantityErrors[variantId] == true) {
         firstErrorIndex = i;
@@ -45,7 +59,7 @@ class WarehouseValidationHelper {
         isQuantityError = true;
         break;
       }
-      
+
       // Проверяем ошибку цены, если есть
       if (priceErrors != null && priceErrors[variantId] == true) {
         if (firstErrorIndex == null) {
@@ -88,7 +102,7 @@ class WarehouseValidationHelper {
       // Устанавливаем фокус на поле с ошибкой
       Future.delayed(const Duration(milliseconds: 450), () {
         if (!mounted) return;
-        
+
         if (isQuantityError) {
           quantityFocusNodes[firstErrorVariantId!]?.requestFocus();
         } else if (priceFocusNodes != null) {
@@ -98,4 +112,3 @@ class WarehouseValidationHelper {
     });
   }
 }
-

@@ -316,7 +316,7 @@ class CreateClienSalesDocumentScreenState
 
 // ✅ УЛУЧШЕНО: функция _updateItemQuantity
   void _updateItemQuantity(int variantId, String value) {
-    final quantity = int.tryParse(value);
+    final quantity = WarehouseValidationHelper.parseFlexibleDecimal(value);
     if (quantity != null && quantity > 0) {
       setState(() {
         final index =
@@ -534,7 +534,8 @@ class CreateClienSalesDocumentScreenState
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            !WarehouseValidationHelper.isPositiveQuantity(
+                quantityController.text)) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -582,7 +583,8 @@ class CreateClienSalesDocumentScreenState
 
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
             if (hasUnits) 'unit_id': item['unit_id'],
           };
@@ -1115,7 +1117,8 @@ class CreateClienSalesDocumentScreenState
                           hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

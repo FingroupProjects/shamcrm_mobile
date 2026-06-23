@@ -31,39 +31,39 @@ class EditGoodsOpeningScreen extends StatefulWidget {
 
 class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  
+
   // Controllers for numeric fields
   late TextEditingController quantityController;
   late TextEditingController priceController;
-  
+
   // Selection variables
   String? _selectedSupplierId;
   String? _selectedWarehouseId;
   String? _selectedUnitId;
-  
+
   GoodVariantItem? _selectedGoods;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize controllers with existing values
-    final documentGood = widget.goodsOpening.documentGoods?.isNotEmpty == true 
-        ? widget.goodsOpening.documentGoods!.first 
+    final documentGood = widget.goodsOpening.documentGoods?.isNotEmpty == true
+        ? widget.goodsOpening.documentGoods!.first
         : null;
-        
+
     quantityController = TextEditingController(
       text: parseNumberToString(documentGood?.quantity, nullValue: '0'),
     );
     priceController = TextEditingController(
       text: parseNumberToString(documentGood?.price, nullValue: '0'),
     );
-    
+
     // Initialize selections from existing data
     _selectedSupplierId = widget.goodsOpening.model?.id?.toString();
     _selectedWarehouseId = widget.goodsOpening.storage?.id?.toString();
     _selectedUnitId = documentGood?.unit?.id?.toString();
-    
+
     // Initialize selected goods from existing data - use goodVariantId as the ID
     if (documentGood?.goodVariant != null) {
       _selectedGoods = GoodVariantItem(
@@ -78,7 +78,7 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
             : null,
       );
     }
-    
+
     // Load required data
     context.read<GetAllGoodsListBloc>().add(GetAllGoodsListEv());
     context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
@@ -93,8 +93,8 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    debugPrint("EditGoodsOpeningScreen: Building edit screen for Goods Opening ID: ${widget.goodsOpening.id}");
+    debugPrint(
+        "EditGoodsOpeningScreen: Building edit screen for Goods Opening ID: ${widget.goodsOpening.id}");
 
     return BlocListener<GoodsOpeningsBloc, GoodsOpeningsState>(
       listener: (context, state) {
@@ -180,210 +180,240 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
           ),
         ),
         body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GoodsRadioGroupWidget(
-                        selectedGood: _selectedGoods?.id.toString(),
-                        showPrice: false,
-                        onSelectGood: (GoodVariantItem goods) {
-                          setState(() {
-                            _selectedGoods = goods;
-                            // Сбрасываем выбранную единицу измерения при смене товара
-                            _selectedUnitId = null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      SupplierWidget(
-                        selectedSupplier: _selectedSupplierId,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSupplierId = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      StorageWidget(
-                        selectedStorage: _selectedWarehouseId,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedWarehouseId = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      GoodUnitsDropdown(
-                        selectedGood: _selectedGoods,
-                        selectedUnitId: _selectedUnitId,
-                        onUnitSelected: (unitId) {
-                          setState(() {
-                            _selectedUnitId = unitId;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        controller: quantityController,
-                        label: AppLocalizations.of(context)!.translate('quantity'),
-                        hintText: AppLocalizations.of(context)!.translate('enter_quantity'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          PriceInputFormatter(),
-                        ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          if (double.tryParse(value) == null) {
-                            return AppLocalizations.of(context)!.translate('enter_correct_number');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      CustomTextField(
-                        controller: priceController,
-                        label: AppLocalizations.of(context)!.translate('price'),
-                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          PriceInputFormatter(),
-                        ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!.translate('field_required');
-                          }
-                          if (double.tryParse(value) == null) {
-                            return AppLocalizations.of(context)!.translate('enter_correct_number');
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+          key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GoodsRadioGroupWidget(
+                          selectedGood: _selectedGoods?.id.toString(),
+                          showPrice: false,
+                          onSelectGood: (GoodVariantItem goods) {
+                            setState(() {
+                              _selectedGoods = goods;
+                              // Сбрасываем выбранную единицу измерения при смене товара
+                              _selectedUnitId = null;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        SupplierWidget(
+                          selectedSupplier: _selectedSupplierId,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedSupplierId = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        StorageWidget(
+                          selectedStorage: _selectedWarehouseId,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedWarehouseId = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        GoodUnitsDropdown(
+                          selectedGood: _selectedGoods,
+                          selectedUnitId: _selectedUnitId,
+                          onUnitSelected: (unitId) {
+                            setState(() {
+                              _selectedUnitId = unitId;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextField(
+                          controller: quantityController,
+                          label: AppLocalizations.of(context)!
+                              .translate('quantity'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_quantity'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            PriceInputFormatter(),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            if (double.tryParse(value) == null) {
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        CustomTextField(
+                          controller: priceController,
+                          label:
+                              AppLocalizations.of(context)!.translate('price'),
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_price'),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: [
+                            PriceInputFormatter(),
+                          ],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return AppLocalizations.of(context)!
+                                  .translate('field_required');
+                            }
+                            if (double.tryParse(value) == null) {
+                              return AppLocalizations.of(context)!
+                                  .translate('enter_correct_number');
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            BlocBuilder<GoodsOpeningsBloc, GoodsOpeningsState>(
-              builder: (context, state) {
-                final isUpdating = state is GoodsOpeningUpdating;
-                
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CustomButton(
-                          buttonText:
-                              AppLocalizations.of(context)!.translate('close'),
-                          buttonColor: const Color(0xffF4F7FD),
-                          textColor: Colors.black,
-                          onPressed: isUpdating ? null : () {
-                            Navigator.pop(context);
-                          },
+              BlocBuilder<GoodsOpeningsBloc, GoodsOpeningsState>(
+                builder: (context, state) {
+                  final isUpdating = state is GoodsOpeningUpdating;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            buttonText: AppLocalizations.of(context)!
+                                .translate('close'),
+                            buttonColor: const Color(0xffF4F7FD),
+                            textColor: Colors.black,
+                            onPressed: isUpdating
+                                ? null
+                                : () {
+                                    Navigator.pop(context);
+                                  },
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CustomButton(
-                          buttonText:
-                              AppLocalizations.of(context)!.translate('save'),
-                          buttonColor: const Color(0xff4759FF),
-                          textColor: Colors.white,
-                          isLoading: isUpdating,
-                          onPressed: isUpdating ? null : () {
-                          if (_formKey.currentState!.validate()) {
-                          if (_selectedGoods == null ||
-                              _selectedSupplierId == null ||
-                              _selectedWarehouseId == null ||
-                              _selectedUnitId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  AppLocalizations.of(context)!.translate('fill_all_fields'),
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                backgroundColor: Colors.orange,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                            return;
-                          }
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: CustomButton(
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('save'),
+                            buttonColor: const Color(0xff4759FF),
+                            textColor: Colors.white,
+                            isLoading: isUpdating,
+                            onPressed: isUpdating
+                                ? null
+                                : () {
+                                    if (_formKey.currentState!.validate()) {
+                                      if (_selectedGoods == null ||
+                                          _selectedSupplierId == null ||
+                                          _selectedWarehouseId == null ||
+                                          _selectedUnitId == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              AppLocalizations.of(context)!
+                                                  .translate('fill_all_fields'),
+                                              style: const TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 8),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            backgroundColor: Colors.orange,
+                                            elevation: 3,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12, horizontal: 16),
+                                            duration:
+                                                const Duration(seconds: 2),
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-                          if (widget.goodsOpening.id == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Ошибка: неверные данные документа',
-                                  style: const TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                backgroundColor: Colors.red,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                            return;
-                          }
+                                      if (widget.goodsOpening.id == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Ошибка: неверные данные документа',
+                                              style: const TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 8),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            elevation: 3,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12, horizontal: 16),
+                                            duration:
+                                                const Duration(seconds: 2),
+                                          ),
+                                        );
+                                        return;
+                                      }
 
-                          context.read<GoodsOpeningsBloc>().add(
-                            UpdateGoodsOpening(
-                              id: widget.goodsOpening.id!,
-                              goodVariantId: _selectedGoods!.id!,
-                              supplierId: int.parse(_selectedSupplierId!),
-                              price: double.parse(priceController.text),
-                              quantity: double.parse(quantityController.text),
-                              unitId: int.parse(_selectedUnitId!),
-                              storageId: int.parse(_selectedWarehouseId!),
-                            ),
-                            );
-                          }
-                        },
-                      ),
+                                      context.read<GoodsOpeningsBloc>().add(
+                                            UpdateGoodsOpening(
+                                              id: widget.goodsOpening.id!,
+                                              goodVariantId:
+                                                  _selectedGoods!.id!,
+                                              supplierId: int.parse(
+                                                  _selectedSupplierId!),
+                                              price: double.parse(
+                                                  priceController.text),
+                                              quantity: double.parse(
+                                                  quantityController.text),
+                                              unitId:
+                                                  int.parse(_selectedUnitId!),
+                                              storageId: int.parse(
+                                                  _selectedWarehouseId!),
+                                            ),
+                                          );
+                                    }
+                                  },
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ],
           ),
-          ],
         ),
-      ),
       ),
     );
   }
-
 }

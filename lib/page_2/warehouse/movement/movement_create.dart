@@ -387,7 +387,8 @@ class CreateMovementDocumentScreenState
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            !WarehouseValidationHelper.isPositiveQuantity(
+                quantityController.text)) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -426,7 +427,8 @@ class CreateMovementDocumentScreenState
           final unitId = item['unit_id'];
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                item['quantity'].toString()),
             'unit_id': unitId,
           };
         }).toList(),
@@ -949,7 +951,8 @@ class CreateMovementDocumentScreenState
                             hintText: AppLocalizations.of(context)!
                                     .translate('quantity') ??
                                 'Количество',
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
                               QuantityInputFormatter(),
                             ],

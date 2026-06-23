@@ -534,7 +534,8 @@ class CreateManufactureDocumentScreenState
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            !WarehouseValidationHelper.isPositiveQuantity(
+                quantityController.text)) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -579,7 +580,8 @@ class CreateManufactureDocumentScreenState
               item['materials'] as List<Map<String, dynamic>>? ?? const [];
           return {
             'good_variant_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                item['quantity'].toString()),
             'price': price,
             'unit_id': unitId,
             'materials': materials
@@ -1162,7 +1164,8 @@ class CreateManufactureDocumentScreenState
                             hintText: AppLocalizations.of(context)!
                                     .translate('quantity') ??
                                 'Количество',
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
                               QuantityInputFormatter(),
                             ],

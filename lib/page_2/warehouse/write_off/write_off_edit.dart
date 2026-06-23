@@ -368,7 +368,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            !WarehouseValidationHelper.isPositiveQuantity(
+                quantityController.text)) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -406,7 +407,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
             documentGoods: _items.map((item) {
               return {
                 'good_id': item['variantId'],
-                'quantity': int.tryParse(item['quantity'].toString()),
+                'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                    item['quantity'].toString()),
                 'unit_id': item['unit_id'],
               };
             }).toList(),
@@ -857,7 +859,8 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
                           hintText: AppLocalizations.of(context)
                                   ?.translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

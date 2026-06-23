@@ -542,7 +542,8 @@ class _EditClientReturnDocumentScreenState
 
         if (quantityController == null ||
             quantityController.text.trim().isEmpty ||
-            (int.tryParse(quantityController.text) ?? 0) <= 0) {
+            !WarehouseValidationHelper.isPositiveQuantity(
+                quantityController.text)) {
           _quantityErrors[variantId] = true;
           hasErrors = true;
         }
@@ -588,7 +589,8 @@ class _EditClientReturnDocumentScreenState
         documentGoods: _items
             .map((item) => {
                   'good_id': item['variantId'],
-                  'quantity': int.tryParse(item['quantity'].toString()),
+                  'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                      item['quantity'].toString()),
                   'price': _parsePriceAsNumber(item['price']),
                   "unit_id": item["unit_id"]
                 })
@@ -1126,7 +1128,8 @@ class _EditClientReturnDocumentScreenState
                           hintText: AppLocalizations.of(context)
                                   ?.translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],

@@ -560,7 +560,8 @@ class _IncomingDocumentCreateScreenState
 
           return {
             'good_id': item['variantId'],
-            'quantity': int.tryParse(item['quantity'].toString()),
+            'quantity': WarehouseValidationHelper.parseFlexibleDecimal(
+                item['quantity'].toString()),
             'price': _parsePriceAsNumber(item['price']),
             if (hasUnits) 'unit_id': item['unit_id'],
           };
@@ -1101,7 +1102,8 @@ class _IncomingDocumentCreateScreenState
                           hintText: AppLocalizations.of(context)!
                                   .translate('quantity') ??
                               'Количество',
-                          keyboardType: TextInputType.number,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: [
                             QuantityInputFormatter(),
                           ],
