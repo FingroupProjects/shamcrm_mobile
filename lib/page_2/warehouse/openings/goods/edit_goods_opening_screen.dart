@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../models/page_2/good_variants_model.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
@@ -22,11 +23,10 @@ import 'goods_units_dropdown.dart';
 class EditGoodsOpeningScreen extends StatefulWidget {
   final GoodsOpeningDocument goodsOpening;
 
-  const EditGoodsOpeningScreen({Key? key, required this.goodsOpening})
-      : super(key: key);
+  const EditGoodsOpeningScreen({super.key, required this.goodsOpening});
 
   @override
-  _EditGoodsOpeningScreenState createState() => _EditGoodsOpeningScreenState();
+  State<EditGoodsOpeningScreen> createState() => _EditGoodsOpeningScreenState();
 }
 
 class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
@@ -93,6 +93,7 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     debugPrint(
         "EditGoodsOpeningScreen: Building edit screen for Goods Opening ID: ${widget.goodsOpening.id}");
 
@@ -154,10 +155,10 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
             icon: Image.asset(
@@ -171,11 +172,11 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
           ),
           title: Text(
             AppLocalizations.of(context)!.translate('edit_goods_opening'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -193,6 +194,8 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildStatusBanner(context),
+                        const SizedBox(height: 16),
                         GoodsRadioGroupWidget(
                           selectedGood: _selectedGoods?.id.toString(),
                           showPrice: false,
@@ -413,6 +416,62 @@ class _EditGoodsOpeningScreenState extends State<EditGoodsOpeningScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(BuildContext context) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.buttonPrimaryBg,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.edit_note_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.translate('edit_goods_opening'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!.translate('update_initial_balance'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

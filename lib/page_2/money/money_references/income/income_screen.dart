@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/income/add/add_income_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/money/money_references/income/add_income_screen.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:flutter/material.dart';
@@ -88,12 +89,16 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
+        backgroundColor: colors.surfacePrimary,
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
-              ? AppLocalizations.of(context)?.translate('appbar_settings') ?? 'Настройки'
+              ? AppLocalizations.of(context)?.translate('appbar_settings') ??
+                  'Настройки'
               : AppLocalizations.of(context)?.translate('incomes') ?? 'Доходы',
           onClickProfileAvatar: () {
             setState(() {
@@ -135,28 +140,34 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки',
-                          style: const TextStyle(
+                          AppLocalizations.of(context)
+                                  ?.translate('error_loading') ??
+                              'Ошибка загрузки',
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
                             // Сохраняем текущий поисковый запрос при повторной попытке
-                            final currentState = context.read<IncomeBloc>().state;
+                            final currentState =
+                                context.read<IncomeBloc>().state;
                             final currentQuery = currentState.searchQuery;
-                            context.read<IncomeBloc>().add(FetchIncomes(query: currentQuery));
+                            context
+                                .read<IncomeBloc>()
+                                .add(FetchIncomes(query: currentQuery));
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff1E2E52),
-                            foregroundColor: Colors.white,
+                            backgroundColor: colors.buttonPrimaryBg,
+                            foregroundColor: colors.buttonPrimaryFg,
                           ),
                           child: Text(
-                            AppLocalizations.of(context)?.translate('retry') ?? 'Повторить',
+                            AppLocalizations.of(context)?.translate('retry') ??
+                                'Повторить',
                           ),
                         ),
                       ],
@@ -168,29 +179,34 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   if (incomes.isEmpty) {
                     return Center(
                       child: Text(
-                        AppLocalizations.of(context)?.translate('no_incomes') ?? 'Нет доходов',
-                        style: const TextStyle(
+                        AppLocalizations.of(context)?.translate('no_incomes') ??
+                            'Нет доходов',
+                        style: TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     );
                   }
                   return RefreshIndicator(
-                    color: const Color(0xff1E2E52),
-                    backgroundColor: Colors.white,
+                    color: colors.buttonPrimaryBg,
+                    backgroundColor: colors.surfacePrimary,
                     onRefresh: () async {
                       // Сохраняем текущий поисковый запрос при обновлении
                       final currentState = context.read<IncomeBloc>().state;
                       final currentQuery = currentState.searchQuery;
-                      context.read<IncomeBloc>().add(FetchIncomes(query: currentQuery));
+                      context
+                          .read<IncomeBloc>()
+                          .add(FetchIncomes(query: currentQuery));
                     },
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      itemCount: incomes.length + (state.status == IncomeStatus.loadingMore ? 1 : 0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                      itemCount: incomes.length +
+                          (state.status == IncomeStatus.loadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index >= incomes.length) {
                           return Container(
@@ -204,7 +220,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                         }
 
                         final data = incomes[index];
-                        return _buildIncomeCard(data);
+                        return _buildIncomeCard(data, colors);
                       },
                     ),
                   );
@@ -215,16 +231,17 @@ class _IncomeScreenState extends State<IncomeScreen> {
       // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
       floatingActionButton: _hasCreatePermission
           ? FloatingActionButton(
-              backgroundColor: const Color(0xff1E2E52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: colors.buttonPrimaryBg,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               onPressed: _navigateToAddIncome,
-              child: const Icon(Icons.add, color: Colors.white, size: 32),
+              child: Icon(Icons.add, color: colors.buttonPrimaryFg, size: 32),
             )
           : null,
     );
   }
 
-  Widget _buildIncomeCard(IncomeModel data) {
+  Widget _buildIncomeCard(IncomeModel data, dynamic colors) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Material(
@@ -240,8 +257,16 @@ class _IncomeScreenState extends State<IncomeScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
-              color: const Color(0xffF2F6FF),
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.borderSubtle),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.shadow.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,11 +277,11 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     children: [
                       Text(
                         data.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -265,13 +290,13 @@ class _IncomeScreenState extends State<IncomeScreen> {
                 // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
                 if (_hasDeletePermission)
                   GestureDetector(
-                    child: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 24,
+                      color: colors.buttonDangerBg,
                     ),
                     onTap: () {
-                      _showDeleteConfirmation(data, context);
+                      _showDeleteConfirmation(data, context, colors);
                     },
                   ),
               ],
@@ -322,30 +347,56 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
   }
 
-  void _showDeleteConfirmation(IncomeModel data, BuildContext parentContext) {
+  void _showDeleteConfirmation(
+      IncomeModel data, BuildContext parentContext, dynamic colors) {
     showDialog(
       context: parentContext,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.borderSubtle),
+          ),
           title: Center(
-            child: Text(
-              AppLocalizations.of(context)?.translate('delete_income') ?? 'Удалить доход',
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
+            child: Column(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.buttonDangerBg.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    color: colors.buttonDangerBg,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  AppLocalizations.of(context)?.translate('delete_income') ??
+                      'Удалить доход',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
           content: Text(
             '${AppLocalizations.of(context)?.translate('delete_income_confirm') ?? 'Вы уверены, что хотите удалить доход'} "${data.name}"?',
-            style: const TextStyle(
+            textAlign: TextAlign.center,
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+              color: colors.textSecondary,
             ),
           ),
           actions: [
@@ -354,24 +405,28 @@ class _IncomeScreenState extends State<IncomeScreen> {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonSecondaryBg,
+                    textColor: colors.buttonSecondaryFg,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('delete'),
+                    buttonText:
+                        AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      parentContext.read<IncomeBloc>().add(DeleteIncome(data.id));
+                      parentContext
+                          .read<IncomeBloc>()
+                          .add(DeleteIncome(data.id));
                       Navigator.of(context).pop();
                     },
-                    buttonColor: const Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonDangerBg,
+                    textColor: colors.buttonDangerFg,
                   ),
                 ),
               ],

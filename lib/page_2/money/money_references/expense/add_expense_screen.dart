@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/money/add_expense_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,12 +28,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   void _onSave() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AddExpenseBloc>().add(
-        SubmitAddExpense(
-          data: AddExpenseModel(
-            name: nameController.text.trim(),
-          ),
-        ),
-      );
+            SubmitAddExpense(
+              data: AddExpenseModel(
+                name: nameController.text.trim(),
+              ),
+            ),
+          );
     }
   }
 
@@ -42,26 +43,25 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: _onCancel,
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+          onPressed: () => Navigator.pop(context, false),
         ),
         title: Text(
-          AppLocalizations.of(context)?.translate('add_expense') ?? 'Добавить расход',
-          style: const TextStyle(
+          AppLocalizations.of(context)?.translate('add_expense') ??
+              'Добавить расход',
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -72,8 +72,15 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           } else if (state.status == AddExpenseStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message ?? 'Ошибка добавления расхода'),
-                backgroundColor: Colors.red,
+                content: Text(
+                  state.message ?? 'Ошибка добавления расхода',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    color: colors.textInverse,
+                  ),
+                ),
+                backgroundColor: colors.error,
+                behavior: SnackBarBehavior.floating,
               ),
             );
           }
@@ -95,11 +102,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           children: [
                             CustomTextField(
                               controller: nameController,
-                              hintText: AppLocalizations.of(context)?.translate('enter_expense_name') ?? 'Введите название расхода*',
-                              label: AppLocalizations.of(context)?.translate('expense_name') ?? 'Название',
+                              hintText: AppLocalizations.of(context)
+                                      ?.translate('enter_expense_name') ??
+                                  'Введите название расхода*',
+                              label: AppLocalizations.of(context)
+                                      ?.translate('expense_name') ??
+                                  'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
-                                  return AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
+                                  return AppLocalizations.of(context)!
+                                          .translate('field_required') ??
+                                      'Поле обязательно';
                                 }
                                 return null;
                               },
@@ -110,10 +123,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     ),
                   ),
                 ),
-
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: _buildActionButtons(),
+                  child: _buildActionButtons(colors),
                 ),
               ],
             ),
@@ -123,7 +135,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(dynamic colors) {
     return BlocBuilder<AddExpenseBloc, AddExpenseState>(
       builder: (context, state) {
         final isLoading = state.status == AddExpenseStatus.loading;
@@ -133,13 +145,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             // Cancel button
             Expanded(
               child: CustomButton(
-                  buttonText: AppLocalizations.of(context)
-                      ?.translate('cancel') ??
-                      'Отмена',
-                  buttonColor: const Color(0xffF4F7FD),
-                  textColor: Colors.black,
-                  onPressed: isLoading ? () {} : _onCancel
-              ),
+                  buttonText:
+                      AppLocalizations.of(context)?.translate('cancel') ??
+                          'Отмена',
+                  buttonColor: colors.buttonSecondaryBg,
+                  textColor: colors.buttonSecondaryFg,
+                  onPressed: isLoading ? () {} : _onCancel),
             ),
 
             const SizedBox(width: 16),
@@ -148,32 +159,32 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             Expanded(
               child: isLoading
                   ? Container(
-                height: 48, // Assuming button height
-                decoration: BoxDecoration(
-                  color: const Color(0xff4759FF).withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white,
+                      height: 48, // Assuming button height
+                      decoration: BoxDecoration(
+                        color: colors.buttonPrimaryBg.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                  ),
-                ),
-              )
+                      child: const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
                   : CustomButton(
-                buttonText: AppLocalizations.of(context)
-                    ?.translate('save') ??
-                    'Сохранить',
-                buttonColor: const Color(0xff4759FF),
-                textColor: Colors.white,
-                onPressed: _onSave,
-              ),
+                      buttonText:
+                          AppLocalizations.of(context)?.translate('save') ??
+                              'Сохранить',
+                      buttonColor: colors.buttonPrimaryBg,
+                      textColor: colors.buttonPrimaryFg,
+                      onPressed: _onSave,
+                    ),
             ),
           ],
         );

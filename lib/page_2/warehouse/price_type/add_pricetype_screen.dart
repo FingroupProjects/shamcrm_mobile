@@ -1,12 +1,10 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
-
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
-
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,16 +23,18 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
   String selectedDialCode = '';
 
   void _showErrorSnackBar(BuildContext context, String message) {
+    final colors = context.appColors;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: colors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -42,7 +42,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: colors.error,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),
@@ -53,52 +53,50 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('add_pricetype') ??
               'Добавить тип цены',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
       body: BlocListener<PriceTypeScreenBloc, PriceTypeState>(
         listener: (context, state) {
-
           debugPrint("PriceTypeState: $state");
 
           if (state is PriceTypeError) {
             _showErrorSnackBar(
                 context,
-                AppLocalizations.of(context)!.translate(state.message) ?? state.message);
+                AppLocalizations.of(context)!.translate(state.message) ??
+                    state.message);
           } else if (state is PriceTypeSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate('pricetype_created_successfully') ?? 'Тип цены успешно создан',
-                  style: const TextStyle(
+                  AppLocalizations.of(context)!
+                          .translate('pricetype_created_successfully') ??
+                      'Тип цены успешно создан',
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -106,7 +104,7 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: colors.success,
                 elevation: 3,
                 padding:
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -135,7 +133,9 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                           hintText: AppLocalizations.of(context)!
                                   .translate('enter_pricetype_name') ??
                               'Введите название типа цены',
-                          label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
+                          label: AppLocalizations.of(context)!
+                                  .translate('title_without_dots') ??
+                              'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
@@ -160,11 +160,9 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('close') ??
                                 'Отмена',
-                        buttonColor: const Color(0xffF4F7FD),
-                        textColor: Colors.black,
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                        buttonColor: colors.backgroundSecondary,
+                        textColor: colors.textPrimary,
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -172,9 +170,9 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                       child: BlocBuilder<PriceTypeScreenBloc, PriceTypeState>(
                         builder: (context, state) {
                           if (state is PriceTypeLoading) {
-                            return const Center(
+                            return Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
+                                color: colors.buttonPrimaryBg,
                               ),
                             );
                           } else {
@@ -182,8 +180,8 @@ class _AddPriceTypeScreenState extends State<AddPriceTypeScreen> {
                               buttonText: AppLocalizations.of(context)!
                                       .translate('save') ??
                                   'Сохранить',
-                              buttonColor: const Color(0xff4759FF),
-                              textColor: Colors.white,
+                              buttonColor: colors.buttonPrimaryBg,
+                              textColor: colors.textInverse,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   final priceType = PriceTypeModel(

@@ -1,18 +1,18 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/cash_desk/add/add_cash_desk_bloc.dart';
-import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
+import 'package:crm_task_manager/bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
+import 'package:crm_task_manager/bloc/cash_desk/cash_desk_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/models/money/cash_register_model.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/edit_cash_desk_screen.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../../bloc/cash_desk/cash_desk_bloc.dart';
-import '../../../../bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
-import '../../../../custom_widget/custom_app_bar_page_2.dart';
-import '../../../../custom_widget/custom_button.dart';
-import '../../../../models/money/cash_register_model.dart';
-import '../../../../screens/profile/languages/app_localizations.dart';
-import '../../../../screens/profile/profile_screen.dart';
-import 'edit_cash_desk_screen.dart';
 
 class CashDeskScreen extends StatefulWidget {
   const CashDeskScreen({super.key});
@@ -25,13 +25,12 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  bool isClickAvatarIcon = false;
+  final ApiService _apiService = ApiService();
 
-  // НОВОЕ: Флаги прав доступа
+  bool isClickAvatarIcon = false;
   bool _hasCreatePermission = false;
   bool _hasUpdatePermission = false;
   bool _hasDeletePermission = false;
-  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -41,20 +40,17 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
     _scrollController.addListener(_onScroll);
   }
 
-  // НОВОЕ: Проверка прав доступа
   Future<void> _checkPermissions() async {
     try {
       final create = await _apiService.hasPermission('cash_register.create');
       final update = await _apiService.hasPermission('cash_register.update');
       final delete = await _apiService.hasPermission('cash_register.delete');
-
-      if (mounted) {
-        setState(() {
-          _hasCreatePermission = create;
-          _hasUpdatePermission = update;
-          _hasDeletePermission = delete;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _hasCreatePermission = create;
+        _hasUpdatePermission = update;
+        _hasDeletePermission = delete;
+      });
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
     }
@@ -77,8 +73,7 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
   bool get _isBottom {
     if (!_scrollController.hasClients) return false;
     final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.offset;
-    return currentScroll >= (maxScroll * 0.9);
+    return _scrollController.offset >= (maxScroll * 0.9);
   }
 
   void _onSearch(String input) {
@@ -88,19 +83,22 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
+        backgroundColor: colors.surfacePrimary,
         title: CustomAppBarPage2(
           title: isClickAvatarIcon
-              ? AppLocalizations.of(context)?.translate('appbar_settings') ?? 'Настройки'
+              ? AppLocalizations.of(context)?.translate('appbar_settings') ??
+                  'Настройки'
               : AppLocalizations.of(context)?.translate('cash_desk') ?? 'Касса',
           onClickProfileAvatar: () {
-            setState(() {
-              isClickAvatarIcon = !isClickAvatarIcon;
-            });
+            setState(() => isClickAvatarIcon = !isClickAvatarIcon);
           },
-          clearButtonClickFiltr: (isSearching) {},
+          clearButtonClickFiltr: (_) {},
           showSearchIcon: !isClickAvatarIcon,
           showFilterIcon: false,
           showFilterOrderIcon: false,
@@ -109,17 +107,15 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
           focusNode: _searchFocusNode,
           clearButtonClick: (isSearching) {
             if (!isSearching) {
-              setState(() {
-                _searchController.clear();
-              });
+              setState(() => _searchController.clear());
               context.read<CashDeskBloc>().add(const SearchCashRegisters(null));
             }
           },
-          currentFilters: {},
+          currentFilters: const {},
         ),
       ),
       body: isClickAvatarIcon
-          ? ProfileScreen()
+          ? const ProfileScreen()
           : BlocBuilder<CashDeskBloc, CashDeskState>(
               builder: (context, state) {
                 if (state.status == CashDeskStatus.initialLoading) {
@@ -129,67 +125,80 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                       duration: const Duration(milliseconds: 1000),
                     ),
                   );
-                } else if (state.status == CashDeskStatus.initialError) {
+                }
+
+                if (state.status == CashDeskStatus.initialError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          AppLocalizations.of(context)?.translate('error_loading') ?? 'Ошибка загрузки',
-                          style: const TextStyle(
+                          AppLocalizations.of(context)
+                                  ?.translate('error_loading') ??
+                              'Ошибка загрузки',
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            // Сохраняем текущий поисковый запрос при повторной попытке
-                            final currentState = context.read<CashDeskBloc>().state;
-                            final currentQuery = currentState.searchQuery;
-                            context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
+                            final currentQuery =
+                                context.read<CashDeskBloc>().state.searchQuery;
+                            context
+                                .read<CashDeskBloc>()
+                                .add(FetchCashRegisters(query: currentQuery));
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff1E2E52),
-                            foregroundColor: Colors.white,
+                            backgroundColor: colors.buttonPrimaryBg,
+                            foregroundColor: colors.buttonPrimaryFg,
                           ),
                           child: Text(
-                            AppLocalizations.of(context)?.translate('retry') ?? 'Повторить',
+                            AppLocalizations.of(context)?.translate('retry') ??
+                                'Повторить',
                           ),
                         ),
                       ],
                     ),
                   );
-                } else if (state.status == CashDeskStatus.initialLoaded ||
+                }
+
+                if (state.status == CashDeskStatus.initialLoaded ||
                     state.status == CashDeskStatus.loadingMore) {
                   final cashRegisters = state.cashRegisters;
                   if (cashRegisters.isEmpty) {
                     return Center(
                       child: Text(
-                        AppLocalizations.of(context)?.translate('no_cash_registers') ?? 'Нет касс',
-                        style: const TextStyle(
+                        AppLocalizations.of(context)
+                                ?.translate('no_cash_registers') ??
+                            'Нет касс',
+                        style: TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     );
                   }
+
                   return RefreshIndicator(
-                    color: const Color(0xff1E2E52),
-                    backgroundColor: Colors.white,
+                    color: colors.buttonPrimaryBg,
+                    backgroundColor: colors.surfacePrimary,
                     onRefresh: () async {
-                      // Сохраняем текущий поисковый запрос при обновлении
-                      final currentState = context.read<CashDeskBloc>().state;
-                      final currentQuery = currentState.searchQuery;
-                      context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
+                      final currentQuery =
+                          context.read<CashDeskBloc>().state.searchQuery;
+                      context
+                          .read<CashDeskBloc>()
+                          .add(FetchCashRegisters(query: currentQuery));
                     },
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
                       itemCount: cashRegisters.length +
                           (state.status == CashDeskStatus.loadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
@@ -204,76 +213,73 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                           );
                         }
 
-                        final data = cashRegisters[index];
-                        return _buildCashRegisterCard(data);
+                        return _buildCashRegisterCard(
+                            cashRegisters[index], colors);
                       },
                     ),
                   );
                 }
+
                 return const SizedBox();
               },
             ),
-      // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
       floatingActionButton: _hasCreatePermission
           ? FloatingActionButton(
-              backgroundColor: const Color(0xff1E2E52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: colors.buttonPrimaryBg,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               onPressed: _navigateToAddReference,
-              child: const Icon(Icons.add, color: Colors.white, size: 32),
+              child: Icon(Icons.add, color: colors.buttonPrimaryFg, size: 32),
             )
           : null,
     );
   }
 
-  Widget _buildCashRegisterCard(CashRegisterModel data) {
+  Widget _buildCashRegisterCard(CashRegisterModel data, dynamic colors) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          // ИЗМЕНЕНО: Открываем редактирование только если есть право
           onTap: _hasUpdatePermission
-              ? () {
-                  _navigateToEditReference(data);
-                }
+              ? () => _navigateToEditReference(data)
               : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
-              color: const Color(0xffF2F6FF),
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.borderSubtle),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.shadow.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    data.name,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ),
-                // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
                 if (_hasDeletePermission)
                   GestureDetector(
-                    child: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                    onTap: () => _showDeleteConfirmation(data),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 24,
+                      color: colors.buttonDangerBg,
                     ),
-                    onTap: () {
-                      _showDeleteConfirmation(data, context);
-                    },
                   ),
               ],
             ),
@@ -289,15 +295,13 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
       MaterialPageRoute(
         builder: (context) => BlocProvider(
           create: (context) => AddCashDeskBloc(),
-          child: AddCashDesk(),
+          child: const AddCashDesk(),
         ),
       ),
     );
 
     if (result == true) {
-      // Сохраняем текущий поисковый запрос
-      final currentState = context.read<CashDeskBloc>().state;
-      final currentQuery = currentState.searchQuery;
+      final currentQuery = context.read<CashDeskBloc>().state.searchQuery;
       context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
     }
   }
@@ -308,72 +312,96 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
       MaterialPageRoute(
         builder: (context) => BlocProvider(
           create: (context) => EditCashDeskBloc(),
-          child: EditCashDesk(
-            initialData: data,
-          ),
+          child: EditCashDesk(initialData: data),
         ),
       ),
     );
 
     if (result == true) {
-      // Сохраняем текущий поисковый запрос
-      final currentState = context.read<CashDeskBloc>().state;
-      final currentQuery = currentState.searchQuery;
+      final currentQuery = context.read<CashDeskBloc>().state.searchQuery;
       context.read<CashDeskBloc>().add(FetchCashRegisters(query: currentQuery));
     }
   }
 
-  void _showDeleteConfirmation(CashRegisterModel data, BuildContext parentContext) {
+  void _showDeleteConfirmation(CashRegisterModel data) {
+    final colors = context.appColors;
+
     showDialog(
-      context: parentContext,
-      builder: (BuildContext context) {
+      context: context,
+      builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.borderSubtle),
+          ),
           title: Center(
-            child: Text(
-              AppLocalizations.of(context)?.translate('delete_reference') ?? 'Удалить справочник',
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
+            child: Column(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.buttonDangerBg.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    color: colors.buttonDangerBg,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  AppLocalizations.of(dialogContext)
+                          ?.translate('delete_reference') ??
+                      'Удалить справочник',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
           content: Text(
-            AppLocalizations.of(context)?.translate('confirm_delete_reference') ??
+            AppLocalizations.of(dialogContext)
+                    ?.translate('confirm_delete_reference') ??
                 'Вы уверены, что хотите удалить справочник?',
-            style: const TextStyle(
+            textAlign: TextAlign.center,
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+              color: colors.textSecondary,
             ),
           ),
           actions: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
+                    buttonText:
+                        AppLocalizations.of(dialogContext)!.translate('cancel'),
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    buttonColor: colors.buttonSecondaryBg,
+                    textColor: colors.buttonSecondaryFg,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText: AppLocalizations.of(context)!.translate('delete'),
+                    buttonText:
+                        AppLocalizations.of(dialogContext)!.translate('delete'),
                     onPressed: () {
-                      parentContext.read<CashDeskBloc>().add(DeleteCashDesk(data.id));
-                      Navigator.of(context).pop();
+                      context.read<CashDeskBloc>().add(DeleteCashDesk(data.id));
+                      Navigator.of(dialogContext).pop();
                     },
-                    buttonColor: const Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonDangerBg,
+                    textColor: colors.buttonDangerFg,
                   ),
                 ),
               ],

@@ -1,12 +1,10 @@
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/supplier_openings_model.dart';
-import '../../../../models/page_2/supplier_model.dart';
 import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
-import '../../../../bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.dart';
@@ -19,11 +17,10 @@ import '../../../../utils/global_fun.dart';
 class EditSupplierOpeningScreen extends StatefulWidget {
   final SupplierOpening supplierOpening;
 
-  const EditSupplierOpeningScreen({Key? key, required this.supplierOpening})
-      : super(key: key);
+  const EditSupplierOpeningScreen({super.key, required this.supplierOpening});
 
   @override
-  _EditSupplierOpeningScreenState createState() =>
+  State<EditSupplierOpeningScreen> createState() =>
       _EditSupplierOpeningScreenState();
 }
 
@@ -36,7 +33,6 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
 
   // Supplier selection
   String? _selectedSupplierId;
-  Supplier? _selectedSupplierData;
 
   // Флаги для отслеживания состояния полей
   bool isOurDebtEnabled = true;
@@ -147,6 +143,7 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<SupplierOpeningsBloc, SupplierOpeningsState>(
       listener: (context, state) {
         if (!mounted || !context.mounted) return;
@@ -169,10 +166,10 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
             icon: Image.asset(
@@ -186,11 +183,11 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
           ),
           title: Text(
             AppLocalizations.of(context)!.translate('edit_supplier_opening'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -208,6 +205,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildStatusBanner(context),
+                        const SizedBox(height: 16),
                         SupplierWidget(
                           selectedSupplier: _selectedSupplierId,
                           onChanged: (value) =>
@@ -370,6 +369,62 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(BuildContext context) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.buttonPrimaryBg,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.edit_note_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.translate('edit_supplier_opening'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!.translate('update_initial_balance'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

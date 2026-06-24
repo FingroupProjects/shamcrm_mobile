@@ -1,14 +1,14 @@
+import 'package:crm_task_manager/bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
 import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../../bloc/cash_desk/edit/edit_cash_desk_bloc.dart';
-import '../../../../custom_widget/custom_button.dart';
-import '../../../../custom_widget/custom_textfield.dart';
-import '../../../../custom_widget/filter/task/multi_user_list.dart';
-import '../../../../screens/profile/languages/app_localizations.dart';
 
 class EditCashDesk extends StatefulWidget {
   final CashRegisterModel? initialData;
@@ -24,9 +24,40 @@ class _EditCashDeskState extends State<EditCashDesk> {
   late List<UserData> selectedUsers;
 
   @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialData;
+    nameController = TextEditingController(text: initial?.name ?? '');
+    selectedUsers = (initial?.users ?? [])
+        .map((e) => UserData(id: e.id, name: e.name, lastname: e.lastname))
+        .toList();
+  }
+
+  @override
   void dispose() {
     nameController.dispose();
     super.dispose();
+  }
+
+  void _showErrorSnackBar(String message) {
+    final colors = context.appColors;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: colors.textInverse,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: colors.error,
+      ),
+    );
   }
 
   void _onSave() {
@@ -37,49 +68,40 @@ class _EditCashDeskState extends State<EditCashDesk> {
       );
 
       context.read<EditCashDeskBloc>().add(
-        SubmitEditCashDesk(
-          data: model,
-          id: widget.initialData!.id,
-        ),
-      );
+            SubmitEditCashDesk(
+              data: model,
+              id: widget.initialData!.id,
+            ),
+          );
     }
   }
 
-  void _onCancel() {
-    Navigator.pop(context);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    final initial = widget.initialData;
-    nameController = TextEditingController(text: initial?.name ?? '');
-    selectedUsers = (initial?.users ?? []).map((e) => UserData(id: e.id, name: e.name, lastname: e.lastname)).toList();
-  }
+  void _onCancel() => Navigator.pop(context);
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: _onCancel,
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+          onPressed: () => Navigator.pop(context, false),
         ),
+        centerTitle: true,
         title: Text(
           AppLocalizations.of(context)?.translate('edit_cash_desk') ??
-              AppLocalizations.of(context)?.translate('edit_reference') ?? 'Редактировать кассу',
-          style: const TextStyle(
+              AppLocalizations.of(context)?.translate('edit_reference') ??
+              'Редактировать кассу',
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -88,7 +110,10 @@ class _EditCashDeskState extends State<EditCashDesk> {
           if (state.status == EditCashDeskStatus.loaded) {
             Navigator.pop(context, true);
           } else if (state.status == EditCashDeskStatus.error) {
-            // TODO : show error
+            _showErrorSnackBar(
+              AppLocalizations.of(context)?.translate('error_loading') ??
+                  'Ошибка при сохранении',
+            );
           }
         },
         child: SafeArea(
@@ -110,15 +135,19 @@ class _EditCashDeskState extends State<EditCashDesk> {
                               controller: nameController,
                               hintText: AppLocalizations.of(context)
                                       ?.translate('enter_title') ??
-                                  AppLocalizations.of(context)!.translate('enter_name') ?? 'Введите название*',
+                                  AppLocalizations.of(context)
+                                      ?.translate('enter_name') ??
+                                  'Введите название*',
                               label: AppLocalizations.of(context)
                                       ?.translate('cash_register_name') ??
-                                  AppLocalizations.of(context)!.translate('name') ?? 'Название',
+                                  AppLocalizations.of(context)
+                                      ?.translate('name') ??
+                                  'Название',
                               validator: (value) {
                                 if (value?.trim().isEmpty ?? true) {
                                   return AppLocalizations.of(context)
                                           ?.translate('field_required') ??
-                                      AppLocalizations.of(context)!.translate('field_required') ?? 'Поле обязательно';
+                                      'Поле обязательно';
                                 }
                                 return null;
                               },
@@ -130,9 +159,8 @@ class _EditCashDeskState extends State<EditCashDesk> {
                                   .toList(),
                               onSelectUsers:
                                   (List<UserData> selectedUsersData) {
-                                setState(() {
-                                  selectedUsers = selectedUsersData;
-                                });
+                                setState(
+                                    () => selectedUsers = selectedUsersData);
                               },
                             ),
                           ],
@@ -143,7 +171,7 @@ class _EditCashDeskState extends State<EditCashDesk> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: _buildActionButtons(),
+                  child: _buildActionButtons(colors),
                 ),
               ],
             ),
@@ -153,44 +181,39 @@ class _EditCashDeskState extends State<EditCashDesk> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(dynamic colors) {
     return BlocBuilder<EditCashDeskBloc, EditCashDeskState>(
       builder: (context, state) {
         final isLoading = state.status == EditCashDeskStatus.loading;
 
         return Row(
           children: [
-            // Cancel button
             Expanded(
               child: CustomButton(
-                  buttonText:
-                      AppLocalizations.of(context)?.translate('close') ??
-                          'Закрыть',
-                  buttonColor: const Color(0xffF4F7FD),
-                  textColor: Colors.black,
-                  onPressed: isLoading ? () {} : _onCancel),
+                buttonText: AppLocalizations.of(context)?.translate('close') ??
+                    'Закрыть',
+                buttonColor: colors.buttonSecondaryBg,
+                textColor: colors.buttonSecondaryFg,
+                onPressed: isLoading ? () {} : _onCancel,
+              ),
             ),
-
             const SizedBox(width: 16),
-
-            // Save button
             Expanded(
               child: isLoading
                   ? Container(
-                      height: 48, // Assuming button height
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: const Color(0xff4759FF).withOpacity(0.6),
+                        color: colors.buttonPrimaryBg.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+                                colors.buttonPrimaryFg),
                           ),
                         ),
                       ),
@@ -199,8 +222,8 @@ class _EditCashDeskState extends State<EditCashDesk> {
                       buttonText:
                           AppLocalizations.of(context)?.translate('save') ??
                               'Сохранить',
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
+                      buttonColor: colors.buttonPrimaryBg,
+                      textColor: colors.buttonPrimaryFg,
                       onPressed: _onSave,
                     ),
             ),

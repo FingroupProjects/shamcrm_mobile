@@ -1,9 +1,9 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/warehouse_multiuser_select.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -31,16 +31,18 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
+    final colors = context.appColors;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: colors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -48,7 +50,7 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: colors.error,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),
@@ -59,29 +61,27 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
         title: Text(
-          AppLocalizations.of(context)!.translate('add_warehouse') ?? 'Добавить склад',
-          style: const TextStyle(
+          AppLocalizations.of(context)!.translate('add_warehouse') ??
+              'Добавить склад',
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -90,18 +90,21 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
           if (state is WareHouseError) {
             _showErrorSnackBar(
                 context,
-                AppLocalizations.of(context)!.translate(state.message) ?? state.message);
+                AppLocalizations.of(context)!.translate(state.message) ??
+                    state.message);
           }
           if (state is WareHouseSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  AppLocalizations.of(context)!.translate('warehouse_created_successfully') ?? 'Склад успешно создан',
-                  style: const TextStyle(
+                  AppLocalizations.of(context)!
+                          .translate('warehouse_created_successfully') ??
+                      'Склад успешно создан',
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -109,9 +112,10 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: colors.success,
                 elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -136,12 +140,16 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                           CustomTextField(
                             controller: nameController,
                             hintText: AppLocalizations.of(context)!
-                                .translate('enter_warehouse_name') ?? 'Введите название склада',
-                            label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
+                                    .translate('enter_warehouse_name') ??
+                                'Введите название склада',
+                            label: AppLocalizations.of(context)!
+                                    .translate('title_without_dots') ??
+                                'Название',
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return AppLocalizations.of(context)!
-                                    .translate('field_required') ?? 'Поле обязательно';
+                                        .translate('field_required') ??
+                                    'Поле обязательно';
                               }
                               return null;
                             },
@@ -157,19 +165,22 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            AppLocalizations.of(context)!.translate('warehouse_visibility') ?? 'Показывать склад в интернет магазине  как филиал',
-                            style: const TextStyle(
+                            AppLocalizations.of(context)!
+                                    .translate('warehouse_visibility') ??
+                                'Показывать склад в интернет магазине  как филиал',
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4F7FD),
+                              color: colors.backgroundSecondary,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -179,23 +190,30 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                                   child: Switch(
                                     value: _isWarehouseVisible,
                                     onChanged: _toggleWarehouseVisibility,
-                                    activeColor: Colors.white,
-                                    inactiveThumbColor: Colors.white,
-                                    activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                    inactiveTrackColor: Colors.grey.withOpacity(0.5),
+                                    activeThumbColor: colors.buttonPrimaryFg,
+                                    inactiveThumbColor: colors.textInverse,
+                                    activeTrackColor: colors.buttonPrimaryBg,
+                                    inactiveTrackColor: colors.borderSubtle
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _isWarehouseVisible
-                                        ? AppLocalizations.of(context)!.translate('warehouse_visible_on') ?? 'Показывать склад: Вкл'
-                                        : AppLocalizations.of(context)!.translate('warehouse_visible_off') ?? 'Показывать склад: Выкл',
-                                    style: const TextStyle(
+                                        ? AppLocalizations.of(context)!
+                                                .translate(
+                                                    'warehouse_visible_on') ??
+                                            'Показывать склад: Вкл'
+                                        : AppLocalizations.of(context)!
+                                                .translate(
+                                                    'warehouse_visible_off') ??
+                                            'Показывать склад: Выкл',
+                                    style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
-                                      color: Color(0xFF1E1E1E),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -213,9 +231,11 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                     children: [
                       Expanded(
                         child: CustomButton(
-                          buttonText: AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
-                          buttonColor: const Color(0xffF4F7FD),
-                          textColor: Colors.black,
+                          buttonText: AppLocalizations.of(context)!
+                                  .translate('close') ??
+                              'Отмена',
+                          buttonColor: colors.backgroundSecondary,
+                          textColor: colors.textPrimary,
                           onPressed: () {
                             Navigator.pop(context);
                           },
@@ -226,16 +246,18 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                         child: BlocBuilder<WareHouseBloc, WareHouseState>(
                           builder: (context, state) {
                             if (state is WareHouseLoading) {
-                              return const Center(
+                              return Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xff1E2E52),
+                                  color: colors.buttonPrimaryBg,
                                 ),
                               );
                             }
                             return CustomButton(
-                              buttonText: AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
-                              buttonColor: const Color(0xff4759FF),
-                              textColor: Colors.white,
+                              buttonText: AppLocalizations.of(context)!
+                                      .translate('save') ??
+                                  'Сохранить',
+                              buttonColor: colors.buttonPrimaryBg,
+                              textColor: colors.textInverse,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   final warehouse = WareHouse(
@@ -245,7 +267,9 @@ class _AddWarehouseScreenState extends State<AddWarehouseScreen> {
                                     createdAt: DateTime.now().toIso8601String(),
                                     updatedAt: DateTime.now().toIso8601String(),
                                   );
-                                  context.read<WareHouseBloc>().add(CreateWareHouse(warehouse, ids));
+                                  context
+                                      .read<WareHouseBloc>()
+                                      .add(CreateWareHouse(warehouse, ids));
                                 }
                               },
                             );

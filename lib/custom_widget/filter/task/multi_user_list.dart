@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
 
-  UserMultiSelectWidget({
+  const UserMultiSelectWidget({
     super.key,
     required this.onSelectUsers,
     this.selectedUsers,
@@ -23,13 +24,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> usersList = [];
   List<UserData> selectedUsersData = [];
   bool allSelected = false;
-
-  final TextStyle userTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -52,6 +46,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return FormField<List<UserData>>(
       validator: (value) {
         if (selectedUsersData.isEmpty) {
@@ -61,24 +57,34 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
         return null;
       },
       builder: (FormFieldState<List<UserData>> field) {
+        final labelStyle = TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          fontFamily: 'Gilroy',
+          color: colors.textPrimary,
+        );
+        final valueStyle = TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: colors.textPrimary,
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context)!.translate('assignees_list'),
-              style: userTextStyle.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 16,
-              ),
+              style: labelStyle,
             ),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.fieldBorder,
                 ),
               ),
               child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
@@ -90,7 +96,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           .where((user) => widget.selectedUsers!
                               .contains(user.id.toString()))
                           .toList();
-                      allSelected = selectedUsersData.length == usersList.length;
+                      allSelected =
+                          selectedUsersData.length == usersList.length;
                     }
                   }
 
@@ -101,15 +108,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: colors.fieldBg,
+                      expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: colors.fieldBg,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: colors.fieldBorder,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -133,11 +140,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: const Color(0xff1E2E52),
+                                            color: colors.buttonPrimaryBg,
                                             width: 1),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? colors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
@@ -153,22 +160,22 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                       child: Text(
                                         AppLocalizations.of(context)!
                                             .translate('select_all'),
-                                        style: userTextStyle,
+                                        style: valueStyle,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                            Divider(
-                                height: 20,
-                                color: const Color(0xFFE5E7EB)), // Разделитель
-                            _buildListItem(item, isSelected, onItemSelect),
+                            Divider(height: 20, color: colors.fieldBorder),
+                            _buildListItem(context, item, isSelected,
+                                onItemSelect, valueStyle),
                           ],
                         );
                       }
                       // Обычные элементы списка
-                      return _buildListItem(item, isSelected, onItemSelect);
+                      return _buildListItem(
+                          context, item, isSelected, onItemSelect, valueStyle);
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedUsersNames = selectedUsersData.isEmpty
@@ -179,7 +186,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               .join(', ');
                       return Text(
                         selectedUsersNames,
-                        style: userTextStyle,
+                        style: valueStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
@@ -187,8 +194,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     hintBuilder: (context, hint, enabled) => Text(
                       AppLocalizations.of(context)!
                           .translate('select_assignees_list'),
-                      style: userTextStyle.copyWith(
+                      style: TextStyle(
                         fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: colors.textSecondary,
                       ),
                     ),
                     onListChanged: (values) {
@@ -207,9 +217,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
-                  field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  field.errorText ?? '',
+                  style: TextStyle(
+                    color: colors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -221,7 +231,15 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     );
   }
 
-  Widget _buildListItem(UserData item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(
+    BuildContext context,
+    UserData item,
+    bool isSelected,
+    Function() onItemSelect,
+    TextStyle valueStyle,
+  ) {
+    final colors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -233,11 +251,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
@@ -250,8 +268,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '${item.name!} ${item.lastname ?? ''}',
-                style: userTextStyle,
+                '${item.name ?? ''} ${item.lastname ?? ''}',
+                style: valueStyle,
               ),
             ),
           ],

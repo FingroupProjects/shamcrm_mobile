@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_state.dart';
@@ -14,11 +15,10 @@ import '../../../../custom_widget/price_input_formatter.dart';
 class EditClientOpeningScreen extends StatefulWidget {
   final ClientOpening clientOpening;
 
-  const EditClientOpeningScreen({Key? key, required this.clientOpening})
-      : super(key: key);
+  const EditClientOpeningScreen({super.key, required this.clientOpening});
 
   @override
-  _EditClientOpeningScreenState createState() =>
+  State<EditClientOpeningScreen> createState() =>
       _EditClientOpeningScreenState();
 }
 
@@ -113,6 +113,7 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     debugPrint("Editing Client Opening: ${widget.clientOpening.id}");
 
     return BlocListener<ClientOpeningsBloc, ClientOpeningsState>(
@@ -173,28 +174,22 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           elevation: 0,
           leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+            onPressed: () => Navigator.pop(context),
           ),
           title: Text(
             AppLocalizations.of(context)!.translate('edit_client_opening'),
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -212,6 +207,15 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildStatusBanner(
+                          context,
+                          title: AppLocalizations.of(context)!
+                              .translate('edit_client_opening'),
+                          subtitle: AppLocalizations.of(context)!
+                              .translate('update_initial_balance'),
+                          color: colors.buttonPrimaryBg,
+                        ),
+                        const SizedBox(height: 16),
                         LeadRadioGroupWidget(
                           selectedLead: _selectedLead?.id.toString(),
                           onSelectLead: (lead) =>
@@ -427,6 +431,71 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
         elevation: 3,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.18),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.edit_note_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

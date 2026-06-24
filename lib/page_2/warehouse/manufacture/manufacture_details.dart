@@ -8,6 +8,7 @@ import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_delete.dart';
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_edit.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -379,12 +380,13 @@ class _ManufactureDocumentDetailsScreenState
   }
 
   Widget _buildActionButton() {
+    final colors = context.appColors;
     if (_isButtonLoading) {
       return Container(
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -408,7 +410,7 @@ class _ManufactureDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('restore_document') ??
             'Восстановить',
         icon: Icons.restore,
-        color: const Color(0xFF2196F3),
+        color: colors.buttonPrimaryBg,
         onPressed: _restoreDocument,
       );
     }
@@ -427,7 +429,7 @@ class _ManufactureDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('approve_document') ??
             'Провести',
         icon: Icons.check_circle_outline,
-        color: const Color(0xFF4CAF50),
+        color: colors.success,
         onPressed: _approveDocument,
       );
     }
@@ -440,7 +442,7 @@ class _ManufactureDocumentDetailsScreenState
       text: AppLocalizations.of(context)!.translate('unapprove_document') ??
           'Отменить проведение',
       icon: Icons.cancel_outlined,
-      color: const Color(0xFFFFA500),
+      color: colors.warning,
       onPressed: _unApproveDocument,
     );
   }
@@ -504,6 +506,7 @@ class _ManufactureDocumentDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return PopScope(
       onPopInvoked: (didPop) {
         if (didPop && _documentUpdated && widget.onDocumentUpdated != null) {
@@ -512,7 +515,7 @@ class _ManufactureDocumentDetailsScreenState
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         body: _isLoading
             ? Center(
                 child: PlayStoreImageLoading(
@@ -558,12 +561,13 @@ class _ManufactureDocumentDetailsScreenState
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    final colors = context.appColors;
     // ИЗМЕНЕНО: Показываем кнопки только если есть права И документ не удалён
     final showActions = currentDocument?.deletedAt == null &&
         (widget.hasUpdatePermission || widget.hasDeletePermission);
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -586,11 +590,11 @@ class _ManufactureDocumentDetailsScreenState
         offset: const Offset(-10, 0),
         child: Text(
           "${AppLocalizations.of(context)!.translate('manufacture') ?? 'Производство'} №${widget.docNumber}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),

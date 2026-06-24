@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_create.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -211,6 +212,7 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return PopScope(
       canPop: true,
@@ -242,11 +244,11 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
                           .add(const FetchManufactures(forceRefresh: true));
                     }
                   },
-                  backgroundColor: const Color(0xff1E2E52),
+                  backgroundColor: colors.buttonPrimaryBg,
                   child: const Icon(Icons.add, color: Colors.white),
                 )
               : null,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           appBar: AppBar(
             automaticallyImplyLeading: !_selectionMode,
             forceMaterialTransparency: true,

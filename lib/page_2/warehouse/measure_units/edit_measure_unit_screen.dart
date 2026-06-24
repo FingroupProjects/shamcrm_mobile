@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/measure_units/measure_units_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
@@ -32,16 +33,18 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
+    final colors = context.appColors;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: colors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -49,7 +52,7 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: colors.error,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),
@@ -60,30 +63,26 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('edit_measure_unit') ??
               'Редактировать единицу измерения',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         // actions: [
@@ -171,11 +170,11 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                   AppLocalizations.of(context)!
                           .translate('measure_unit_updated_successfully') ??
                       'Единица измерения успешно обновлена',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -183,7 +182,7 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: colors.success,
                 elevation: 3,
                 padding:
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -212,7 +211,9 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                           hintText: AppLocalizations.of(context)!
                                   .translate('enter_measure_unit_name') ??
                               'Введите название единицы измерения',
-                          label: AppLocalizations.of(context)!.translate('title_without_dots') ?? 'Название',
+                          label: AppLocalizations.of(context)!
+                                  .translate('title_without_dots') ??
+                              'Название',
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return AppLocalizations.of(context)!
@@ -247,11 +248,9 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('close') ??
                                 'Отмена',
-                        buttonColor: const Color(0xffF4F7FD),
-                        textColor: Colors.black,
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                        buttonColor: colors.backgroundSecondary,
+                        textColor: colors.textPrimary,
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -259,9 +258,9 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                       child: BlocBuilder<MeasureUnitsBloc, MeasureUnitsState>(
                         builder: (context, state) {
                           if (state is MeasureUnitsLoading) {
-                            return const Center(
+                            return Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
+                                color: colors.buttonPrimaryBg,
                               ),
                             );
                           } else {
@@ -269,8 +268,8 @@ class _EditMeasureUnitScreenState extends State<EditMeasureUnitScreen> {
                               buttonText: AppLocalizations.of(context)!
                                       .translate('save') ??
                                   'Сохранить',
-                              buttonColor: const Color(0xff4759FF),
-                              textColor: Colors.white,
+                              buttonColor: colors.buttonPrimaryBg,
+                              textColor: colors.textInverse,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   final measureUnit = MeasureUnitModel(

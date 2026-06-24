@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -25,13 +26,6 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
   bool allSelected = false;
   bool _hasInitialized = false; // NEW: Track initialization
 
-  final TextStyle userTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   static final UserData selectAllSentinel = UserData(
     id: -1,
     name: 'SELECT_ALL',
@@ -46,7 +40,9 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
 
   // NEW: Initialize selected users when data is available
   void _initializeSelection(List<UserData> fetchedUsers) {
-    if (!_hasInitialized && widget.selectedUsers != null && widget.selectedUsers!.isNotEmpty) {
+    if (!_hasInitialized &&
+        widget.selectedUsers != null &&
+        widget.selectedUsers!.isNotEmpty) {
       selectedUsersData = fetchedUsers
           .where((user) => widget.selectedUsers!.contains(user.id.toString()))
           .toList();
@@ -77,6 +73,14 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final userTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
+
     return FormField<List<UserData>>(
       validator: (value) {
         if (selectedUsersData.isEmpty) {
@@ -99,23 +103,27 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.fieldBorder,
                 ),
               ),
               child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
                 builder: (context, state) {
                   if (state is GetAllClientLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: colors.buttonPrimaryBg,
+                      ),
+                    );
                   } else if (state is GetAllClientError) {
                     return Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
                         '${state.message}',
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: colors.error),
                       ),
                     );
                   } else if (state is GetAllClientSuccess) {
@@ -129,20 +137,21 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
 
                     return CustomDropdown<UserData>.multiSelectSearch(
                       items: usersList,
-                      initialItems: selectedUsersData, // Now properly initialized
+                      initialItems:
+                          selectedUsersData, // Now properly initialized
                       searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
+                          AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: MediaQuery.of(context).size.height * 0.5,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: colors.fieldBg,
+                        expandedFillColor: colors.surfacePrimary,
                         closedBorder: Border.all(
                           color: Colors.transparent,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: const Color(0xFFE5E7EB),
+                          color: colors.borderSubtle,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
@@ -166,20 +175,20 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                                         height: 18,
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                              color: const Color(0xff1E2E52),
+                                              color: colors.buttonPrimaryBg,
                                               width: 1),
                                           borderRadius:
-                                          BorderRadius.circular(4),
+                                              BorderRadius.circular(4),
                                           color: allSelected
-                                              ? const Color(0xff1E2E52)
+                                              ? colors.buttonPrimaryBg
                                               : Colors.transparent,
                                         ),
                                         child: allSelected
-                                            ? const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 14,
-                                        )
+                                            ? Icon(
+                                                Icons.check,
+                                                color: colors.buttonPrimaryFg,
+                                                size: 14,
+                                              )
                                             : null,
                                       ),
                                       const SizedBox(width: 12),
@@ -194,27 +203,32 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                                   ),
                                 ),
                               ),
-                              const Divider(
+                              Divider(
                                 height: 20,
-                                color: Color(0xFFE5E7EB),
+                                color: colors.borderSubtle,
                               ),
                             ],
                           );
                         }
-                        return _buildListItem(item, isSelected, onItemSelect);
+                        return _buildListItem(
+                          item,
+                          isSelected,
+                          onItemSelect,
+                          userTextStyle,
+                        );
                       },
                       headerListBuilder: (context, hint, enabled) {
                         String selectedUsersNames = selectedUsersData.isEmpty
                             ? AppLocalizations.of(context)!
-                            .translate('select_assignees_list')
+                                .translate('select_assignees_list')
                             : selectedUsersData
-                            .take(3)
-                            .map((e) =>
-                        '${e.name ?? 'Unknown'} ${e.lastname ?? ''}')
-                            .join(', ') +
-                            (selectedUsersData.length > 3
-                                ? ' +${selectedUsersData.length - 3} more'
-                                : '');
+                                    .take(3)
+                                    .map((e) =>
+                                        '${e.name ?? 'Unknown'} ${e.lastname ?? ''}')
+                                    .join(', ') +
+                                (selectedUsersData.length > 3
+                                    ? ' +${selectedUsersData.length - 3} more'
+                                    : '');
                         return Text(
                           selectedUsersNames,
                           style: userTextStyle,
@@ -252,8 +266,8 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: colors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -266,7 +280,13 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
   }
 
   Widget _buildListItem(
-      UserData item, bool isSelected, Function() onItemSelect) {
+    UserData item,
+    bool isSelected,
+    Function() onItemSelect,
+    TextStyle userTextStyle,
+  ) {
+    final colors = context.appColors;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -278,19 +298,18 @@ class _WarehouseMultiUserState extends State<WarehouseMultiUser> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color:
-                isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
-                Icons.check,
-                color: Colors.white,
-                size: 14,
-              )
+                  ? Icon(
+                      Icons.check,
+                      color: colors.buttonPrimaryFg,
+                      size: 14,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/edit_supplier_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_deletion.dart';
@@ -46,6 +47,7 @@ class _SupplierCardState extends State<SupplierCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
@@ -74,13 +76,14 @@ class _SupplierCardState extends State<SupplierCard> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9EDF5),
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.borderSubtle),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: colors.shadow.withValues(alpha: 0.08),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -92,11 +95,11 @@ class _SupplierCardState extends State<SupplierCard> {
                 Expanded(
                   child: Text(
                     '${localization!.translate('empty_0') ?? 'Поставщик'} ${widget.supplier.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.bold,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -104,13 +107,14 @@ class _SupplierCardState extends State<SupplierCard> {
                 ),
                 // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
                 if (widget.hasDeletePermission)
-                  GestureDetector(
-                    child: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                  IconButton(
+                    tooltip: localization.translate('delete') ?? 'Удалить',
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colors.buttonDangerBg,
+                      size: 24,
                     ),
-                    onTap: () {
+                    onPressed: () {
                       showDialog(
                         context: context,
                         builder: (context) => SupplierDeleteDialog(
@@ -129,11 +133,11 @@ class _SupplierCardState extends State<SupplierCard> {
               const SizedBox(height: 8),
               Text(
                 '${localization.translate('phone') ?? 'Телефон'}: ${widget.supplier.phone ?? 'N/A'}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                 ),
               ),
             ],
@@ -142,11 +146,11 @@ class _SupplierCardState extends State<SupplierCard> {
               const SizedBox(height: 8),
               Text(
                 '${localization.translate('inn') ?? 'ИНН'}: ${widget.supplier.inn ?? 'N/A'}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                 ),
               ),
             ]

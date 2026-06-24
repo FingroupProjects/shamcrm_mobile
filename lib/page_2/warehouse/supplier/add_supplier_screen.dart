@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -72,6 +73,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
 
   Widget _buildCurrencyField() {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     SupplierCurrency? initialCurrency;
     if (_selectedCurrency?.id != null) {
       for (final currency in _currencies) {
@@ -86,11 +88,11 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
       children: [
         Text(
           localizations.translate('currency_label') ?? 'Валюта',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -101,18 +103,17 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
           overlayHeight: 300,
           closeDropDownOnClearFilterSearch: true,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
-            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+            closedFillColor: colors.fieldBg,
+            expandedFillColor: colors.surfacePrimary,
+            closedBorder: Border.all(color: colors.fieldBorder, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder:
-                Border.all(color: const Color(0xffF4F7FD), width: 1),
+            expandedBorder: Border.all(color: colors.borderSubtle, width: 1),
             expandedBorderRadius: BorderRadius.circular(12),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
             item.name ?? '-',
-            style: const TextStyle(
-              color: Color(0xff1E2E52),
+            style: TextStyle(
+              color: colors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
@@ -122,20 +123,20 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
             selectedItem?.name ??
                 (localizations.translate('select_currency') ??
                     'Выберите валюту'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           hintBuilder: (context, hint, enabled) => Text(
             localizations.translate('select_currency') ?? 'Выберите валюту',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -144,10 +145,10 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 localizations.translate('no_results') ?? 'Нет результатов',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -190,16 +191,18 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
+    final colors = context.appColors;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: colors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -207,7 +210,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: colors.error,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),
@@ -218,30 +221,26 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
-          ),
-          onPressed: () {
-            Navigator.pop(context, false);
-          },
+          icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+          onPressed: () => Navigator.pop(context, false),
         ),
         title: Text(
           AppLocalizations.of(context)!.translate('add_supplier') ??
               'Добавить поставщика',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -259,11 +258,11 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                   AppLocalizations.of(context)!
                           .translate('supplier_created_successfully') ??
                       'Поставщик успешно создан',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -271,7 +270,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: colors.success,
                 elevation: 3,
                 padding:
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -375,8 +374,8 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('close') ??
                                 'Отмена',
-                        buttonColor: const Color(0xffF4F7FD),
-                        textColor: Colors.black,
+                        buttonColor: colors.backgroundSecondary,
+                        textColor: colors.textPrimary,
                         onPressed: () {
                           Navigator.pop(context, false);
                         },
@@ -387,9 +386,9 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                       child: BlocBuilder<SupplierBloc, SupplierState>(
                         builder: (context, state) {
                           if (state is SupplierLoading) {
-                            return const Center(
+                            return Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
+                                color: colors.buttonPrimaryBg,
                               ),
                             );
                           } else {
@@ -397,8 +396,8 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                               buttonText: AppLocalizations.of(context)!
                                       .translate('save') ??
                                   'Сохранить',
-                              buttonColor: const Color(0xff4759FF),
-                              textColor: Colors.white,
+                              buttonColor: colors.buttonPrimaryBg,
+                              textColor: colors.textInverse,
                               onPressed: () {
                                 if (_formKey.currentState!.validate()) {
                                   final supplier = Supplier(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_state.dart';
@@ -13,13 +14,13 @@ class AddCashRegisterOpeningScreen extends StatefulWidget {
   final int cashRegisterId;
 
   const AddCashRegisterOpeningScreen({
-    Key? key,
+    super.key,
     required this.cashRegisterName,
     required this.cashRegisterId,
-  }) : super(key: key);
+  });
 
   @override
-  _AddCashRegisterOpeningScreenState createState() =>
+  State<AddCashRegisterOpeningScreen> createState() =>
       _AddCashRegisterOpeningScreenState();
 }
 
@@ -46,6 +47,7 @@ class _AddCashRegisterOpeningScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
       listener: (context, state) {
         if (state is CashRegisterOpeningCreateSuccess) {
@@ -107,10 +109,10 @@ class _AddCashRegisterOpeningScreenState
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
             icon: Image.asset(
@@ -125,11 +127,11 @@ class _AddCashRegisterOpeningScreenState
           title: Text(
             AppLocalizations.of(context)!
                 .translate('add_cash_register_opening'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -147,6 +149,8 @@ class _AddCashRegisterOpeningScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildStatusBanner(context),
+                        const SizedBox(height: 16),
                         _buildCashRegisterNameField(),
                         const SizedBox(height: 16),
                         CustomTextField(
@@ -233,6 +237,64 @@ class _AddCashRegisterOpeningScreenState
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(BuildContext context) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.buttonPrimaryBg,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.hourglass_bottom_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!
+                      .translate('add_cash_register_opening'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!
+                      .translate('fill_in_the_initial_balance'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

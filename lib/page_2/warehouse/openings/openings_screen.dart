@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
 import '../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
@@ -22,27 +23,28 @@ import 'goods/create_goods_opening_dialog.dart';
 import 'cash_register/create_cash_register_opening_dialog.dart';
 
 class TaskStyles {
-  static const Color activeColor = Color(0xff1E2E52);
-  static const Color inactiveColor = Color(0xff99A4BA);
-
   static const TextStyle tabTextStyle = TextStyle(
     fontSize: 14,
     fontFamily: 'Gilroy',
     fontWeight: FontWeight.w500,
   );
 
-  static BoxDecoration tabButtonDecoration(bool isActive) {
+  static BoxDecoration tabButtonDecoration({
+    required bool isActive,
+    required Color activeColor,
+    required Color inactiveColor,
+  }) {
     return BoxDecoration(
-      color: isActive ? const Color(0xff1E2E52) : Colors.white,
+      color: isActive ? activeColor : Colors.white,
       borderRadius: BorderRadius.circular(20),
       border: Border.all(
-        color: isActive ? const Color(0xff1E2E52) : const Color(0xff99A4BA),
+        color: isActive ? activeColor : inactiveColor,
         width: 1,
       ),
       boxShadow: isActive
           ? [
               BoxShadow(
-                color: const Color(0xff1E2E52).withOpacity(0.1),
+                color: activeColor.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -58,7 +60,7 @@ class OpeningsScreen extends StatefulWidget {
   const OpeningsScreen({super.key, this.currentTabIndex = 0});
 
   @override
-  _OpeningsScreenState createState() => _OpeningsScreenState();
+  State<OpeningsScreen> createState() => _OpeningsScreenState();
 }
 
 class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStateMixin {
@@ -140,6 +142,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return MultiBlocProvider(
       providers: [
@@ -149,12 +152,12 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
         BlocProvider<CashRegisterOpeningsBloc>.value(value: _cashRegisterBloc),
       ],
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         floatingActionButton: isClickAvatarIcon
             ? null
             : FloatingActionButton(
                 onPressed: _showCreateDialog,
-                backgroundColor: const Color(0xff1E2E52),
+                backgroundColor: colors.buttonPrimaryBg,
                 child: const Icon(
                   Icons.add,
                   color: Colors.white,
@@ -163,7 +166,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
         appBar: AppBar(
           forceMaterialTransparency: true,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           automaticallyImplyLeading: !isClickAvatarIcon,
           title: CustomAppBarSimple(
             title: isClickAvatarIcon
@@ -226,6 +229,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     // Use translation for title
     String title = localizations.translate(_tabTitles[index]['titleKey']);
@@ -236,12 +240,16 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
         _tabController.animateTo(index);
       },
       child: Container(
-        decoration: TaskStyles.tabButtonDecoration(isActive),
+        decoration: TaskStyles.tabButtonDecoration(
+          isActive: isActive,
+          activeColor: colors.buttonPrimaryBg,
+          inactiveColor: colors.borderPrimary,
+        ),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Text(
           title,
           style: TaskStyles.tabTextStyle.copyWith(
-            color: isActive ? Colors.white : TaskStyles.inactiveColor,
+            color: isActive ? Colors.white : colors.textMuted,
           ),
         ),
       ),

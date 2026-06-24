@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/add_pricetype_screen.dart';
@@ -34,7 +35,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _priceTypeBloc = context.read<PriceTypeScreenBloc>()..add(const FetchPriceType(query: null));
+    _priceTypeBloc = context.read<PriceTypeScreenBloc>()
+      ..add(const FetchPriceType(query: null));
   }
 
   // НОВОЕ: Проверка прав доступа
@@ -65,7 +67,7 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
 
   void _onSearch(String query) {
     debugPrint('PriceTypeScreen: Поиск типов цен с запросом: $query');
-    
+
     setState(() {
       _isSearching = query.isNotEmpty;
     });
@@ -76,13 +78,15 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return BlocProvider.value(
       value: _priceTypeBloc,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
+          backgroundColor: colors.surfacePrimary,
           title: CustomAppBarPage2(
             title: localizations.translate('price_type') ?? 'Типы цен',
             showSearchIcon: true,
@@ -122,8 +126,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                     });
                   }
                 },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
+                backgroundColor: colors.buttonPrimaryBg,
+                child: Icon(Icons.add, color: colors.buttonPrimaryFg),
               )
             : null,
         body: BlocBuilder<PriceTypeScreenBloc, PriceTypeState>(
@@ -142,28 +146,31 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                 return Center(
                   child: Text(
                     _isSearching
-                        ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
-                        : (localizations.translate('no_price_types') ?? 'Нет типов цен'),
-                    style: const TextStyle(
+                        ? (localizations.translate('nothing_found') ??
+                            'Ничего не найдено')
+                        : (localizations.translate('no_price_types') ??
+                            'Нет типов цен'),
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                 );
               }
 
               return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.buttonPrimaryBg,
+                backgroundColor: colors.backgroundPrimary,
                 onRefresh: () {
                   final query = _currentFilters['query'] as String?;
                   _priceTypeBloc.add(FetchPriceType(query: query));
                   return Future.value();
                 },
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: priceTypes.length,
                   itemBuilder: (context, index) {
                     final priceTypeItem = priceTypes[index];
@@ -190,11 +197,11 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                       Text(
                         '${state.message}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -204,8 +211,8 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
                           _priceTypeBloc.add(FetchPriceType(query: query));
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
                         ),
                         child: Text(
                           localizations.translate('retry') ?? 'Повторить',
@@ -219,11 +226,11 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
             return Center(
               child: Text(
                 localizations.translate('no_data') ?? 'Нет данных',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                 ),
               ),
             );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_state.dart';
@@ -13,13 +14,13 @@ class AddSupplierOpeningScreen extends StatefulWidget {
   final int supplierId;
 
   const AddSupplierOpeningScreen({
-    Key? key,
+    super.key,
     required this.supplierName,
     required this.supplierId,
-  }) : super(key: key);
+  });
 
   @override
-  _AddSupplierOpeningScreenState createState() =>
+  State<AddSupplierOpeningScreen> createState() =>
       _AddSupplierOpeningScreenState();
 }
 
@@ -125,6 +126,7 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<SupplierOpeningsBloc, SupplierOpeningsState>(
       listener: (context, state) {
         if (!mounted || !context.mounted) return;
@@ -147,10 +149,10 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
             icon: Image.asset(
@@ -165,11 +167,11 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
           title: Text(
             AppLocalizations.of(context)?.translate('add_supplier_opening') ??
                 'Добавить остаток поставщика',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -187,6 +189,8 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildStatusBanner(context),
+                        const SizedBox(height: 16),
                         _buildSupplierNameField(),
                         const SizedBox(height: 16),
                         GestureDetector(
@@ -348,6 +352,62 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(BuildContext context) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.buttonPrimaryBg,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.hourglass_bottom_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.translate('add_supplier_opening'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!.translate('fill_in_the_initial_balance'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

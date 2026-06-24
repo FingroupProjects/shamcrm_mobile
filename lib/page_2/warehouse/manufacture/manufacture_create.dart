@@ -9,6 +9,8 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
@@ -630,9 +632,16 @@ class CreateManufactureDocumentScreenState
     );
   }
 
+  double get _totalAmount {
+    return _items.fold<double>(0, (sum, item) => sum + (item['total'] ?? 0.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final secondaryText = colors.textSecondary;
+    final accent = colors.buttonPrimaryBg;
 
     return WillPopScope(
       onWillPop: () async {
@@ -644,7 +653,7 @@ class CreateManufactureDocumentScreenState
       },
       child: KeyboardDismissible(
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           appBar: _buildAppBar(localizations),
           body: BlocListener<ManufactureBloc, ManufactureState>(
             listener: (context, state) {
@@ -653,6 +662,17 @@ class CreateManufactureDocumentScreenState
                 Navigator.pop(context, true);
               } else if (state is ManufactureCreateError && mounted) {
                 setState(() => _isLoading = false);
+                if ((state.statusCode == 409 || state.statusCode == 422) &&
+                    state.message.trim().isNotEmpty) {
+                  showSimpleErrorDialog(
+                    context,
+                    localizations.translate('error') ?? 'Ошибка',
+                    state.message,
+                    errorDialogEnum: ErrorDialogEnum.goodsMovementUpdate,
+                  );
+                } else {
+                  _showSnackBar(state.message, false);
+                }
               }
             },
             child: Form(
@@ -660,12 +680,12 @@ class CreateManufactureDocumentScreenState
               child: Column(
                 children: [
                   Container(
-                    color: Colors.white,
+                    color: colors.backgroundPrimary,
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: const Color(0xff4759FF),
-                      unselectedLabelColor: const Color(0xff99A4BA),
-                      indicatorColor: const Color(0xff4759FF),
+                      labelColor: accent,
+                      unselectedLabelColor: secondaryText,
+                      indicatorColor: accent,
                       indicatorWeight: 3,
                       labelStyle: const TextStyle(
                         fontSize: 16,
@@ -753,6 +773,8 @@ class CreateManufactureDocumentScreenState
   }
 
   Widget _buildGoodsTab(AppLocalizations localizations) {
+    final colors = context.appColors;
+    final accent = colors.buttonPrimaryBg;
     return Column(
       children: [
         Expanded(
@@ -796,10 +818,10 @@ class CreateManufactureDocumentScreenState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.backgroundPrimary,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -809,7 +831,7 @@ class CreateManufactureDocumentScreenState
           child: ElevatedButton(
             onPressed: _openVariantSelection,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: accent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -840,14 +862,16 @@ class CreateManufactureDocumentScreenState
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
+    final total = _totalAmount;
+    final hasItems = _items.isNotEmpty;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -864,17 +888,47 @@ class CreateManufactureDocumentScreenState
           Expanded(
             child: Text(
               localizations.translate('create_manufacture') ??
-                  'Создать перемещение',
+                  'Создать производство',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
+          if (hasItems) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: colors.buttonPrimaryBg,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    total.toStringAsFixed(0),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: colors.buttonPrimaryBg,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
       centerTitle: false,
@@ -1013,6 +1067,8 @@ class CreateManufactureDocumentScreenState
   }
 
   Widget _buildSelectedItemsList() {
+    final colors = context.appColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1032,29 +1088,29 @@ class CreateManufactureDocumentScreenState
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
+              color: colors.backgroundSecondary,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: colors.borderSubtle),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   AppLocalizations.of(context)?.translate('total') ?? 'Итого',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 Text(
                   NumberFormat('#,##0.###', 'ru').format(_calculateTotalSum()),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ],
@@ -1067,6 +1123,7 @@ class CreateManufactureDocumentScreenState
 
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
+    final colors = context.appColors;
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final quantityController = _quantityControllers[variantId];
@@ -1083,14 +1140,13 @@ class CreateManufactureDocumentScreenState
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
+                color: colors.shadow.withValues(alpha: 0.08),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -1105,11 +1161,11 @@ class CreateManufactureDocumentScreenState
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1120,21 +1176,21 @@ class CreateManufactureDocumentScreenState
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                      child: Icon(Icons.close,
+                          color: colors.textSecondary, size: 18),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
               if (!isCollapsed) ...[
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                Divider(height: 1, color: colors.borderSubtle),
                 const SizedBox(height: 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1148,11 +1204,11 @@ class CreateManufactureDocumentScreenState
                             AppLocalizations.of(context)!
                                     .translate('quantity') ??
                                 'Кол-во',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1169,11 +1225,11 @@ class CreateManufactureDocumentScreenState
                               QuantityInputFormatter(),
                             ],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                             hasError: _quantityErrors[variantId] == true,
                             onChanged: (value) =>
@@ -1193,11 +1249,11 @@ class CreateManufactureDocumentScreenState
                             Text(
                               AppLocalizations.of(context)!.translate('unit') ??
                                   'Ед.',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1207,10 +1263,10 @@ class CreateManufactureDocumentScreenState
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF4F7FD),
+                                  color: colors.backgroundSecondary,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: const Color(0xFFE5E7EB)),
+                                  border:
+                                      Border.all(color: colors.borderSubtle),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
@@ -1218,13 +1274,14 @@ class CreateManufactureDocumentScreenState
                                     isDense: true,
                                     isExpanded: true,
                                     dropdownColor: Colors.white,
-                                    icon: const Icon(Icons.arrow_drop_down,
-                                        size: 16, color: Color(0xff4759FF)),
-                                    style: const TextStyle(
+                                    icon: Icon(Icons.arrow_drop_down,
+                                        size: 16,
+                                        color: colors.buttonPrimaryBg),
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                     items: availableUnits.map((unit) {
                                       return DropdownMenuItem<String>(
@@ -1251,19 +1308,19 @@ class CreateManufactureDocumentScreenState
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF4F7FD),
+                                  color: colors.backgroundSecondary,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: const Color(0xFFE5E7EB)),
+                                  border:
+                                      Border.all(color: colors.borderSubtle),
                                 ),
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   item['selectedUnit'] ?? 'шт',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -1279,11 +1336,11 @@ class CreateManufactureDocumentScreenState
                           Text(
                             AppLocalizations.of(context)?.translate('price') ??
                                 'Цена',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1302,11 +1359,11 @@ class CreateManufactureDocumentScreenState
                               ),
                             ],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                             onChanged: (value) =>
                                 _updateItemPrice(variantId, value),
@@ -1323,11 +1380,11 @@ class CreateManufactureDocumentScreenState
                           Text(
                             AppLocalizations.of(context)?.translate('sum') ??
                                 'Сумма',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1335,18 +1392,17 @@ class CreateManufactureDocumentScreenState
                             height: 48,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4F7FD),
+                              color: colors.backgroundSecondary,
                               borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFFE5E7EB)),
+                              border: Border.all(color: colors.borderSubtle),
                             ),
                             child: Text(
                               NumberFormat('#,##0.###', 'ru').format(itemSum),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                           ),
@@ -1365,6 +1421,7 @@ class CreateManufactureDocumentScreenState
   }
 
   Widget _buildMaterialsSection(Map<String, dynamic> item) {
+    final colors = context.appColors;
     final materials =
         item['materials'] as List<Map<String, dynamic>>? ?? const [];
     if (materials.isEmpty) {
@@ -1380,7 +1437,7 @@ class CreateManufactureDocumentScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(height: 1, color: Color(0xFFE5E7EB)),
+          Divider(height: 1, color: colors.borderSubtle),
           const SizedBox(height: 10),
           InkWell(
             onTap: () => _toggleMaterialSection(variantId),
@@ -1392,11 +1449,11 @@ class CreateManufactureDocumentScreenState
                   Expanded(
                     child: Text(
                       localizations.translate('raw_materials') ?? 'Сырье',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -1404,11 +1461,11 @@ class CreateManufactureDocumentScreenState
                     isCollapsed
                         ? (localizations.translate('expand') ?? 'Развернуть')
                         : (localizations.translate('collapse') ?? 'Свернуть'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1416,7 +1473,7 @@ class CreateManufactureDocumentScreenState
                     isCollapsed
                         ? Icons.keyboard_arrow_down
                         : Icons.keyboard_arrow_up,
-                    color: const Color(0xff4759FF),
+                    color: colors.buttonPrimaryBg,
                     size: 18,
                   ),
                 ],
@@ -1428,7 +1485,7 @@ class CreateManufactureDocumentScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F0FB),
+                color: colors.backgroundSecondary,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -1437,11 +1494,11 @@ class CreateManufactureDocumentScreenState
                     flex: 34,
                     child: Text(
                       localizations.translate('raw_materials') ?? 'Сырье',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff5F6F94),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -1450,11 +1507,11 @@ class CreateManufactureDocumentScreenState
                     child: Text(
                       localizations.translate('unit') ?? 'Ед. изм.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff5F6F94),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -1463,11 +1520,11 @@ class CreateManufactureDocumentScreenState
                     child: Text(
                       localizations.translate('norm') ?? 'Норма',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff5F6F94),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -1476,11 +1533,11 @@ class CreateManufactureDocumentScreenState
                     child: Text(
                       localizations.translate('quantity') ?? 'Количество',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff5F6F94),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -1504,9 +1561,9 @@ class CreateManufactureDocumentScreenState
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFD),
+                  color: colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: colors.borderSubtle),
                 ),
                 child: Row(
                   children: [
@@ -1514,11 +1571,11 @@ class CreateManufactureDocumentScreenState
                       flex: 34,
                       child: Text(
                         material['name']?.toString() ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),
@@ -1527,10 +1584,10 @@ class CreateManufactureDocumentScreenState
                       child: Text(
                         material['unit_name']?.toString() ?? '',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -1539,10 +1596,10 @@ class CreateManufactureDocumentScreenState
                       child: Text(
                         '${material['norm'] ?? 0}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -1557,11 +1614,11 @@ class CreateManufactureDocumentScreenState
                         ),
                         inputFormatters: [QuantityInputFormatter()],
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         onChanged: (value) => _updateMaterialQuantity(
                           item['variantId'] as int,

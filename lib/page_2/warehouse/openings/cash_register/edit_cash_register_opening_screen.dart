@@ -4,12 +4,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/openings/cash_register/cash_re
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/cash_register_openings_model.dart';
-import '../../../../models/cash_register_list_model.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../bloc/cash_register_list/cash_register_list_event.dart';
-import '../../../../bloc/cash_register_list/cash_register_list_state.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
@@ -20,11 +18,10 @@ class EditCashRegisterOpeningScreen extends StatefulWidget {
   final CashRegisterOpening cashRegisterOpening;
 
   const EditCashRegisterOpeningScreen(
-      {Key? key, required this.cashRegisterOpening})
-      : super(key: key);
+      {super.key, required this.cashRegisterOpening});
 
   @override
-  _EditCashRegisterOpeningScreenState createState() =>
+  State<EditCashRegisterOpeningScreen> createState() =>
       _EditCashRegisterOpeningScreenState();
 }
 
@@ -37,7 +34,6 @@ class _EditCashRegisterOpeningScreenState
 
   // Cash register selection
   String? _selectedCashRegisterId;
-  CashRegisterData? _selectedCashRegisterData;
 
   @override
   void initState() {
@@ -64,6 +60,7 @@ class _EditCashRegisterOpeningScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
       listener: (context, state) {
         if (state is CashRegisterOpeningUpdateSuccess) {
@@ -122,10 +119,10 @@ class _EditCashRegisterOpeningScreenState
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: Colors.white,
+          backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
             icon: Image.asset(
@@ -140,11 +137,11 @@ class _EditCashRegisterOpeningScreenState
           title: Text(
             AppLocalizations.of(context)!
                 .translate('edit_cash_register_opening'),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -162,12 +159,13 @@ class _EditCashRegisterOpeningScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildStatusBanner(context),
+                        const SizedBox(height: 16),
                         CashRegisterGroupWidget(
                             onSelectCashRegister: (cashRegisterData) {
                               setState(() {
                                 _selectedCashRegisterId =
                                     cashRegisterData.id.toString();
-                                _selectedCashRegisterData = cashRegisterData;
                               });
                             },
                             selectedCashRegisterId: _selectedCashRegisterId),
@@ -256,6 +254,64 @@ class _EditCashRegisterOpeningScreenState
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner(BuildContext context) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: colors.buttonPrimaryBg,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.edit_note_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!
+                      .translate('edit_cash_register_opening'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!
+                      .translate('update_initial_balance'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

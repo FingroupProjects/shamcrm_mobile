@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/client_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../utils/global_fun.dart';
@@ -25,6 +26,7 @@ class ClientCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return GestureDetector(
       onTap: () => onClick(client),
@@ -32,9 +34,16 @@ class ClientCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected ? colors.fieldBg : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,10 +87,10 @@ class ClientCard extends StatelessWidget {
             // Action buttons
             if (onDelete != null)
               GestureDetector(
-                child: Image.asset(
-                  'assets/icons/delete.png',
-                  width: 24,
-                  height: 24,
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 24,
+                  color: colors.buttonDangerBg,
                 ),
                 onTap: () => onDelete!(client),
               ),
@@ -89,8 +98,10 @@ class ClientCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: const Color(0xff1E2E52),
+                  isSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: colors.buttonPrimaryBg,
                   size: 24,
                 ),
               ),

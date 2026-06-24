@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -27,6 +28,11 @@ class ManufactureCard extends StatelessWidget {
     if (localizations == null) {
       return const SizedBox.shrink();
     }
+    final colors = context.appColors;
+    final cardBg = isSelected ? colors.surfaceElevated : colors.surfacePrimary;
+    final primaryText = context.adaptiveForegroundOn(cardBg);
+    final secondaryText = context.adaptiveHintOn(cardBg);
+    final statusColor = document.statusColor;
 
     return GestureDetector(
       onTap: onTap,
@@ -34,9 +40,16 @@ class ManufactureCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: cardBg,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -51,11 +64,11 @@ class ManufactureCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           '№${document.docNumber ?? ''}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: primaryText,
                           ),
                         ),
                       ),
@@ -63,13 +76,13 @@ class ManufactureCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: document.statusColor.withOpacity(0.1),
+                          color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           _getLocalizedStatus(context, document),
                           style: TextStyle(
-                            color: document.statusColor,
+                            color: statusColor,
                             fontSize: 12,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
@@ -81,41 +94,41 @@ class ManufactureCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('date') ?? 'Дата'} ${document.date != null ? DateFormat('dd.MM.yyyy').format(document.date!) : 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: secondaryText,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('manufacture_writeoff_storage') ?? 'Склад списания'}: ${document.sender_storage_id?.name ?? document.storage?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: secondaryText,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('manufacture_income_storage') ?? 'Склад прихода'}: ${document.recipient_storage_id?.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: secondaryText,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('total_quantity') ?? 'Общее количество'}: ${document.totalQuantity}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: primaryText,
                     ),
                   ),
                 ],
@@ -128,7 +141,7 @@ class ManufactureCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: const Color(0xff1E2E52),
+                  color: primaryText,
                   size: 24,
                 ),
               ),

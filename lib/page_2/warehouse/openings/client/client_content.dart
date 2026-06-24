@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../custom_widget/animation.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/client_openings_model.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart';
@@ -27,9 +28,10 @@ class _ClientContentState extends State<ClientContent> {
   }
 
   Widget _buildClientList(List<ClientOpening> clients) {
+    final colors = context.appColors;
     return RefreshIndicator(
       onRefresh: _onRefresh,
-      color: const Color(0xff1E2E52),
+      color: colors.buttonPrimaryBg,
       child: ListView.separated(
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -98,7 +100,7 @@ class _ClientContentState extends State<ClientContent> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    localizations.translate('no_clients') ?? 'Нет клиентов',
+                    localizations.translate('no_clients'),
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 18,
@@ -108,7 +110,7 @@ class _ClientContentState extends State<ClientContent> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    localizations.translate('no_clients_description') ?? 'Список клиентов пуст',
+                    localizations.translate('no_clients_description'),
                     style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
@@ -134,6 +136,7 @@ class _ClientContentState extends State<ClientContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     
     return RefreshIndicator(
       onRefresh: _onRefresh,
@@ -148,11 +151,11 @@ class _ClientContentState extends State<ClientContent> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffFEF2F2),
+                    decoration: BoxDecoration(
+                    color: colors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xffFECACA),
+                      color: colors.error.withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -166,7 +169,7 @@ class _ClientContentState extends State<ClientContent> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        localizations.translate('error_loading_dialog') ?? 'Ошибка загрузки',
+                        localizations.translate('error_loading_dialog'),
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
@@ -190,7 +193,7 @@ class _ClientContentState extends State<ClientContent> {
                           context.read<ClientOpeningsBloc>().add(LoadClientOpenings());
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
+                          backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -199,7 +202,7 @@ class _ClientContentState extends State<ClientContent> {
                           ),
                         ),
                         child: Text(
-                          localizations.translate('retry') ?? 'Повторить',
+                          localizations.translate('retry'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,

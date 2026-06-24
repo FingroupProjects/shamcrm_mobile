@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/storage/bloc/storage_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/edit_warehouse_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/warehaouse_deletion.dart';
@@ -45,6 +46,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
@@ -75,13 +77,14 @@ class _WareHouseCardState extends State<WareHouseCard> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9EDF5),
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.borderSubtle),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: colors.shadow.withValues(alpha: 0.08),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -93,11 +96,11 @@ class _WareHouseCardState extends State<WareHouseCard> {
                 Expanded(
                   child: Text(
                     '${localization!.translate('empty_0') ?? 'Склад'} ${widget.warehouse.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.bold,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -105,13 +108,14 @@ class _WareHouseCardState extends State<WareHouseCard> {
                 ),
                 // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
                 if (widget.hasDeletePermission)
-                  GestureDetector(
-                    child: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                  IconButton(
+                    tooltip: localization.translate('delete') ?? 'Удалить',
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colors.buttonDangerBg,
+                      size: 24,
                     ),
-                    onTap: () {
+                    onPressed: () {
                       showDialog(
                         context: context,
                         builder: (context) =>

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/measure_units/add_measure_unit_screen.dart';
@@ -39,7 +40,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _measureUnitsBloc = context.read<MeasureUnitsBloc>()..add(const FetchMeasureUnits(query: null));
+    _measureUnitsBloc = context.read<MeasureUnitsBloc>()
+      ..add(const FetchMeasureUnits(query: null));
     _scrollController.addListener(_onScroll);
   }
 
@@ -88,7 +90,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
       _isSearching = query.isNotEmpty;
     });
     _currentFilters['query'] = query;
-    _measureUnitsBloc.add(FetchMeasureUnits(query: query.isNotEmpty ? query : null));
+    _measureUnitsBloc
+        .add(FetchMeasureUnits(query: query.isNotEmpty ? query : null));
   }
 
   Future<void> _onRefresh() async {
@@ -106,6 +109,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return BlocProvider.value(
       value: _measureUnitsBloc,
@@ -113,7 +117,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
         appBar: AppBar(
           forceMaterialTransparency: true,
           title: CustomAppBarPage2(
-            title: localizations!.translate('units_of_measurement') ?? 'Единицы измерения',
+            title: localizations!.translate('units_of_measurement') ??
+                'Единицы измерения',
             showSearchIcon: true,
             showFilterIcon: false,
             showFilterOrderIcon: false,
@@ -153,8 +158,8 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                     }
                   }
                 },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
+                backgroundColor: colors.buttonPrimaryBg,
+                child: Icon(Icons.add, color: colors.buttonPrimaryFg),
               )
             : null,
         body: BlocBuilder<MeasureUnitsBloc, MeasureUnitsState>(
@@ -171,29 +176,34 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 return Center(
                   child: Text(
                     _isSearching
-                        ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
-                        : (localizations.translate('no_measure_units') ?? 'Нет единиц измерения'),
-                    style: const TextStyle(
+                        ? (localizations.translate('nothing_found') ??
+                            'Ничего не найдено')
+                        : (localizations.translate('no_measure_units') ??
+                            'Нет единиц измерения'),
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                     ),
                   ),
                 );
               }
 
               return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.buttonPrimaryBg,
+                backgroundColor: colors.backgroundPrimary,
                 onRefresh: () async {
                   final query = _currentFilters['query'] as String?;
-                  context.read<MeasureUnitsBloc>().add(RefreshMeasureUnits(query: query));
+                  context
+                      .read<MeasureUnitsBloc>()
+                      .add(RefreshMeasureUnits(query: query));
                 },
                 child: ListView.builder(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: state.units.length,
                   itemBuilder: (context, index) {
                     final MeasureUnitModel unit = state.units[index];
@@ -212,18 +222,20 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
               );
             } else if (state is MeasureUnitsEmpty) {
               return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
-                        : (localizations.translate('no_measure_units') ?? 'Нет единиц измерения'),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
-                    ),
+                child: Text(
+                  _isSearching
+                      ? (localizations.translate('nothing_found') ??
+                          'Ничего не найдено')
+                      : (localizations.translate('no_measure_units') ??
+                          'Нет единиц измерения'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
                   ),
-                );
+                ),
+              );
             } else if (state is MeasureUnitsError) {
               return Center(
                 child: Padding(
@@ -234,22 +246,24 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                       Text(
                         'Error: ${state.message}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: () {
                           final query = _currentFilters['query'] as String?;
-                          context.read<MeasureUnitsBloc>().add(FetchMeasureUnits(query: query));
+                          context
+                              .read<MeasureUnitsBloc>()
+                              .add(FetchMeasureUnits(query: query));
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
                         ),
                         child: Text(
                           localizations.translate('retry') ?? 'Повторить',

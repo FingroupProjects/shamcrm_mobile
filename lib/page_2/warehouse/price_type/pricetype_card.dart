@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/edit_pricetype_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_deletion.dart';
@@ -45,6 +46,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
   @override
   Widget build(BuildContext context) {
     final localization = AppLocalizations.of(context);
+    final colors = context.appColors;
 
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
@@ -72,13 +74,14 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9EDF5),
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.borderSubtle),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: colors.shadow.withValues(alpha: 0.08),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -90,11 +93,11 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                 Expanded(
                   child: Text(
                     '${localization!.translate('empty_0') ?? 'Тип цены'} ${widget.priceType.name ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.bold,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -102,13 +105,14 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
                 ),
                 // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
                 if (widget.hasDeletePermission)
-                  GestureDetector(
-                    child: Image.asset(
-                      'assets/icons/delete.png',
-                      width: 24,
-                      height: 24,
+                  IconButton(
+                    tooltip: localization.translate('delete') ?? 'Удалить',
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colors.buttonDangerBg,
+                      size: 24,
                     ),
-                    onTap: () {
+                    onPressed: () {
                       showDialog(
                         context: context,
                         builder: (_) => BlocProvider.value(
