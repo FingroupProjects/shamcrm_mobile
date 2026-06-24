@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../bloc/income/add/add_income_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/filter/task/multi_user_list.dart';
@@ -44,10 +45,11 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
           icon: Image.asset(
@@ -59,11 +61,11 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
         ),
         title: Text(
           AppLocalizations.of(context)?.translate('add_income') ?? 'Добавить доход',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -75,7 +77,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message ?? AppLocalizations.of(context)!.translate('error_adding_income') ?? 'Ошибка добавления дохода'),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
               ),
             );
           }
@@ -129,6 +131,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     return BlocBuilder<AddIncomeBloc, AddIncomeState>(
       builder: (context, state) {
         final isLoading = state.status == AddIncomeStatus.loading;
+        final colors = context.appColors;
 
         return Row(
           children: [
@@ -138,8 +141,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                   buttonText: AppLocalizations.of(context)
                       ?.translate('cancel') ??
                       AppLocalizations.of(context)!.translate('cancel') ?? 'Отмена',
-                  buttonColor: const Color(0xffF4F7FD),
-                  textColor: Colors.black,
+                  buttonColor: colors.fieldBg,
+                  textColor: colors.textPrimary,
                   onPressed: isLoading ? () {} : _onCancel
               ),
             ),
@@ -152,17 +155,17 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                   ? Container(
                 height: 48, // Assuming button height
                 decoration: BoxDecoration(
-                  color: const Color(0xff4759FF).withOpacity(0.6),
+                  color: colors.buttonPrimaryBg.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Center(
+                child: Center(
                   child: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white,
+                        colors.surfacePrimary,
                       ),
                     ),
                   ),
@@ -172,8 +175,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                 buttonText: AppLocalizations.of(context)
                     ?.translate('save') ??
                     AppLocalizations.of(context)!.translate('save') ?? 'Сохранить',
-                buttonColor: const Color(0xff4759FF),
-                textColor: Colors.white,
+                buttonColor: colors.buttonPrimaryBg,
+                textColor: colors.surfacePrimary,
                 onPressed: _onSave,
               ),
             ),

@@ -106,6 +106,32 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                 child: _BackgroundBlurControl(controller: controller),
               ),
               const SizedBox(height: 16),
+              _SectionCard(
+                title: 'Анимация входа',
+                subtitle:
+                    'Короткий переход с логотипом перед открытием PIN-кода.',
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: controller.loginIntroAnimationEnabled,
+                  onChanged: controller.setLoginIntroAnimationEnabled,
+                  title: Text(
+                    controller.loginIntroAnimationEnabled
+                        ? 'Включена'
+                        : 'Выключена',
+                    style: context.appTextStyles.bodyLg.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Показывать короткую анимацию shamCRM при переходе к PIN.',
+                    style: context.appTextStyles.bodySm.copyWith(
+                      color: context.appColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               FilledButton(
                 onPressed: controller.resetAppearance,
                 style: FilledButton.styleFrom(

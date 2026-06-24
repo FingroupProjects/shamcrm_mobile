@@ -88,6 +88,9 @@ class _IncomingCardState extends State<IncomingCard> {
     final colors = context.appColors;
     final doc = widget.document;
     final localizations = AppLocalizations.of(context)!;
+    final cardBg = widget.isSelected ? colors.surfaceElevated : colors.surfacePrimary;
+    final primaryText = context.adaptiveForegroundOn(cardBg);
+    final secondaryText = context.adaptiveHintOn(cardBg);
 
     return GestureDetector(
       onTap: () {
@@ -99,7 +102,7 @@ class _IncomingCardState extends State<IncomingCard> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: widget.isSelected ? colors.surfaceElevated : colors.surfacePrimary,
+          color: cardBg,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: colors.borderSubtle),
           boxShadow: [
@@ -127,7 +130,7 @@ class _IncomingCardState extends State<IncomingCard> {
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: colors.textPrimary,
+                            color: primaryText,
                           ),
                         ),
                       ),
@@ -157,7 +160,7 @@ class _IncomingCardState extends State<IncomingCard> {
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: colors.textSecondary,
+                      color: secondaryText,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -167,7 +170,7 @@ class _IncomingCardState extends State<IncomingCard> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: colors.textPrimary,
+                      color: primaryText,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -177,7 +180,7 @@ class _IncomingCardState extends State<IncomingCard> {
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: colors.textSecondary,
+                      color: secondaryText,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -190,7 +193,7 @@ class _IncomingCardState extends State<IncomingCard> {
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: colors.textSecondary,
+                            color: secondaryText,
                           ),
                         ),
                       ),
@@ -201,7 +204,7 @@ class _IncomingCardState extends State<IncomingCard> {
                           fontSize: 16,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
+                          color: primaryText,
                         ),
                       ),
                     ],
@@ -217,7 +220,7 @@ class _IncomingCardState extends State<IncomingCard> {
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                        color: colors.textSecondary,
+                          color: secondaryText,
                         ),
                       ),
                     ),
@@ -245,7 +248,7 @@ class _IncomingCardState extends State<IncomingCard> {
                   widget.isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: colors.textPrimary,
+                  color: primaryText,
                   size: 24,
                 ),
               ),

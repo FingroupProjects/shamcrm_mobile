@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/money_outcome/money_outcome_bl
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/employee_remaining_model.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
@@ -185,6 +186,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
       context: context,
       barrierColor: const Color(0x661E2E52),
       builder: (dialogContext) {
+        final colors = context.appColors;
         int selectedYear = initialDate.year;
         final locale = Localizations.localeOf(context).languageCode;
 
@@ -196,8 +198,8 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
             );
 
             return Dialog(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: colors.surfacePrimary,
               elevation: 0,
               insetPadding: const EdgeInsets.symmetric(horizontal: 24),
               shape: RoundedRectangleBorder(
@@ -205,11 +207,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xff1E2E52).withValues(alpha: 0.12),
+                      color: colors.shadow.withValues(alpha: 0.12),
                       blurRadius: 30,
                       offset: const Offset(0, 12),
                     ),
@@ -225,11 +227,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                           Text(
                             AppLocalizations.of(context)!
                                 .translate('select_month'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                           const Spacer(),
@@ -237,14 +239,14 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: const Color(0xffF4F7FD),
+                              color: colors.fieldBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: IconButton(
                               onPressed: () => Navigator.pop(dialogContext),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.close,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                                 size: 20,
                               ),
                             ),
@@ -258,7 +260,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xffF7F9FE),
+                          color: colors.fieldBg,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -267,7 +269,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colors.surfacePrimary,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: IconButton(
@@ -276,9 +278,9 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                                     selectedYear--;
                                   });
                                 },
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.chevron_left,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -286,11 +288,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                               child: Text(
                                 selectedYear.toString(),
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -298,7 +300,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colors.surfacePrimary,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: IconButton(
@@ -307,9 +309,9 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                                     selectedYear++;
                                   });
                                 },
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.chevron_right,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -344,13 +346,13 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                               duration: const Duration(milliseconds: 140),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xff4759FF)
-                                    : const Color(0xffF4F7FD),
+                                    ? colors.buttonPrimaryBg
+                                    : colors.fieldBg,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
-                                      ? const Color(0xff4759FF)
-                                      : const Color(0xffE2E8F5),
+                                      ? colors.buttonPrimaryBg
+                                      : colors.borderSubtle,
                                 ),
                               ),
                               alignment: Alignment.center,
@@ -362,7 +364,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
                                       ? Colors.white
-                                      : const Color(0xff1E2E52),
+                                      : colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -636,16 +638,16 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-              color: Color(0xff1E2E52), size: 24),
+          icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 24),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -654,11 +656,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                   'Редактировать расход')
               : (localizations.translate('create_outcoming_document') ??
                   'Создать расход'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         centerTitle: true,
@@ -753,6 +755,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   }
 
   Widget _buildApproveButton(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -777,7 +780,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: colors.surfacePrimary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
@@ -798,16 +801,17 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   }
 
   Widget _buildMonthField(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           localizations.translate('month') ?? 'Месяц',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -818,8 +822,8 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
               controller: _monthController,
               decoration: InputDecoration(
                 hintText: 'MM/YYYY',
-                prefixIcon: const Icon(Icons.calendar_month_outlined,
-                    color: Color(0xff1E2E52)),
+                prefixIcon: Icon(Icons.calendar_month_outlined,
+                    color: colors.textPrimary),
                 suffixIcon: _isEmployeesLoading
                     ? const Padding(
                         padding: EdgeInsets.all(14),
@@ -835,7 +839,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: const Color(0xffF4F7FD),
+                fillColor: colors.fieldBg,
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
               ),
@@ -847,20 +851,21 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   }
 
   Widget _buildEmployeeField(AppLocalizations localizations) {
+    final colors = context.appColors;
     final borderColor = _employeeTouched && _selectedEmployee == null
         ? Colors.red
-        : const Color(0xffF4F7FD);
+        : colors.borderSubtle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           localizations.translate('employee') ?? 'Сотрудник',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -869,9 +874,9 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xffFFF5F5),
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xffFECDD3)),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -882,7 +887,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                     fontFamily: 'Gilroy',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xffDC2626),
+                    color: Colors.red,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -904,30 +909,30 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                 'Выберите сотрудника',
             searchHintText: localizations.translate('search') ?? 'Поиск',
             decoration: CustomDropdownDecoration(
-              closedFillColor: const Color(0xffF4F7FD),
-              expandedFillColor: Colors.white,
+              closedFillColor: colors.fieldBg,
+              expandedFillColor: colors.surfacePrimary,
               closedBorder: Border.all(
                   color: borderColor, width: _employeeTouched ? 1.5 : 1),
-              expandedBorder: Border.all(color: const Color(0xffD9E2F2)),
+              expandedBorder: Border.all(color: colors.borderSubtle),
               closedBorderRadius: BorderRadius.circular(12),
               expandedBorderRadius: BorderRadius.circular(12),
-              listItemStyle: const TextStyle(
+              listItemStyle: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
-              headerStyle: const TextStyle(
+              headerStyle: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
-              hintStyle: const TextStyle(
+              hintStyle: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
             ),
             onChanged: (value) {
@@ -957,11 +962,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
             headerBuilder: (context, selectedItem, enabled) {
               return Text(
                 selectedItem.fullName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               );
             },
@@ -972,7 +977,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xffF4F7FD),
+              color: colors.fieldBg,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1043,13 +1048,14 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: colors.shadow.withOpacity(0.08),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -1),
@@ -1078,7 +1084,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                         Icons.check_circle_outline,
                         size: 20,
                         color: _isLoading
-                            ? const Color(0xff99A4BA)
+                            ? colors.textSecondary
                             : const Color(0xff4CAF50),
                       ),
                       const SizedBox(width: 8),
@@ -1090,7 +1096,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
                           color: _isLoading
-                              ? const Color(0xff99A4BA)
+                              ? colors.textSecondary
                               : const Color(0xff4CAF50),
                         ),
                       ),
@@ -1107,7 +1113,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
+                    backgroundColor: colors.fieldBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1116,11 +1122,11 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                   ),
                   child: Text(
                     localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -1130,7 +1136,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveDocument,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
+                    backgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1138,22 +1144,22 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                colors.surfacePrimary),
                           ),
                         )
                       : Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: colors.surfacePrimary,
                           ),
                         ),
                 ),

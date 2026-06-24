@@ -1,4 +1,5 @@
 import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -9,18 +10,21 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
   final int documentId;
   final Function(int)? onDelete;
 
-  const MoneyIncomeDeleteDialog({super.key, required this.documentId, this.onDelete});
+  const MoneyIncomeDeleteDialog(
+      {super.key, required this.documentId, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<MoneyIncomeBloc, MoneyIncomeState>(
       listener: (context, state) {
-        if (state is MoneyIncomeDeleteError || state is MoneyIncomeDeleteSuccess) {
+        if (state is MoneyIncomeDeleteError ||
+            state is MoneyIncomeDeleteSuccess) {
           Navigator.of(context).pop(true);
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_money_income'),
@@ -28,18 +32,21 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
         content: Text(
-          AppLocalizations.of(context)?.translate('delete_money_income_confirm') ??
-              AppLocalizations.of(context)?.translate('confirm_delete_income_document') ?? 'Вы уверены, что хотите удалить этот документ дохода?',
+          AppLocalizations.of(context)
+                  ?.translate('delete_money_income_confirm') ??
+              AppLocalizations.of(context)
+                  ?.translate('confirm_delete_income_document') ??
+              'Вы уверены, что хотите удалить этот документ дохода?',
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -52,8 +59,8 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: colors.error,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -63,8 +70,8 @@ class MoneyIncomeDeleteDialog extends StatelessWidget {
                   onPressed: () {
                     onDelete != null ? onDelete!(documentId) : null;
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],

@@ -78,7 +78,6 @@ class LoginScreen extends StatelessWidget {
                           );
                         }
 
-                        await Future.delayed(const Duration(seconds: 1));
                         await _checkPinSetupStatus(context);
                       } else if (state is LoginError) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -113,8 +112,10 @@ class LoginScreen extends StatelessWidget {
                           children: [
                             Center(
                               child: Image.asset(
-                                'assets/images/new_icon_shamCRM.jpg',
-                                height: 72,
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? 'assets/images/night.png'
+                                    : 'assets/images/day.png',
+                                height: 92,
                               ),
                             ),
                             const SizedBox(height: 24),

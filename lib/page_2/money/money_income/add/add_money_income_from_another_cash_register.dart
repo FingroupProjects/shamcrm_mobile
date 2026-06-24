@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -139,9 +140,10 @@ class _AddMoneyIncomeAnotherCashRegisterState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: _buildAppBar(localizations),
       body: MultiBlocListener(
         listeners: [
@@ -239,23 +241,24 @@ class _AddMoneyIncomeAnotherCashRegisterState
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios,
+            color: colors.textPrimary, size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
         AppLocalizations.of(context)!.translate('create_incoming_document') ??
             'Создать доход',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       centerTitle: true,
@@ -335,13 +338,14 @@ class _AddMoneyIncomeAnotherCashRegisterState
 
   // Обновленный виджет кнопок действий (+ "Сохранить и провести")
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: colors.shadow,
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -1),
@@ -354,7 +358,7 @@ class _AddMoneyIncomeAnotherCashRegisterState
             width: double.infinity,
             height: 48,
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+              border: Border.all(color: colors.buttonPrimaryBg, width: 1.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Material(
@@ -371,8 +375,8 @@ class _AddMoneyIncomeAnotherCashRegisterState
                         Icons.check_circle_outline,
                         size: 20,
                         color: _isLoading
-                            ? const Color(0xff99A4BA)
-                            : const Color(0xff4CAF50),
+                            ? colors.textSecondary
+                            : colors.buttonPrimaryBg,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -383,8 +387,8 @@ class _AddMoneyIncomeAnotherCashRegisterState
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
                           color: _isLoading
-                              ? const Color(0xff99A4BA)
-                              : const Color(0xff4CAF50),
+                              ? colors.textSecondary
+                              : colors.buttonPrimaryBg,
                         ),
                       ),
                     ],
@@ -400,7 +404,7 @@ class _AddMoneyIncomeAnotherCashRegisterState
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
+                    backgroundColor: colors.fieldBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -409,11 +413,11 @@ class _AddMoneyIncomeAnotherCashRegisterState
                   ),
                   child: Text(
                     localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
+                    style:  TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -423,7 +427,7 @@ class _AddMoneyIncomeAnotherCashRegisterState
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveDocument,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
+                    backgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -431,22 +435,22 @@ class _AddMoneyIncomeAnotherCashRegisterState
                     elevation: 0,
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ?  SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                                AlwaysStoppedAnimation<Color>(colors.surfacePrimary),
                           ),
                         )
                       : Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style:  TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                  color: colors.surfacePrimary,
                           ),
                         ),
                 ),

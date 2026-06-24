@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.119+149
+version: 2.1.125+155
 
 
 environment:
@@ -152,6 +152,8 @@ flutter:
     - assets/icons/shamCRM.jpg
     - assets/images/
     - assets/images/avatar2.png
+    - assets/images/day.png
+    - assets/images/night.png
     - assets/fon/
     - assets/icons/languages/
     - assets/langs/

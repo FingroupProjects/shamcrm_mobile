@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_list_bloc.dart';
 import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_list_event.dart';
 import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_list_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/outcome_category_data.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,8 @@ class OutcomeRadioGroupWidget extends StatefulWidget {
   });
 
   @override
-  State<OutcomeRadioGroupWidget> createState() => _OutcomeRadioGroupWidgetState();
+  State<OutcomeRadioGroupWidget> createState() =>
+      _OutcomeRadioGroupWidgetState();
 }
 
 class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
@@ -39,17 +41,22 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
           _updateSelectedOutcomeCategoryData();
         }
         if (state is! GetAllOutcomeCategorySuccess) {
-          context.read<GetAllOutcomeCategoryBloc>().add(GetAllOutcomeCategoryEv());
+          context
+              .read<GetAllOutcomeCategoryBloc>()
+              .add(GetAllOutcomeCategoryEv());
         }
       }
     });
   }
 
   void _updateSelectedOutcomeCategoryData() {
-    if (widget.selectedOutcomeCategoryId != null && outcomeCategoriesList.isNotEmpty) {
+    if (widget.selectedOutcomeCategoryId != null &&
+        outcomeCategoriesList.isNotEmpty) {
       try {
         selectedOutcomeCategoryData = outcomeCategoriesList.firstWhere(
-              (category) => category.id.toString() == widget.selectedOutcomeCategoryId.toString(),
+          (category) =>
+              category.id.toString() ==
+              widget.selectedOutcomeCategoryId.toString(),
         );
         // Убираем автоматический вызов callback - это вызывает setState during build
         // if (selectedOutcomeCategoryData?.id != null) {
@@ -63,16 +70,18 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.title ?? AppLocalizations.of(context)!.translate('outcome_category'),
-          style: const TextStyle(
+          widget.title ??
+              AppLocalizations.of(context)!.translate('outcome_category'),
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -85,100 +94,108 @@ class _OutcomeRadioGroupWidgetState extends State<OutcomeRadioGroupWidget> {
               if (outcomeCategoriesList.length == 1 &&
                   (widget.selectedOutcomeCategoryId == null ||
                       selectedOutcomeCategoryData == null) &&
-                  _autoSelectedOutcomeCategoryId != outcomeCategoriesList.first.id.toString()) {
+                  _autoSelectedOutcomeCategoryId !=
+                      outcomeCategoriesList.first.id.toString()) {
                 final singleCategory = outcomeCategoriesList.first;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted) return;
                   widget.onSelectOutcomeCategory(singleCategory);
                   setState(() {
                     selectedOutcomeCategoryData = singleCategory;
-                    _autoSelectedOutcomeCategoryId = singleCategory.id.toString();
+                    _autoSelectedOutcomeCategoryId =
+                        singleCategory.id.toString();
                   });
                 });
               }
             }
 
             return CustomDropdown<OutcomeCategoryData>.search(
-          closeDropDownOnClearFilterSearch: true,
-          items: outcomeCategoriesList,
-          searchHintText: AppLocalizations.of(context)!.translate('search'),
-          overlayHeight: 400,
-          enabled: true,
-          decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
-            closedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
-              width: 1,
-            ),
-            closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
-              width: 1,
-            ),
-            expandedBorderRadius: BorderRadius.circular(12),
-          ),
-          listItemBuilder: (context, item, isSelected, onItemSelect) {
-            return Text(
-              item.name,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
+              closeDropDownOnClearFilterSearch: true,
+              items: outcomeCategoriesList,
+              searchHintText: AppLocalizations.of(context)!.translate('search'),
+              overlayHeight: 400,
+              enabled: true,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: colors.fieldBg,
+                expandedFillColor: colors.surfacePrimary,
+                closedBorder: Border.all(
+                  color: colors.borderSubtle,
+                  width: 1,
+                ),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(
+                  color: colors.borderSubtle,
+                  width: 1,
+                ),
+                expandedBorderRadius: BorderRadius.circular(12),
               ),
-            );
-          },
-          headerBuilder: (context, selectedItem, enabled) {
-            if (state is GetAllOutcomeCategoryLoading) {
-              return Text(
-                AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Выберите категорию дохода',
-                style: const TextStyle(
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.name,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                );
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                if (state is GetAllOutcomeCategoryLoading) {
+                  return Text(
+                    AppLocalizations.of(context)!
+                            .translate('select_outcome_category') ??
+                        'Выберите категорию расхода',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: colors.textPrimary,
+                    ),
+                  );
+                }
+                return Text(
+                  selectedItem.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: colors.textPrimary,
+                  ),
+                );
+              },
+              hintBuilder: (context, hint, enabled) => Text(
+                AppLocalizations.of(context)!
+                        .translate('select_outcome_category') ??
+                    'Выберите категорию расхода',
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
-              );
-            }
-            return Text(
-              selectedItem.name,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
               ),
-            );
-          },
-          hintBuilder: (context, hint, enabled) => Text(
-            AppLocalizations.of(context)!.translate('select_outcome_category') ?? 'Выберите категорию дохода',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          excludeSelected: false,
-          initialItem: outcomeCategoriesList.contains(selectedOutcomeCategoryData)
-              ? selectedOutcomeCategoryData
-              : null,
-          validator: (value) {
-            if (value == null) {
-              return AppLocalizations.of(context)!.translate('field_required_project');
-            }
-            return null;
-          },
-          onChanged: (value) {
-            if (value != null) {
-              widget.onSelectOutcomeCategory(value);
-              setState(() {
-                selectedOutcomeCategoryData = value;
-              });
-              FocusScope.of(context).unfocus();
-            }
-          },
+              excludeSelected: false,
+              initialItem:
+                  outcomeCategoriesList.contains(selectedOutcomeCategoryData)
+                      ? selectedOutcomeCategoryData
+                      : null,
+              validator: (value) {
+                if (value == null) {
+                  return AppLocalizations.of(context)!
+                      .translate('field_required_project');
+                }
+                return null;
+              },
+              onChanged: (value) {
+                if (value != null) {
+                  widget.onSelectOutcomeCategory(value);
+                  setState(() {
+                    selectedOutcomeCategoryData = value;
+                  });
+                  FocusScope.of(context).unfocus();
+                }
+              },
             );
           },
         ),

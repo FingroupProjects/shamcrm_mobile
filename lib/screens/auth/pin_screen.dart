@@ -5,7 +5,6 @@ import 'package:crm_task_manager/api/service/biometric_service.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
@@ -36,18 +35,20 @@ class PinScreen extends StatefulWidget {
 }
 
 class _PinScreenState extends State<PinScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   String _pin = '';
   bool _isWrongPin = false;
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
+  late AnimationController _introController;
+  late Animation<double> _introScale;
   final BiometricService _biometricService = BiometricService();
   BiometricAvailability? _biometricAvailability;
   bool _isBiometricEnabled = false;
   String _userNameProfile = '';
-  bool _isLoading = true;
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
+  bool _showIntro = true;
 
   @override
   void initState() {
@@ -56,6 +57,13 @@ class _PinScreenState extends State<PinScreen>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
+    );
+    _introController = AnimationController(
+      duration: const Duration(milliseconds: 1100),
+      vsync: this,
+    );
+    _introScale = Tween<double>(begin: 1.18, end: 1.0).animate(
+      CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
     );
 
     _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
@@ -68,7 +76,49 @@ class _PinScreenState extends State<PinScreen>
       }
     });
 
-    _initializeMinimal();
+    _startIntroAndInitialize();
+  }
+
+  Future<void> _startIntroAndInitialize() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final introEnabled =
+          prefs.getBool('app_login_intro_animation_v1') ?? true;
+
+      if (mounted) {
+        setState(() {
+          _showIntro = introEnabled;
+        });
+      }
+
+      final initFuture = _initializeMinimal();
+
+      if (introEnabled) {
+        await _introController.forward();
+      } else {
+        await Future.delayed(const Duration(milliseconds: 120));
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _showIntro = false;
+      });
+
+      await initFuture;
+
+      await _loadBiometricSetting();
+      await _initBiometrics();
+    } catch (e) {
+      debugPrint('PinScreen: intro init error: $e');
+      if (mounted) {
+        setState(() {
+          _showIntro = false;
+        });
+      }
+      await _initializeMinimal();
+      await _loadBiometricSetting();
+      await _initBiometrics();
+    }
   }
 
   // ==========================================================================
@@ -92,22 +142,8 @@ class _PinScreenState extends State<PinScreen>
       // ШАГ 4: Проверка PIN
       await _checkSavedPin();
 
-      // ШАГ 5: Загрузка настройки биометрии
-      await _loadBiometricSetting();
-
-      // ШАГ 6: Биометрия (только если включена)
-      await _initBiometrics();
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
         _showErrorDialog(
           AppLocalizations.of(context)?.translate('initialization_error') ??
               'Ошибка инициализации',
@@ -248,6 +284,9 @@ class _PinScreenState extends State<PinScreen>
   }
 
   Future<void> _initBiometrics() async {
+    if (_showIntro) {
+      return;
+    }
     try {
       // Check if biometric auth is enabled in settings
       if (!_isBiometricEnabled) {
@@ -560,7 +599,6 @@ class _PinScreenState extends State<PinScreen>
               Navigator.of(context).pop();
               setState(() {
                 _isInitialized = false;
-                _isLoading = true;
               });
               _initializeMinimal();
             },
@@ -597,6 +635,7 @@ class _PinScreenState extends State<PinScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _introController.dispose();
     super.dispose();
   }
 
@@ -610,24 +649,6 @@ class _PinScreenState extends State<PinScreen>
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
 
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: colors.backgroundPrimary,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
-            Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: const Duration(milliseconds: 1000),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     if (localizations == null) {
       return Scaffold(
         backgroundColor: colors.backgroundPrimary,
@@ -636,9 +657,39 @@ class _PinScreenState extends State<PinScreen>
           children: [
             const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
             Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: const Duration(milliseconds: 1000),
+              child: SizedBox(
+                width: 1,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_showIntro) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final imagePath =
+          isDark ? 'assets/images/night.png' : 'assets/images/day.png';
+
+      return Scaffold(
+        backgroundColor: colors.backgroundPrimary,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            AnimatedBuilder(
+              animation: _introController,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _introScale.value,
+                  child: child,
+                );
+              },
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
               ),
             ),
           ],

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
@@ -199,11 +200,12 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return BlocProvider.value(
       value: _moneyIncomeBloc,
       child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: AppBar(
             forceMaterialTransparency: true,
             automaticallyImplyLeading: !_selectionMode,
@@ -406,19 +408,19 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   return Center(
                     child: Text(
                       _isSearching ? localizations.translate('nothing_found') : localizations.translate('no_money_income'),
-                      style: const TextStyle(
+                        style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   );
                 }
 
                 return RefreshIndicator(
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
+                  color: colors.buttonPrimaryBg,
+                  backgroundColor: colors.surfacePrimary,
                   onRefresh: _onRefresh,
                   child: ListView.separated(
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -452,11 +454,11 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: document.deletedAt == null ? Colors.red : const Color(0xFF2196F3),
+                                  color: document.deletedAt == null ? colors.error : colors.buttonPrimaryBg,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: colors.shadow,
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
                                     ),
@@ -467,7 +469,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                                   document.deletedAt == null 
                                       ? Icons.delete 
                                       : Icons.restore_from_trash,
-                                  color: Colors.white,
+                                  color: colors.surfacePrimary,
                                   size: 24,
                                 ),
                               ),
@@ -553,20 +555,20 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         value: MoneyIncomeOperationType.client_payment.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.person,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('client_payment'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -577,20 +579,20 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         value: MoneyIncomeOperationType.send_another_cash_register.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.swap_horiz,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('cash_register_transfer'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -601,20 +603,20 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         value: MoneyIncomeOperationType.other_incomes.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.add_circle_outline,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('other_income'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -625,20 +627,20 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                         value: MoneyIncomeOperationType.return_supplier.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.keyboard_return,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('supplier_return'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -651,16 +653,16 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.1),
+                  shadowColor: colors.shadow,
                   child: Container(
                     width: 56,
                     height: 56,
-                    decoration: const BoxDecoration(color: Color(0xff1E2E52), borderRadius: BorderRadius.all(Radius.circular(18))),
-                    child: const Icon(
+                    decoration: BoxDecoration(color: colors.buttonPrimaryBg, borderRadius: const BorderRadius.all(Radius.circular(18))),
+                    child: Icon(
                       Icons.add,
-                      color: Colors.white,
+                      color: colors.surfacePrimary,
                       size: 24,
                     ),
                   ),

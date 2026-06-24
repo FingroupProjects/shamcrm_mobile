@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/cash_register_list/cash_register_list_bloc
 import 'package:crm_task_manager/bloc/cash_register_list/cash_register_list_event.dart';
 import 'package:crm_task_manager/bloc/cash_register_list/cash_register_list_state.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,16 +80,17 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           widget.title ?? localizations.translate('cash_register'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -150,16 +152,16 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                         searchHintText: localizations.translate('search'),
                         overlayHeight: 400,
                         enabled: !isLoading,
-                        decoration: CustomDropdownDecoration(
-                          closedFillColor: const Color(0xffF4F7FD),
-                          expandedFillColor: Colors.white,
+                          decoration: CustomDropdownDecoration(
+                          closedFillColor: colors.fieldBg,
+                          expandedFillColor: colors.surfacePrimary,
                           closedBorder: Border.all(
-                            color: hasError ? Colors.red : const Color(0xffF4F7FD),
+                            color: hasError ? colors.error : colors.borderSubtle,
                             width: hasError ? 1.5 : 1,
                           ),
                           closedBorderRadius: BorderRadius.circular(12),
                           expandedBorder: Border.all(
-                            color: const Color(0xffF4F7FD),
+                            color: colors.borderSubtle,
                             width: 1,
                           ),
                           expandedBorderRadius: BorderRadius.circular(12),
@@ -172,8 +174,8 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                         listItemBuilder: (context, item, isSelected, onItemSelect) {
                           return Text(
                             item.name,
-                            style: const TextStyle(
-                              color: Color(0xff1E2E52),
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                               fontFamily: 'Gilroy',
@@ -181,59 +183,59 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                           );
                         },
                         headerBuilder: (context, selectedItem, enabled) {
-                          if (isLoading) {
-                            return const Center(
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                                ),
-                              ),
-                            );
-                          }
-                          return Text(
-                            selectedItem.name,
-                            style: const TextStyle(
+  if (isLoading) {
+    return Center(
+      child: SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+        ),
+      ),
+    );
+  }
+  return Text(
+    selectedItem.name,
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           );
                         },
                         hintBuilder: (context, hint, enabled) {
                           if (isLoading) {
-                            return const Center(
+                            return Center(
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                  valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                                 ),
                               ),
                             );
                           }
                           return Text(
                             localizations.translate('select_cash_register'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           );
                         },
                         noResultFoundBuilder: (context, text) {
                           if (isLoading) {
-                            return const Center(
+                            return Center(
                               child: Padding(
                                 padding: EdgeInsets.all(20.0),
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                                  valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                                 ),
                               ),
                             );
@@ -243,10 +245,10 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
                               padding: const EdgeInsets.all(20.0),
                               child: Text(
                                 localizations.translate('no_results'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),

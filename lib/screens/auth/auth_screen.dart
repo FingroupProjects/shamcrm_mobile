@@ -197,10 +197,10 @@ class _AuthScreenState extends State<AuthScreen> {
                   width: screenWidth * 0.92,
                   constraints: const BoxConstraints(maxWidth: 420),
                   margin: EdgeInsets.only(
-                    top: screenHeight * 0.05,
+                    top: screenHeight * 0.08,
                     bottom: 24,
                   ),
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                   decoration: BoxDecoration(
                     color: colors.surfacePrimary.withValues(alpha: 0.78),
                     borderRadius: BorderRadius.circular(28),

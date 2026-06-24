@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../bloc/income/edit/edit_income_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../custom_widget/custom_textfield.dart';
 import '../../../../custom_widget/filter/task/multi_user_list.dart';
@@ -56,10 +57,11 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         elevation: 0,
         leading: IconButton(
           icon: Image.asset(
@@ -71,11 +73,11 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
         ),
         title: Text(
           AppLocalizations.of(context)?.translate('edit_income') ?? 'Редактировать доход',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -87,7 +89,7 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message ?? 'Ошибка обновления дохода'),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
               ),
             );
           }
@@ -140,6 +142,7 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
     return BlocBuilder<EditIncomeBloc, EditIncomeState>(
       builder: (context, state) {
         final isLoading = state.status == EditIncomeStatus.loading;
+        final colors = context.appColors;
 
         return Row(
           children: [
@@ -147,10 +150,10 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
             Expanded(
               child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)?.translate('close') ??
+                  AppLocalizations.of(context)?.translate('close') ??
                           'Закрыть',
-                  buttonColor: const Color(0xffF4F7FD),
-                  textColor: Colors.black,
+                  buttonColor: colors.fieldBg,
+                  textColor: colors.textPrimary,
                   onPressed: isLoading ? () {} : _onCancel),
             ),
 
@@ -162,28 +165,28 @@ class _EditIncomeScreenState extends State<EditIncomeScreen> {
                   ? Container(
                       height: 48, // Assuming button height
                       decoration: BoxDecoration(
-                        color: const Color(0xff4759FF).withOpacity(0.6),
+                        color: colors.buttonPrimaryBg.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                              colors.surfacePrimary,
+                            ),
                             ),
                           ),
                         ),
-                      ),
-                    )
+                      )
                   : CustomButton(
                       buttonText:
                           AppLocalizations.of(context)?.translate('save') ??
                               'Сохранить',
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
+                      buttonColor: colors.buttonPrimaryBg,
+                      textColor: colors.surfacePrimary,
                       onPressed: _onSave,
                     ),
             ),

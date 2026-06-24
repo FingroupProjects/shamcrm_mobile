@@ -66,7 +66,7 @@ class ErrorDialog extends StatelessWidget {
   });
 
   // Простой и эффективный метод для красивого отображения ошибки
-  Widget _buildFormattedError(String message) {
+  Widget _buildFormattedError(BuildContext context, String message) {
     debugPrint("🔍 [ErrorDialog] _buildFormattedError вызван");
     debugPrint("🔍 [ErrorDialog] errorDialogEnum: $errorDialogEnum");
     debugPrint("🔍 [ErrorDialog] message: $message");
@@ -161,7 +161,7 @@ class ErrorDialog extends StatelessWidget {
 
     if (errorDialogEnum == ErrorDialogEnum.supplierReturnApprove) {
       debugPrint("[ERROR] ErrorDialog.SupplierReturnApprove: $message");
-      return _buildSupplierReturnApproveError(message);
+      return _buildSupplierReturnApproveError(context, message);
     }
 
     if (errorDialogEnum == ErrorDialogEnum.supplierReturnUnapprove) {
@@ -171,7 +171,7 @@ class ErrorDialog extends StatelessWidget {
 
     if (errorDialogEnum == ErrorDialogEnum.supplierReturnDelete) {
       debugPrint("[ERROR] ErrorDialog.SupplierReturnDelete: $message");
-      return _buildSupplierReturnDeleteError(message);
+      return _buildSupplierReturnDeleteError(context, message);
     }
 
     if (errorDialogEnum == ErrorDialogEnum.supplierReturnRestore) {
@@ -284,7 +284,7 @@ class ErrorDialog extends StatelessWidget {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xffFFFFFF),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Color(0xffE2E8F0),
@@ -306,7 +306,7 @@ class ErrorDialog extends StatelessWidget {
                 width: double.infinity,
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(0xffF8FAFC),
+          color: const Color(0xffF8FAFC),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -3479,20 +3479,15 @@ class ErrorDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildSupplierReturnApproveError(String message) {
+  Widget _buildSupplierReturnApproveError(BuildContext context, String message) {
+    final colors = context.appColors;
     // Невозможно провести возврат. Недостаточно товара от этого поставщика:
     // Товар "иии": попытка вернуть 20000 шт., доступно для возврата от поставщика 1008 шт.
     debugPrint("🔍 [SupplierReturnApprove] Полученное сообщение: $message");
 
-    RegExp returnRegex = RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*от поставщика (\d+) шт');
+    RegExp returnRegex =
+        RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*от поставщика (\d+) шт');
     Match? match = returnRegex.firstMatch(message);
-
-    debugPrint("🔍 [SupplierReturnApprove] Match найден: ${match != null}");
-    if (match != null) {
-      debugPrint("🔍 [SupplierReturnApprove] Group 1 (название): ${match.group(1)}");
-      debugPrint("🔍 [SupplierReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
-      debugPrint("🔍 [SupplierReturnApprove] Group 3 (доступно): ${match.group(3)}");
-    }
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
     String attemptedReturn = match?.group(2) ?? '0';
@@ -3501,15 +3496,14 @@ class ErrorDialog extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Заголовок ошибки
         Container(
           width: double.infinity,
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Color(0xffFFF5F5),
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffFECDD3),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
@@ -3522,7 +3516,7 @@ class ErrorDialog extends StatelessWidget {
                     fontFamily: 'Gilroy',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xffDC2626),
+                    color: colors.buttonPrimaryBg,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -3531,36 +3525,32 @@ class ErrorDialog extends StatelessWidget {
             ],
           ),
         ),
-
-        SizedBox(height: 16),
-
-        // Информация о товаре
+        const SizedBox(height: 16),
         Container(
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
+            decoration: BoxDecoration(
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffE2E8F0),
+              color: colors.borderSubtle,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Color(0xff1E2E52).withOpacity(0.08),
+                color: colors.textPrimary.withOpacity(0.08),
                 blurRadius: 8,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Заголовок товара
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(0xffF8FAFC),
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -3568,25 +3558,25 @@ class ErrorDialog extends StatelessWidget {
                   border: Border(
                     left: BorderSide(
                       width: 4,
-                      color: Color(0xffDC2626),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Color(0xffDC2626).withOpacity(0.1),
+                        color: colors.buttonPrimaryBg.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
                         Icons.unarchive_outlined,
                         size: 16,
-                        color: Color(0xffDC2626),
+                        color: colors.buttonPrimaryBg,
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         productName,
@@ -3594,7 +3584,7 @@ class ErrorDialog extends StatelessWidget {
                           fontFamily: 'Gilroy',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -3603,10 +3593,8 @@ class ErrorDialog extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Информация о количествах
               Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -3616,23 +3604,22 @@ class ErrorDialog extends StatelessWidget {
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff64748B),
+                        color: colors.textSecondary,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        // Попытка вернуть
                         Expanded(
                           child: Container(
-                            padding: EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Color(0xffFEF2F2),
+                              color: colors.surfaceElevated,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Color(0xffFECDD3),
+                                color: colors.borderSubtle,
                                 width: 1,
                               ),
                             ),
@@ -3645,37 +3632,34 @@ class ErrorDialog extends StatelessWidget {
                                     fontFamily: 'Gilroy',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff991B1B),
+                                    color: colors.error,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   _formatNumber(attemptedReturn),
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xffDC2626),
+                                    color: colors.error,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-
-                        SizedBox(width: 12),
-
-                        // Доступно от поставщика
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Container(
-                            padding: EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Color(0xffF0F9FF),
+                              color: colors.surfaceElevated,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Color(0xffBAE6FD),
+                                color: colors.borderSubtle,
                                 width: 1,
                               ),
                             ),
@@ -3688,19 +3672,19 @@ class ErrorDialog extends StatelessWidget {
                                     fontFamily: 'Gilroy',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff0369A1),
+                                    color: colors.textSecondary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   _formatNumber(availableForReturn),
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xff0284C7),
+                                    color: colors.buttonPrimaryBg,
                                   ),
                                 ),
                               ],
@@ -3719,7 +3703,8 @@ class ErrorDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildSupplierReturnDeleteError(String message) {
+  Widget _buildSupplierReturnDeleteError(BuildContext context, String message) {
+    final colors = context.appColors;
     // Парсим название товара и отрицательный остаток
     RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = deletionRegex.firstMatch(message);
@@ -3735,10 +3720,10 @@ class ErrorDialog extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Color(0xffFFF5F5),
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffFECDD3),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
@@ -3751,7 +3736,7 @@ class ErrorDialog extends StatelessWidget {
                     fontFamily: 'Gilroy',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xffDC2626),
+                    color: colors.error,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -3767,15 +3752,15 @@ class ErrorDialog extends StatelessWidget {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffE2E8F0),
+              color: colors.borderSubtle,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Color(0xff1E2E52).withOpacity(0.08),
+                color: colors.textPrimary.withOpacity(0.08),
                 blurRadius: 8,
                 offset: Offset(0, 2),
               ),
@@ -3789,7 +3774,7 @@ class ErrorDialog extends StatelessWidget {
                 width: double.infinity,
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(0xffF8FAFC),
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -3797,7 +3782,7 @@ class ErrorDialog extends StatelessWidget {
                   border: Border(
                     left: BorderSide(
                       width: 4,
-                      color: Color(0xffDC2626),
+                      color: colors.error,
                     ),
                   ),
                 ),
@@ -3806,13 +3791,13 @@ class ErrorDialog extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Color(0xffDC2626).withOpacity(0.1),
+                        color: colors.error.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
                         Icons.delete_outline,
                         size: 16,
-                        color: Color(0xffDC2626),
+                        color: colors.error,
                       ),
                     ),
                     SizedBox(width: 12),
@@ -3823,7 +3808,7 @@ class ErrorDialog extends StatelessWidget {
                           fontFamily: 'Gilroy',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -3845,7 +3830,7 @@ class ErrorDialog extends StatelessWidget {
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff64748B),
+                        color: colors.textSecondary,
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
@@ -3855,7 +3840,7 @@ class ErrorDialog extends StatelessWidget {
                       width: double.infinity,
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Color(0xffFEF2F2),
+                              color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: Color(0xffFECDD3),
@@ -4274,7 +4259,7 @@ class ErrorDialog extends StatelessWidget {
                   border: Border(
                     left: BorderSide(
                       width: 4,
-                      color: Color(0xff1E2E52),
+                      color: const Color(0xff1E2E52),
                     ),
                   ),
                 ),
@@ -4283,7 +4268,7 @@ class ErrorDialog extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Color(0xff1E2E52).withOpacity(0.1),
+                        color: const Color(0xff1E2E52).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -4292,7 +4277,7 @@ class ErrorDialog extends StatelessWidget {
                           fontFamily: 'Gilroy',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                          color: const Color(0xff1E2E52),
                         ),
                       ),
                     ),
@@ -4304,7 +4289,7 @@ class ErrorDialog extends StatelessWidget {
                           fontFamily: 'Gilroy',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                        color: const Color(0xff1E2E52),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -4324,10 +4309,10 @@ class ErrorDialog extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Color(0xffFEF2F2),
+            color: const Color(0xffFEF2F2),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Color(0xffFECDD3),
+                            color: const Color(0xffFECDD3),
                             width: 1,
                           ),
                         ),
@@ -4340,7 +4325,7 @@ class ErrorDialog extends StatelessWidget {
                                 fontFamily: 'Gilroy',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff991B1B),
+                                color: const Color(0xffDC2626),
                               ),
                             ),
                             SizedBox(height: 4),
@@ -4350,7 +4335,7 @@ class ErrorDialog extends StatelessWidget {
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xffDC2626),
+                                    color: const Color(0xffDC2626),
                               ),
                             ),
                           ],
@@ -4365,10 +4350,10 @@ class ErrorDialog extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Color(0xffF0F9FF),
+                              color: const Color(0xffF0F9FF),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Color(0xffBAE6FD),
+                                color: const Color(0xffBAE6FD),
                             width: 1,
                           ),
                         ),
@@ -4381,7 +4366,7 @@ class ErrorDialog extends StatelessWidget {
                                 fontFamily: 'Gilroy',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff0369A1),
+                                    color: const Color(0xff0369A1),
                               ),
                             ),
                             SizedBox(height: 4),
@@ -4391,7 +4376,7 @@ class ErrorDialog extends StatelessWidget {
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xff0284C7),
+                                    color: const Color(0xff0284C7),
                               ),
                             ),
                           ],
@@ -4531,7 +4516,7 @@ class ErrorDialog extends StatelessWidget {
             Flexible(
               child: SingleChildScrollView(
                 padding: EdgeInsets.all(24),
-                child: _buildFormattedError(errorMessage),
+                child: _buildFormattedError(context, errorMessage),
               ),
             ),
 

@@ -435,20 +435,22 @@ class _SupplierReturnDocumentDetailsScreenState
   }
 
   Widget _buildActionButton() {
+    final colors = context.appColors;
     if (_isButtonLoading) {
       return Container(
         height: 48,
         width: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colors.borderSubtle),
         ),
         child: const Center(
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: const Color(0xff1E2E52),
+              color: Color(0xff1E2E52),
               strokeWidth: 2,
             ),
           ),
@@ -465,7 +467,7 @@ class _SupplierReturnDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('restore_document') ??
             'Восстановить',
         icon: Icons.restore,
-        color: const Color(0xFF2196F3),
+        color: colors.buttonPrimaryBg,
         onPressed: _restoreDocument,
       );
     }
@@ -485,7 +487,7 @@ class _SupplierReturnDocumentDetailsScreenState
         text: AppLocalizations.of(context)!.translate('approve_document') ??
             'Провести',
         icon: Icons.check_circle_outline,
-        color: const Color(0xFF4CAF50),
+        color: colors.buttonPrimaryBg,
         onPressed: _approveDocument,
       );
     }
@@ -494,17 +496,18 @@ class _SupplierReturnDocumentDetailsScreenState
       text: AppLocalizations.of(context)!.translate('unapprove_document') ??
           'Отменить проведение',
       icon: Icons.cancel_outlined,
-      color: const Color(0xFFFFA500),
+      color: colors.textSecondary,
       onPressed: _unApproveDocument,
     );
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -515,8 +518,8 @@ class _SupplierReturnDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -530,8 +533,8 @@ class _SupplierReturnDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -545,7 +548,7 @@ class _SupplierReturnDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -566,7 +569,7 @@ class _SupplierReturnDocumentDetailsScreenState
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         body: _isLoading
             ? Center(
                 child: PlayStoreImageLoading(
@@ -856,6 +859,7 @@ class _SupplierReturnDocumentDetailsScreenState
   }
 
   Widget _buildGoodsItem(DocumentGood good) {
+    final colors = context.appColors;
     final selectedUnit = good.selectedUnit;
     final amount =
         1.0; // USE 1 for amount DO NOT USE selectedUnit.amount ?? 1.0;
@@ -885,8 +889,10 @@ class _SupplierReturnDocumentDetailsScreenState
                     children: [
                       Text(
                         good.fullName ?? good.good?.name ?? 'N/A',
-                        style: TaskCardStyles.titleStyle(context)
-                            .copyWith(fontSize: 14),
+                        style: TaskCardStyles.titleStyle(context).copyWith(
+                          fontSize: 14,
+                          color: colors.textPrimary,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -993,8 +999,9 @@ class _SupplierReturnDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
+                          color: colors.surfaceElevated,
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: colors.borderSubtle),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1003,21 +1010,21 @@ class _SupplierReturnDocumentDetailsScreenState
                               AppLocalizations.of(context)!
                                       .translate('total') ??
                                   'Итого',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff1E2E52),
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '${parseNumberToString(((good.quantity ?? 0) * amount * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xff4CAF50),
+                                color: colors.buttonPrimaryBg,
                               ),
                             ),
                           ],
@@ -1065,7 +1072,7 @@ class _SupplierReturnDocumentDetailsScreenState
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: context.appColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
@@ -1116,11 +1123,11 @@ class _SupplierReturnDocumentDetailsScreenState
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textSecondary,
       ),
     );
   }
@@ -1128,11 +1135,11 @@ class _SupplierReturnDocumentDetailsScreenState
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: context.appColors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

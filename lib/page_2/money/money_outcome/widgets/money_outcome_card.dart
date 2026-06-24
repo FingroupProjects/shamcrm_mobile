@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_operation_type.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -95,6 +96,7 @@ class MoneyOutcomeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     final formattedDate = _formatDocumentDate();
 
     return GestureDetector(
@@ -103,9 +105,9 @@ class MoneyOutcomeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected ? colors.surfacePrimary : colors.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          boxShadow: [BoxShadow(color: colors.shadow.withOpacity(0.08), blurRadius: 4)],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -120,11 +122,11 @@ class MoneyOutcomeCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           _getDocumentTitle(localizations),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -165,22 +167,22 @@ class MoneyOutcomeCard extends StatelessWidget {
 
                   Text(
                     '${localizations.translate('amount') ?? 'Сумма'}: ${_formatAmount(document.amount)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   if (formattedDate != null) ...[
                     const SizedBox(height: 8),
                     Text(
                       '${_getDateLabel(localizations)}: $formattedDate',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -189,21 +191,21 @@ class MoneyOutcomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '${localizations.translate('exchange_rate') ?? 'Курс валюты'}: ${document.exchangeRate!.value}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${localizations.translate('total_by_currency') ?? 'Итого валюты'}: ${_formatAmount(_parseDouble(document.amount) * _parseDouble(document.exchangeRate!.value))}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -212,11 +214,11 @@ class MoneyOutcomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       _getSecondaryLine(localizations)!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -246,7 +248,7 @@ class MoneyOutcomeCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   size: 24,
                 ),
               ),

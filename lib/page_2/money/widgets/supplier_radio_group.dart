@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
@@ -80,16 +81,17 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('supplier'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -125,24 +127,30 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
               overlayHeight: 400,
               enabled: true,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
+                closedFillColor: colors.surfaceElevated,
+                expandedFillColor: colors.surfaceElevated,
                 closedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.borderSubtle,
                   width: 1,
                 ),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.borderSubtle,
                   width: 1,
                 ),
                 expandedBorderRadius: BorderRadius.circular(12),
+                listItemDecoration: ListItemDecoration(
+                  splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.10),
+                  highlightColor:
+                      colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                  selectedColor: colors.surfaceElevated,
+                ),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.name,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -153,31 +161,31 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
                 if (state is GetAllSupplierLoading) {
                   return Text(
                     AppLocalizations.of(context)!.translate('select_supplier'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   );
                 }
                 return Text(
                   selectedItem.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
                 AppLocalizations.of(context)!.translate('select_supplier'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               excludeSelected: false,

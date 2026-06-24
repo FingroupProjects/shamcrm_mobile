@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
@@ -202,11 +203,12 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return BlocProvider.value(
       value: _moneyOutcomeBloc,
       child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           appBar: AppBar(
             forceMaterialTransparency: true,
             automaticallyImplyLeading: !_selectionMode,
@@ -472,19 +474,19 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                       _isSearching
                           ? localizations.translate('nothing_found')
                           : localizations.translate('no_money_outcome'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   );
                 }
 
                 return RefreshIndicator(
-                  color: const Color(0xff1E2E52),
-                  backgroundColor: Colors.white,
+                  color: colors.buttonPrimaryBg,
+                  backgroundColor: colors.surfacePrimary,
                   onRefresh: _onRefresh,
                   child: ListView.separated(
                     separatorBuilder: (context, index) =>
@@ -633,20 +635,20 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                         value: MoneyOutcomeOperationType.supplier_payment.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.keyboard_return,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('supplier_payment'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -657,9 +659,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                         value: MoneyOutcomeOperationType.other_expenses.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.add_circle_outline,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
@@ -668,11 +670,11 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                                 localizations.translate(
                                     MoneyOutcomeOperationType
                                         .other_expenses.name),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -683,20 +685,20 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                         value: MoneyOutcomeOperationType.client_return.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.person,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('clientreturn'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -707,20 +709,20 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                         value: MoneyOutcomeOperationType.salary_payment.name,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.badge_outlined,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 localizations.translate('salary_payment'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -733,18 +735,19 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.1),
+                  shadowColor: colors.shadow.withOpacity(0.1),
                   child: Container(
                     width: 56,
                     height: 56,
-                    decoration: const BoxDecoration(
-                        color: Color(0xff1E2E52),
-                        borderRadius: BorderRadius.all(Radius.circular(18))),
-                    child: const Icon(
+                    decoration: BoxDecoration(
+                        color: colors.buttonPrimaryBg,
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(18))),
+                    child: Icon(
                       Icons.add,
-                      color: Colors.white,
+                      color: colors.surfacePrimary,
                       size: 24,
                     ),
                   ),

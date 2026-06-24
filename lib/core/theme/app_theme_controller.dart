@@ -21,6 +21,7 @@ class AppThemeController extends ChangeNotifier {
   static const _backgroundImagePathKey = 'app_background_image_path_v1';
   static const _backgroundAssetPathKey = 'app_background_asset_path_v1';
   static const _backgroundBlurKey = 'app_background_blur_v1';
+  static const _loginIntroAnimationKey = 'app_login_intro_animation_v1';
 
   ThemeMode _themeMode;
   AppPalettePreset _palettePreset;
@@ -29,6 +30,7 @@ class AppThemeController extends ChangeNotifier {
   String? _backgroundImagePath;
   String? _backgroundAssetPath;
   double _backgroundBlurPercent = 18;
+  bool _loginIntroAnimationEnabled = true;
   bool _isInitialized = false;
 
   ThemeMode get themeMode => _themeMode;
@@ -38,6 +40,7 @@ class AppThemeController extends ChangeNotifier {
   String? get backgroundAssetPath => _backgroundAssetPath;
   double get backgroundBlurPercent => _backgroundBlurPercent;
   double get backgroundBlurSigma => _blurPercentToSigma(_backgroundBlurPercent);
+  bool get loginIntroAnimationEnabled => _loginIntroAnimationEnabled;
   AppPalette get lightPalette =>
       _palettePreset.lightPaletteForSeed(_paletteSeedColor);
   AppPalette get darkPalette =>
@@ -60,6 +63,8 @@ class AppThemeController extends ChangeNotifier {
     _backgroundAssetPath = prefs.getString(_backgroundAssetPathKey);
     _backgroundBlurPercent =
         prefs.getDouble(_backgroundBlurKey) ?? _backgroundBlurPercent;
+    _loginIntroAnimationEnabled =
+        prefs.getBool(_loginIntroAnimationKey) ?? _loginIntroAnimationEnabled;
     if (_backgroundPreset == AppBackgroundPreset.custom &&
         ((_backgroundImagePath == null || _backgroundImagePath!.isEmpty) &&
             (_backgroundAssetPath == null || _backgroundAssetPath!.isEmpty))) {
@@ -202,6 +207,14 @@ class AppThemeController extends ChangeNotifier {
     _backgroundBlurPercent = normalized;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_backgroundBlurKey, _backgroundBlurPercent);
+    notifyListeners();
+  }
+
+  Future<void> setLoginIntroAnimationEnabled(bool enabled) async {
+    if (_loginIntroAnimationEnabled == enabled) return;
+    _loginIntroAnimationEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_loginIntroAnimationKey, enabled);
     notifyListeners();
   }
 

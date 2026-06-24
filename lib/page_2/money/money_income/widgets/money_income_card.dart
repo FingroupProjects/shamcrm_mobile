@@ -2,7 +2,7 @@ import 'package:crm_task_manager/page_2/money/money_income/money_income_operatio
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:intl/intl.dart';
 
 class MoneyIncomeCard extends StatelessWidget {
@@ -41,7 +41,8 @@ class MoneyIncomeCard extends StatelessWidget {
     if (rawDate == null || rawDate.isEmpty) return null;
 
     try {
-      return DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(rawDate).toLocal());
+      return DateFormat('dd/MM/yyyy HH:mm')
+          .format(DateTime.parse(rawDate).toLocal());
     } catch (_) {
       return rawDate;
     }
@@ -67,15 +68,19 @@ class MoneyIncomeCard extends StatelessWidget {
 
   Color _getStatusColor() {
     if (document.deletedAt != null) {
-      return Colors.red;
+      return const Color(0xFFE35D5D);
     }
-    return document.approved == false ? Colors.orange : Colors.green;
+    return document.approved == false
+        ? const Color(0xFFF39C38)
+        : const Color(0xFF2BB673);
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final formattedDate = _formatDocumentDate();
+    final colors = context.appColors;
+    final isSelectedBg = isSelected ? colors.fieldBg : colors.surfaceElevated;
 
     return GestureDetector(
       onTap: () => onClick(document),
@@ -83,9 +88,10 @@ class MoneyIncomeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelectedBg,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [BoxShadow(color: colors.shadow, blurRadius: 4)],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -100,11 +106,11 @@ class MoneyIncomeCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           '${localizations.translate('income') ?? 'Доход'} №${document.docNumber}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.bold,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -143,22 +149,22 @@ class MoneyIncomeCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${localizations.translate('amount') ?? 'Сумма'}: ${_formatAmount(document.amount)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   if (formattedDate != null) ...[
                     const SizedBox(height: 8),
                     Text(
                       '${_getDateLabel(localizations)}: $formattedDate',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -166,21 +172,21 @@ class MoneyIncomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '${localizations.translate('exchange_rate') ?? 'Курс валюты'}: ${document.exchangeRate!.value}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${localizations.translate('total_by_currency') ?? 'Итого валюты'}: ${_formatAmount(_parseDouble(document.amount) * _parseDouble(document.exchangeRate!.value))}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -188,11 +194,11 @@ class MoneyIncomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],
@@ -207,11 +213,11 @@ class MoneyIncomeCard extends StatelessWidget {
                               .replaceAll('{cashRegister}',
                                   document.cashRegister?.name ?? '') ??
                           'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w400,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     )
                   ],
@@ -225,7 +231,7 @@ class MoneyIncomeCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   size: 24,
                 ),
               ),

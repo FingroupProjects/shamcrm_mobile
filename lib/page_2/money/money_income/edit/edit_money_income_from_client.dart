@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
@@ -280,9 +281,10 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: _buildAppBar(localizations),
       body: MultiBlocListener(
         listeners: [
@@ -435,23 +437,23 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 24),
         onPressed: () => Navigator.pop(context, _isStatusChanged),
       ),
       title: Text(
         AppLocalizations.of(context)!.translate('edit_incoming_document') ??
             'Редактировать доход',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       centerTitle: true,
@@ -540,11 +542,12 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   }
 
   Widget _buildTotalByCurrencyWidget(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: colors.fieldBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -552,20 +555,20 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
         children: [
           Text(
             _totalByCurrencyLabel(localizations),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           Text(
             parseNumberToString(_totalByCurrency),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ],
@@ -575,6 +578,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
 
   // ИЗМЕНЕННЫЙ МЕТОД
   Widget _buildApproveButton(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -590,9 +594,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
             icon: !_isApproved
                 ? Icons.check_circle_outline
                 : Icons.close_outlined,
-            color: !_isApproved
-                ? const Color(0xFF4CAF50)
-                : const Color(0xFFFFA500),
+            color: !_isApproved ? colors.buttonPrimaryBg : colors.error,
             onPressed: _isApproveLoading ? () {} : _toggleApproval,
           ),
         ),
@@ -602,7 +604,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: colors.surfacePrimary.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
               // child: const SizedBox(
@@ -620,13 +622,14 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: colors.shadow,
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -1),
@@ -643,7 +646,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                       if (mounted) Navigator.pop(context, _isStatusChanged);
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
+                backgroundColor: colors.fieldBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -652,11 +655,11 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('close') ?? 'Закрыть',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -666,7 +669,7 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _createDocument,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
+                backgroundColor: colors.buttonPrimaryBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -674,22 +677,23 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                 elevation: 0,
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.surfacePrimary),
                       ),
                     )
                   : Text(
                       AppLocalizations.of(context)!.translate('save') ??
                           'Сохранить',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: colors.surfacePrimary,
                       ),
                     ),
             ),

@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
@@ -184,16 +185,17 @@ class _AddMoneyIncomeSupplierReturnState
 
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
+    final colors = context.appColors;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.surfacePrimary,
           ),
         ),
         backgroundColor: isSuccess ? Colors.green : Colors.red,
@@ -208,16 +210,18 @@ class _AddMoneyIncomeSupplierReturnState
   }
 
   Widget _buildSupplierWidget() {
+    final colors = context.appColors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('supplier') ?? 'Поставщик',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -262,7 +266,7 @@ class _AddMoneyIncomeSupplierReturnState
                       child: Text(
                           AppLocalizations.of(context)!.translate('retry') ??
                               'Повторить',
-                          style: const TextStyle(fontSize: 12)),
+                          style: TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -275,17 +279,18 @@ class _AddMoneyIncomeSupplierReturnState
                 height: 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.fieldBg,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.borderSubtle),
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.translate('select_supplier') ??
                       'Выберите поставщика',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               );
@@ -316,20 +321,19 @@ class _AddMoneyIncomeSupplierReturnState
               overlayHeight: 300,
               enabled: true,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder:
-                    Border.all(color: const Color(0xffF4F7FD), width: 1),
+                closedFillColor: colors.surfaceElevated,
+                expandedFillColor: colors.surfaceElevated,
+                closedBorder: Border.all(color: colors.borderSubtle, width: 1),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder:
-                    Border.all(color: const Color(0xffF4F7FD), width: 1),
+                    Border.all(color: colors.borderSubtle, width: 1),
                 expandedBorderRadius: BorderRadius.circular(12),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.name ?? item.id?.toString() ?? 'Unknown Supplier',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -339,22 +343,22 @@ class _AddMoneyIncomeSupplierReturnState
               headerBuilder: (context, selectedItem, enabled) {
                 return Text(
                   selectedItem.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
                 AppLocalizations.of(context)!.translate('select_supplier') ??
                     'Выберите поставщика',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               initialItem: _selectedSupplier != null &&
@@ -384,9 +388,10 @@ class _AddMoneyIncomeSupplierReturnState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       appBar: _buildAppBar(localizations),
       body: MultiBlocListener(
         listeners: [
@@ -476,23 +481,23 @@ class _AddMoneyIncomeSupplierReturnState
   }
 
   AppBar _buildAppBar(AppLocalizations localizations) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
         AppLocalizations.of(context)!.translate('create_incoming_document') ??
             'Создать доход',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       centerTitle: true,
@@ -580,32 +585,35 @@ class _AddMoneyIncomeSupplierReturnState
   }
 
   Widget _buildTotalByCurrencyWidget(AppLocalizations localizations) {
+    final colors = context.appColors;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: colors.fieldBg,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             _totalByCurrencyLabel(localizations),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           Text(
             parseNumberToString(_totalByCurrency),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ],
@@ -625,13 +633,14 @@ class _AddMoneyIncomeSupplierReturnState
 
   // Обновленный виджет кнопок действий (+ "Сохранить и провести")
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: colors.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -1),
@@ -644,7 +653,7 @@ class _AddMoneyIncomeSupplierReturnState
             width: double.infinity,
             height: 48,
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
+              border: Border.all(color: colors.buttonPrimaryBg, width: 1.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Material(
@@ -661,8 +670,8 @@ class _AddMoneyIncomeSupplierReturnState
                         Icons.check_circle_outline,
                         size: 20,
                         color: _isLoading
-                            ? const Color(0xff99A4BA)
-                            : const Color(0xff4CAF50),
+                            ? colors.textSecondary
+                            : colors.buttonPrimaryBg,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -673,8 +682,8 @@ class _AddMoneyIncomeSupplierReturnState
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
                           color: _isLoading
-                              ? const Color(0xff99A4BA)
-                              : const Color(0xff4CAF50),
+                              ? colors.textSecondary
+                              : colors.buttonPrimaryBg,
                         ),
                       ),
                     ],
@@ -690,7 +699,7 @@ class _AddMoneyIncomeSupplierReturnState
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF4F7FD),
+                    backgroundColor: colors.fieldBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -699,11 +708,11 @@ class _AddMoneyIncomeSupplierReturnState
                   ),
                   child: Text(
                     localizations.translate('close') ?? 'Отмена',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -713,7 +722,7 @@ class _AddMoneyIncomeSupplierReturnState
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveDocument,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4759FF),
+                    backgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -732,11 +741,11 @@ class _AddMoneyIncomeSupplierReturnState
                         )
                       : Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: colors.surfacePrimary,
                           ),
                         ),
                 ),
