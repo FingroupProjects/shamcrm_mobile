@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_details_screen.dart';
@@ -31,21 +32,21 @@ class _CategoryCardState extends State<CategoryCard> {
   String? baseUrl;
 
 Future<Widget> _buildImageWidget() async {
+  final colors = context.appColors;
   if (widget.image == null) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.image_not_supported,
         size: 40,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
-  // Получаем полный URL изображения через getFileUrl
   final imageUrl = await _apiService.getFileUrl(widget.image!);
 
   return ClipRRect(
@@ -59,11 +60,11 @@ Future<Widget> _buildImageWidget() async {
         return Container(
           width: 100,
           height: 100,
-          color: Colors.white,
-          child: const Icon(
+          color: colors.surfacePrimary,
+          child: Icon(
             Icons.broken_image,
             size: 40,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
           ),
         );
       },
@@ -72,13 +73,14 @@ Future<Widget> _buildImageWidget() async {
         return Container(
           width: 100,
           height: 100,
-          color: Colors.grey[200],
+          color: colors.fieldBg,
           child: Center(
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
                       loadingProgress.expectedTotalBytes!
                   : null,
+              color: colors.buttonPrimaryBg,
             ),
           ),
         );
@@ -115,9 +117,9 @@ Future<Widget> _buildImageWidget() async {
     }
   }
 
- 
   @override
 Widget build(BuildContext context) {
+  final colors = context.appColors;
   final subcategoriesText = widget.subcategories.isNotEmpty
       ? widget.subcategories.map((subcategory) => subcategory.name).join(', ')
       : '';
@@ -166,7 +168,7 @@ Widget build(BuildContext context) {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xff99A4BA),
+                                color: colors.textSecondary,
                               ),
                             ),
                             TextSpan(
@@ -175,7 +177,7 @@ Widget build(BuildContext context) {
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                           ],
@@ -196,30 +198,30 @@ Widget build(BuildContext context) {
                       return Container(
                         width: 100,
                         height: 100,
-                        color: Colors.grey[200],
-                        child: const Center(child: CircularProgressIndicator()),
+                        color: colors.fieldBg,
+                        child: Center(child: CircularProgressIndicator(color: colors.buttonPrimaryBg)),
                       );
                     }
                     if (snapshot.hasError) {
                       return Container(
                         width: 100,
                         height: 100,
-                        color: Colors.white,
-                        child: const Icon(
+                        color: colors.surfacePrimary,
+                        child: Icon(
                           Icons.broken_image,
                           size: 40,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       );
                     }
                     return snapshot.data ?? Container(
                       width: 100,
                       height: 100,
-                      color: Colors.white,
-                      child: const Icon(
+                      color: colors.surfacePrimary,
+                      child: Icon(
                         Icons.image_not_supported,
                         size: 40,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     );
                   },

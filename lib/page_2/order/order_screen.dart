@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_cache.dart';
@@ -118,7 +119,6 @@ class _OrderScreenState extends State<OrderScreen>
       await orderBloc.clearAllCountsAndCache();
       orderBloc.add(FetchOrderStatuses(forceRefresh: true));
     } catch (e) {
-      // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
       debugPrint('OrderScreen: Ошибка при обновлении данных: $e');
 
       if (mounted) {
@@ -150,7 +150,6 @@ class _OrderScreenState extends State<OrderScreen>
     });
   }
 
-  // Метод для проверки наличия активных фильтров
   bool _hasActiveFilters() {
     if (_currentFilters.isEmpty) return false;
 
@@ -274,6 +273,7 @@ class _OrderScreenState extends State<OrderScreen>
   }
 
   void _showStatusOptions(BuildContext context, int index) {
+    final colors = context.appColors;
     final RenderBox renderBox =
         _tabKeys[index].currentContext!.findRenderObject() as RenderBox;
     final Offset position = renderBox.localToGlobal(Offset.zero);
@@ -288,20 +288,20 @@ class _OrderScreenState extends State<OrderScreen>
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       elevation: 4,
-      color: Colors.white,
+      color: colors.surfacePrimary,
       items: [
         if (_canUpdateOrderStatus)
           PopupMenuItem(
             value: 'edit',
             child: ListTile(
-              leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+              leading: Icon(Icons.edit, color: colors.iconSecondary),
               title: Text(
                 'Изменить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -310,14 +310,14 @@ class _OrderScreenState extends State<OrderScreen>
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+              leading: Icon(Icons.delete, color: colors.iconSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -327,7 +327,7 @@ class _OrderScreenState extends State<OrderScreen>
       if (value == 'edit') {
         showDialog(
           context: context,
-          barrierColor: Colors.black.withOpacity(0.5),
+          barrierColor: colors.overlay,
           builder: (context) => EditStatusOrder(
             status: _statuses[index],
             orderBloc: _orderBloc,
@@ -340,7 +340,7 @@ class _OrderScreenState extends State<OrderScreen>
       } else if (value == 'delete') {
         showDialog(
           context: context,
-          barrierColor: Colors.black.withOpacity(0.5),
+          barrierColor: colors.overlay,
           builder: (context) => DeleteStatusOrder(
             statusId: _statuses[index].id,
             statusName: _statuses[index].name,
@@ -358,12 +358,14 @@ class _OrderScreenState extends State<OrderScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
     return BlocProvider.value(
       value: _orderBloc,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
+          backgroundColor: colors.surfacePrimary,
           title: CustomAppBarPage2(
             onChangedSearchInput: (value) => _onSearch(value),
             showFilterIcon: false,
@@ -501,7 +503,6 @@ class _OrderScreenState extends State<OrderScreen>
                       debugPrint(
                           'OrderScreen: BlocListener - state: ${state.runtimeType}');
 
-                      // Сбрасываем флаги загрузки когда получены данные
                       if (state is OrderLoaded || state is OrderError) {
                         if (mounted && _isFilterLoading) {
                           debugPrint('OrderScreen: Resetting loader flags');
@@ -523,30 +524,24 @@ class _OrderScreenState extends State<OrderScreen>
 
                         if (mounted) {
                           setState(() {
-                            // Обновляем статусы с новыми данными
                             _statuses = state.statuses;
                             _tabKeys = List.generate(
                                 _statuses.length, (_) => GlobalKey());
 
                             if (_statuses.isNotEmpty) {
-                              // Проверяем, нужно ли создавать новый контроллер
                               bool needNewController =
                                   _tabController.length != _statuses.length;
 
                               if (needNewController) {
-                                // Dispose старого контроллера если он существует
                                 if (_tabController.length > 0) {
                                   _tabController.dispose();
                                 }
 
-                                // Создаем новый контроллер
                                 _tabController = TabController(
                                     length: _statuses.length, vsync: this);
 
-                                // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
                                 _tabController.addListener(() {
                                   if (!_tabController.indexIsChanging) {
-                                    // ← КРИТИЧНО: Проверяем флаг пропуска!
                                     if (_skipNextTabListener) {
                                       debugPrint(
                                           'OrderScreen: TabController listener - SKIPPED (filter just applied)');
@@ -554,7 +549,7 @@ class _OrderScreenState extends State<OrderScreen>
                                         _skipNextTabListener = false;
                                         _currentTabIndex = _tabController.index;
                                       });
-                                      return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
+                                      return;
                                     }
 
                                     if (_currentTabIndex !=
@@ -619,10 +614,9 @@ class _OrderScreenState extends State<OrderScreen>
                                       }
                                     }
                                   }
-                                }); // ← Закрываем listener здесь, только для нового контроллера!
+                                });
                               }
 
-                              // Установка правильного индекса
                               if (needNewController) {
                                 if (_currentTabIndex < _statuses.length &&
                                     _currentTabIndex >= 0) {
@@ -633,10 +627,8 @@ class _OrderScreenState extends State<OrderScreen>
                                 }
                               }
 
-                              // Прокручиваем к активному табу
                               _scrollToActiveTab();
 
-                              // Обрабатываем специальные навигации
                               if (_navigateToNewStatus &&
                                   _statuses.isNotEmpty &&
                                   _newStatusId != null) {
@@ -657,7 +649,6 @@ class _OrderScreenState extends State<OrderScreen>
                                 }
                               }
 
-                              // Автоматически загружаем заказы для активного статуса после refresh
                               Future.delayed(Duration(milliseconds: 150), () {
                                 if (mounted &&
                                     _statuses.isNotEmpty &&
@@ -682,7 +673,6 @@ class _OrderScreenState extends State<OrderScreen>
                                 }
                               });
                             } else {
-                              // Если статусы пустые, создаем пустой контроллер
                               if (_tabController.length > 0) {
                                 _tabController.dispose();
                               }
@@ -693,15 +683,16 @@ class _OrderScreenState extends State<OrderScreen>
                           });
                         }
                       } else if (state is OrderStatusCreated) {
+                        final snackColors = context.appColors;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               state.message,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: snackColors.textInverse,
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
@@ -724,17 +715,18 @@ class _OrderScreenState extends State<OrderScreen>
                         _orderBloc.add(FetchOrderStatuses());
                       } else if (state is OrderStatusDeleted ||
                           state is OrderStatusUpdated) {
+                        final snackColors = context.appColors;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               state is OrderStatusDeleted
                                   ? state.message
                                   : (state as OrderStatusUpdated).message,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: snackColors.textInverse,
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
@@ -752,15 +744,16 @@ class _OrderScreenState extends State<OrderScreen>
                         _resetScreenState();
                         _orderBloc.add(FetchOrderStatuses());
                       } else if (state is OrderError) {
+                        final snackColors = context.appColors;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               state.message,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: snackColors.textInverse,
                               ),
                             ),
                             behavior: SnackBarBehavior.floating,
@@ -775,7 +768,6 @@ class _OrderScreenState extends State<OrderScreen>
                             duration: const Duration(seconds: 3),
                           ),
                         );
-                        // Устанавливаем _isInitialLoad в false при ошибке, чтобы не показывать загрузку бесконечно
                         if (_isInitialLoad) {
                           setState(() {
                             _isInitialLoad = false;
@@ -785,7 +777,6 @@ class _OrderScreenState extends State<OrderScreen>
                     },
                     child: BlocBuilder<OrderBloc, OrderState>(
                       builder: (context, state) {
-                        // Показываем индикатор загрузки, если идет начальная загрузка
                         if (_isInitialLoad || state is OrderLoading) {
                           return const Center(
                             child: PlayStoreImageLoading(
@@ -794,24 +785,22 @@ class _OrderScreenState extends State<OrderScreen>
                             ),
                           );
                         }
-                        // Показываем сообщение, если статусы не загружены и список пуст
                         if (_statuses.isEmpty && state is OrderLoaded) {
                           return Center(
                             child: Text(
                               localizations!.translate('no_order_statuses'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
+                                color: colors.textSecondary,
                               ),
                             ),
                           );
                         }
-                        // Основной контент, если есть статусы
                         return RefreshIndicator(
-                          color: const Color(0xff1E2E52),
-                          backgroundColor: Colors.white,
+                          color: colors.iconPrimary,
+                          backgroundColor: colors.surfacePrimary,
                           onRefresh: () {
                             final currentStatusId = _statuses.isNotEmpty &&
                                     _currentTabIndex < _statuses.length
@@ -945,10 +934,10 @@ class _OrderScreenState extends State<OrderScreen>
                     }
                   }
                 },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(
+                backgroundColor: colors.buttonPrimaryBg,
+                child: Icon(
                   Icons.add,
-                  color: Color.fromARGB(255, 255, 255, 255),
+                  color: colors.textInverse,
                   size: 25,
                 ),
               )
@@ -958,6 +947,7 @@ class _OrderScreenState extends State<OrderScreen>
   }
 
   Widget _buildCustomTabBar(BuildContext context) {
+    final colors = context.appColors;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       controller: _scrollController,
@@ -980,13 +970,13 @@ class _OrderScreenState extends State<OrderScreen>
                         CreateOrderStatusDialog(orderBloc: _orderBloc),
                   );
                 },
-                child: const Text(
+                child: Text(
                   '+',
                   style: TextStyle(
                     fontSize: 24,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w400,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -998,18 +988,16 @@ class _OrderScreenState extends State<OrderScreen>
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+    final colors = context.appColors;
 
     return FutureBuilder<int>(
       future: OrderCache.getPersistentOrderCount(_statuses[index].id),
       builder: (context, snapshot) {
-        // Сначала пробуем получить count из постоянного кэша
         int orderCount = snapshot.data ?? 0;
 
-        // Если в постоянном кэше нет данных, пробуем другие источники
         if (orderCount == 0) {
           return BlocBuilder<OrderBloc, OrderState>(
             builder: (context, state) {
-              // Используем данные из состояния только если нет постоянного счетчика
               if (state is OrderLoaded) {
                 final statusId = _statuses[index].id;
                 final orderStatus = state.statuses.firstWhere(
@@ -1028,8 +1016,6 @@ class _OrderScreenState extends State<OrderScreen>
                   ),
                 );
                 orderCount = orderStatus.ordersCount;
-
-                // Сразу сохраняем в постоянный кэш
                 OrderCache.setPersistentOrderCount(statusId, orderCount);
               }
 
@@ -1038,14 +1024,13 @@ class _OrderScreenState extends State<OrderScreen>
           );
         }
 
-        // Если есть постоянный счетчик, используем его напрямую
         return _buildTabButtonUI(index, isActive, orderCount);
       },
     );
   }
 
-  // Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int orderCount) {
+    final colors = context.appColors;
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
@@ -1056,43 +1041,35 @@ class _OrderScreenState extends State<OrderScreen>
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isActive ? Colors.black : const Color(0xff99A4BA),
+            color: isActive ? colors.textPrimary : colors.textSecondary,
           ),
         ),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Text(
-            //   _statuses[index].name,
-            //   style: TaskStyles.tabTextStyle.copyWith(
-            //     color: isActive
-            //         ? TaskStyles.activeColor
-            //         : TaskStyles.inactiveColor,
-            //   ),
-            // ),
             const SizedBox(width: 4),
             Transform.translate(
               offset: const Offset(12, 0),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isActive
-                        ? const Color(0xff1E2E52)
-                        : const Color(0xff99A4BA),
+                        ? colors.textPrimary
+                        : colors.textSecondary,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   orderCount.toString(),
                   style: TextStyle(
-                    color: isActive ? Colors.black : const Color(0xff99A4BA),
+                    color: isActive ? colors.textPrimary : colors.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1106,11 +1083,11 @@ class _OrderScreenState extends State<OrderScreen>
   }
 
   Widget _buildFilteredView() {
+    final colors = context.appColors;
     return BlocListener<OrderBloc, OrderState>(
       listener: (context, state) {
         debugPrint(
             'OrderScreen: _buildFilteredView listener - state: ${state.runtimeType}');
-        // Сбрасываем флаги когда данные загружены или произошла ошибка
         if ((state is OrderLoaded || state is OrderError) &&
             mounted &&
             (_isFilterLoading || _shouldShowLoader)) {
@@ -1129,7 +1106,6 @@ class _OrderScreenState extends State<OrderScreen>
                   ? _statuses[_currentTabIndex].id
                   : 0;
 
-          // Показываем лоадер только если флаги активны ИЛИ состояние - OrderLoading
           if (_shouldShowLoader || _isFilterLoading || state is OrderLoading) {
             return const Center(
               child: PlayStoreImageLoading(
@@ -1145,18 +1121,18 @@ class _OrderScreenState extends State<OrderScreen>
             if (orders.isEmpty) {
               return RefreshIndicator(
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.iconPrimary,
+                backgroundColor: colors.surfacePrimary,
                 child: Center(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Text(
                       AppLocalizations.of(context)!.translate('nothing_found'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -1166,8 +1142,8 @@ class _OrderScreenState extends State<OrderScreen>
 
             return RefreshIndicator(
               onRefresh: () => _onRefresh(currentStatusId),
-              color: const Color(0xff1E2E52),
-              backgroundColor: Colors.white,
+              color: colors.iconPrimary,
+              backgroundColor: colors.surfacePrimary,
               child: ListView.builder(
                 controller: _scrollController,
                 itemCount: orders.length,
@@ -1194,16 +1170,15 @@ class _OrderScreenState extends State<OrderScreen>
             );
           }
 
-          // Если состояние OrderError - показываем ошибку
           if (state is OrderError) {
             return Center(
               child: Text(
                 state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Colors.red,
+                  color: colors.error,
                 ),
               ),
             );

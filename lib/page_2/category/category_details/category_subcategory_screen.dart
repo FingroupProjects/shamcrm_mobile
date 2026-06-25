@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeo
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/page_2/category/category_details/subCategory_add_screen.dart';
@@ -80,16 +81,13 @@ Future<void> _initializeBaseUrl() async {
       child: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
         builder: (context, state) {
           if (state is CategoryByIdLoading) {
-            //print('CategorySubCategoryScreen: Состояние загрузки');
-            return Center(child: CircularProgressIndicator(color: const Color(0xff1E2E52)));
+            final colors = context.appColors;
+            return Center(child: CircularProgressIndicator(color: colors.buttonPrimaryBg));
           } else if (state is CategoryByIdError) {
-            //print('CategorySubCategoryScreen: Ошибка: ${state.message}');
             return Center(child: Text(state.message));
           } else if (state is CategoryByIdLoaded) {
-            //print('CategorySubCategoryScreen: Загружено подкатегорий: ${state.category.categories.length}');
             return _buildSubCategoryList(state.category.categories);
           } else {
-            //print('CategorySubCategoryScreen: Нет данных для отображения');
             return Center(child: Text(AppLocalizations.of(context)!.translate("no_data_to_display")));
           }
         },
@@ -98,6 +96,7 @@ Future<void> _initializeBaseUrl() async {
   }
 
   Widget _buildSubCategoryList(List<CategoryDataById> categories) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -117,7 +116,7 @@ Future<void> _initializeBaseUrl() async {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -140,13 +139,14 @@ Future<void> _initializeBaseUrl() async {
   }
 
   Widget _buildSubCategoryItem(CategoryDataById category) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () => _navigateToSubCategoryDetails(category),
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Color(0xffF4F7FD),
+          color: colors.fieldBg,
         ),
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -158,7 +158,7 @@ Future<void> _initializeBaseUrl() async {
                 height: 100,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                 ),
                 child: category.image != null
                     ? ClipRRect(
@@ -182,7 +182,7 @@ Future<void> _initializeBaseUrl() async {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -196,7 +196,7 @@ Future<void> _initializeBaseUrl() async {
                             AppLocalizations.of(context)!.translate('characteristics'),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -207,14 +207,14 @@ Future<void> _initializeBaseUrl() async {
                               ...category.attributes.take(4).map((attr) => Container(
                                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: colors.surfacePrimary,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
                                       style: TextStyle(
                                         fontSize: 10,
-                                        color: Color(0xff1E2E52),
+                                        color: colors.textPrimary,
                                       ),
                                     ),
                                   )),
@@ -222,14 +222,14 @@ Future<void> _initializeBaseUrl() async {
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: colors.surfacePrimary,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     '+${category.attributes.length - 3}',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -248,16 +248,17 @@ Future<void> _initializeBaseUrl() async {
   }
 
   Widget _buildNoPhotoPlaceholder() {
+    final colors = context.appColors;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.photo_camera, size: 30, color: Color(0xff99A4BA)),
+        Icon(Icons.photo_camera, size: 30, color: colors.textSecondary),
         SizedBox(height: 4),
         Text(
           AppLocalizations.of(context)!.translate("no_photo"),
           style: TextStyle(
             fontSize: 12,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
             fontFamily: 'Gilroy',
           ),
         ),
@@ -266,7 +267,6 @@ Future<void> _initializeBaseUrl() async {
   }
 
   void _navigateToSubCategoryDetails(CategoryDataById category) {
-    //print('CategorySubCategoryScreen: Переход к деталям подкатегории: ${category.name}');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -279,6 +279,7 @@ Future<void> _initializeBaseUrl() async {
   }
 
   Row _buildTitleRow(String title) {
+    final colors = context.appColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -288,19 +289,18 @@ Future<void> _initializeBaseUrl() async {
             fontWeight: FontWeight.w500,
           ),
         ),
-        if (_canCreateCategory) // Условное отображение кнопки
+        if (_canCreateCategory)
           TextButton(
             onPressed: () {
-              //print('CategorySubCategoryScreen: Нажата кнопка добавления подкатегории');
               SubCategoryAddBottomSheet.show(context, widget.categoryId);
               setState(() {
                 isCreateSubCatgeory = true;
               });
             },
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: colors.buttonPrimaryFg,
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              backgroundColor: Color(0xff1E2E52),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -311,7 +311,7 @@ Future<void> _initializeBaseUrl() async {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: colors.buttonPrimaryFg,
               ),
             ),
           ),

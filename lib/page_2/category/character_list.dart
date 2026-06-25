@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +14,7 @@ class CharacteristicData {
 class CharacteristicSelectionWidget extends StatefulWidget {
   final String? selectedCharacteristic;
   final Function(String) onSelectCharacteristic;
-  final Function(bool)? onDropdownVisibilityChanged; 
+  final Function(bool)? onDropdownVisibilityChanged;
 
   CharacteristicSelectionWidget({
     Key? key,
@@ -59,9 +60,7 @@ Future<void> _loadCharacteristics() async {
       });
     }
   } catch (e) {
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(content: Text('Не удалось загрузить характеристики: ${e.toString()}')),
-    // );
+    // silent fail
   }
 }
 
@@ -91,15 +90,6 @@ Future<void> _loadCharacteristics() async {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   "Характеристика", // Заголовок
-        //   style: TextStyle(
-        //     fontSize: 16,
-        //     fontWeight: FontWeight.w500,
-        //     fontFamily: 'Gilroy',
-        //     color: Color(0xfff1E2E52),
-        //   ),
-        // ),
         const SizedBox(height: 4),
         _buildTextField(),
       ],
@@ -107,15 +97,16 @@ Future<void> _loadCharacteristics() async {
   }
 
 Widget _buildTextField() {
+  final colors = context.appColors;
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Container(
         decoration: BoxDecoration(
-          color: Color(0xffF4F7FD),
+          color: colors.fieldBg,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Color(0xffF4F7FD),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
@@ -129,7 +120,7 @@ Widget _buildTextField() {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context)!.translate('select_characteristic'),
@@ -137,7 +128,7 @@ Widget _buildTextField() {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52).withOpacity(0.6),
+                    color: colors.textSecondary.withValues(alpha: 0.6),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -157,7 +148,7 @@ Widget _buildTextField() {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.arrow_drop_down),
+              icon: Icon(Icons.arrow_drop_down, color: colors.textSecondary),
               onPressed: () {
                 setState(() {
                   _isDropdownVisible = !_isDropdownVisible;
@@ -180,14 +171,14 @@ Widget _buildTextField() {
         Container(
           margin: EdgeInsets.only(top: 2),
           constraints: BoxConstraints(
-            maxHeight: 200, // Reduced height to show ~2 items
+            maxHeight: 200,
             maxWidth: 330,
           ),
           decoration: BoxDecoration(
-            color: Color(0xffF4F7FD),
+            color: colors.fieldBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffF4F7FD),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
@@ -199,22 +190,26 @@ Widget _buildTextField() {
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
+                  style: TextStyle(color: colors.textPrimary),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.translate('search'),
-                    prefixIcon: Icon(Icons.search, color: Color(0xff1E2E52)),
+                    hintStyle: TextStyle(color: colors.textSecondary),
+                    prefixIcon: Icon(Icons.search, color: colors.textSecondary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.black),
+                      borderSide: BorderSide(color: colors.borderSubtle),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.black),
+                      borderSide: BorderSide(color: colors.borderPrimary),
                     ),
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    filled: true,
+                    fillColor: colors.surfacePrimary,
                   ),
                   onChanged: (value) {
                     filterSearchResults(value);
@@ -229,7 +224,7 @@ Widget _buildTextField() {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: Colors.grey[600],
+                            color: colors.textSecondary,
                           ),
                         ),
                       )
@@ -246,7 +241,7 @@ Widget _buildTextField() {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                                 fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                             onTap: () {

@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class _LabelWidgetState extends State<LabelWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<LabelBloc, LabelState>(
       listener: (context, state) {
         if (state is LabelError) {
@@ -39,18 +41,18 @@ class _LabelWidgetState extends State<LabelWidget> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -59,20 +61,15 @@ class _LabelWidgetState extends State<LabelWidget> {
         builder: (context, state) {
           List<Label> labelsList = state is LabelLoaded ? state.labels : [];
 
-          // Устанавливаем selectedLabelData при загрузке меток
           if (state is LabelLoaded && widget.selectedLabel != null && labelsList.isNotEmpty) {
             try {
               selectedLabelData = labelsList.firstWhere(
                 (label) => label.id.toString() == widget.selectedLabel,
-                // orElse: () => null,
               );
             } catch (e) {
               selectedLabelData = null;
-              //print('LabelWidget: Error finding label: $e');
             }
           }
-
-          //print('LabelWidget: selectedLabel = ${widget.selectedLabel}, selectedLabelData = ${selectedLabelData?.id}');
 
           if (state is LabelLoading) {
             return Column(
@@ -84,11 +81,11 @@ class _LabelWidgetState extends State<LabelWidget> {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+                Center(child: CircularProgressIndicator(color: colors.buttonPrimaryBg)),
               ],
             );
           }
@@ -102,7 +99,7 @@ class _LabelWidgetState extends State<LabelWidget> {
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -114,15 +111,15 @@ class _LabelWidgetState extends State<LabelWidget> {
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: colors.fieldBg,
+                    expandedFillColor: colors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.borderSubtle,
                       width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.borderSubtle,
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
@@ -138,11 +135,11 @@ class _LabelWidgetState extends State<LabelWidget> {
                             shape: BoxShape.circle,
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           item.name,
                           style: TextStyle(
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
@@ -163,7 +160,7 @@ class _LabelWidgetState extends State<LabelWidget> {
                               shape: BoxShape.circle,
                             ),
                           ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           selectedItem?.name ??
                               AppLocalizations.of(context)!.translate('select_label'),
@@ -171,7 +168,7 @@ class _LabelWidgetState extends State<LabelWidget> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ],
@@ -183,7 +180,7 @@ class _LabelWidgetState extends State<LabelWidget> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   excludeSelected: false,

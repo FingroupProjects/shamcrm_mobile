@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeo
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_by_id/catgeoryById_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/page_2/category/category_details/subCategory/subCategory_edit_screen.dart';
@@ -121,6 +122,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return MultiBlocListener(
       listeners: [
         BlocListener<CategoryBloc, CategoryState>(
@@ -131,11 +133,11 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 SnackBar(
                   content: Text(
                     AppLocalizations.of(context)!.translate('subcategory_updated_successfully'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: colors.surfacePrimary,
                     ),
                   ),
                   behavior: SnackBarBehavior.floating,
@@ -143,7 +145,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: Colors.green,
+                  backgroundColor: colors.success,
                   elevation: 3,
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   duration: const Duration(seconds: 3),
@@ -179,7 +181,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
           context,
           AppLocalizations.of(context)!.translate('view_subcategory'),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         body: BlocBuilder<CategoryByIdBloc, CategoryByIdState>(
           builder: (context, state) {
             if (state is CategoryByIdLoading) {
@@ -235,8 +237,8 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                             return Container(
                               width: double.infinity,
                               height: 200,
-                              color: Colors.white,
-                              child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
+                              color: colors.surfacePrimary,
+                              child: Icon(Icons.image_not_supported, size: 50, color: colors.textPrimary),
                             );
                           },
                           loadingBuilder: (context, child, loadingProgress) {
@@ -245,14 +247,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                             return Container(
                               width: double.infinity,
                               height: 200,
-                              color: Colors.white,
+                              color: colors.surfacePrimary,
                               child: Center(
                                 child: CircularProgressIndicator(
                                   value: loadingProgress.expectedTotalBytes != null
                                       ? loadingProgress.cumulativeBytesLoaded /
                                       loadingProgress.expectedTotalBytes!
                                       : null,
-                                  color: Colors.black,
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             );
@@ -273,6 +275,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Widget _buildSubCategoryList(List<CategoryDataById> categories) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,7 +287,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Color(0xffF4F7FD),
+                color: colors.fieldBg,
               ),
               child: Center(
                 child: Padding(
@@ -295,7 +298,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -318,13 +321,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Widget _buildSubCategoryItem(CategoryDataById category) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () => _navigateToSubCategoryDetails(category),
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Color(0xffF4F7FD),
+          color: colors.fieldBg,
         ),
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -336,7 +340,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 height: 100,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                 ),
                 child: category.image != null
                     ? ClipRRect(
@@ -360,7 +364,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -374,7 +378,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                             AppLocalizations.of(context)!.translate('characteristics'),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -385,14 +389,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                               ...category.attributes.take(4).map((attr) => Container(
                                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: colors.surfacePrimary,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   attr.name.length > 10 ? '${attr.name.substring(0, 7)}...' : attr.name,
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               )),
@@ -400,14 +404,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                                 Container(
                                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: colors.surfacePrimary,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     '+${category.attributes.length - 3}',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -426,16 +430,17 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Widget _buildNoPhotoPlaceholder() {
+    final colors = context.appColors;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.photo_camera, size: 30, color: Color(0xff99A4BA)),
+        Icon(Icons.photo_camera, size: 30, color: colors.textSecondary),
         SizedBox(height: 4),
         Text(
           AppLocalizations.of(context)!.translate("no_photo"),
           style: TextStyle(
             fontSize: 12,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
             fontFamily: 'Gilroy',
           ),
         ),
@@ -457,6 +462,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Row _buildTitleRow(String title) {
+    final colors = context.appColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -465,7 +471,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         if (_canCreateCategory) // Условное отображение кнопки добавления
@@ -475,9 +481,9 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
               SubCategoryAddBottomSheet.show(context, _currentCategory.id);
             },
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: colors.surfacePrimary,
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              backgroundColor: Color(0xff1E2E52),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -488,7 +494,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: colors.surfacePrimary,
               ),
             ),
           ),
@@ -497,6 +503,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Widget _buildAttributesSection() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -506,7 +513,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         SizedBox(height: 8),
@@ -517,7 +524,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
             return Container(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Color(0xffF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -527,7 +534,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                     attr.name,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
@@ -540,8 +547,9 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -555,9 +563,9 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.iconPrimary,
             ),
             onPressed: () async {
-              //print('SubCategoryDetailsScreen: Нажата кнопка "Назад"');
               Navigator.pop(context);
             },
           ),
@@ -567,11 +575,11 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         offset: const Offset(-10, 0),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -585,16 +593,16 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 'assets/icons/edit.png',
                 width: 24,
                 height: 24,
+                color: colors.iconPrimary,
               ),
               onPressed: () async {
-                //print('SubCategoryDetailsScreen: Нажата кнопка редактирования');
                 await SubCategoryEditBottomSheet.show(
                   context,
                   initialSubCategoryId: widget.category.id,
                   initialName: _currentCategory.name,
                   initialImage: _cachedImageFile,
                   initialAttributes: _currentCategory.attributes,
-                  initialDisplayType: _currentCategory.displayType ?? 'a', // Убедимся, что поле существует
+                  initialDisplayType: _currentCategory.displayType ?? 'a',
                   initialHasPriceCharacteristics: _currentCategory.hasPriceCharacteristics,
                 );
               },
@@ -606,15 +614,14 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 'assets/icons/delete.png',
                 width: 24,
                 height: 24,
+                color: colors.iconPrimary,
               ),
               onPressed: () {
-                //print('SubCategoryDetailsScreen: Нажата кнопка удаления');
                 showDialog(
                   context: context,
                   builder: (context) => DeleteSubCategoryDialog(categoryId: widget.category.id),
                 ).then((deleted) {
                   if (deleted == true) {
-                    //print('SubCategoryDetailsScreen: Подкатегория удалена, обновление данных');
                     context.read<CategoryByIdBloc>().add(FetchCategoryByIdEvent(categoryId: widget.ctgId));
                     Navigator.of(context).pop(true);
                   }
@@ -672,18 +679,20 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
       style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
+    final colors = context.appColors;
     if (value.isEmpty) {
       //print('SubCategoryDetailsScreen: Пустое значение для $label');
       return Container();
@@ -694,7 +703,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
+        color: colors.textPrimary,
         decoration: label == AppLocalizations.of(context)!.translate('description_details')
             ? TextDecoration.underline
             : TextDecoration.none,
@@ -705,12 +714,12 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
-    //print('SubCategoryDetailsScreen: Отображение диалога полного текста для: $title');
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final colors = context.appColors;
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -722,7 +731,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
@@ -737,7 +746,7 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                     content,
                     textAlign: TextAlign.start,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -750,11 +759,10 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
-                    //print('SubCategoryDetailsScreen: Закрытие диалога полного текста');
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.surfacePrimary,
                 ),
               ),
             ],

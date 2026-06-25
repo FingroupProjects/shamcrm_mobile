@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
@@ -50,8 +51,8 @@ class SubCategoryEditBottomSheet {
     return await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: context.appColors.surfacePrimary,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
@@ -91,18 +92,18 @@ class SubCategoryEditBottomSheet {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xffDFE3EC),
+                        color: context.appColors.borderSubtle,
                         borderRadius: BorderRadius.circular(1200),
                       ),
                     ),
                     Text(
                       AppLocalizations.of(context)!
                           .translate('edit_subcategory'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -150,11 +151,11 @@ class SubCategoryEditBottomSheet {
                               Text(
                                 AppLocalizations.of(context)!
                                     .translate('image_message'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: context.appColors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -170,10 +171,10 @@ class SubCategoryEditBottomSheet {
                                       width: double.infinity,
                                       height: 60,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xffF4F7FD),
+                                        color: context.appColors.fieldBg,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: const Color(0xffF4F7FD),
+                                          color: context.appColors.fieldBg,
                                           width: 1.5,
                                         ),
                                       ),
@@ -183,9 +184,9 @@ class SubCategoryEditBottomSheet {
                                           mainAxisAlignment:
                                           MainAxisAlignment.center,
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.camera_alt,
-                                              color: Color(0xff99A4BA),
+                                              color: context.appColors.textSecondary,
                                               size: 24,
                                             ),
                                             const SizedBox(width: 8),
@@ -194,12 +195,12 @@ class SubCategoryEditBottomSheet {
                                                   context)!
                                                   .translate(
                                                   'pick_image'),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight:
                                                 FontWeight.w500,
                                                 fontFamily: 'Gilroy',
-                                                color: Color(0xff99A4BA),
+                                                color: context.appColors.textSecondary,
                                               ),
                                             ),
                                           ],
@@ -231,23 +232,23 @@ class SubCategoryEditBottomSheet {
                                                 _image!.path
                                                     .split('/')
                                                     .last,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 14,
                                                   fontWeight:
                                                   FontWeight.w500,
                                                   fontFamily: 'Gilroy',
                                                   color:
-                                                  Color(0xff1E2E52),
+                                                  context.appColors.textPrimary,
                                                 ),
                                                 overflow:
                                                 TextOverflow.ellipsis,
                                               ),
                                             ),
                                             IconButton(
-                                              icon: const Icon(
+                                              icon: Icon(
                                                   Icons.close,
                                                   color:
-                                                  Color(0xff1E2E52)),
+                                                  context.appColors.textPrimary),
                                               onPressed: () {
                                                 setState(() {
                                                   _image = null;
@@ -266,15 +267,15 @@ class SubCategoryEditBottomSheet {
                               CustomButton(
                                 buttonText: AppLocalizations.of(context)!
                                     .translate('add_characteristic'),
-                                buttonColor: const Color(0xff1E2E52),
-                                textColor: Colors.white,
+                                buttonColor: context.appColors.buttonPrimaryBg,
+                                textColor: context.appColors.surfacePrimary,
                                 onPressed: _showAddCharacterCustomFieldDialog,
                               ),
                               const SizedBox(height: 5),
                               Column(
                                 children: customFields.map((field) {
                                   return Card(
-                                    color: const Color(0xffF4F7FD),
+                                    color: context.appColors.fieldBg,
                                     margin:
                                     const EdgeInsets.symmetric(vertical: 4),
                                     child: ListTile(
@@ -294,11 +295,11 @@ class SubCategoryEditBottomSheet {
                                             .translate('individual')
                                             : AppLocalizations.of(context)!
                                             .translate('common'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w400,
                                           fontFamily: 'Gilroy',
-                                          color: Color(0x991E2E52),
+                                          color: context.appColors.textSecondary.withValues(alpha: 0.6),
                                         ),
                                       ),
                                       trailing: IconButton(
@@ -328,8 +329,8 @@ class SubCategoryEditBottomSheet {
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('cancel'),
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: context.appColors.fieldBg,
+                            textColor: context.appColors.textPrimary,
                             onPressed: () => Navigator.pop(context),
                           ),
                         ),
@@ -338,8 +339,8 @@ class SubCategoryEditBottomSheet {
                           child: CustomButton(
                             buttonText:
                             AppLocalizations.of(context)!.translate('save'),
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: context.appColors.buttonPrimaryBg,
+                            textColor: context.appColors.surfacePrimary,
                             onPressed: () {
                               if (formKey.currentState!.validate()) {
                                 final result = _createCategory(

@@ -20,17 +20,15 @@ class GoodsDetailsScreen extends StatefulWidget {
   final int id;
   final bool showActions;
   final bool isFromOrder;
-  final bool isFromBarcodeSearch; // Новый параметр
-  final bool
-      showEditButton; // Новый параметр для контроля кнопки редактирования
+  final bool isFromBarcodeSearch;
+  final bool showEditButton;
 
   const GoodsDetailsScreen({
     required this.id,
     this.showActions = true,
     this.isFromOrder = false,
-    this.isFromBarcodeSearch = false, // По умолчанию false
-    this.showEditButton = true, // По умолчанию показываем кнопку
-
+    this.isFromBarcodeSearch = false,
+    this.showEditButton = true,
     super.key,
   });
 
@@ -51,7 +49,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    // Загружаем данные о товаре по ID
     context
         .read<GoodsByIdBloc>()
         .add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
@@ -186,13 +183,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black54,
+            color: context.appColors.overlay,
             borderRadius: BorderRadius.circular(30),
           ),
           child: Text(
             '${_currentPage + 1}/${sortedFiles.length}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.appColors.textInverse,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -271,13 +268,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-          color: colors.textPrimary,
+            color: colors.textPrimary,
           ),
         ),
       ),
       actions: widget.showActions &&
               _canUpdateProduct &&
-              widget.showEditButton // Добавляем проверку showEditButton
+              widget.showEditButton
           ? [
               BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
                 builder: (context, state) {
@@ -331,6 +328,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildDetailsList(Goods goods) {
+    final colors = context.appColors;
     List<String> labels = [];
     if (goods.isPopular)
       labels.add(AppLocalizations.of(context)!.translate('hit'));
@@ -434,8 +432,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
                           color: goods.discountedPrice != null
-                              ? Colors.grey
-                              : const Color(0xFF1E2E52),
+                              ? colors.textMuted
+                              : colors.textPrimary,
                           decoration: goods.discountedPrice != null
                               ? TextDecoration.lineThrough
                               : TextDecoration.none,
@@ -444,11 +442,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       if (goods.discountedPrice != null)
                         Text(
                           goods.discountedPrice!.toStringAsFixed(2),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                     ],
@@ -480,6 +478,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildMaterialGoodsSection(List<MaterialGood> materialGoods) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -519,6 +518,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildRelatedGoodsSection(List<RelatedGood> relatedGoods) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -544,12 +544,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               title: item.displayName,
               icon: Icons.link_outlined,
               meta: [
-                if (item.price != null) 'Цена: ${_formatRelationPrice(item.price!)}',
+                if (item.price != null)
+                  'Цена: ${_formatRelationPrice(item.price!)}',
               ],
               badgeText: item.isRequired ? 'Обязательный' : 'Необязательный',
               badgeColor: item.isRequired
-                  ? const Color(0xff4759FF)
-                  : const Color(0xff99A4BA),
+                  ? colors.buttonPrimaryBg
+                  : colors.textMuted,
             );
           }),
       ],
@@ -561,18 +562,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     required int count,
     required IconData icon,
   }) {
+    final colors = context.appColors;
     return Row(
       children: [
         Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xff4759FF).withValues(alpha: 0.1),
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             icon,
-            color: const Color(0xff4759FF),
+            color: colors.buttonPrimaryBg,
             size: 18,
           ),
         ),
@@ -580,27 +582,27 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xffE9F1FF),
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             count.toString(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
-              color: Color(0xff4759FF),
+              color: colors.buttonPrimaryBg,
             ),
           ),
         ),
@@ -613,13 +615,14 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     required String subtitle,
     required IconData icon,
   }) {
+    final colors = context.appColors;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFF),
+        color: colors.backgroundSecondary,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE4F2)),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
         children: [
@@ -627,12 +630,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xffE9F1FF),
+              color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: const Color(0xff5C6F91),
+              color: colors.textSecondary,
               size: 20,
             ),
           ),
@@ -643,21 +646,21 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff5C6F91),
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -676,18 +679,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
     String? badgeText,
     Color? badgeColor,
   }) {
+    final colors = context.appColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A1E2E52),
+            color: colors.shadowColor,
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -698,17 +702,17 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xffE9F1FF),
+              color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
             child: Text(
               index.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w700,
-                color: Color(0xff4759FF),
+                color: colors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -722,17 +726,17 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     Icon(
                       icon,
                       size: 16,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),
@@ -752,16 +756,16 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4F7FD),
+                              color: colors.backgroundSecondary,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
                               item,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xff5C6F91),
+                                color: colors.textSecondary,
                               ),
                             ),
                           ),
@@ -777,7 +781,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: (badgeColor ?? const Color(0xff99A4BA))
+                      color: (badgeColor ?? colors.textMuted)
                           .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
@@ -787,7 +791,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                         fontSize: 12,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
-                        color: badgeColor ?? const Color(0xff99A4BA),
+                        color: badgeColor ?? colors.textMuted,
                       ),
                     ),
                   ),
@@ -821,6 +825,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantsSection(Goods goods) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -830,7 +835,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -848,7 +853,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantCard(GoodsVariant variant, List<GoodsFile> goodsFiles) {
-    final price = variant.price; // NEW PRICE instead of variantPrice
+    final colors = context.appColors;
+    final price = variant.price;
     Set<Map<String, String>> uniqueAttributes = {};
     if (variant.attributeValues.isNotEmpty) {
       for (var attrValue in variant.attributeValues) {
@@ -881,9 +887,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         );
       },
       child: Card(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.only(bottom: 16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -891,7 +898,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                  width: 120, height: 120, child: _buildVariantImage(imageUrl)),
+                  width: 120,
+                  height: 120,
+                  child: _buildVariantImage(imageUrl)),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -906,11 +915,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                 flex: 2,
                                 child: Text(
                                   '${attr['name']}: ',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
@@ -920,11 +929,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                                 flex: 2,
                                 child: Text(
                                   attr['value']!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
@@ -938,22 +947,22 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Text(
                           '${AppLocalizations.of(context)!.translate('more')} ${uniqueAttributes.length - 4}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.grey,
+                            color: colors.textMuted,
                           ),
                         ),
                       ),
                     const SizedBox(height: 8),
                     Text(
                       '$price',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ],
@@ -967,11 +976,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantImage(String? imageUrl) {
+    final colors = context.appColors;
     if (imageUrl == null) {
       return Container(
-        color: Colors.grey[200],
-        child: const Center(
-            child: Icon(Icons.image, size: 50, color: Colors.grey)),
+        color: colors.surfacePrimary,
+        child: Center(
+            child: Icon(Icons.image, size: 50, color: colors.iconPrimary)),
       );
     }
     return ClipRRect(
@@ -980,9 +990,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => Container(
-          color: Colors.grey[200],
-          child: const Center(
-              child: Icon(Icons.image, size: 50, color: Colors.grey)),
+          color: colors.surfacePrimary,
+          child: Center(
+              child: Icon(Icons.image, size: 50, color: colors.iconPrimary)),
         ),
       ),
     );
@@ -1023,16 +1033,17 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   Widget _buildLabel(String label) {
     return Text(
       '$label:',
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textMuted,
       ),
     );
   }
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
+    final colors = context.appColors;
     if (label ==
             AppLocalizations.of(context)!
                 .translate('goods_description_details') &&
@@ -1057,7 +1068,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: const Color(0xFF1E2E52),
+        color: colors.textPrimary,
         decoration: label ==
                 AppLocalizations.of(context)!
                     .translate('goods_description_details')
@@ -1070,11 +1081,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: colors.surfacePrimary,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1082,8 +1095,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
@@ -1097,8 +1110,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 child: Text(
                   content,
                   textAlign: TextAlign.start,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -1109,10 +1122,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('close'),
+                buttonText:
+                    AppLocalizations.of(context)!.translate('close'),
                 onPressed: () => Navigator.pop(context),
-                buttonColor: const Color(0xff1E2E52),
-                textColor: Colors.white,
+                buttonColor: colors.textPrimary,
+                textColor: colors.textInverse,
               ),
             ),
           ],
@@ -1129,10 +1143,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: _buildAppBar(
           context, AppLocalizations.of(context)!.translate('view_goods')),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       body: BlocConsumer<GoodsByIdBloc, GoodsByIdState>(
         listener: (context, state) {
           if (state is GoodsByIdError) {
@@ -1144,18 +1159,20 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.surfacePrimary,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
                 elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: const Duration(seconds: 3),
               ),
             );
           } else if (state is GoodsByIdDeleted) {
@@ -1169,8 +1186,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         },
         builder: (context, state) {
           if (state is GoodsByIdLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return Center(
+                child: CircularProgressIndicator(
+                    color: colors.buttonPrimaryBg));
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
             details = [
@@ -1196,8 +1214,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 'value': goods.quantity?.toString() ?? '0'
               },
               {
-                'label':
-                    AppLocalizations.of(context)!.translate('category_details'),
+                'label': AppLocalizations.of(context)!
+                    .translate('category_details'),
                 'value': goods.category.name ?? ''
               },
               {
@@ -1239,7 +1257,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             return Center(child: Text(state.message));
           }
           return Center(
-              child: Text(AppLocalizations.of(context)!.translate('loading')));
+              child: Text(
+                  AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );

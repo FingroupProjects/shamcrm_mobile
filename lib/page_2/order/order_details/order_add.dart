@@ -298,7 +298,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 fontFamily: 'Gilroy',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: colors.textInverse,
               ),
             ),
             behavior: SnackBarBehavior.floating,
@@ -607,7 +607,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           enabled: !_isLoadingInternetStores,
           decoration: CustomDropdownDecoration(
             closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
               color: const Color(0xffF4F7FD),
               width: 1.5,
@@ -765,7 +765,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.textInverse,
           ),
         ),
         backgroundColor: Colors.red,
@@ -820,7 +820,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.textInverse,
                 ),
               ),
               backgroundColor: Colors.green,
@@ -918,7 +918,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: colors.textInverse,
       items: menuItems,
     ).then((value) {
       if (value == 'manual') {
@@ -1016,7 +1016,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
               title: Text(
                 AppLocalizations.of(context)!.translate('warning'),
                 style: TextStyle(
@@ -1046,7 +1046,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
                         buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
+                        textColor: colors.textInverse,
                       ),
                     ),
                     SizedBox(width: 8),
@@ -1056,7 +1056,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
                         buttonColor: Colors.red,
-                        textColor: Colors.white,
+                        textColor: colors.textInverse,
                       ),
                     ),
                   ],
@@ -1208,7 +1208,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     buttonText:
                         AppLocalizations.of(context)!.translate('add_field'),
                     buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    textColor: colors.textInverse,
                     onPressed: _showAddFieldMenu,
                   ),
                 );
@@ -1224,7 +1224,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.textInverse,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Color(0xffE5E9F2),
@@ -1320,7 +1320,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                       decoration: BoxDecoration(
                                         color: config.isActive
                                             ? Color(0xff4759FF)
-                                            : Colors.white,
+                                            : colors.surfacePrimary,
                                         border: Border.all(
                                           color: config.isActive
                                               ? Color(0xff4759FF)
@@ -1335,7 +1335,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                         child: Icon(
                                           Icons.check_rounded,
                                           size: 16,
-                                          color: Colors.white,
+                                          color: colors.textInverse,
                                         ),
                                       ),
                                     ),
@@ -1401,7 +1401,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                       decoration: BoxDecoration(
                                         color: config.showOnSite
                                             ? Color(0xff4759FF)
-                                            : Colors.white,
+                                            : colors.surfacePrimary,
                                         border: Border.all(
                                           color: config.showOnSite
                                               ? Color(0xff4759FF)
@@ -1416,7 +1416,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                         child: Icon(
                                           Icons.check_rounded,
                                           size: 16,
-                                          color: Colors.white,
+                                          color: colors.textInverse,
                                         ),
                                       ),
                                     ),
@@ -1449,7 +1449,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.textInverse,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -1485,7 +1485,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('save'),
                   buttonColor: const Color(0xff4759FF),
-                  textColor: Colors.white,
+                  textColor: colors.textInverse,
                   onPressed: isSavingFieldOrder
                       ? null
                       : () async {
@@ -1845,7 +1845,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -1931,7 +1931,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Colors.white,
+                color: colors.textInverse,
               ),
             ),
           ),
@@ -1949,7 +1949,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         BlocProvider<DeliveryAddressBloc>.value(value: _deliveryAddressBloc),
       ],
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         appBar: _buildAppBar(),
         body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
           listener: (context, configState) {
@@ -1968,7 +1968,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: colors.textInverse,
                     ),
                   ),
                   backgroundColor: Colors.red,
@@ -2139,7 +2139,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   AppBar _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
@@ -2264,7 +2264,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             margin: const EdgeInsets.only(top: 16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.textInverse,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -2345,7 +2345,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.textInverse,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -2534,7 +2534,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [
+      decoration: BoxDecoration(color: colors.textInverse, boxShadow: [
         BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
@@ -2730,7 +2730,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.white),
+                    color: colors.textInverse),
               ),
             ),
           ),

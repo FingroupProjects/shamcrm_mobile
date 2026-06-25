@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/u
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_character.dart';
 import 'package:crm_task_manager/custom_widget/simple_switch.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
@@ -105,7 +106,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   Future<void> _selectMaterialGood() async {
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       isScrollControlled: true,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _materialGoods
@@ -150,7 +151,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   Future<void> _selectRelatedGood() async {
     final selected = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       isScrollControlled: true,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _relatedGoods
@@ -235,8 +236,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   void _showImagePickerOptionsForRow(int rowIndex) async {
+    final colors = context.appColors;
     showModalBottomSheet(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       context: context,
       builder: (context) {
         return Container(
@@ -245,14 +247,14 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.camera_alt),
+                leading: Icon(Icons.camera_alt, color: colors.iconPrimary),
                 title: Text(
                   AppLocalizations.of(context)!.translate('make_photo'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                    color: colors.textPrimary,
                   ),
                 ),
                 onTap: () {
@@ -261,15 +263,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library),
+                leading: Icon(Icons.photo_library, color: colors.iconPrimary),
                 title: Text(
                   AppLocalizations.of(context)!
                       .translate('select_from_gallery'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                    color: colors.textPrimary,
                   ),
                 ),
                 onTap: () {
@@ -277,7 +279,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   _pickMultipleImagesForRow(rowIndex);
                 },
               ),
-              SizedBox(height: 0),
+              const SizedBox(height: 0),
             ],
           ),
         );
@@ -307,6 +309,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   Widget _buildProductionTypeSection() {
+    final colors = context.appColors;
     if (!_manufactureLoaded || !_hasManufacture) {
       return const SizedBox.shrink();
     }
@@ -317,11 +320,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         const SizedBox(height: 12),
         Text(
           'Тип товара',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -349,29 +352,29 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             children: [
               Text(
                 'Сырье',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               ElevatedButton.icon(
                 onPressed: _selectMaterialGood,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff4759FF),
+                  backgroundColor: colors.buttonPrimaryBg,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                icon: const Icon(Icons.add, color: Colors.white, size: 18),
-                label: const Text(
+                icon: Icon(Icons.add, color: colors.buttonPrimaryFg, size: 18),
+                label: Text(
                   'Добавить',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Gilroy',
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
               ),
@@ -388,6 +391,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     required String label,
     required String value,
   }) {
+    final colors = context.appColors;
     final isSelected = _productionType == value;
     return InkWell(
       onTap: () => _setProductionType(value),
@@ -395,11 +399,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color:
-                isSelected ? const Color(0xff4759FF) : const Color(0xFFDCE4F2),
+            color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
             width: 1.5,
           ),
         ),
@@ -408,8 +411,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
               color: isSelected
-                  ? const Color(0xff4759FF)
-                  : const Color(0xff99A4BA),
+                  ? colors.buttonPrimaryBg
+                  : colors.textMuted,
               size: 20,
             ),
             const SizedBox(width: 10),
@@ -419,9 +422,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: isSelected
-                    ? const Color(0xff4759FF)
-                    : const Color(0xff1E2E52),
+                color: isSelected ? colors.buttonPrimaryBg : colors.textPrimary,
               ),
             ),
           ],
@@ -431,21 +432,22 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   Widget _buildMaterialGoodsTable() {
+    final colors = context.appColors;
     if (_materialGoods.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9F1FF),
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text(
+        child: Text(
           'Пусто',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
-            color: Color(0xff5C6F91),
+            color: colors.textSecondary,
           ),
         ),
       );
@@ -457,74 +459,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFE9F1FF),
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Expanded(
-                flex: 1,
-                child: Text(
-                  '#',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 5,
-                child: Text(
-                  'Название',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  'Ед.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  'Норма',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
+              Expanded(flex: 1, child: Text('#', style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 5, child: Text('Название', style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 3, child: Text('Ед.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 3, child: Text('Норма', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 2, child: Text('', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
             ],
           ),
         ),
@@ -543,50 +487,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: colors.borderSubtle),
             ),
             child: Row(
               children: [
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 5,
-                  child: Text(
-                    item['name']?.toString() ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    item['unit_name']?.toString() ?? '',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff5C6F91),
-                    ),
-                  ),
-                ),
+                Expanded(flex: 1, child: Text('${index + 1}', style: TextStyle(fontSize: 13, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textPrimary))),
+                Expanded(flex: 5, child: Text(item['name']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: colors.textPrimary))),
+                Expanded(flex: 3, child: Text(item['unit_name']?.toString() ?? '', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', color: colors.textSecondary))),
                 Expanded(
                   flex: 3,
                   child: Padding(
@@ -594,23 +503,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     child: TextField(
                       controller: controller,
                       onChanged: (value) => _updateMaterialNorm(index, value),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [PriceInputFormatter()],
                       textAlign: TextAlign.center,
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: const Color(0xFFF4F7FD),
+                        fillColor: colors.backgroundSecondary,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       ),
                     ),
                   ),
@@ -619,11 +520,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   flex: 2,
                   child: IconButton(
                     onPressed: () => _removeMaterialGood(index),
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Color(0xff1E2E52),
-                      size: 20,
-                    ),
+                    icon: Icon(Icons.delete_outline, color: colors.textPrimary, size: 20),
                   ),
                 ),
               ],
@@ -635,6 +532,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   Widget _buildRelatedGoodsSection() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -642,35 +540,25 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Сопутствующие товары',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
             ElevatedButton.icon(
               onPressed: _selectRelatedGood,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                backgroundColor: colors.buttonPrimaryBg,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              icon: const Icon(Icons.add, color: Colors.white, size: 18),
-              label: const Text(
-                'Добавить',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: Colors.white,
-                ),
-              ),
+              icon: Icon(Icons.add, color: colors.buttonPrimaryFg, size: 18),
+              label: Text('Добавить', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'Gilroy', color: colors.buttonPrimaryFg)),
             ),
           ],
         ),
@@ -681,23 +569,16 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   Widget _buildRelatedGoodsTable() {
+    final colors = context.appColors;
     if (_relatedGoods.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9F1FF),
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text(
-          'Пусто',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'Gilroy',
-            color: Color(0xff5C6F91),
-          ),
-        ),
+        child: Text('Пусто', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontFamily: 'Gilroy', color: colors.textSecondary)),
       );
     }
 
@@ -707,61 +588,15 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFE9F1FF),
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Expanded(
-                flex: 1,
-                child: Text(
-                  '#',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 5,
-                child: Text(
-                  'Название',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  'Обязательный',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff5C6F91),
-                  ),
-                ),
-              ),
+              Expanded(flex: 1, child: Text('#', style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 5, child: Text('Название', style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 3, child: Text('Обязательный', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
+              Expanded(flex: 2, child: Text('', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textSecondary))),
             ],
           ),
         ),
@@ -775,38 +610,14 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: colors.borderSubtle),
             ),
             child: Row(
               children: [
-                Expanded(
-                  flex: 1,
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 5,
-                  child: Text(
-                    item['name']?.toString() ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
-                    ),
-                  ),
-                ),
+                Expanded(flex: 1, child: Text('${index + 1}', style: TextStyle(fontSize: 13, fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textPrimary))),
+                Expanded(flex: 5, child: Text(item['name']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: colors.textPrimary))),
                 Expanded(
                   flex: 3,
                   child: Row(
@@ -814,30 +625,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     children: [
                       Checkbox(
                         value: isRequired,
-                        onChanged: (value) =>
-                            _toggleRelatedGoodRequired(index, value ?? false),
+                        onChanged: (value) => _toggleRelatedGoodRequired(index, value ?? false),
                         fillColor: WidgetStateProperty.resolveWith<Color>(
-                          (states) => states.contains(WidgetState.selected)
-                              ? const Color(0xff4759FF)
-                              : Colors.white,
+                          (states) => states.contains(WidgetState.selected) ? colors.buttonPrimaryBg : colors.surfacePrimary,
                         ),
-                        checkColor: Colors.white,
-                        side: const BorderSide(
-                          color: Color(0xff99A4BA),
-                          width: 1.4,
-                        ),
+                        checkColor: colors.buttonPrimaryFg,
+                        side: BorderSide(color: colors.textMuted, width: 1.4),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Да',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
+                      Text('Да', style: TextStyle(fontSize: 13, fontFamily: 'Gilroy', color: colors.textPrimary)),
                     ],
                   ),
                 ),
@@ -845,11 +643,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   flex: 2,
                   child: IconButton(
                     onPressed: () => _removeRelatedGood(index),
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Color(0xff1E2E52),
-                      size: 20,
-                    ),
+                    icon: Icon(Icons.delete_outline, color: colors.textPrimary, size: 20),
                   ),
                 ),
               ],
@@ -862,18 +656,19 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         forceMaterialTransparency: true,
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('add_goods'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         centerTitle: false,
@@ -882,6 +677,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             'assets/icons/arrow-left.png',
             width: 24,
             height: 24,
+            color: colors.iconPrimary,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -891,16 +687,14 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           BlocListener<GoodsBloc, GoodsState>(
             listener: (context, state) {
               if (state is GoodsSuccess) {
-                //print('GoodsAddScreen: GoodsSuccess received - ${state.message}');
-                setState(() => isLoading = false); // Сбрасываем isLoading
+                setState(() => isLoading = false);
                 showCustomSnackBar(
                   context: context,
                   message: state.message,
                   isSuccess: true,
                 );
-                Navigator.pop(context); // Закрываем экран
+                Navigator.pop(context);
               } else if (state is GoodsError) {
-                //print('GoodsAddScreen: GoodsError received - ${state.message}');
                 setState(() => isLoading = false);
                 showCustomSnackBar(
                   context: context,
@@ -908,15 +702,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   isSuccess: false,
                 );
               } else if (state is GoodsLoading) {
-                //print('GoodsAddScreen: GoodsLoading state');
                 setState(() => isLoading = true);
               }
             },
           ),
         ],
         child: Padding(
-          padding:
-              const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
           child: GestureDetector(
             onTap: () {
               FocusScope.of(context).unfocus();
@@ -929,13 +721,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                   children: [
                     CustomTextField(
                       controller: goodsNameController,
-                      hintText: AppLocalizations.of(context)!
-                          .translate('enter_goods_name'),
-                      label:
-                          AppLocalizations.of(context)!.translate('goods_name'),
+                      hintText: AppLocalizations.of(context)!.translate('enter_goods_name'),
+                      label: AppLocalizations.of(context)!.translate('goods_name'),
                       validator: (value) => value == null || value.isEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('field_required')
+                          ? AppLocalizations.of(context)!.translate('field_required')
                           : null,
                     ),
                     const SizedBox(height: 8),
@@ -946,12 +735,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           selectedCategory = category;
                           attributeControllers.clear();
                           tableAttributes.clear();
-                          if (category != null &&
-                              category.attributes.isNotEmpty) {
-                            for (var attribute in category.attributes
-                                .where((a) => !a.isIndividual)) {
-                              attributeControllers[attribute.name] =
-                                  TextEditingController();
+                          if (category != null && category.attributes.isNotEmpty) {
+                            for (var attribute in category.attributes.where((a) => !a.isIndividual)) {
+                              attributeControllers[attribute.name] = TextEditingController();
                             }
                           }
                         });
@@ -962,10 +748,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     const SizedBox(height: 8),
                     CustomTextField(
                       controller: goodsDescriptionController,
-                      hintText: AppLocalizations.of(context)!
-                          .translate('enter_goods_description'),
-                      label: AppLocalizations.of(context)!
-                          .translate('goods_description'),
+                      hintText: AppLocalizations.of(context)!.translate('enter_goods_description'),
+                      label: AppLocalizations.of(context)!.translate('goods_description'),
                       maxLines: 5,
                       keyboardType: TextInputType.multiline,
                     ),
@@ -973,47 +757,19 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     CustomTextField(
                       controller: priceController,
                       label: AppLocalizations.of(context)!.translate('price'),
-                      hintText: AppLocalizations.of(context)!
-                          .translate('enter_price'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [
-                        PriceInputFormatter(),
-                      ],
+                      hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [PriceInputFormatter()],
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context)!
-                              .translate('field_required');
+                          return AppLocalizations.of(context)!.translate('field_required');
                         }
                         if (double.tryParse(value) == null) {
-                          return AppLocalizations.of(context)!
-                              .translate('enter_correct_number');
+                          return AppLocalizations.of(context)!.translate('enter_correct_number');
                         }
                         return null;
                       },
                     ),
-                    // if (selectedCategory != null && !selectedCategory!.hasPriceCharacteristics)
-                    //   Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       const SizedBox(height: 8),
-                    //       CustomTextField(
-                    //         controller: discountPriceController,
-                    //         label: AppLocalizations.of(context)!.translate('price'),
-                    //         hintText: AppLocalizations.of(context)!.translate('enter_price'),
-                    //         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    //         validator: (value) {
-                    //           if (value == null || value.isEmpty) {
-                    //             return AppLocalizations.of(context)!.translate('field_required');
-                    //           }
-                    //           if (double.tryParse(value) == null) {
-                    //             return AppLocalizations.of(context)!.translate('enter_correct_number');
-                    //           }
-                    //           return null;
-                    //         },
-                    //       ),
-                    //     ],
-                    //   ),
                     const SizedBox(height: 8),
                     LabelWidget(
                       selectedLabel: selectlabel,
@@ -1045,41 +801,34 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                     _buildProductionTypeSection(),
                     _buildRelatedGoodsSection(),
                     const SizedBox(height: 16),
-                    if (selectedCategory != null &&
-                        selectedCategory!.attributes.isNotEmpty)
+                    if (selectedCategory != null && selectedCategory!.attributes.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 0.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 0.0),
                             child: Container(
                               decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: Color(0xff1E2E52), width: 1.0),
+                                border: Border.all(color: colors.buttonPrimaryBg, width: 1.0),
                                 borderRadius: BorderRadius.circular(14.0),
                               ),
                               child: Center(
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Text(
-                                    AppLocalizations.of(context)!
-                                        .translate('characteristic'),
+                                    AppLocalizations.of(context)!.translate('characteristic'),
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          ...selectedCategory!.attributes
-                              .where((attr) => !attr.isIndividual)
-                              .map((attribute) {
+                          ...selectedCategory!.attributes.where((attr) => !attr.isIndividual).map((attribute) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1090,21 +839,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                     fontFamily: 'Gilroy',
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 CustomCharacteristicField(
-                                  controller:
-                                      attributeControllers[attribute.name]!,
-                                  hintText:
-                                      '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
+                                  controller: attributeControllers[attribute.name]!,
+                                  hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
                                 ),
                               ],
                             );
                           }).toList(),
-                          if (selectedCategory!.attributes
-                              .any((attr) => attr.isIndividual))
+                          if (selectedCategory!.attributes.any((attr) => attr.isIndividual))
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1119,101 +865,29 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                         headingRowHeight: 56,
                                         dividerThickness: 0,
                                         columns: [
-                                          DataColumn(
-                                            label: Text(
-                                              AppLocalizations.of(context)!
-                                                  .translate('image_message'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
-                                          ...selectedCategory!.attributes
-                                              .where(
-                                                  (attr) => attr.isIndividual)
-                                              .map((attr) => DataColumn(
-                                                    label: Text(
-                                                      attr.name,
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff1E2E52),
-                                                      ),
-                                                    ),
-                                                  ))
-                                              .toList(),
-                                          if (selectedCategory!
-                                              .hasPriceCharacteristics)
-                                            DataColumn(
-                                              label: Text(
-                                                AppLocalizations.of(context)!
-                                                    .translate('price'),
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: Color(0xff1E2E52),
-                                                ),
-                                              ),
-                                            ),
-                                          DataColumn(
-                                            label: Text(
-                                              AppLocalizations.of(context)!
-                                                  .translate('status'),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
-                                          DataColumn(
-                                            label: Text(
-                                              '',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: Color(0xff1E2E52),
-                                              ),
-                                            ),
-                                          ),
+                                          DataColumn(label: Text(AppLocalizations.of(context)!.translate('image_message'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary))),
+                                          ...selectedCategory!.attributes.where((attr) => attr.isIndividual).map((attr) => DataColumn(label: Text(attr.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary)))),
+                                          if (selectedCategory!.hasPriceCharacteristics)
+                                            DataColumn(label: Text(AppLocalizations.of(context)!.translate('price'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary))),
+                                          DataColumn(label: Text(AppLocalizations.of(context)!.translate('status'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary))),
+                                          DataColumn(label: Text('', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary))),
                                         ],
-                                        rows: tableAttributes
-                                            .asMap()
-                                            .entries
-                                            .map((entry) {
+                                        rows: tableAttributes.asMap().entries.map((entry) {
                                           int index = entry.key;
-                                          Map<String, dynamic> row =
-                                              entry.value;
+                                          Map<String, dynamic> row = entry.value;
                                           return DataRow(
                                             cells: [
                                               DataCell(
                                                 Row(
                                                   children: [
-                                                    if (row['images']
-                                                        .isNotEmpty)
+                                                    if (row['images'].isNotEmpty)
                                                       Container(
                                                         width: 40,
                                                         height: 40,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8),
-                                                          image:
-                                                              DecorationImage(
-                                                            image: FileImage(
-                                                                File(row[
-                                                                        'images']
-                                                                    .first)),
+                                                        decoration: BoxDecoration(
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          image: DecorationImage(
+                                                            image: FileImage(File(row['images'].first)),
                                                             fit: BoxFit.cover,
                                                           ),
                                                         ),
@@ -1222,143 +896,55 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     Stack(
                                                       children: [
                                                         IconButton(
-                                                          icon: Icon(
-                                                              Icons.add_circle,
-                                                              color:
-                                                                  Colors.blue,
-                                                              size: 20),
-                                                          onPressed: () =>
-                                                              _showImagePickerOptionsForRow(
-                                                                  index),
+                                                          icon: Icon(Icons.add_circle, color: colors.buttonPrimaryBg, size: 20),
+                                                          onPressed: () => _showImagePickerOptionsForRow(index),
                                                         ),
-                                                        if (row['images']
-                                                            .isNotEmpty)
+                                                        if (row['images'].isNotEmpty)
                                                           Positioned(
                                                             top: 4,
                                                             right: 4,
                                                             child: Container(
-                                                              padding:
-                                                                  EdgeInsets
-                                                                      .all(4),
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                color:
-                                                                    Colors.red,
-                                                                shape: BoxShape
-                                                                    .circle,
-                                                              ),
-                                                              child: Text(
-                                                                '${row['images'].length}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 10,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                              ),
+                                                              padding: const EdgeInsets.all(4),
+                                                              decoration: BoxDecoration(color: colors.error, shape: BoxShape.circle),
+                                                              child: Text('${row['images'].length}', style: TextStyle(color: colors.textInverse, fontSize: 10, fontWeight: FontWeight.bold)),
                                                             ),
                                                           ),
                                                       ],
                                                     ),
                                                     IconButton(
-                                                      icon: Icon(
-                                                          Icons.visibility,
-                                                          color: Colors.grey,
-                                                          size: 20),
-                                                      onPressed: row['images']
-                                                              .isNotEmpty
-                                                          ? () =>
-                                                              _showImageListPopup(
-                                                                  row['images'])
-                                                          : null,
+                                                      icon: Icon(Icons.visibility, color: colors.textMuted, size: 20),
+                                                      onPressed: row['images'].isNotEmpty ? () => _showImageListPopup(row['images']) : null,
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                              ...selectedCategory!.attributes
-                                                  .where((attr) =>
-                                                      attr.isIndividual)
-                                                  .map((attr) => DataCell(
-                                                        SizedBox(
-                                                          width: 150,
-                                                          child: TextField(
-                                                            controller:
-                                                                row[attr.name],
-                                                            decoration:
-                                                                InputDecoration(
-                                                              hintText:
-                                                                  '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                                                              hintStyle:
-                                                                  TextStyle(
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                                fontFamily:
-                                                                    'Gilroy',
-                                                                color: Color(
-                                                                    0xff99A4BA),
-                                                              ),
-                                                              border:
-                                                                  OutlineInputBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                      horizontal:
-                                                                          12,
-                                                                      vertical:
-                                                                          16),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ))
-                                                  .toList(),
-                                              if (selectedCategory!
-                                                  .hasPriceCharacteristics)
+                                              ...selectedCategory!.attributes.where((attr) => attr.isIndividual).map((attr) => DataCell(
+                                                SizedBox(
+                                                  width: 150,
+                                                  child: TextField(
+                                                    controller: row[attr.name],
+                                                    decoration: InputDecoration(
+                                                      hintText: '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                      hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textMuted),
+                                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                                    ),
+                                                  ),
+                                                ),
+                                              )),
+                                              if (selectedCategory!.hasPriceCharacteristics)
                                                 DataCell(
                                                   SizedBox(
                                                     width: 150,
                                                     child: TextField(
                                                       controller: row['price'],
-                                                      decoration:
-                                                          InputDecoration(
-                                                        hintText: AppLocalizations
-                                                                .of(context)!
-                                                            .translate(
-                                                                'enter_price'),
-                                                        hintStyle: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          fontFamily: 'Gilroy',
-                                                          color:
-                                                              Color(0xff99A4BA),
-                                                        ),
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                        ),
-                                                        contentPadding:
-                                                            EdgeInsets
-                                                                .symmetric(
-                                                                    horizontal:
-                                                                        12,
-                                                                    vertical:
-                                                                        16),
+                                                      decoration: InputDecoration(
+                                                        hintText: AppLocalizations.of(context)!.translate('enter_price'),
+                                                        hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textMuted),
+                                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                                       ),
-                                                      keyboardType:
-                                                          const TextInputType
-                                                              .numberWithOptions(
-                                                              decimal: true),
+                                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                                     ),
                                                   ),
                                                 ),
@@ -1370,47 +956,28 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       row['is_active'] = value;
                                                     });
                                                   },
-                                                  activeColor:
-                                                      const Color.fromARGB(
-                                                          255, 255, 255, 255),
-                                                  inactiveTrackColor:
-                                                      const Color.fromARGB(255,
-                                                              179, 179, 179)
-                                                          .withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles
-                                                      .messageBubbleSenderColor,
-                                                  inactiveThumbColor:
-                                                      const Color.fromARGB(
-                                                          255, 255, 255, 255),
+                                                  activeColor: colors.buttonPrimaryFg,
+                                                  inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+                                                  activeTrackColor: colors.buttonPrimaryBg,
+                                                  inactiveThumbColor: colors.buttonPrimaryFg,
                                                 ),
                                               ),
                                               DataCell(
                                                 IconButton(
-                                                  icon: Icon(Icons.delete,
-                                                      color: Colors.red,
-                                                      size: 20),
-                                                  onPressed: () =>
-                                                      removeTableRow(index),
+                                                  icon: Icon(Icons.delete, color: colors.error, size: 20),
+                                                  onPressed: () => removeTableRow(index),
                                                 ),
                                               ),
                                             ],
                                           );
                                         }).toList(),
                                       ),
-                                      ...tableAttributes
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
+                                      ...tableAttributes.asMap().entries.map((entry) {
                                         int index = entry.key;
-                                        if (index <
-                                            tableAttributes.length - 1) {
-                                          return Divider(
-                                            color: Color(0xffE0E6F5),
-                                            thickness: 1,
-                                            height: 8,
-                                          );
+                                        if (index < tableAttributes.length - 1) {
+                                          return Divider(color: colors.borderSubtle, thickness: 1, height: 8);
                                         }
-                                        return SizedBox.shrink();
+                                        return const SizedBox.shrink();
                                       }).toList(),
                                     ],
                                   ),
@@ -1419,12 +986,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                 ElevatedButton(
                                   onPressed: () => addTableRow(),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                                    backgroundColor: colors.buttonPrimaryBg,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
-                                  child: Icon(Icons.add, color: Colors.white),
+                                  child: Icon(Icons.add, color: colors.buttonPrimaryFg),
                                 ),
                               ],
                             ),
@@ -1437,30 +1002,20 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                         width: double.infinity,
                         height: 275,
                         decoration: BoxDecoration(
-                          color: const Color(0xffF4F7FD),
+                          color: colors.backgroundSecondary,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xffF4F7FD),
-                            width: 1.5,
-                          ),
+                          border: Border.all(color: colors.borderSubtle, width: 1.5),
                         ),
                         child: _imagePaths.isEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.camera_alt,
-                                        color: Color(0xff99A4BA), size: 40),
+                                    Icon(Icons.camera_alt, color: colors.textMuted, size: 40),
                                     const SizedBox(height: 8),
                                     Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('pick_image'),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: Color(0xff99A4BA),
-                                      ),
+                                      AppLocalizations.of(context)!.translate('pick_image'),
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textMuted),
                                     ),
                                   ],
                                 ),
@@ -1472,10 +1027,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     runSpacing: 10,
                                     padding: const EdgeInsets.all(8),
                                     children: [
-                                      ..._imagePaths
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
+                                      ..._imagePaths.asMap().entries.map((entry) {
                                         int index = entry.key;
                                         String imagePath = entry.value;
                                         return GestureDetector(
@@ -1489,18 +1041,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             width: 100,
                                             height: 100,
                                             decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              image: DecorationImage(
-                                                image:
-                                                    FileImage(File(imagePath)),
-                                                fit: BoxFit.cover,
-                                              ),
-                                              border: mainImageIndex == index
-                                                  ? Border.all(
-                                                      color: Colors.blue,
-                                                      width: 2)
-                                                  : null,
+                                              borderRadius: BorderRadius.circular(12),
+                                              image: DecorationImage(image: FileImage(File(imagePath)), fit: BoxFit.cover),
+                                              border: mainImageIndex == index ? Border.all(color: colors.buttonPrimaryBg, width: 2) : null,
                                             ),
                                             child: Stack(
                                               children: [
@@ -1508,22 +1051,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                   top: 4,
                                                   right: 4,
                                                   child: GestureDetector(
-                                                    onTap: () =>
-                                                        _removeImage(imagePath),
+                                                    onTap: () => _removeImage(imagePath),
                                                     child: Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              4),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.black
-                                                            .withOpacity(0.5),
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: Icon(
-                                                        Icons.close,
-                                                        color: Colors.white,
-                                                        size: 16,
-                                                      ),
+                                                      padding: const EdgeInsets.all(4),
+                                                      decoration: BoxDecoration(color: colors.overlay, shape: BoxShape.circle),
+                                                      child: Icon(Icons.close, color: colors.textInverse, size: 16),
                                                     ),
                                                   ),
                                                 ),
@@ -1532,18 +1064,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     bottom: 4,
                                                     right: 4,
                                                     child: Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              4),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.blue,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: Icon(
-                                                        Icons.check,
-                                                        color: Colors.white,
-                                                        size: 16,
-                                                      ),
+                                                      padding: const EdgeInsets.all(4),
+                                                      decoration: BoxDecoration(color: colors.buttonPrimaryBg, shape: BoxShape.circle),
+                                                      child: Icon(Icons.check, color: colors.buttonPrimaryFg, size: 16),
                                                     ),
                                                   ),
                                               ],
@@ -1557,27 +1080,18 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                           width: 100,
                                           height: 100,
                                           decoration: BoxDecoration(
-                                            color: Color(0xffF4F7FD),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: Border.all(
-                                                color: Color(0xffF4F7FD)),
+                                            color: colors.backgroundSecondary,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: colors.borderSubtle),
                                           ),
                                           child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.add_a_photo,
-                                                  color: Color(0xff99A4BA),
-                                                  size: 40),
-                                              SizedBox(height: 4),
+                                              Icon(Icons.add_a_photo, color: colors.textMuted, size: 40),
+                                              const SizedBox(height: 4),
                                               Text(
-                                                AppLocalizations.of(context)!
-                                                    .translate('add'),
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Color(0xff99A4BA),
-                                                ),
+                                                AppLocalizations.of(context)!.translate('add'),
+                                                style: TextStyle(fontSize: 10, color: colors.textMuted),
                                               ),
                                             ],
                                           ),
@@ -1586,18 +1100,13 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     ],
                                     onReorder: (int oldIndex, int newIndex) {
                                       setState(() {
-                                        final item =
-                                            _imagePaths.removeAt(oldIndex);
+                                        final item = _imagePaths.removeAt(oldIndex);
                                         _imagePaths.insert(newIndex, item);
                                         if (mainImageIndex == oldIndex) {
                                           mainImageIndex = newIndex;
-                                        } else if (mainImageIndex != null &&
-                                            oldIndex < mainImageIndex! &&
-                                            newIndex >= mainImageIndex!) {
+                                        } else if (mainImageIndex != null && oldIndex < mainImageIndex! && newIndex >= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! - 1;
-                                        } else if (mainImageIndex != null &&
-                                            oldIndex > mainImageIndex! &&
-                                            newIndex <= mainImageIndex!) {
+                                        } else if (mainImageIndex != null && oldIndex > mainImageIndex! && newIndex <= mainImageIndex!) {
                                           mainImageIndex = mainImageIndex! + 1;
                                         }
                                       });
@@ -1608,21 +1117,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                     left: 8,
                                     child: IgnorePointer(
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.5),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(color: colors.overlay, borderRadius: BorderRadius.circular(12)),
                                         child: Text(
                                           '${_imagePaths.length} ${AppLocalizations.of(context)!.translate('image_message')}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            fontFamily: 'Gilroy',
-                                            color: Colors.white,
-                                          ),
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textInverse),
                                         ),
                                       ),
                                     ),
@@ -1639,14 +1138,8 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!
-                                    .translate('status_goods'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
-                                ),
+                                AppLocalizations.of(context)!.translate('status_goods'),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary),
                               ),
                               const SizedBox(height: 8),
                               GestureDetector(
@@ -1656,10 +1149,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                   });
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 4, horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF4F7FD),
+                                    color: colors.backgroundSecondary,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Row(
@@ -1671,31 +1163,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             isActive = value;
                                           });
                                         },
-                                        activeColor: const Color.fromARGB(
-                                            255, 255, 255, 255),
-                                        inactiveTrackColor:
-                                            const Color.fromARGB(
-                                                    255, 179, 179, 179)
-                                                .withOpacity(0.5),
-                                        activeTrackColor: ChatSmsStyles
-                                            .messageBubbleSenderColor,
-                                        inactiveThumbColor:
-                                            const Color.fromARGB(
-                                                255, 255, 255, 255),
+                                        activeColor: colors.buttonPrimaryFg,
+                                        inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+                                        activeTrackColor: colors.buttonPrimaryBg,
+                                        inactiveThumbColor: colors.buttonPrimaryFg,
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
                                         isActive
-                                            ? AppLocalizations.of(context)!
-                                                .translate('active')
-                                            : AppLocalizations.of(context)!
-                                                .translate('inactive'),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          fontFamily: 'Gilroy',
-                                          color: Color(0xFF1E1E1E),
-                                        ),
+                                            ? AppLocalizations.of(context)!.translate('active')
+                                            : AppLocalizations.of(context)!.translate('inactive'),
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary),
                                       ),
                                     ],
                                   ),
@@ -1716,43 +1194,37 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 18),
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: BoxDecoration(color: colors.surfacePrimary),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                buttonColor: const Color(0xffF4F7FD),
-                textColor: Colors.black,
+                buttonColor: colors.backgroundSecondary,
+                textColor: colors.textPrimary,
                 onPressed: () => Navigator.pop(context),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 48,
-                      child: Center(
-                        child:
-                            CircularProgressIndicator(color: Color(0xff4759FF)),
-                      ),
+                      child: Center(child: CircularProgressIndicator(color: colors.buttonPrimaryBg)),
                     )
                   : CustomButton(
-                      buttonText:
-                          AppLocalizations.of(context)!.translate('add'),
-                      buttonColor: const Color(0xff4759FF),
-                      textColor: Colors.white,
+                      buttonText: AppLocalizations.of(context)!.translate('add'),
+                      buttonColor: colors.buttonPrimaryBg,
+                      textColor: colors.buttonPrimaryFg,
                       onPressed: () {
                         validateForm();
-                        if (formKey.currentState!.validate() &&
-                            isCategoryValid) {
+                        if (formKey.currentState!.validate() && isCategoryValid) {
                           _createProduct();
                         } else {
                           showCustomSnackBar(
                             context: context,
-                            message: AppLocalizations.of(context)!
-                                .translate('fill_all_required_fields'),
+                            message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
                             isSuccess: false,
                           );
                         }
@@ -1766,8 +1238,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   Future<void> _showImagePickerOptions() async {
+    final colors = context.appColors;
     showModalBottomSheet(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       context: context,
       builder: (context) {
         return Container(
@@ -1776,15 +1249,10 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.camera_alt),
+                leading: Icon(Icons.camera_alt, color: colors.iconPrimary),
                 title: Text(
                   AppLocalizations.of(context)!.translate('make_photo'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -1792,23 +1260,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library),
+                leading: Icon(Icons.photo_library, color: colors.iconPrimary),
                 title: Text(
-                  AppLocalizations.of(context)!
-                      .translate('select_from_gallery'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
-                  ),
+                  AppLocalizations.of(context)!.translate('select_from_gallery'),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Gilroy', color: colors.textPrimary),
                 ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickMultipleImages();
                 },
               ),
-              SizedBox(height: 0),
+              const SizedBox(height: 0),
             ],
           ),
         );
@@ -1847,15 +1309,14 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   void _createProduct() async {
+    final colors = context.appColors;
     validateForm();
     if (formKey.currentState!.validate() && isCategoryValid) {
       bool isPriceValid = true;
       if (selectedCategory!.hasPriceCharacteristics) {
         for (var row in tableAttributes) {
           final priceController = row['price'] as TextEditingController?;
-          if (priceController == null ||
-              priceController.text.trim().isEmpty ||
-              double.tryParse(priceController.text.trim()) == null) {
+          if (priceController == null || priceController.text.trim().isEmpty || double.tryParse(priceController.text.trim()) == null) {
             isPriceValid = false;
             break;
           }
@@ -1869,9 +1330,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         );
         return;
       }
-      if (_hasManufacture &&
-          _productionType == 'produced' &&
-          _materialGoods.isEmpty) {
+      if (_hasManufacture && _productionType == 'produced' && _materialGoods.isEmpty) {
         showCustomSnackBar(
           context: context,
           message: 'Добавьте сырье для производимого товара',
@@ -1881,58 +1340,41 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       }
 
       setState(() => isLoading = true);
-      //print('GoodsAddScreen: Starting product creation');
 
       try {
         List<Map<String, dynamic>> attributes = [];
         List<Map<String, dynamic>> variants = [];
 
-        for (var attribute
-            in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
+        for (var attribute in selectedCategory!.attributes.where((a) => !a.isIndividual)) {
           final controller = attributeControllers[attribute.name];
           if (controller != null && controller.text.trim().isNotEmpty) {
-            attributes.add({
-              'category_attribute_id': attribute.id,
-              'value': controller.text.trim(),
-            });
+            attributes.add({'category_attribute_id': attribute.id, 'value': controller.text.trim()});
           }
         }
 
         for (var row in tableAttributes) {
-          Map<String, dynamic> variant = {
-            'is_active': row['is_active'],
-            'variant_attributes': [],
-          };
+          Map<String, dynamic> variant = {'is_active': row['is_active'], 'variant_attributes': []};
 
-          List<String> variantImagePaths =
-              (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
+          List<String> variantImagePaths = (row['images'] as List<dynamic>?)?.cast<String>() ?? [];
           List<File> variantImages = [];
           for (var path in variantImagePaths) {
             File file = File(path);
             if (await file.exists()) {
               variantImages.add(file);
-            } else {
-              //print('File not found, skipping: $path');
             }
           }
 
-          for (var attr
-              in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+          for (var attr in selectedCategory!.attributes.where((a) => a.isIndividual)) {
             final controller = row[attr.name] as TextEditingController?;
             if (controller != null && controller.text.trim().isNotEmpty) {
-              variant['variant_attributes'].add({
-                'category_attribute_id': attr.id,
-                'value': controller.text.trim(),
-              });
+              variant['variant_attributes'].add({'category_attribute_id': attr.id, 'value': controller.text.trim()});
             }
           }
 
           if (selectedCategory!.hasPriceCharacteristics) {
             final priceController = row['price'] as TextEditingController?;
-            if (priceController != null &&
-                priceController.text.trim().isNotEmpty) {
-              final price = double.tryParse(priceController.text.trim());
-              variant['price'] = price ?? 0.0;
+            if (priceController != null && priceController.text.trim().isNotEmpty) {
+              variant['price'] = double.tryParse(priceController.text.trim()) ?? 0.0;
             } else {
               variant['price'] = 0.0;
             }
@@ -1958,63 +1400,38 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         }
 
         int? labelId = selectlabel != null ? int.tryParse(selectlabel!) : null;
-        //print('GoodsAddScreen: Creating product with labelId: $labelId');
 
         context.read<GoodsBloc>().add(
-              CreateGoods(
-                isService: isService,
-                name: goodsNameController.text.trim(),
-                parentId: selectedCategory!.id,
-                description: goodsDescriptionController.text.trim(),
-                quantity: int.tryParse(stockQuantityController.text),
-                unitId:
-                    selectedUnit != null ? int.tryParse(selectedUnit!) : null,
-                attributes: attributes,
-                variants: variants,
-                images: images,
-                isActive: isActive,
-                price: double.tryParse(priceController.text.trim()) ?? 0.0,
-                // discountPrice: selectedCategory!.hasPriceCharacteristics
-                //     ? null
-                //     : (double.tryParse(discountPriceController.text.trim()) ?? 0.0),
-                storageId: null,
-                mainImageIndex: mainImageIndex,
-                labelId: labelId,
-                productionType: _hasManufacture ? _productionType : null,
-                materialGoods: _productionType == 'produced'
-                    ? _materialGoods
-                        .where((item) =>
-                            item['good_id'] != null &&
-                            (item['norm'] as num? ?? 0) > 0)
-                        .map((item) => {
-                              'good_id': item['good_id'],
-                              'norm': item['norm'],
-                            })
-                        .toList()
-                    : const [],
-                relatedGoods: _relatedGoods
-                    .where((item) => item['variant_id'] != null)
-                    .map((item) => {
-                          'variant_id': item['variant_id'],
-                          'is_required': item['is_required'] == true ? 1 : 0,
-                        })
-                    .toList(),
-              ),
-            );
-      } catch (e) {
-        //print('GoodsAddScreen: Error creating product - $e');
-        setState(() => isLoading = false);
-        showCustomSnackBar(
-          context: context,
-          message: 'Произошла ошибка: $e',
-          isSuccess: false,
+          CreateGoods(
+            isService: isService,
+            name: goodsNameController.text.trim(),
+            parentId: selectedCategory!.id,
+            description: goodsDescriptionController.text.trim(),
+            quantity: int.tryParse(stockQuantityController.text),
+            unitId: selectedUnit != null ? int.tryParse(selectedUnit!) : null,
+            attributes: attributes,
+            variants: variants,
+            images: images,
+            isActive: isActive,
+            price: double.tryParse(priceController.text.trim()) ?? 0.0,
+            storageId: null,
+            mainImageIndex: mainImageIndex,
+            labelId: labelId,
+            productionType: _hasManufacture ? _productionType : null,
+            materialGoods: _productionType == 'produced'
+                ? _materialGoods.where((item) => item['good_id'] != null && (item['norm'] as num? ?? 0) > 0).map((item) => {'good_id': item['good_id'], 'norm': item['norm']}).toList()
+                : const [],
+            relatedGoods: _relatedGoods.where((item) => item['variant_id'] != null).map((item) => {'variant_id': item['variant_id'], 'is_required': item['is_required'] == true ? 1 : 0}).toList(),
+          ),
         );
+      } catch (e) {
+        setState(() => isLoading = false);
+        showCustomSnackBar(context: context, message: 'Произошла ошибка: $e', isSuccess: false);
       }
     } else {
       showCustomSnackBar(
         context: context,
-        message:
-            AppLocalizations.of(context)!.translate('fill_all_required_fields'),
+        message: AppLocalizations.of(context)!.translate('fill_all_required_fields'),
         isSuccess: false,
       );
     }

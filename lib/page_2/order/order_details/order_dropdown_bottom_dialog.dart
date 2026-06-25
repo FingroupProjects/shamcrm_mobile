@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -29,8 +30,8 @@ Future<void> OrderDropdownBottomSheet(
 
   return showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
+    backgroundColor: context.appColors.surfacePrimary,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
     builder: (BuildContext context) {
@@ -59,6 +60,7 @@ Future<void> OrderDropdownBottomSheet(
 
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
+              final colors = context.appColors;
               return Container(
                 height: 700,
                 padding: const EdgeInsets.all(16),
@@ -69,7 +71,7 @@ Future<void> OrderDropdownBottomSheet(
                       height: 4,
                       margin: const EdgeInsets.only(top: 7),
                       decoration: BoxDecoration(
-                        color: const Color(0xffDFE3EC),
+                        color: colors.borderSubtle,
                         borderRadius: BorderRadius.circular(1200),
                       ),
                     ),
@@ -93,19 +95,19 @@ Future<void> OrderDropdownBottomSheet(
                       ),
                     ),
                     isSubmittingSave
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52),
+                                color: colors.buttonPrimaryBg,
                               ),
                             ),
                           )
                         : CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('save'),
-                            buttonColor: const Color(0xff4F40EC),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.textInverse,
                             onPressed: () async {
                               if (isSubmittingSave || selectedStatusId == null) {
                                 return;
@@ -166,11 +168,11 @@ Future<void> OrderDropdownBottomSheet(
                                       content: Text(
                                         AppLocalizations.of(context)!
                                             .translate('error_text'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontFamily: 'Gilroy',
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.white,
+                                          color: colors.textInverse,
                                         ),
                                       ),
                                       behavior: SnackBarBehavior.floating,
@@ -179,7 +181,7 @@ Future<void> OrderDropdownBottomSheet(
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      backgroundColor: Colors.red,
+                                      backgroundColor: colors.error,
                                       elevation: 3,
                                       padding: const EdgeInsets.symmetric(
                                           vertical: 12, horizontal: 16),
@@ -196,11 +198,11 @@ Future<void> OrderDropdownBottomSheet(
                                     content: Text(
                                       AppLocalizations.of(context)!.translate(
                                           'status_changed_successfully'),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.white,
+                                        color: colors.textInverse,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
@@ -209,7 +211,7 @@ Future<void> OrderDropdownBottomSheet(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: colors.success,
                                     elevation: 3,
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),
@@ -247,16 +249,15 @@ Future<void> OrderDropdownBottomSheet(
                                         : error
                                             .toString()
                                             .replaceFirst('Exception: ', '');
-
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
                                       errorMessage,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.white,
+                                        color: colors.textInverse,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
@@ -265,7 +266,7 @@ Future<void> OrderDropdownBottomSheet(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: Colors.red,
+                                    backgroundColor: colors.error,
                                     elevation: 3,
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 12, horizontal: 16),

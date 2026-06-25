@@ -2,14 +2,15 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/label/label_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LabelsMultiSelectWidget extends StatefulWidget {
-  final List<String>? selectedLabels; // Оставляем как List<String> для label_id
-  final Function(List<String>) onSelectLabels; // Изменяем на List<String>
+  final List<String>? selectedLabels;
+  final Function(List<String>) onSelectLabels;
 
   const LabelsMultiSelectWidget({
     super.key,
@@ -29,27 +30,26 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
   void initState() {
     super.initState();
     context.read<LabelBloc>().add(FetchLabels());
-    //print('LabelsMultiSelectWidget: Инициализация, загрузка меток');
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BlocListener<LabelBloc, LabelState>(
           listener: (context, state) {
             if (state is LabelError) {
-              //print('LabelsMultiSelectWidget: Ошибка загрузки меток: ${state.message}');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
                     AppLocalizations.of(context)!.translate(state.message),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: colors.surfacePrimary,
                     ),
                   ),
                   behavior: SnackBarBehavior.floating,
@@ -57,7 +57,7 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: colors.error,
                   elevation: 3,
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   duration: const Duration(seconds: 3),
@@ -68,21 +68,20 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
           child: BlocBuilder<LabelBloc, LabelState>(
             builder: (context, state) {
               if (state is LabelLoading) {
-                //print('LabelsMultiSelectWidget: Загрузка меток');
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       AppLocalizations.of(context)!.translate('labels'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52))),
+                    Center(child: CircularProgressIndicator(color: colors.buttonPrimaryBg)),
                   ],
                 );
               }
@@ -93,7 +92,6 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                   selectedLabelsData = labelsList
                       .where((label) => widget.selectedLabels!.contains(label.id.toString()))
                       .toList();
-                  //print('LabelsMultiSelectWidget: Начальные метки: ${selectedLabelsData.map((e) => e.name).toList()}');
                 }
 
                 return Column(
@@ -101,11 +99,11 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                   children: [
                     Text(
                       AppLocalizations.of(context)!.translate('labels'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -115,12 +113,15 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                       searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(color: Color(0xffF4F7FD), width: 1),
+                        closedFillColor: colors.backgroundSecondary,
+                        expandedFillColor: colors.surfaceElevated,
+                        closedBorder: Border.all(color: colors.borderSubtle, width: 1),
                         closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(color: Color(0xffF4F7FD), width: 1),
+                        expandedBorder: Border.all(color: colors.borderSubtle, width: 1),
                         expandedBorderRadius: BorderRadius.circular(12),
+                        listItemDecoration: ListItemDecoration(
+                          selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.15),
+                        ),
                       ),
                       listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return ListTile(
@@ -135,11 +136,11 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                                 width: 18,
                                 height: 18,
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: const Color(0xff1E2E52), width: 1),
-                                  color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                                  border: Border.all(color: colors.borderPrimary, width: 1),
+                                  color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
                                 ),
                                 child: isSelected
-                                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                                    ? Icon(Icons.check, color: colors.textInverse, size: 16)
                                     : null,
                               ),
                               const SizedBox(width: 10),
@@ -154,11 +155,11 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                               const SizedBox(width: 8),
                               Text(
                                 item.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   fontFamily: 'Gilroy',
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ],
@@ -172,38 +173,34 @@ class _LabelsMultiSelectWidgetState extends State<LabelsMultiSelectWidget> {
                       headerListBuilder: (context, selectedItems, enabled) {
                         final selectedLabelsCount = selectedItems.length;
                         return Text(
-  selectedLabelsCount == 0
-      ? AppLocalizations.of(context)!.translate('select_labels') // "Выберите метки"
-      : '${AppLocalizations.of(context)!.translate('selected_labels')} ($selectedLabelsCount)', // "Выбраны метки (2)"
-  style: const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  ),
-);
-
+                          selectedLabelsCount == 0
+                              ? AppLocalizations.of(context)!.translate('select_labels')
+                              : '${AppLocalizations.of(context)!.translate('selected_labels')} ($selectedLabelsCount)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Gilroy',
+                            color: colors.textPrimary,
+                          ),
+                        );
                       },
-                     hintBuilder: (context, hint, enabled) => Text(
-  selectedLabelsData.isEmpty
-      ? AppLocalizations.of(context)!.translate('select_labels')
-      : '${AppLocalizations.of(context)!.translate('selected_labels')} (${selectedLabelsData.length})',
-  style: const TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  ),
-),
-
+                      hintBuilder: (context, hint, enabled) => Text(
+                        selectedLabelsData.isEmpty
+                            ? AppLocalizations.of(context)!.translate('select_labels')
+                            : '${AppLocalizations.of(context)!.translate('selected_labels')} (${selectedLabelsData.length})',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                          color: colors.textPrimary,
+                        ),
+                      ),
                       onListChanged: (values) {
-                        // Передаём список label_id как строки
                         final selectedIds = values.map((label) => label.id.toString()).toList();
                         widget.onSelectLabels(selectedIds);
                         setState(() {
                           selectedLabelsData = values;
                         });
-                        //print('LabelsMultiSelectWidget: Выбраны метки (label_id): $selectedIds');
                       },
                     ),
                   ],

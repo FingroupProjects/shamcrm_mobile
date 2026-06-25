@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class PaymentStatusStyle {
@@ -14,6 +15,7 @@ class PaymentStatusStyle {
 }
 
 PaymentStatusStyle getPaymentStatusStyle(String? paymentStatus, BuildContext context) {
+  final colors = context.appColors;
   switch (paymentStatus?.toLowerCase()) {
     case 'pending':
       return PaymentStatusStyle(
@@ -29,11 +31,11 @@ PaymentStatusStyle getPaymentStatusStyle(String? paymentStatus, BuildContext con
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => Text(
                 AppLocalizations.of(context)!.translate('pending'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -56,11 +58,11 @@ PaymentStatusStyle getPaymentStatusStyle(String? paymentStatus, BuildContext con
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => Text(
                 AppLocalizations.of(context)!.translate('paid'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -83,11 +85,11 @@ PaymentStatusStyle getPaymentStatusStyle(String? paymentStatus, BuildContext con
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => Text(
                 AppLocalizations.of(context)!.translate('failed'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),

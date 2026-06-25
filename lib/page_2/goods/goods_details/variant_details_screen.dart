@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -20,23 +20,22 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   final ApiService _apiService = ApiService();
   String? baseUrl;
 
- Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
 
   @override
   void initState() {
     super.initState();
-    //print('VariantDetailsScreen: Initializing for variant ID ${widget.variant.id}');
     _initializeBaseUrl();
   }
 
@@ -48,41 +47,42 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
 
   void _updateDetails() {
     final variant = widget.variant;
-    //print('VariantDetailsScreen: Updating details for variant ID ${variant.id}');
-    //print('VariantDetailsScreen: Variant attributeValues count: ${variant.attributeValues.length}');
 
     details = [
       {
         'label': AppLocalizations.of(context)!.translate('goods_price_details'),
-        'value': variant.price.toString() ?? '0', // NEW FIELD for price instead of old variantPrice
+        'value': variant.price.toString(),
       },
-      // {
-      //   'label': AppLocalizations.of(context)!.translate('start_date'),
-      //   'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate(''),
-      // },
       {
         'label': AppLocalizations.of(context)!.translate('status_lead_profile'),
-        'value': variant.isActive ? AppLocalizations.of(context)!.translate('active_swtich') : AppLocalizations.of(context)!.translate('inactive_swtich'),
+        'value': variant.isActive
+            ? AppLocalizations.of(context)!.translate('active_swtich')
+            : AppLocalizations.of(context)!.translate('inactive_swtich'),
       },
-      // Добавляем все атрибуты из attributeValues
       ...variant.attributeValues.map((val) {
-        final label = val.categoryAttribute?.attribute?.name ?? AppLocalizations.of(context)!.translate('characteristic') ;
-        final value = val.value.isNotEmpty ? val.value : AppLocalizations.of(context)!.translate('');
+        final label = val.categoryAttribute?.attribute?.name ??
+            AppLocalizations.of(context)!.translate('characteristic');
+        final value = val.value.isNotEmpty
+            ? val.value
+            : AppLocalizations.of(context)!.translate('');
         return {
           'label': label,
           'value': value,
         };
-      }).toList(),
+      }),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    List<String> variantImages = widget.variant.files?.map((file) => file.path).toList() ?? [];
+    final colors = context.appColors;
+    List<String> variantImages =
+        widget.variant.files?.map((file) => file.path).toList() ?? [];
 
     return Scaffold(
-      appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('view_variant')),
-      backgroundColor: Colors.white,
+      appBar: _buildAppBar(
+          context, AppLocalizations.of(context)!.translate('view_variant')),
+      backgroundColor: colors.backgroundPrimary,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ListView(
@@ -96,6 +96,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildImageSlider(List<String> images) {
+    final colors = context.appColors;
     if (baseUrl == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -111,7 +112,7 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
               _currentPage = index;
             }),
             itemBuilder: (context, index) {
-              final imageUrl = '${images[index]}';
+              final imageUrl = images[index];
               if (images[index].isEmpty) {
                 return _buildPlaceholder();
               }
@@ -137,13 +138,13 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black54,
+            color: colors.overlay,
             borderRadius: BorderRadius.circular(30),
           ),
           child: Text(
             '${_currentPage + 1}/${images.length}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.textInverse,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -154,19 +155,20 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildPlaceholder() {
-    //print('VariantDetailsScreen: Displaying image placeholder');
+    final colors = context.appColors;
     return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: Icon(Icons.image, size: 50, color: Colors.grey),
+      color: colors.surfacePrimary,
+      child: Center(
+        child: Icon(Icons.image, size: 50, color: colors.iconPrimary),
       ),
     );
   }
 
-  void _openImageGallery(BuildContext context, List<String> imagePaths, int initialIndex) {
+  void _openImageGallery(
+      BuildContext context, List<String> imagePaths, int initialIndex) {
     final List<String> imageUrls = imagePaths
         .where((path) => path.isNotEmpty)
-        .map((path) => '$baseUrl/$path')
+        .map((path) => path)
         .toList();
 
     if (imageUrls.isEmpty) return;
@@ -186,9 +188,9 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
-    //print('VariantDetailsScreen: Building AppBar with title $title');
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -198,9 +200,13 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
         child: Transform.translate(
           offset: const Offset(0, -2),
           child: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+              color: colors.iconPrimary,
+            ),
             onPressed: () {
-              //print('VariantDetailsScreen: Back button pressed');
               Navigator.pop(context);
             },
           ),
@@ -210,11 +216,11 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
         offset: const Offset(-10, 0),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -222,7 +228,6 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildDetailsList() {
-    //print('VariantDetailsScreen: Building details list with ${details.length} items');
     return ListView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -236,28 +241,28 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
-    //print('VariantDetailsScreen: Building detail item - label: $label, value: $value');
+    final colors = context.appColors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '$label: ',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600, // Имя жирным
-            color: Color(0xff1E2E52),
+            fontWeight: FontWeight.w600,
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w400, // Значение обычным шрифтом
-              color: Color(0xff1E2E52),
+              fontWeight: FontWeight.w400,
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -265,59 +270,4 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
     );
   }
 
-  void _showFullTextDialog(String title, String content) {
-    //print('VariantDetailsScreen: Showing full text dialog - title: $title');
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
-                  fontSize: 18,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 400),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                child: Text(
-                  content,
-                  textAlign: TextAlign.start,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: CustomButton(
-                buttonText: AppLocalizations.of(context)!.translate('close'),
-                onPressed: () {
-                  //print('VariantDetailsScreen: Closing full text dialog');
-                  Navigator.pop(context);
-                },
-                buttonColor: const Color(0xff1E2E52),
-                textColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

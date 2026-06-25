@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -24,6 +25,7 @@ class CategoryEditBottomSheet {
     bool _isImageSelected = true;
     bool _isImageChanged = false;
     int categoryId = initialCategoryId;
+    final colors = context.appColors;
 
     Future<void> _pickImage() async {
       final pickedFile =
@@ -40,13 +42,14 @@ class CategoryEditBottomSheet {
     return await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: colors.surfacePrimary,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+            final colors = context.appColors;
             return FractionallySizedBox(
               heightFactor: 0.9,
               child: Padding(
@@ -65,17 +68,17 @@ class CategoryEditBottomSheet {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 7),
                       decoration: BoxDecoration(
-                        color: Color(0xfffDFE3EC),
+                        color: colors.borderSubtle,
                         borderRadius: BorderRadius.circular(1200),
                       ),
                     ),
                     Text(
                       AppLocalizations.of(context)!.translate('edit_category'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -104,11 +107,11 @@ class CategoryEditBottomSheet {
                               Text(
                                 AppLocalizations.of(context)!
                                     .translate('image_message'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -122,15 +125,14 @@ class CategoryEditBottomSheet {
                                   children: [
                                     Container(
                                       width: double.infinity,
-                                      height:
-                                          200, // Increased height for larger image display
+                                      height: 200,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xffF4F7FD),
+                                        color: colors.fieldBg,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: !_isImageSelected
-                                              ? Colors.red
-                                              : const Color(0xffF4F7FD),
+                                              ? colors.error
+                                              : colors.borderSubtle,
                                           width: 1,
                                         ),
                                       ),
@@ -142,7 +144,7 @@ class CategoryEditBottomSheet {
                                                 children: [
                                                   Icon(
                                                     Icons.camera_alt,
-                                                    color: Color(0xff99A4BA),
+                                                    color: colors.textSecondary,
                                                     size: 24,
                                                   ),
                                                   const SizedBox(width: 8),
@@ -156,7 +158,7 @@ class CategoryEditBottomSheet {
                                                       fontWeight:
                                                           FontWeight.w500,
                                                       fontFamily: 'Gilroy',
-                                                      color: Color(0xff99A4BA),
+                                                      color: colors.textSecondary,
                                                     ),
                                                   ),
                                                 ],
@@ -167,8 +169,7 @@ class CategoryEditBottomSheet {
                                                 Center(
                                                   child: Container(
                                                     width: double.infinity,
-                                                    height:
-                                                        180, // Slightly smaller to fit within container
+                                                    height: 180,
                                                     decoration: BoxDecoration(
                                                       borderRadius:
                                                           BorderRadius.circular(
@@ -176,8 +177,7 @@ class CategoryEditBottomSheet {
                                                       image: DecorationImage(
                                                         image:
                                                             FileImage(_image!),
-                                                        fit: BoxFit
-                                                            .contain, // Ensures full image is visible
+                                                        fit: BoxFit.contain,
                                                       ),
                                                     ),
                                                   ),
@@ -187,8 +187,7 @@ class CategoryEditBottomSheet {
                                                   right: 8,
                                                   child: IconButton(
                                                     icon: Icon(Icons.close,
-                                                        color:
-                                                            Color(0xff1E2E52)),
+                                                        color: colors.textPrimary),
                                                     onPressed: () {
                                                       setState(() {
                                                         _image = null;
@@ -209,7 +208,7 @@ class CategoryEditBottomSheet {
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                             fontFamily: 'Gilroy',
-                                            color: Color(0xff1E2E52),
+                                            color: colors.textPrimary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -220,9 +219,9 @@ class CategoryEditBottomSheet {
                                         child: Text(
                                           AppLocalizations.of(context)!
                                               .translate('required_image'),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.red,
+                                            color: colors.error,
                                             fontWeight: FontWeight.w400,
                                           ),
                                         ),
@@ -242,8 +241,8 @@ class CategoryEditBottomSheet {
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('cancel'),
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: colors.fieldBg,
+                            textColor: colors.textPrimary,
                             onPressed: () => Navigator.pop(context),
                           ),
                         ),
@@ -252,11 +251,10 @@ class CategoryEditBottomSheet {
                           child: CustomButton(
                             buttonText:
                                 AppLocalizations.of(context)!.translate('save'),
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.buttonPrimaryFg,
                             onPressed: () {
                               if (formKey.currentState!.validate()) {
-                                // if (formKey.currentState!.validate() && _image != null) {
                                 _updateCategory(
                                   categoryId,
                                   categoryNameController.text,

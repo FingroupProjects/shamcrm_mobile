@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_delete.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_edit_screen.dart';
@@ -99,12 +100,13 @@ Future<void> _initializeBaseUrl() async {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: _buildAppBar(
         context,
         AppLocalizations.of(context)!.translate('view_category'),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: ListView(
@@ -127,28 +129,26 @@ Future<void> _initializeBaseUrl() async {
                           height: 200,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
-                            //print('CategoryDetailsScreen: Ошибка загрузки изображения: $error');
                             return Container(
                               width: double.infinity,
                               height: 200,
-                              color: Colors.white,
-                              child: Icon(Icons.image_not_supported, size: 50, color: Colors.black),
+                              color: colors.surfacePrimary,
+                              child: Icon(Icons.image_not_supported, size: 50, color: colors.textSecondary),
                             );
                           },
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
-                            //print('CategoryDetailsScreen: Загрузка изображения...');
                             return Container(
                               width: double.infinity,
                               height: 200,
-                              color: Colors.white,
+                              color: colors.surfacePrimary,
                               child: Center(
                                 child: CircularProgressIndicator(
                                   value: loadingProgress.expectedTotalBytes != null
                                       ? loadingProgress.cumulativeBytesLoaded /
                                           loadingProgress.expectedTotalBytes!
                                       : null,
-                                  color: Colors.black,
+                                  color: colors.buttonPrimaryBg,
                                 ),
                               ),
                             );
@@ -165,8 +165,9 @@ Future<void> _initializeBaseUrl() async {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -180,9 +181,9 @@ Future<void> _initializeBaseUrl() async {
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.iconPrimary,
             ),
             onPressed: () async {
-              //print('CategoryDetailsScreen: Нажата кнопка "Назад"');
               Navigator.pop(context);
             },
           ),
@@ -192,11 +193,11 @@ Future<void> _initializeBaseUrl() async {
         offset: const Offset(-10, 0),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -212,9 +213,9 @@ Future<void> _initializeBaseUrl() async {
                       'assets/icons/edit.png',
                       width: 24,
                       height: 24,
+                      color: colors.iconPrimary,
                     ),
                     onPressed: () async {
-                      //print('CategoryDetailsScreen: Нажата кнопка редактирования');
                       final result = await CategoryEditBottomSheet.show(
                         context,
                         initialCategoryId: widget.categoryId,
@@ -230,7 +231,6 @@ Future<void> _initializeBaseUrl() async {
                             _cachedImageFile = null;
                           }
                           _updateDetails();
-                          //print('CategoryDetailsScreen: Категория отредактирована, новое имя: $currentName');
                         });
                       }
                     },
@@ -242,15 +242,14 @@ Future<void> _initializeBaseUrl() async {
                       'assets/icons/delete.png',
                       width: 24,
                       height: 24,
+                      color: colors.iconPrimary,
                     ),
                     onPressed: () {
-                      //print('CategoryDetailsScreen: Нажата кнопка удаления');
                       showDialog(
                         context: context,
                         builder: (context) => DeleteCategoryDialog(categoryId: widget.categoryId),
                       ).then((deleted) {
                         if (deleted == true) {
-                          //print('CategoryDetailsScreen: Категория удалена, возврат на предыдущий экран');
                           Navigator.of(context).pop(true);
                         }
                       });
@@ -308,20 +307,21 @@ Future<void> _initializeBaseUrl() async {
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
       style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA), // Исправлен цвет (был некорректный f99A4BA)
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value, String label, {int? maxLines}) {
+    final colors = context.appColors;
     if (value.isEmpty) {
-      //print('CategoryDetailsScreen: Пустое значение для $label');
       return Container();
     }
     return Text(
@@ -330,7 +330,7 @@ Future<void> _initializeBaseUrl() async {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xFF1E2E52),
+        color: colors.textPrimary,
         decoration: label == AppLocalizations.of(context)!.translate('description_details')
             ? TextDecoration.underline
             : TextDecoration.none,
@@ -341,12 +341,12 @@ Future<void> _initializeBaseUrl() async {
   }
 
   void _showFullTextDialog(String title, String content) {
-    //print('CategoryDetailsScreen: Отображение диалога полного текста для: $title');
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -358,7 +358,7 @@ Future<void> _initializeBaseUrl() async {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
@@ -373,7 +373,7 @@ Future<void> _initializeBaseUrl() async {
                     content,
                     textAlign: TextAlign.start,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -386,11 +386,10 @@ Future<void> _initializeBaseUrl() async {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () {
-                    //print('CategoryDetailsScreen: Закрытие диалога полного текста');
                     Navigator.pop(context);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -13,10 +14,11 @@ class PriceAffectSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F7FD),
+        color: colors.fieldBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -30,7 +32,7 @@ class PriceAffectSwitcher extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -39,20 +41,19 @@ class PriceAffectSwitcher extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Gilroy',
-                    color: Color(0x991E2E52), 
+                    color: colors.textSecondary.withValues(alpha: 0.6),
                   ),
                 ),
               ],
             ),
           ),
-
           Switch(
             value: isActive,
             onChanged: onChanged,
-            activeColor: const Color.fromARGB(255, 255, 255, 255),
-            inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-            activeTrackColor: const Color(0xFF4759FF), 
-            inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+            activeColor: colors.surfacePrimary,
+            inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+            activeTrackColor: colors.buttonPrimaryBg,
+            inactiveThumbColor: colors.surfacePrimary,
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,8 +25,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
   String _lastSearchQuery = '';
-  bool _canCreateCategory = false; // Новая переменная для права category.create
-  final ApiService _apiService = ApiService(); // Экземпляр ApiService
+  bool _canCreateCategory = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     _searchController.addListener(() {
       _onSearch(_searchController.text);
     });
-    _checkPermissions(); // Проверяем права доступа при инициализации
+    _checkPermissions();
   }
 
 Future<void> _checkPermissions() async {
@@ -45,12 +46,10 @@ Future<void> _checkPermissions() async {
 
     setState(() {
       _canCreateCategory = canCreate && !integrationWith1C;
-      //print('CategoryScreen: _canCreateCategory установлен в $_canCreateCategory (canCreate: $canCreate, integration_with_1C: $integrationWith1C)');
     });
   } catch (e) {
     setState(() {
       _canCreateCategory = false;
-      //print('CategoryScreen: Ошибка при проверке прав: $e');
     });
   }
 }
@@ -76,13 +75,13 @@ Future<void> _checkPermissions() async {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
-    //print('CategoryScreen: Очистка ресурсов');
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
@@ -93,7 +92,6 @@ Future<void> _checkPermissions() async {
           onClickProfileAvatar: () {
             setState(() {
               isClickAvatarIcon = !isClickAvatarIcon;
-              //print('CategoryScreen: Переключение на профиль: $isClickAvatarIcon');
             });
           },
           clearButtonClickFiltr: (isSearching) {},
@@ -121,19 +119,16 @@ Future<void> _checkPermissions() async {
                     message: AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: true,
                   );
-                  //print('CategoryScreen: Успех: ${state.message}');
                 } else if (state is CategoryError) {
                   showCustomSnackBar(
                     context: context,
                     message: AppLocalizations.of(context)!.translate(state.message),
                     isSuccess: false,
                   );
-                  //print('CategoryScreen: Ошибка: ${state.message}');
                 }
               },
               builder: (context, state) {
                 if (state is CategoryLoading) {
-                  //print('CategoryScreen: Состояние загрузки');
                   return const Center(
                     child: PlayStoreImageLoading(
                       size: 80.0,
@@ -141,7 +136,6 @@ Future<void> _checkPermissions() async {
                     ),
                   );
                 } else if (state is CategoryError) {
-                  //print('CategoryScreen: Ошибка загрузки категорий: ${state.message}');
                   context.read<CategoryBloc>().add(FetchCategories());
                   return const Center(
                     child: PlayStoreImageLoading(
@@ -150,23 +144,21 @@ Future<void> _checkPermissions() async {
                     ),
                   );
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {
-                  //print('CategoryScreen: Список категорий пуст');
                   return Center(
                     child: Text(
                       _isSearching
                           ? localizations!.translate('nothing_found')
                           : localizations!.translate('category_not_found'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                   );
                 } else if (state is CategoryLoaded) {
                   final categories = state.categories;
-                  //print('CategoryScreen: Загружено категорий: ${categories.length}');
                   return ListView.builder(
                     padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
                     itemCount: categories.length,
@@ -185,19 +177,17 @@ Future<void> _checkPermissions() async {
                     },
                   );
                 }
-                //print('CategoryScreen: Неизвестное состояние');
                 return const Center(
-                  child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                  child: CircularProgressIndicator(),
                 );
               },
             ),
       floatingActionButton: _canCreateCategory
           ? FloatingActionButton(
               onPressed: () {
-                //print('CategoryScreen: Нажата кнопка добавления категории');
                 CategoryAddBottomSheet.show(context);
               },
-              backgroundColor: const Color(0xff1E2E52),
+              backgroundColor: context.appColors.buttonPrimaryBg,
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,

@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.da
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -542,11 +543,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Column(
@@ -556,8 +558,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -570,8 +572,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 child: SingleChildScrollView(
                   child: Text(
                     content,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -584,14 +586,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff1E2E52),
+                    backgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.translate('close'),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colors.textInverse,
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                     ),
@@ -607,6 +609,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return MultiBlocProvider(
       providers: [
         BlocProvider<OrderHistoryBloc>(
@@ -632,7 +635,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             }
 
             return Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
               appBar: _buildAppBar(context, orderForAppBar),
               body: _buildBody(state),
             );
@@ -668,12 +671,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, Order? order) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Color(0xff1E2E52)),
+        icon: Icon(Icons.arrow_back, color: colors.textPrimary),
         onPressed: () {
           // Передаем результат редактирования при закрытии экрана
           Navigator.pop(context, _buildNavigationResult());
@@ -681,11 +685,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
       title: Text(
         '${AppLocalizations.of(context)!.translate('order_title')}№${widget.orderId}',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       actions: [
@@ -741,6 +745,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
+    final colors = context.appColors;
     final String clientLabel =
         AppLocalizations.of(context)!.translate('client');
     final String dealLabel =
@@ -772,20 +777,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   Flexible(
                     child: Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     size: 16,
                   ),
                 ],
@@ -827,11 +832,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             Expanded(
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration: TextDecoration.underline,
                 ),
                 maxLines: 1,
@@ -869,11 +874,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             Expanded(
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration: TextDecoration.underline,
                 ),
                 maxLines: 1,
@@ -896,11 +901,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             Expanded(
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration: TextDecoration.underline,
                 ),
                 maxLines: 1,
@@ -932,7 +937,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration: value.isNotEmpty &&
                           value !=
                               AppLocalizations.of(context)!
@@ -962,11 +967,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textSecondary,
       ),
     );
   }
@@ -974,11 +979,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: context.appColors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

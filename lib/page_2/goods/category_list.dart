@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -26,12 +27,12 @@ class CategoryDropdownWidget extends StatefulWidget {
 class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
   SubCategoryAttributesData? selectedSubCategory;
 
-  final TextStyle categoryTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
+  TextStyle get categoryTextStyle => TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Gilroy',
+        color: context.appColors.textPrimary,
+      );
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,15 +63,15 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
             searchHintText: AppLocalizations.of(context)!.translate('search'),
             overlayHeight: 300,
             decoration: CustomDropdownDecoration(
-              closedFillColor: Color(0xffF4F7FD),
-              expandedFillColor: Colors.white,
+              closedFillColor: colors.fieldBg,
+              expandedFillColor: colors.surfacePrimary,
               closedBorder: Border.all(
-                color: widget.isValid ? const Color(0xffF4F7FD) : Colors.red,
+                color: widget.isValid ? colors.borderSubtle : colors.error,
                 width: 1.5,
               ),
               closedBorderRadius: BorderRadius.circular(12),
               expandedBorder: Border.all(
-                color: widget.isValid ? const Color(0xffF4F7FD) : Colors.red,
+                color: widget.isValid ? colors.borderSubtle : colors.error,
                 width: 1.5,
               ),
               expandedBorderRadius: BorderRadius.circular(12),
@@ -88,7 +90,8 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               );
             },
             hintBuilder: (context, hint, enabled) => Text(
-              AppLocalizations.of(context)!.translate('list_select_subcategories'),
+              AppLocalizations.of(context)!
+                  .translate('list_select_subcategories'),
               style: categoryTextStyle.copyWith(fontSize: 14),
             ),
             excludeSelected: false,
@@ -111,7 +114,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
               '    ${AppLocalizations.of(context)!.translate('field_required')}',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.red,
+                color: colors.error,
                 fontWeight: FontWeight.w400,
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,7 @@ class _UnitsWidgetState extends State<UnitsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<UnitsBloc, UnitsState>(
       listener: (context, state) {
         if (state is UnitsError) {
@@ -40,18 +42,18 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -59,15 +61,14 @@ class _UnitsWidgetState extends State<UnitsWidget> {
       child: BlocBuilder<UnitsBloc, UnitsState>(
         builder: (context, state) {
           final isLoading = state is UnitsLoading;
-          
-          // Обновляем данные при успешной загрузке
+
           if (state is UnitsLoaded) {
             List<MeasureUnitModel> unitsList = state.unitsList;
 
             if (widget.selectedUnit != null && unitsList.isNotEmpty) {
               try {
                 selectedUnitData = unitsList.firstWhere(
-                      (unit) => unit.id.toString() == widget.selectedUnit,
+                  (unit) => unit.id.toString() == widget.selectedUnit,
                 );
               } catch (e) {
                 selectedUnitData = null;
@@ -89,7 +90,6 @@ class _UnitsWidgetState extends State<UnitsWidget> {
             }
           }
 
-          // Всегда отображаем поле
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -99,7 +99,7 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -108,19 +108,19 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                   closeDropDownOnClearFilterSearch: true,
                   items: state is UnitsLoaded ? state.unitsList : [],
                   searchHintText:
-                  AppLocalizations.of(context)!.translate('search'),
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
-                  enabled: !isLoading, // ← Блокируем при загрузке
+                  enabled: !isLoading,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: colors.fieldBg,
+                    expandedFillColor: colors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.borderSubtle,
                       width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.borderSubtle,
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
@@ -129,7 +129,7 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                     return Text(
                       item.name,
                       style: TextStyle(
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
@@ -139,64 +139,59 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
-                    // ← Показываем загрузку в центре
                     if (isLoading) {
-                      return const Center(
+                      return Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                           ),
                         ),
                       );
                     }
-                    
                     return Text(
                       selectedItem.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
                   hintBuilder: (context, hint, enabled) {
-                    // ← Загрузка когда ничего не выбрано
                     if (isLoading) {
-                      return const Center(
+                      return Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                           ),
                         ),
                       );
                     }
-                    
                     return Text(
                       AppLocalizations.of(context)!.translate('select_unit'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
-                  // ← Загрузка в открытом списке
                   noResultFoundBuilder: (context, text) {
                     if (isLoading) {
-                      return const Center(
+                      return Center(
                         child: Padding(
-                          padding: EdgeInsets.all(20.0),
+                          padding: const EdgeInsets.all(20.0),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                           ),
                         ),
                       );
@@ -206,10 +201,10 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
                           AppLocalizations.of(context)!.translate('no_results'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -217,12 +212,13 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                   },
                   excludeSelected: false,
                   initialItem: (state is UnitsLoaded &&
-                      state.unitsList.contains(selectedUnitData))
+                          state.unitsList.contains(selectedUnitData))
                       ? selectedUnitData
                       : null,
                   validator: (value) {
                     if (value == null) {
-                      return AppLocalizations.of(context)!.translate('field_required_project');
+                      return AppLocalizations.of(context)!
+                          .translate('field_required_project');
                     }
                     return null;
                   },

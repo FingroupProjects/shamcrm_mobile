@@ -308,14 +308,14 @@ class _GoodsScreenState extends State<GoodsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.search_off,
-                              size: 64, color: Colors.grey),
+                          Icon(Icons.search_off,
+                              size: 64, color: colors.textMuted),
                           const SizedBox(height: 16),
                           Text(
                             localizations!.translate('goods_not_found'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
-                              color: Colors.grey,
+                              color: colors.textMuted,
                               fontFamily: 'Gilroy',
                             ),
                           ),
@@ -341,16 +341,16 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.inventory_2_outlined,
-                            size: 64, color: Colors.grey),
+                        Icon(Icons.inventory_2_outlined,
+                            size: 64, color: colors.textMuted),
                         const SizedBox(height: 16),
                         Text(
                           _isSearching
                               ? localizations!.translate('nothing_found')
                               : localizations!.translate('no_products'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey,
+                            color: colors.textMuted,
                             fontFamily: 'Gilroy',
                           ),
                         ),

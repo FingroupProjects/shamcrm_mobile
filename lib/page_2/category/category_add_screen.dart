@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -16,6 +17,7 @@ import 'package:image_picker/image_picker.dart';
 
 class CategoryAddBottomSheet {
   static void show(BuildContext context) {
+    final colors = context.appColors;
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController categoryNameController = TextEditingController();
     bool isActive = false;
@@ -35,13 +37,14 @@ class CategoryAddBottomSheet {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: colors.surfacePrimary,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
+            final colors = context.appColors;
             void _showAddCharacterCustomFieldDialog() {
               showDialog(
                 context: context,
@@ -75,17 +78,17 @@ class CategoryAddBottomSheet {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 5),
                       decoration: BoxDecoration(
-                        color: const Color(0xffDFE3EC),
+                        color: colors.borderSubtle,
                         borderRadius: BorderRadius.circular(1200),
                       ),
                     ),
                     Text(
                       AppLocalizations.of(context)!.translate('new_category'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -116,11 +119,11 @@ class CategoryAddBottomSheet {
                                       children: [
                                         Text(
                                           AppLocalizations.of(context)!.translate('parent_category'),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w500,
                                             fontFamily: 'Gilroy',
-                                            color: Color(0xff1E2E52),
+                                            color: colors.textPrimary,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
@@ -137,7 +140,7 @@ class CategoryAddBottomSheet {
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFF4F7FD),
+                                              color: colors.fieldBg,
                                               borderRadius: BorderRadius.circular(12),
                                             ),
                                             child: Row(
@@ -153,21 +156,12 @@ class CategoryAddBottomSheet {
                                                       }
                                                     });
                                                   },
-                                                  activeColor: const Color.fromARGB(255, 255, 255, 255),
-                                                  inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                                                  activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                                                  inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                                                  activeColor: colors.surfacePrimary,
+                                                  inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+                                                  activeTrackColor: colors.buttonPrimaryBg,
+                                                  inactiveThumbColor: colors.surfacePrimary,
                                                 ),
                                                 const SizedBox(width: 10),
-                                                Text(
-                                                  isActive ? '' : '',
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Gilroy',
-                                                    color: Color(0xFF1E1E1E),
-                                                  ),
-                                                ),
                                               ],
                                             ),
                                           ),
@@ -194,7 +188,7 @@ class CategoryAddBottomSheet {
                                     setState(() {
                                       isAffectingPrice = value;
                                       if (isAffectingPrice) {
-                                        selectedType = 'b'; // Автоматически выбираем Характеристику
+                                        selectedType = 'b';
                                         customFields = [];
                                       }
                                     });
@@ -207,7 +201,6 @@ class CategoryAddBottomSheet {
                                   onTypeChanged: (type) {
                                     setState(() {
                                       if (!isAffectingPrice || type == 'b') {
-                                        // Разрешаем изменение только если isAffectingPrice = false или выбирается Характеристика
                                         selectedType = type;
                                       }
                                     });
@@ -217,11 +210,11 @@ class CategoryAddBottomSheet {
                               const SizedBox(height: 8),
                               Text(
                                 AppLocalizations.of(context)!.translate('image_message'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -234,7 +227,7 @@ class CategoryAddBottomSheet {
                                   width: double.infinity,
                                   height: 60,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xffF4F7FD),
+                                    color: colors.fieldBg,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: _image == null
@@ -242,19 +235,19 @@ class CategoryAddBottomSheet {
                                           child: Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.camera_alt,
-                                                color: Color(0xff99A4BA),
+                                                color: colors.textSecondary,
                                                 size: 24,
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
                                                 AppLocalizations.of(context)!.translate('pick_image'),
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                   fontFamily: 'Gilroy',
-                                                  color: Color(0xff99A4BA),
+                                                  color: colors.textSecondary,
                                                 ),
                                               ),
                                             ],
@@ -279,17 +272,17 @@ class CategoryAddBottomSheet {
                                               Expanded(
                                                 child: Text(
                                                   _image!.path.split('/').last,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w500,
                                                     fontFamily: 'Gilroy',
-                                                    color: Color(0xff1E2E52),
+                                                    color: colors.textPrimary,
                                                   ),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
                                               IconButton(
-                                                icon: const Icon(Icons.close, color: Color(0xff1E2E52)),
+                                                icon: Icon(Icons.close, color: colors.textPrimary),
                                                 onPressed: () {
                                                   setState(() {
                                                     _image = null;
@@ -305,8 +298,8 @@ class CategoryAddBottomSheet {
                               if (!isActive)
                                 CustomButton(
                                   buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
-                                  buttonColor: const Color(0xff1E2E52),
-                                  textColor: Colors.white,
+                                  buttonColor: colors.buttonPrimaryBg,
+                                  textColor: colors.buttonPrimaryFg,
                                   onPressed: _showAddCharacterCustomFieldDialog,
                                 ),
                               if (!isActive) const SizedBox(height: 5),
@@ -314,31 +307,32 @@ class CategoryAddBottomSheet {
                                 Column(
                                   children: customFields.map((field) {
                                     return Card(
-                                      color: const Color(0xffF4F7FD),
+                                      color: colors.fieldBg,
                                       margin: const EdgeInsets.symmetric(vertical: 4),
                                       child: ListTile(
-                                        contentPadding: const EdgeInsets.only(left: 16, right: 16), // Исправлено: emberi16 -> 16
+                                        contentPadding: const EdgeInsets.only(left: 16, right: 16),
                                         title: Text(
                                           field.name,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                             fontFamily: 'Gilroy',
+                                            color: colors.textPrimary,
                                           ),
                                         ),
                                         subtitle: Text(
                                           field.isIndividual
                                               ? AppLocalizations.of(context)!.translate('individual')
                                               : AppLocalizations.of(context)!.translate('common'),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w400,
                                             fontFamily: 'Gilroy',
-                                            color: Color(0x991E2E52),
+                                            color: colors.textSecondary.withValues(alpha: 0.6),
                                           ),
                                         ),
                                         trailing: IconButton(
-                                          icon: const Icon(Icons.delete, color: Color(0xff1E2E52)),
+                                          icon: Icon(Icons.delete, color: colors.textPrimary),
                                           onPressed: () {
                                             setState(() {
                                               customFields.remove(field);
@@ -360,8 +354,8 @@ class CategoryAddBottomSheet {
                         Expanded(
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: colors.fieldBg,
+                            textColor: colors.textPrimary,
                             onPressed: () => Navigator.pop(context),
                           ),
                         ),
@@ -369,8 +363,8 @@ class CategoryAddBottomSheet {
                         Expanded(
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!.translate('add'),
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.buttonPrimaryFg,
                             onPressed: () {
                               if (formKey.currentState!.validate()) {
                                 if (!isActive && subSelectedCategory == null) {
@@ -421,7 +415,6 @@ class CategoryAddBottomSheet {
     try {
       final categoryBloc = BlocProvider.of<CategoryBloc>(context);
 
-      // Формируем список атрибутов с учетом isIndividual
       List<Map<String, dynamic>> attributes = customFields
           .map((field) => {
                 'name': field.name,
@@ -438,7 +431,7 @@ class CategoryAddBottomSheet {
         image: image,
         displayType: selectedType,
         hasPriceCharacteristics: isAffectingPrice,
-        isParent: isActive, // Передаём isActive как isParent
+        isParent: isActive,
       ));
     } catch (e) {
       showCustomSnackBar(

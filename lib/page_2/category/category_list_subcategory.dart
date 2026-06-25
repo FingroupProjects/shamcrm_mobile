@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -50,13 +51,14 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocBuilder<CategoryBloc, CategoryState>(
       builder: (context, state) {
         if (state is CategoryLoading) {
-          return const Center(
-              child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+          return Center(
+            child: CircularProgressIndicator(color: colors.buttonPrimaryBg),
+          );
         } else if (state is CategoryLoaded) {
-          // Заполняем мапы названий и ID
           categories = state.categories;
           subCategoryNames =
               state.categories.map((category) => category.name).toList();
@@ -74,7 +76,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -88,19 +90,19 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
                 overlayHeight: 300,
                 enabled: true,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(color: Color(0xffF4F7FD), width: 1),
+                  closedFillColor: colors.fieldBg,
+                  expandedFillColor: colors.surfacePrimary,
+                  closedBorder: Border.all(color: colors.borderSubtle, width: 1),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder:
-                      Border.all(color: Color(0xffF4F7FD), width: 1),
+                      Border.all(color: colors.borderSubtle, width: 1),
                   expandedBorderRadius: BorderRadius.circular(12),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
                     item.name,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
@@ -114,7 +116,7 @@ class _SubCategoryDropdownWidgetState extends State<SubCategoryDropdownWidget> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 initialItem: _getInitialCategory(),

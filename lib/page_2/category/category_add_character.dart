@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/category/character_list.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class AddCustomCharacterFieldDialog extends StatefulWidget {
-  final Function(String, bool) onAddField; 
+  final Function(String, bool) onAddField;
 
   AddCustomCharacterFieldDialog({required this.onAddField});
 
@@ -17,9 +18,9 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
   String? selectedCharacter;
   bool _isDropdownVisible = false;
   bool _isKeyboardVisible = false;
-  bool isCommonActive = true; 
-  bool isUniqueActive = false; 
-  bool showOnWebsite = false; // Новый переключатель
+  bool isCommonActive = true;
+  bool isUniqueActive = false;
+  bool showOnWebsite = false;
 
   @override
   void initState() {
@@ -47,6 +48,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final double dialogHeight = _isDropdownVisible
         ? MediaQuery.of(context).size.height * 0.60
         : MediaQuery.of(context).size.height * 0.40;
@@ -58,7 +60,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
         height: dialogHeight,
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
         ),
         child: SingleChildScrollView(
@@ -71,7 +73,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   fontSize: 18,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               SizedBox(height: 4),
@@ -99,14 +101,14 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                         isCommonActive = value;
                         if (isCommonActive) {
                           isUniqueActive = false;
-                          showOnWebsite = false; // Сбрасываем при переключении
+                          showOnWebsite = false;
                         }
                       });
                     },
-                    activeColor: const Color.fromARGB(255, 255, 255, 255),
-                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                    activeTrackColor: Color(0xff1E2E52),
-                    inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                    activeColor: colors.surfacePrimary,
+                    inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+                    activeTrackColor: colors.buttonPrimaryBg,
+                    inactiveThumbColor: colors.surfacePrimary,
                   ),
                   SizedBox(width: 8),
                   Text(
@@ -115,7 +117,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
@@ -131,14 +133,14 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                         if (isUniqueActive) {
                           isCommonActive = false;
                         } else {
-                          showOnWebsite = false; // Сбрасываем при выключении
+                          showOnWebsite = false;
                         }
                       });
                     },
-                    activeColor: const Color.fromARGB(255, 255, 255, 255),
-                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                    activeTrackColor: Color(0xff1E2E52),
-                    inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                    activeColor: colors.surfacePrimary,
+                    inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+                    activeTrackColor: colors.buttonPrimaryBg,
+                    inactiveThumbColor: colors.surfacePrimary,
                   ),
                   SizedBox(width: 8),
                   Text(
@@ -147,12 +149,11 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
               ),
-              // Третий переключатель - показывается только когда isUniqueActive == true
               if (isUniqueActive)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -164,10 +165,10 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                           showOnWebsite = value;
                         });
                       },
-                      activeColor: const Color.fromARGB(255, 255, 255, 255),
-                      inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-                      activeTrackColor: Color(0xff1E2E52),
-                      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+                      activeColor: colors.surfacePrimary,
+                      inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
+                      activeTrackColor: colors.buttonPrimaryBg,
+                      inactiveThumbColor: colors.surfacePrimary,
                     ),
                     SizedBox(width: 8),
                     Text(
@@ -176,7 +177,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ],
@@ -191,8 +192,8 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      buttonColor: Colors.red,
-                      textColor: Colors.white,
+                      buttonColor: colors.buttonDangerBg,
+                      textColor: colors.buttonPrimaryFg,
                     ),
                   ),
                   SizedBox(width: 8),
@@ -201,18 +202,18 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                       buttonText: AppLocalizations.of(context)!.translate('add'),
                       onPressed: () {
                         if (selectedCharacter != null && selectedCharacter!.isNotEmpty) {
-                          widget.onAddField(selectedCharacter!, isUniqueActive); 
+                          widget.onAddField(selectedCharacter!, isUniqueActive);
                           Navigator.of(context).pop();
                         } else {
-                         showCustomSnackBar(
+                          showCustomSnackBar(
                             context: context,
                             message: AppLocalizations.of(context)!.translate('select_characteristic'),
                             isSuccess: false,
                           );
                         }
                       },
-                      buttonColor: Color(0xff1E2E52),
-                      textColor: Colors.white,
+                      buttonColor: colors.buttonPrimaryBg,
+                      textColor: colors.buttonPrimaryFg,
                     ),
                   ),
                 ],

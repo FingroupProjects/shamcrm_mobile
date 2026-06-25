@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ class DeleteCategoryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<CategoryBloc, CategoryState>(
       listener: (context, state) {
         if (state is CategoryDeleted) {
@@ -27,7 +29,7 @@ class DeleteCategoryDialog extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -35,7 +37,7 @@ class DeleteCategoryDialog extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: colors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -50,7 +52,7 @@ class DeleteCategoryDialog extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.surfacePrimary,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -58,7 +60,7 @@ class DeleteCategoryDialog extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.buttonDangerBg,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -67,7 +69,7 @@ class DeleteCategoryDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -75,11 +77,11 @@ class DeleteCategoryDialog extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 AppLocalizations.of(context)!.translate('delete_category_title'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -88,11 +90,11 @@ class DeleteCategoryDialog extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 AppLocalizations.of(context)!.translate('confrim_delete_category'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -108,8 +110,8 @@ class DeleteCategoryDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonDangerBg,
+                  textColor: colors.surfacePrimary,
                 ),
               ),
               const SizedBox(width: 8),
@@ -119,8 +121,8 @@ class DeleteCategoryDialog extends StatelessWidget {
                   onPressed: () {
                     context.read<CategoryBloc>().add(DeleteCategory(categoryId));
                   },
-                  buttonColor: const Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.surfacePrimary,
                 ),
               ),
             ],
