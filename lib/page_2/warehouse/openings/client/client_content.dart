@@ -81,6 +81,7 @@ class _ClientContentState extends State<ClientContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     
     return RefreshIndicator(
       onRefresh: _onRefresh,
@@ -96,25 +97,26 @@ class _ClientContentState extends State<ClientContent> {
                   const Icon(
                     Icons.person_outline,
                     size: 64,
-                    color: Color(0xff99A4BA),
+                    color: Color(0xff8D97AD),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     localizations.translate('no_clients'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     localizations.translate('no_clients_description'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w500,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],

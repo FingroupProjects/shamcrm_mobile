@@ -115,14 +115,12 @@ class _AddCashRegisterOpeningScreenState
           backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: colors.iconPrimary,
+              size: 22,
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
           ),
           title: Text(
             AppLocalizations.of(context)!
@@ -149,8 +147,8 @@ class _AddCashRegisterOpeningScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStatusBanner(context),
-                        const SizedBox(height: 16),
+                        // _buildStatusBanner(context),
+                        // const SizedBox(height: 16),
                         _buildCashRegisterNameField(),
                         const SizedBox(height: 16),
                         CustomTextField(
@@ -192,8 +190,8 @@ class _AddCashRegisterOpeningScreenState
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('close'),
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: colors.surfacePrimary,
+                            textColor: colors.textPrimary,
                             onPressed: isCreating
                                 ? null
                                 : () {
@@ -206,8 +204,8 @@ class _AddCashRegisterOpeningScreenState
                           child: CustomButton(
                             buttonText:
                                 AppLocalizations.of(context)!.translate('save'),
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.buttonPrimaryFg,
                             isLoading: isCreating,
                             onPressed: isCreating
                                 ? null
@@ -241,75 +239,65 @@ class _AddCashRegisterOpeningScreenState
     );
   }
 
-  Widget _buildStatusBanner(BuildContext context) {
-    final colors = context.appColors;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: colors.buttonPrimaryBg,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.hourglass_bottom_rounded,
-                color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!
-                      .translate('add_cash_register_opening'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  AppLocalizations.of(context)!
-                      .translate('fill_in_the_initial_balance'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildStatusBanner(BuildContext context) {
+  //   final colors = context.appColors;
+  //   // return Container(
+  //   //   width: double.infinity,
+  //   //   padding: const EdgeInsets.all(16),
+  //   //   decoration: BoxDecoration(
+  //   //     color: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+  //   //     borderRadius: BorderRadius.circular(16),
+  //   //     border: Border.all(
+  //   //       color: colors.buttonPrimaryBg.withValues(alpha: 0.18),
+  //   //     ),
+  //   //   ),
+  //   //   child: Row(
+  //   //     children: [
+  //   //       Container(
+  //   //         width: 42,
+  //   //         height: 42,
+  //   //         decoration: BoxDecoration(
+  //   //           color: colors.buttonPrimaryBg,
+  //   //           shape: BoxShape.circle,
+  //   //         ),
+  //   //         child: const Icon(Icons.hourglass_bottom_rounded,
+  //   //             color: Colors.white, size: 22),
+  //   //       ),
+  //   //       const SizedBox(width: 12),
+  //   //       Expanded(
+  //   //         child: Column(
+  //   //           crossAxisAlignment: CrossAxisAlignment.start,
+  //   //           children: [
+  //   //             Text(
+  //   //               AppLocalizations.of(context)!
+  //   //                   .translate('add_cash_register_opening'),
+  //   //               style: TextStyle(
+  //   //                 fontFamily: 'Gilroy',
+  //   //                 fontSize: 16,
+  //   //                 fontWeight: FontWeight.w600,
+  //   //                 color: colors.textPrimary,
+  //   //               ),
+  //   //             ),
+  //   //           ],
+  //   //         ),
+  //   //       ),
+  //   //     ],
+  //   //   ),
+  //   // );
+  // }
 
   Widget _buildCashRegisterNameField() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('cash_register'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -317,20 +305,20 @@ class _AddCashRegisterOpeningScreenState
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
           child: Text(
             widget.cashRegisterName,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/openings/goods/goods_list_state.dart';
@@ -109,6 +110,7 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     if (kDebugMode) {
       //debugPrint('🟡 GoodsWidget: build() called');
     }
@@ -118,11 +120,11 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('good'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -200,15 +202,15 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
               overlayHeight: 400,
               enabled: !isLoading,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
+                closedFillColor: colors.surfacePrimary,
+                expandedFillColor: colors.surfacePrimary,
                 closedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.borderSubtle,
                   width: 1,
                 ),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.borderSubtle,
                   width: 1,
                 ),
                 expandedBorderRadius: BorderRadius.circular(12),
@@ -223,8 +225,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                   children: [
                     Text(
                       item.fullName ?? item.good?.name ?? 'Без имени',
-                      style: const TextStyle(
-                        color: Color(0xff1E2E52),
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
@@ -237,8 +239,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           'Цена: ${item.price!.price}',
-                          style: const TextStyle(
-                            color: Color(0xff1E2E52),
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
                             fontFamily: 'Gilroy',
@@ -254,14 +256,13 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                 }
 
                 if (isLoading) {
-                  return const Center(
+                  return Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        color: colors.buttonPrimaryBg,
                       ),
                     ),
                   );
@@ -274,11 +275,11 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                       selectedItem.fullName ??
                           selectedItem.good?.name ??
                           'Без имени',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     if (widget.showPrice &&
@@ -286,8 +287,8 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                         selectedItem.price!.price != '0')
                       Text(
                         'Цена: ${selectedItem.price!.price}',
-                        style: const TextStyle(
-                          color: Color(0xff1E2E52),
+                        style: TextStyle(
+                          color: colors.textSecondary,
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
                           fontFamily: 'Gilroy',
@@ -302,14 +303,13 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                 }
 
                 if (isLoading) {
-                  return const Center(
+                  return Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        color: colors.buttonPrimaryBg,
                       ),
                     ),
                   );
@@ -317,11 +317,11 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
 
                 return Text(
                   AppLocalizations.of(context)!.translate('select_good'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 );
               },
@@ -331,13 +331,12 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                 }
 
                 if (isLoading) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(20.0),
+                      padding: const EdgeInsets.all(20.0),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        color: colors.buttonPrimaryBg,
                       ),
                     ),
                   );
@@ -347,10 +346,10 @@ class _GoodsRadioGroupWidgetState extends State<GoodsRadioGroupWidget> {
                     padding: const EdgeInsets.all(20.0),
                     child: Text(
                       AppLocalizations.of(context)!.translate('no_results'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),

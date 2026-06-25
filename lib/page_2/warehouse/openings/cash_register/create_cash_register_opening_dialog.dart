@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_dialog_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_dialog_event.dart';
@@ -15,9 +16,10 @@ class CreateCashRegisterOpeningDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     // Получаем оригинальный блок для передачи в AddCashRegisterOpeningScreen
     final cashRegisterOpeningsBloc = context.read<CashRegisterOpeningsBloc>();
-    
+
     return BlocProvider(
-      create: (context) => CashRegisterDialogBloc()..add(LoadCashRegistersForDialog()),
+      create: (context) =>
+          CashRegisterDialogBloc()..add(LoadCashRegistersForDialog()),
       child: CashRegisterLeadsDialog(
         cashRegisterOpeningsBloc: cashRegisterOpeningsBloc,
       ),
@@ -27,14 +29,15 @@ class CreateCashRegisterOpeningDialog extends StatelessWidget {
 
 class CashRegisterLeadsDialog extends StatefulWidget {
   final CashRegisterOpeningsBloc cashRegisterOpeningsBloc;
-  
+
   const CashRegisterLeadsDialog({
     super.key,
     required this.cashRegisterOpeningsBloc,
   });
 
   @override
-  State<CashRegisterLeadsDialog> createState() => _CashRegisterLeadsDialogState();
+  State<CashRegisterLeadsDialog> createState() =>
+      _CashRegisterLeadsDialogState();
 }
 
 class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
@@ -58,37 +61,44 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
   //   context.read<CashRegisterDialogBloc>().add(SearchCashRegistersForDialog(search: query));
   // }
 
-  Widget _buildCashRegistersList(BuildContext context, List<CashRegister> cashRegisters) {
+  Widget _buildCashRegistersList(
+      BuildContext context, List<CashRegister> cashRegisters) {
+    final colors = context.appColors;
     if (cashRegisters.isEmpty) {
       return SizedBox(
         height: 300,
         child: Center(
           child: Text(
-            _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
+            _translate(
+                context, 'no_data_to_display', 'Нет данных для отображения'),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xff475569),
+              color: colors.textPrimary,
             ),
           ),
         ),
       );
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: cashRegisters.map((cashRegister) => _buildCashRegisterCard(context, cashRegister)).toList(),
+      children: cashRegisters
+          .map((cashRegister) => _buildCashRegisterCard(context, cashRegister))
+          .toList(),
     );
   }
 
-  Widget _buildCashRegisterCard(BuildContext context, CashRegister cashRegister) {
+  Widget _buildCashRegisterCard(
+      BuildContext context, CashRegister cashRegister) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
         // Закрываем диалог
         Navigator.pop(context);
-        
+
         // Открываем экран добавления с существующим блоком
         Navigator.push(
           context,
@@ -108,29 +118,30 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xffE2E8F0),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
         child: Text(
-                cashRegister.name ?? '',
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-
+          cashRegister.name ?? '',
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: colors.textPrimary,
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -142,11 +153,11 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
           maxWidth: 420,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.15),
+              color: colors.shadow.withValues(alpha: 0.15),
               spreadRadius: 0,
               blurRadius: 24,
               offset: const Offset(0, 8),
@@ -161,11 +172,7 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Color(0xff38BDF8),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -179,7 +186,7 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -191,7 +198,8 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _translate(context, 'choose_cash_register', 'Выберите кассу'),
+                          _translate(context, 'choose_cash_register',
+                              'Выберите кассу'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 18,
@@ -257,23 +265,25 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
 
             // Body
             Flexible(
-              child: BlocBuilder<CashRegisterDialogBloc, CashRegisterDialogState>(
+              child:
+                  BlocBuilder<CashRegisterDialogBloc, CashRegisterDialogState>(
                 builder: (context, state) {
                   if (state is CashRegisterDialogLoading) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
+                          CircularProgressIndicator(
+                            color: colors.buttonPrimaryBg,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _translate(context, 'loading_data_dialog', 'Загрузка данных...'),
-                            style: const TextStyle(
+                            _translate(context, 'loading_data_dialog',
+                                'Загрузка данных...'),
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
-                              color: Color(0xff64748B),
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -295,43 +305,49 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _translate(context, 'error_loading_dialog', 'Ошибка загрузки'),
-                              style: const TextStyle(
+                              _translate(context, 'error_loading_dialog',
+                                  'Ошибка загрузки'),
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               state.message,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<CashRegisterDialogBloc>().add(LoadCashRegistersForDialog());
+                                context
+                                    .read<CashRegisterDialogBloc>()
+                                    .add(LoadCashRegistersForDialog());
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1E2E52),
-                                foregroundColor: Colors.white,
+                                backgroundColor: colors.buttonPrimaryBg,
+                                foregroundColor: colors.buttonPrimaryFg,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               child: Text(
-                                _translate(context, 'retry_dialog', 'Повторить'),
-                                style: const TextStyle(
+                                _translate(
+                                    context, 'retry_dialog', 'Повторить'),
+                                style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,
+                                  color: colors.buttonPrimaryFg,
                                 ),
                               ),
                             ),
@@ -344,7 +360,8 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
                   if (state is CashRegisterDialogLoaded) {
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      child: _buildCashRegistersList(context, state.cashRegisters),
+                      child:
+                          _buildCashRegistersList(context, state.cashRegisters),
                     );
                   }
 
@@ -352,7 +369,7 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
           ],
         ),
@@ -360,4 +377,3 @@ class _CashRegisterLeadsDialogState extends State<CashRegisterLeadsDialog> {
     );
   }
 }
-

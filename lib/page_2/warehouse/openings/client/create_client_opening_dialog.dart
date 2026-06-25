@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_dialog_bloc.dart';
@@ -16,7 +17,7 @@ class CreateClientOpeningDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     // Получаем оригинальный блок для передачи в AddClientOpeningScreen
     final clientOpeningsBloc = context.read<ClientOpeningsBloc>();
-    
+
     return BlocProvider(
       create: (context) => ClientDialogBloc()..add(LoadLeadsForDialog()),
       child: ClientLeadsDialog(
@@ -28,7 +29,7 @@ class CreateClientOpeningDialog extends StatelessWidget {
 
 class ClientLeadsDialog extends StatefulWidget {
   final ClientOpeningsBloc clientOpeningsBloc;
-  
+
   const ClientLeadsDialog({
     super.key,
     required this.clientOpeningsBloc,
@@ -58,6 +59,7 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
   }
 
   Widget _buildLeadsList(List<Lead> items) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -66,17 +68,18 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
           Container(
             width: double.infinity,
             height: 350,
-            child: Center(child:
-                Text(
-                  _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
-                  ),
+            child: Center(
+              child: Text(
+                _translate(context, 'no_data_to_display',
+                    'Нет данных для отображения'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
                 ),
+              ),
             ),
           )
         else
@@ -86,11 +89,12 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
   }
 
   Widget _buildLeadCard(Lead item) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
         // Закрываем диалог
         Navigator.pop(context);
-        
+
         // Открываем экран добавления с существующим блоком
         Navigator.push(
           context,
@@ -110,10 +114,10 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xffE2E8F0),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
@@ -122,11 +126,11 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
           children: [
             Text(
               item.name ?? 'N/A',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ],
@@ -137,6 +141,7 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -148,11 +153,11 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
           maxWidth: 420,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.15),
+              color: colors.shadow.withValues(alpha: 0.15),
               spreadRadius: 0,
               blurRadius: 24,
               offset: const Offset(0, 8),
@@ -167,11 +172,7 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Color(0xff38BDF8),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -185,7 +186,7 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -197,7 +198,8 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _translate(context, 'select_client', 'Выберите клиента'),
+                          _translate(
+                              context, 'select_client', 'Выберите клиента'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 18,
@@ -220,7 +222,9 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                             _isSearching = !_isSearching;
                             if (!_isSearching) {
                               _searchController.clear();
-                              context.read<ClientDialogBloc>().add(LoadLeadsForDialog(search: null));
+                              context
+                                  .read<ClientDialogBloc>()
+                                  .add(LoadLeadsForDialog(search: null));
                             }
                           });
                         },
@@ -242,15 +246,16 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                         hintStyle: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
+                        fillColor: Colors.white.withValues(alpha: 0.2),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                       ),
                       onChanged: _onSearch,
                     ),
@@ -268,16 +273,17 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
+                          CircularProgressIndicator(
+                            color: colors.buttonPrimaryBg,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _translate(context, 'loading_data_dialog', 'Загрузка данных...'),
-                            style: const TextStyle(
+                            _translate(context, 'loading_data_dialog',
+                                'Загрузка данных...'),
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
-                              color: Color(0xff64748B),
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -295,44 +301,49 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                             const Icon(
                               Icons.error_outline,
                               size: 48,
-                              color: Color(0xffEF4444),
+                              color: Colors.red,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _translate(context, 'error_loading_dialog', 'Ошибка загрузки'),
-                              style: const TextStyle(
+                              _translate(context, 'error_loading_dialog',
+                                  'Ошибка загрузки'),
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               state.message,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<ClientDialogBloc>().add(LoadLeadsForDialog());
+                                context
+                                    .read<ClientDialogBloc>()
+                                    .add(LoadLeadsForDialog());
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1E2E52),
+                                backgroundColor: colors.buttonPrimaryBg,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               child: Text(
-                                _translate(context, 'retry_dialog', 'Повторить'),
+                                _translate(
+                                    context, 'retry_dialog', 'Повторить'),
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,
@@ -356,7 +367,7 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
           ],
         ),
@@ -364,4 +375,3 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
     );
   }
 }
-

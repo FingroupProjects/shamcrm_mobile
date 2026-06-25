@@ -24,29 +24,37 @@ import 'cash_register/create_cash_register_opening_dialog.dart';
 
 class TaskStyles {
   static const TextStyle tabTextStyle = TextStyle(
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Gilroy',
     fontWeight: FontWeight.w500,
   );
+
+  static const List<Color> tabAccentColors = [
+    Color(0xff38BDF8), // Поставщик
+    Color(0xff38BDF8), // Клиент
+    Color(0xff38BDF8), // Товар
+    Color(0xff38BDF8), // Касса
+  ];
 
   static BoxDecoration tabButtonDecoration({
     required bool isActive,
     required Color activeColor,
     required Color inactiveColor,
+    required Color backgroundColor,
   }) {
     return BoxDecoration(
-      color: isActive ? activeColor : Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      color: isActive ? activeColor : backgroundColor,
+      borderRadius: BorderRadius.circular(999),
       border: Border.all(
-        color: isActive ? activeColor : inactiveColor,
+        color: isActive ? activeColor : inactiveColor.withValues(alpha: 0.55),
         width: 1,
       ),
       boxShadow: isActive
           ? [
               BoxShadow(
-                color: activeColor.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+                color: activeColor.withValues(alpha: 0.16),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ]
           : null,
@@ -63,7 +71,8 @@ class OpeningsScreen extends StatefulWidget {
   State<OpeningsScreen> createState() => _OpeningsScreenState();
 }
 
-class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStateMixin {
+class _OpeningsScreenState extends State<OpeningsScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
   final List<Map<String, dynamic>> _tabTitles = [
@@ -93,7 +102,8 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     _supplierBloc = SupplierOpeningsBloc()..add(LoadSupplierOpenings());
     _clientBloc = ClientOpeningsBloc()..add(LoadClientOpenings());
     _goodsBloc = GoodsOpeningsBloc()..add(LoadGoodsOpenings());
-    _cashRegisterBloc = CashRegisterOpeningsBloc()..add(LoadCashRegisterOpenings());
+    _cashRegisterBloc = CashRegisterOpeningsBloc()
+      ..add(LoadCashRegisterOpenings());
 
     _currentTabIndex = widget.currentTabIndex;
     _scrollController = ScrollController();
@@ -177,7 +187,9 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
                 isClickAvatarIcon = !isClickAvatarIcon;
               });
             },
-            showSearchIcon: !isClickAvatarIcon && _currentTabIndex != 3, // Показываем поиск на всех вкладках кроме Кассы (id=3)
+            showSearchIcon: !isClickAvatarIcon &&
+                _currentTabIndex !=
+                    3, // Показываем поиск на всех вкладках кроме Кассы (id=3)
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
@@ -218,7 +230,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
       child: Row(
         children: List.generate(_tabTitles.length, (index) {
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             child: _buildTabButton(index),
           );
         }),
@@ -230,6 +242,7 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     bool isActive = _tabController.index == index;
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
+    final accentColor = TaskStyles.tabAccentColors[index];
 
     // Use translation for title
     String title = localizations.translate(_tabTitles[index]['titleKey']);
@@ -239,17 +252,22 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
       onTap: () {
         _tabController.animateTo(index);
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        constraints: const BoxConstraints(minWidth: 84),
         decoration: TaskStyles.tabButtonDecoration(
           isActive: isActive,
-          activeColor: colors.buttonPrimaryBg,
+          activeColor: accentColor,
           inactiveColor: colors.borderPrimary,
+          backgroundColor: colors.surfaceElevated,
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 20),
         child: Text(
           title,
+          textAlign: TextAlign.center,
           style: TaskStyles.tabTextStyle.copyWith(
-            color: isActive ? Colors.white : colors.textMuted,
+            color: isActive ? Colors.white : colors.textPrimary,
           ),
         ),
       ),
@@ -283,13 +301,18 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final position =
+          box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
       final screenWidth = MediaQuery.of(context).size.width;
 
       if (position.dx < 0 || (position.dx + tabWidth) > screenWidth) {
-        double targetOffset = _scrollController.offset + position.dx - (screenWidth / 2) + (tabWidth / 2);
-        targetOffset = targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
+        double targetOffset = _scrollController.offset +
+            position.dx -
+            (screenWidth / 2) +
+            (tabWidth / 2);
+        targetOffset =
+            targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
 
         _scrollController.animateTo(
           targetOffset,
@@ -305,18 +328,18 @@ class _OpeningsScreenState extends State<OpeningsScreen> with TickerProviderStat
     if (_tabTitles[_currentTabIndex]['id'] == 3) {
       return;
     }
-    
+
     setState(() {
       _currentSearch = query.trim().isNotEmpty ? query : null;
     });
-    
+
     // Ищем в текущей вкладке
     _loadDataForCurrentTab();
   }
 
   void _loadDataForCurrentTab() {
     final id = _tabTitles[_currentTabIndex]['id'];
-    
+
     if (id == 0) {
       // Supplier tab - передаем текущий search
       _supplierBloc.add(LoadSupplierOpenings(search: _currentSearch));

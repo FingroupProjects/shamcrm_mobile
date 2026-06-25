@@ -155,14 +155,12 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
           backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: colors.iconPrimary,
+              size: 22,
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
           ),
           title: Text(
             AppLocalizations.of(context)?.translate('add_supplier_opening') ??
@@ -189,8 +187,8 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStatusBanner(context),
-                        const SizedBox(height: 16),
+                        // _buildStatusBanner(context),
+                        // const SizedBox(height: 16),
                         _buildSupplierNameField(),
                         const SizedBox(height: 16),
                         GestureDetector(
@@ -298,8 +296,8 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                             buttonText: AppLocalizations.of(context)
                                     ?.translate('close') ??
                                 'Закрыть',
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: colors.surfacePrimary,
+                            textColor: colors.textPrimary,
                             onPressed: isCreating
                                 ? null
                                 : () {
@@ -313,8 +311,8 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
                             buttonText: AppLocalizations.of(context)
                                     ?.translate('save') ??
                                 'Сохранить',
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.buttonPrimaryFg,
                             isLoading: isCreating,
                             onPressed: isCreating
                                 ? null
@@ -386,22 +384,13 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppLocalizations.of(context)!.translate('add_supplier_opening'),
+                  AppLocalizations.of(context)!
+                      .translate('add_supplier_opening'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  AppLocalizations.of(context)!.translate('fill_in_the_initial_balance'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -413,16 +402,17 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
   }
 
   Widget _buildSupplierNameField() {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)?.translate('supplier') ?? 'Поставщик',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -430,20 +420,20 @@ class _AddSupplierOpeningScreenState extends State<AddSupplierOpeningScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
           child: Text(
             widget.supplierName,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),

@@ -172,14 +172,12 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
           backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: colors.iconPrimary,
+              size: 22,
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
           ),
           title: Text(
             AppLocalizations.of(context)!.translate('edit_supplier_opening'),
@@ -205,8 +203,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStatusBanner(context),
-                        const SizedBox(height: 16),
+                        // _buildStatusBanner(context),
+                        // const SizedBox(height: 16),
                         SupplierWidget(
                           selectedSupplier: _selectedSupplierId,
                           onChanged: (value) =>
@@ -309,8 +307,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('close'),
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: colors.surfacePrimary,
+                            textColor: colors.textPrimary,
                             onPressed: isUpdating
                                 ? null
                                 : () {
@@ -323,8 +321,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                           child: CustomButton(
                             buttonText:
                                 AppLocalizations.of(context)!.translate('save'),
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.buttonPrimaryFg,
                             isLoading: isUpdating,
                             onPressed: isUpdating
                                 ? null
@@ -403,7 +401,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppLocalizations.of(context)!.translate('edit_supplier_opening'),
+                  AppLocalizations.of(context)!
+                      .translate('edit_supplier_opening'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
@@ -413,7 +412,8 @@ class _EditSupplierOpeningScreenState extends State<EditSupplierOpeningScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  AppLocalizations.of(context)!.translate('update_initial_balance'),
+                  AppLocalizations.of(context)!
+                      .translate('update_initial_balance'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 13,

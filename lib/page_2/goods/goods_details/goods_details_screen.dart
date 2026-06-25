@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_state.dart';
@@ -202,10 +203,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildPlaceholder() {
+    final colors = context.appColors;
     return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: Icon(Icons.image, size: 50, color: Colors.grey),
+      color: colors.surfacePrimary,
+      child: Center(
+        child: Icon(Icons.image, size: 50, color: colors.iconPrimary),
       ),
     );
   }
@@ -234,8 +236,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -245,8 +248,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         child: Transform.translate(
           offset: const Offset(0, -2),
           child: IconButton(
-            icon: Image.asset('assets/icons/arrow-left.png',
-                width: 24, height: 24),
+            icon: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+              color: colors.iconPrimary,
+            ),
             onPressed: () {
               Navigator.pop(context);
               if (widget.isFromBarcodeSearch) {
@@ -260,11 +267,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         offset: const Offset(-10, 0),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+          color: colors.textPrimary,
           ),
         ),
       ),
@@ -281,7 +288,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         icon: Image.asset('assets/icons/edit.png',
-                            width: 24, height: 24),
+                            width: 24,
+                            height: 24,
+                            color: colors.iconPrimary),
                         onPressed: state is GoodsByIdLoaded
                             ? () async {
                                 final sortedFiles =

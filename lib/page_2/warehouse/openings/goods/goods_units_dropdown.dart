@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -100,6 +101,7 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
   Widget build(BuildContext context) {
     // Обновляем данные перед отображением
     _updateUnitsList();
+    final colors = context.appColors;
 
     final isDisabled = widget.selectedGood == null || unitsList.isEmpty;
 
@@ -112,11 +114,11 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('unit'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -127,15 +129,16 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
           overlayHeight: 400,
           enabled: !isDisabled,
           decoration: CustomDropdownDecoration(
-            closedFillColor: isDisabled ? const Color(0xffE8ECF4) : const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor:
+                isDisabled ? colors.borderSubtle : colors.surfacePrimary,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: isDisabled ? const Color(0xffE8ECF4) : const Color(0xffF4F7FD),
+              color: isDisabled ? colors.borderSubtle : colors.borderSubtle,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.borderSubtle,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -146,8 +149,8 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
               children: [
                 Text(
                   item.name ?? 'N/A',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -186,13 +189,15 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
             if (isDisabled) {
               return Text(
                 widget.selectedGood == null
-                    ? AppLocalizations.of(context)!.translate('select_good_first')
-                    : AppLocalizations.of(context)!.translate('no_units_for_good'),
+                    ? AppLocalizations.of(context)!
+                        .translate('select_good_first')
+                    : AppLocalizations.of(context)!
+                        .translate('no_units_for_good'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: const Color(0xff1E2E52).withOpacity(0.5),
+                  color: colors.textSecondary,
                 ),
               );
             }
@@ -202,11 +207,11 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
               children: [
                 Text(
                   selectedItem.name ?? 'Без названия',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 // if (selectedItem.isBase == true)
@@ -236,24 +241,26 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
             if (isDisabled) {
               return Text(
                 widget.selectedGood == null
-                    ? AppLocalizations.of(context)!.translate('select_good_first')
-                    : AppLocalizations.of(context)!.translate('no_units_for_good'),
+                    ? AppLocalizations.of(context)!
+                        .translate('select_good_first')
+                    : AppLocalizations.of(context)!
+                        .translate('no_units_for_good'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: const Color(0xff1E2E52).withOpacity(0.5),
+                  color: colors.textSecondary,
                 ),
               );
             }
 
             return Text(
               AppLocalizations.of(context)!.translate('select_unit'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
@@ -263,22 +270,24 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
                 padding: const EdgeInsets.all(20.0),
                 child: Text(
                   AppLocalizations.of(context)!.translate('no_results'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
             );
           },
           excludeSelected: false,
-          initialItem: (selectedUnitData != null && unitsList.contains(selectedUnitData))
-              ? selectedUnitData
-              : null,
+          initialItem:
+              (selectedUnitData != null && unitsList.contains(selectedUnitData))
+                  ? selectedUnitData
+                  : null,
           validator: (value) {
             if (value == null) {
-              return AppLocalizations.of(context)!.translate('field_required_project');
+              return AppLocalizations.of(context)!
+                  .translate('field_required_project');
             }
             return null;
           },

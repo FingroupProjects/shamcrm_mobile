@@ -177,15 +177,19 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
         backgroundColor: colors.backgroundPrimary,
         appBar: AppBar(
           forceMaterialTransparency: true,
-          backgroundColor: colors.surfacePrimary,
+          backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: colors.iconPrimary,
+              size: 22,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
             AppLocalizations.of(context)!.translate('edit_client_opening'),
-            style:  TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
@@ -207,15 +211,15 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStatusBanner(
-                          context,
-                          title: AppLocalizations.of(context)!
-                              .translate('edit_client_opening'),
-                          subtitle: AppLocalizations.of(context)!
-                              .translate('update_initial_balance'),
-                          color: colors.buttonPrimaryBg,
-                        ),
-                        const SizedBox(height: 16),
+                        // _buildStatusBanner(
+                        //   context,
+                        //   title: AppLocalizations.of(context)!
+                        //       .translate('edit_client_opening'),
+                        //   subtitle: AppLocalizations.of(context)!
+                        //       .translate('update_initial_balance'),
+                        //   color: colors.buttonPrimaryBg,
+                        // ),
+                        // const SizedBox(height: 16),
                         LeadRadioGroupWidget(
                           selectedLead: _selectedLead?.id.toString(),
                           onSelectLead: (lead) =>
@@ -319,8 +323,8 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
                           child: CustomButton(
                             buttonText: AppLocalizations.of(context)!
                                 .translate('close'),
-                            buttonColor: const Color(0xffF4F7FD),
-                            textColor: Colors.black,
+                            buttonColor: colors.surfacePrimary,
+                            textColor: colors.textPrimary,
                             onPressed: isUpdating
                                 ? null
                                 : () {
@@ -333,8 +337,8 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
                           child: CustomButton(
                             buttonText:
                                 AppLocalizations.of(context)!.translate('save'),
-                            buttonColor: const Color(0xff4759FF),
-                            textColor: Colors.white,
+                            buttonColor: colors.buttonPrimaryBg,
+                            textColor: colors.buttonPrimaryFg,
                             isLoading: isUpdating,
                             onPressed: isUpdating
                                 ? null

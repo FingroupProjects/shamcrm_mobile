@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../custom_widget/animation.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
@@ -46,10 +47,11 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
 
   void _updateDetails() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     // Берем первый товар из документа для отображения основной информации
-    final firstGood = currentDocument.documentGoods != null && currentDocument.documentGoods!.isNotEmpty 
-        ? currentDocument.documentGoods!.first 
+    final firstGood = currentDocument.documentGoods != null &&
+            currentDocument.documentGoods!.isNotEmpty
+        ? currentDocument.documentGoods!.first
         : null;
 
     details = [
@@ -59,7 +61,9 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
       },
       {
         'label': '${localizations.translate('name')}:',
-        'value': firstGood?.goodVariant?.fullName ?? currentDocument.docNumber ?? 'N/A',
+        'value': firstGood?.goodVariant?.fullName ??
+            currentDocument.docNumber ??
+            'N/A',
       },
       {
         'label': '${localizations.translate('supplier')}:',
@@ -86,9 +90,10 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: _buildAppBar(context),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       body: _isLoading
           ? Center(
               child: PlayStoreImageLoading(
@@ -97,7 +102,8 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
               ),
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: ListView(
                 children: [
                   _buildDetailsList(),
@@ -110,9 +116,10 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
 
   AppBar _buildAppBar(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -126,6 +133,7 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.textPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -135,11 +143,11 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
         offset: const Offset(-10, 0),
         child: Text(
           "${localizations.translate('goods_opening_details')} №${currentDocument.docNumber ?? ''}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -154,10 +162,11 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
                 'assets/icons/edit.png',
                 width: 24,
                 height: 24,
+                color: colors.textPrimary,
               ),
               onPressed: () async {
                 if (_isLoading) return;
-                
+
                 // Get the bloc from the current context
                 final openingsBloc = context.read<GoodsOpeningsBloc>();
 
@@ -168,7 +177,8 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
                       providers: [
                         BlocProvider.value(value: openingsBloc),
                         BlocProvider.value(value: GetAllGoodsListBloc()),
-                        BlocProvider(create: (context) => GetAllCashRegisterBloc()),
+                        BlocProvider(
+                            create: (context) => GetAllCashRegisterBloc()),
                       ],
                       child: EditGoodsOpeningScreen(
                         goodsOpening: currentDocument,
@@ -191,6 +201,7 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
                 'assets/icons/delete.png',
                 width: 24,
                 height: 24,
+                color: colors.buttonDangerBg,
               ),
               onPressed: () {
                 if (_isLoading) return;
@@ -243,28 +254,29 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    final colors = context.appColors;
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: colors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );
   }
 }
-

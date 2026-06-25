@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../custom_widget/animation.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/cash_register_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
@@ -26,7 +27,8 @@ class CashRegisterOpeningDetailsScreen extends StatefulWidget {
       _CashRegisterOpeningDetailsScreenState();
 }
 
-class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDetailsScreen> {
+class _CashRegisterOpeningDetailsScreenState
+    extends State<CashRegisterOpeningDetailsScreen> {
   late CashRegisterOpening currentOpening;
   List<Map<String, dynamic>> details = [];
   bool _isLoading = false;
@@ -47,7 +49,9 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
     final localizations = AppLocalizations.of(context)!;
 
     final cashRegisterName = currentOpening.cashRegister?.name;
-    final displayName = (cashRegisterName == null || cashRegisterName.isEmpty) ? 'N/A' : cashRegisterName;
+    final displayName = (cashRegisterName == null || cashRegisterName.isEmpty)
+        ? 'N/A'
+        : cashRegisterName;
 
     details = [
       {
@@ -63,9 +67,10 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: _buildAppBar(context),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       body: _isLoading
           ? Center(
               child: PlayStoreImageLoading(
@@ -74,7 +79,8 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
               ),
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: ListView(
                 children: [
                   _buildDetailsList(),
@@ -87,9 +93,10 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
 
   AppBar _buildAppBar(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -103,6 +110,7 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.textPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -112,11 +120,11 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
         offset: const Offset(-10, 0),
         child: Text(
           localizations.translate('cash_register_opening_details'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -131,6 +139,7 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
                 'assets/icons/edit.png',
                 width: 24,
                 height: 24,
+                color: colors.textPrimary,
               ),
               onPressed: () async {
                 if (_isLoading) return;
@@ -173,6 +182,7 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
                 'assets/icons/delete.png',
                 width: 24,
                 height: 24,
+                color: colors.buttonDangerBg,
               ),
               onPressed: () {
                 if (_isLoading) return;
@@ -183,7 +193,8 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
                     openingId: currentOpening.id ?? 0,
                     openingType: OpeningType.cashRegister,
                     onConfirmDelete: () {
-                      bloc.add(DeleteCashRegisterOpening(id: currentOpening.id ?? 0));
+                      bloc.add(DeleteCashRegisterOpening(
+                          id: currentOpening.id ?? 0));
                       Navigator.pop(context, true);
                     },
                   ),
@@ -225,25 +236,27 @@ class _CashRegisterOpeningDetailsScreenState extends State<CashRegisterOpeningDe
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    final colors = context.appColors;
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: colors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

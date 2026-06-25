@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:crm_task_manager/models/page_2/good_variants_model.dart' as good_variants;
+import 'package:crm_task_manager/models/page_2/good_variants_model.dart'
+    as good_variants;
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_event.dart';
@@ -44,15 +46,18 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
 
   void _onSearch(String input) {
     final query = input.trim().isEmpty ? null : input.trim();
-    context.read<GoodsDialogBloc>().add(SearchGoodVariantsForDialog(search: query));
+    context
+        .read<GoodsDialogBloc>()
+        .add(SearchGoodVariantsForDialog(search: query));
   }
 
   Widget _buildVariantsList(
-      List<good_variants.GoodVariantItem> items,
-      int currentPage,
-      int totalPages,
-      bool isLoadingMore,
-      ) {
+    List<good_variants.GoodVariantItem> items,
+    int currentPage,
+    int totalPages,
+    bool isLoadingMore,
+  ) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,10 +66,10 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xffF8FAFC),
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xffE2E8F0),
+                color: colors.borderSubtle,
                 width: 1,
               ),
             ),
@@ -75,17 +80,18 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                 const Icon(
                   Icons.inventory_2_outlined,
                   size: 48,
-                  color: Color(0xff64748B),
+                  color: Colors.blueGrey,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
+                  _translate(context, 'no_data_to_display',
+                      'Нет данных для отображения'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
+                    color: colors.textPrimary,
                   ),
                 ),
               ],
@@ -93,7 +99,6 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
           )
         else ...[
           ...items.map((item) => _buildVariantCard(item)).toList(),
-
           if (currentPage < totalPages || isLoadingMore)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -101,21 +106,22 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xff38BDF8)),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     'Загрузка страницы $currentPage из $totalPages...',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 13,
-                      color: Color(0xff64748B),
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
@@ -127,49 +133,51 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
   }
 
   Widget _buildVariantCard(good_variants.GoodVariantItem item) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
-          final goodsOpeningsBloc = context.read<GoodsOpeningsBloc>();
+        final goodsOpeningsBloc = context.read<GoodsOpeningsBloc>();
 
-          // Now close the dialog
-          Navigator.pop(context);
+        // Now close the dialog
+        Navigator.pop(context);
 
-          // Navigate to the add screen with the captured blocs
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (newContext) => MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: goodsOpeningsBloc),
-                  BlocProvider.value(value: GetAllGoodsListBloc()),
-                ],
-                child: AddGoodsOpeningScreen(
-                  goodName: item.fullName ?? item.good?.name ?? 'Неизвестный товар',
-                  goodVariantId: item.id ?? 0,
-                ),
+        // Navigate to the add screen with the captured blocs
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (newContext) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: goodsOpeningsBloc),
+                BlocProvider.value(value: GetAllGoodsListBloc()),
+              ],
+              child: AddGoodsOpeningScreen(
+                goodName:
+                    item.fullName ?? item.good?.name ?? 'Неизвестный товар',
+                goodVariantId: item.id ?? 0,
               ),
             ),
-          );
+          ),
+        );
       },
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xffE2E8F0),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
         child: Text(
           item.fullName ?? item.good?.name ?? 'Неизвестный товар',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -178,6 +186,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -189,11 +198,11 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
           maxWidth: 420,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.15),
+              color: colors.shadow.withValues(alpha: 0.15),
               spreadRadius: 0,
               blurRadius: 24,
               offset: const Offset(0, 8),
@@ -208,11 +217,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Color(0xff38BDF8),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -226,7 +231,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -261,7 +266,9 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                             _isSearching = !_isSearching;
                             if (!_isSearching) {
                               _searchController.clear();
-                              context.read<GoodsDialogBloc>().add(LoadGoodVariantsForDialog(search: null));
+                              context
+                                  .read<GoodsDialogBloc>()
+                                  .add(LoadGoodVariantsForDialog(search: null));
                             }
                           });
                         },
@@ -283,15 +290,16 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                         hintStyle: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
+                        fillColor: Colors.white.withValues(alpha: 0.2),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                       ),
                       onChanged: _onSearch,
                     ),
@@ -309,16 +317,17 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
+                          CircularProgressIndicator(
+                            color: colors.buttonPrimaryBg,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _translate(context, 'loading_data_dialog', 'Загрузка данных...'),
-                            style: const TextStyle(
+                            _translate(context, 'loading_data_dialog',
+                                'Загрузка данных...'),
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
-                              color: Color(0xff64748B),
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -336,44 +345,49 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                             const Icon(
                               Icons.error_outline,
                               size: 48,
-                              color: Color(0xffEF4444),
+                              color: Colors.red,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _translate(context, 'error_loading_dialog', 'Ошибка загрузки'),
-                              style: const TextStyle(
+                              _translate(context, 'error_loading_dialog',
+                                  'Ошибка загрузки'),
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               state.message,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<GoodsDialogBloc>().add(LoadGoodVariantsForDialog());
+                                context
+                                    .read<GoodsDialogBloc>()
+                                    .add(LoadGoodVariantsForDialog());
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1E2E52),
+                                backgroundColor: colors.buttonPrimaryBg,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               child: Text(
-                                _translate(context, 'retry_dialog', 'Повторить'),
+                                _translate(
+                                    context, 'retry_dialog', 'Повторить'),
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,

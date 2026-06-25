@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../custom_widget/animation.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
@@ -57,9 +58,10 @@ class _GoodsContentState extends State<GoodsContent> {
   }
 
   Widget _buildGoodsList(List<GoodsOpeningDocument> goods) {
+    final colors = context.appColors;
     return RefreshIndicator(
       onRefresh: _onRefresh,
-      color: const Color(0xff1E2E52),
+      color: colors.buttonPrimaryBg,
       child: ListView.separated(
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -109,6 +111,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return RefreshIndicator(
       onRefresh: _onRefresh,
@@ -124,25 +127,26 @@ class _GoodsContentState extends State<GoodsContent> {
                   const Icon(
                     Icons.inventory_2_outlined,
                     size: 64,
-                    color: Color(0xff99A4BA),
+                    color: Color(0xff8D97AD),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    localizations.translate('no_goods') ?? 'Нет товаров',
-                    style: const TextStyle(
+                    localizations.translate('no_goods'),
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    localizations.translate('no_goods_description') ?? 'Список товаров пуст',
-                    style: const TextStyle(
+                    localizations.translate('no_goods_description'),
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
-                      color: Color(0xff99A4BA),
+                      fontWeight: FontWeight.w500,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ],
@@ -164,6 +168,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return RefreshIndicator(
       onRefresh: _onRefresh,
@@ -175,14 +180,14 @@ class _GoodsContentState extends State<GoodsContent> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Container(
+                  child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xffFEF2F2),
+                    color: colors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xffFECACA),
+                      color: colors.error.withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -196,22 +201,22 @@ class _GoodsContentState extends State<GoodsContent> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        localizations.translate('error_loading_dialog') ?? 'Ошибка загрузки',
-                        style: const TextStyle(
+                        localizations.translate('error_loading_dialog'),
+                        style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         message,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 14,
-                          color: Color(0xff64748B),
+                          color: colors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -220,7 +225,7 @@ class _GoodsContentState extends State<GoodsContent> {
                           context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff1E2E52),
+                          backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -229,7 +234,7 @@ class _GoodsContentState extends State<GoodsContent> {
                           ),
                         ),
                         child: Text(
-                          localizations.translate('retry') ?? 'Повторить',
+                          localizations.translate('retry'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,

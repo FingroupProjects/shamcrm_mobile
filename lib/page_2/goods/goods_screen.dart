@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -146,6 +147,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final localizations = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -397,8 +399,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
                   context.read<GoodsBloc>().add(FetchGoods());
                 }
               },
-              backgroundColor: const Color(0xff1E2E52),
-              child: const Icon(Icons.add, color: Colors.white),
+              backgroundColor: colors.buttonPrimaryBg,
+              child: Icon(Icons.add, color: colors.buttonPrimaryFg),
             )
           : null,
     );

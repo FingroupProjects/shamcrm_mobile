@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/supplier/supplier_dialog_event.dart';
@@ -15,7 +16,7 @@ class CreateSupplierOpeningDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     // Получаем оригинальный блок для передачи в AddSupplierOpeningScreen
     final supplierOpeningsBloc = context.read<SupplierOpeningsBloc>();
-    
+
     return BlocProvider(
       create: (context) => SupplierDialogBloc()..add(LoadSuppliersForDialog()),
       child: SupplierVariantsDialog(
@@ -27,7 +28,7 @@ class CreateSupplierOpeningDialog extends StatelessWidget {
 
 class SupplierVariantsDialog extends StatefulWidget {
   final SupplierOpeningsBloc supplierOpeningsBloc;
-  
+
   const SupplierVariantsDialog({
     super.key,
     required this.supplierOpeningsBloc,
@@ -53,10 +54,13 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
 
   void _onSearch(String input) {
     final query = input.trim().isEmpty ? null : input.trim();
-    context.read<SupplierDialogBloc>().add(SearchSuppliersForDialog(search: query));
+    context
+        .read<SupplierDialogBloc>()
+        .add(SearchSuppliersForDialog(search: query));
   }
 
   Widget _buildSuppliersList(List<Supplier> items) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -66,10 +70,10 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xffF8FAFC),
+              color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xffE2E8F0),
+                color: colors.borderSubtle,
                 width: 1,
               ),
             ),
@@ -80,17 +84,18 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                 const Icon(
                   Icons.business_outlined,
                   size: 48,
-                  color: Color(0xff64748B),
+                  color: Colors.blueGrey,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _translate(context, 'no_data_to_display', 'Нет данных для отображения'),
+                  _translate(context, 'no_data_to_display',
+                      'Нет данных для отображения'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff475569),
+                    color: colors.textPrimary,
                   ),
                 ),
               ],
@@ -103,11 +108,12 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
   }
 
   Widget _buildSupplierCard(Supplier item) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
         // Закрываем диалог
         Navigator.pop(context);
-        
+
         // Открываем экран добавления с существующим блоком
         Navigator.push(
           context,
@@ -127,20 +133,20 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xffE2E8F0),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
         child: Text(
           item.name ?? '',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -149,6 +155,7 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -160,11 +167,11 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
           maxWidth: 420,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.15),
+              color: colors.shadow.withValues(alpha: 0.15),
               spreadRadius: 0,
               blurRadius: 24,
               offset: const Offset(0, 8),
@@ -179,11 +186,7 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Color(0xff38BDF8),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -197,7 +200,7 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -209,7 +212,8 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _translate(context, 'choose_supplier', 'Выберите поставщика'),
+                          _translate(context, 'choose_supplier',
+                              'Выберите поставщика'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 18,
@@ -232,7 +236,9 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                             _isSearching = !_isSearching;
                             if (!_isSearching) {
                               _searchController.clear();
-                              context.read<SupplierDialogBloc>().add(LoadSuppliersForDialog(search: null));
+                              context
+                                  .read<SupplierDialogBloc>()
+                                  .add(LoadSuppliersForDialog(search: null));
                             }
                           });
                         },
@@ -254,15 +260,16 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                         hintStyle: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.2),
+                        fillColor: Colors.white.withValues(alpha: 0.2),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                       ),
                       onChanged: _onSearch,
                     ),
@@ -280,16 +287,17 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xff1E2E52),
+                          CircularProgressIndicator(
+                            color: colors.buttonPrimaryBg,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _translate(context, 'loading_data_dialog', 'Загрузка данных...'),
-                            style: const TextStyle(
+                            _translate(context, 'loading_data_dialog',
+                                'Загрузка данных...'),
+                            style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
-                              color: Color(0xff64748B),
+                              color: colors.textSecondary,
                             ),
                           ),
                         ],
@@ -307,44 +315,49 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                             const Icon(
                               Icons.error_outline,
                               size: 48,
-                              color: Color(0xffEF4444),
+                              color: Colors.red,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _translate(context, 'error_loading_dialog', 'Ошибка загрузки'),
-                              style: const TextStyle(
+                              _translate(context, 'error_loading_dialog',
+                                  'Ошибка загрузки'),
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               state.message,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 14,
-                                color: Color(0xff64748B),
+                                color: colors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context.read<SupplierDialogBloc>().add(LoadSuppliersForDialog());
+                                context
+                                    .read<SupplierDialogBloc>()
+                                    .add(LoadSuppliersForDialog());
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xff1E2E52),
+                                backgroundColor: colors.buttonPrimaryBg,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               child: Text(
-                                _translate(context, 'retry_dialog', 'Повторить'),
+                                _translate(
+                                    context, 'retry_dialog', 'Повторить'),
                                 style: const TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,
@@ -368,7 +381,7 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
           ],
         ),
@@ -376,4 +389,3 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
     );
   }
 }
-

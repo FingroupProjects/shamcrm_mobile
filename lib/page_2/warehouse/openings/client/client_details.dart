@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../custom_widget/animation.dart';
+import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/client_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
@@ -45,10 +46,11 @@ class _ClientOpeningDetailsScreenState
 
   void _updateDetails() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     final clientName = currentOpening.counterparty?.name;
-    final displayName = (clientName == null || clientName.isEmpty) ? 'N/A' : clientName;
-    
+    final displayName =
+        (clientName == null || clientName.isEmpty) ? 'N/A' : clientName;
+
     details = [
       {
         'label': localizations.translate('title_with_two_dots'),
@@ -67,9 +69,10 @@ class _ClientOpeningDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: _buildAppBar(context),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       body: _isLoading
           ? Center(
               child: PlayStoreImageLoading(
@@ -78,7 +81,8 @@ class _ClientOpeningDetailsScreenState
               ),
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: ListView(
                 children: [
                   _buildDetailsList(),
@@ -91,9 +95,10 @@ class _ClientOpeningDetailsScreenState
 
   AppBar _buildAppBar(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -107,6 +112,7 @@ class _ClientOpeningDetailsScreenState
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: colors.textPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -115,12 +121,13 @@ class _ClientOpeningDetailsScreenState
       title: Transform.translate(
         offset: const Offset(-10, 0),
         child: Text(
-          localizations.translate('client_opening_details') ?? 'Остаток клиента',
-          style: const TextStyle(
+          localizations.translate('client_opening_details') ??
+              'Остаток клиента',
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -135,13 +142,14 @@ class _ClientOpeningDetailsScreenState
                 'assets/icons/edit.png',
                 width: 24,
                 height: 24,
+                color: colors.textPrimary,
               ),
               onPressed: () async {
                 if (_isLoading) return;
-                
+
                 // Get the bloc from the current context
                 final openingsBloc = context.read<ClientOpeningsBloc>();
-                
+
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -168,6 +176,7 @@ class _ClientOpeningDetailsScreenState
                 'assets/icons/delete.png',
                 width: 24,
                 height: 24,
+                color: colors.buttonDangerBg,
               ),
               onPressed: () {
                 if (_isLoading) return;
@@ -220,28 +229,29 @@ class _ClientOpeningDetailsScreenState
   }
 
   Widget _buildLabel(String label) {
+    final colors = context.appColors;
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: colors.textSecondary,
       ),
     );
   }
 
   Widget _buildValue(String value) {
+    final colors = context.appColors;
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: colors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );
   }
 }
-
