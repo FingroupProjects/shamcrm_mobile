@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
@@ -68,6 +69,10 @@ class CreateClienSalesDocumentScreenState
   final ApiService _apiService = ApiService();
   int? _organizationCurrencyId;
   String? _exchangeRateErrorText;
+  // 🔍 Barcode scanner
+  bool _isBarcodeLoading = false;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -237,6 +242,110 @@ class CreateClienSalesDocumentScreenState
           });
         }
       });
+    }
+  }
+
+  /// \ud83d\udd0d \u0414\u043e\u0431\u0430\u0432\u043b\u044f\u0435\u0442 \u0442\u043e\u0432\u0430\u0440 \u0447\u0435\u0440\u0435\u0437 \u0448\u0442\u0440\u0438\u0445-\u043a\u043e\u0434 \u0441 quantity=1 (\u043e\u0442\u043b\u0438\u0447\u0438\u0435 \u043e\u0442 \u043e\u0431\u044b\u0447\u043d\u043e\u0433\u043e \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u044f, \u0433\u0434\u0435 quantity \u043f\u0443\u0441\u0442\u043e\u0439)
+  void _handleVariantSelectionFromBarcode(Map<String, dynamic> newItem) {
+    if (!mounted) return;
+    setState(() {
+      for (var item in _items) {
+        final variantId = item['variantId'] as int;
+        _collapsedItems[variantId] = true;
+      }
+
+      final modifiedItem = Map<String, dynamic>.from(newItem);
+      // \ud83d\udd0d \u041f\u0440\u0438 \u0441\u043a\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0438 \u043a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e = 1 (\u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438)
+      modifiedItem['quantity'] = 1.0;
+      _items.add(modifiedItem);
+
+      final variantId = newItem['variantId'] as int;
+      final initialPrice = newItem['price'] ?? 0.0;
+      final amount = newItem['amount'] ?? 1;
+
+      _priceControllers[variantId] = TextEditingController(
+          text: initialPrice > 0
+              ? parseNumberToString(initialPrice * amount)
+              : '');
+      _quantityControllers[variantId] =
+          TextEditingController(text: '1'); // \ud83d\udd0d qty=1
+      _quantityFocusNodes[variantId] = FocusNode();
+      _priceFocusNodes[variantId] = FocusNode();
+      _items.last['price'] = initialPrice;
+      _items.last['total'] = initialPrice * amount;
+      _priceErrors[variantId] = false;
+      _quantityErrors[variantId] = false;
+      _collapsedItems[variantId] = false;
+      if (!newItem.containsKey('amount')) {
+        _items.last['amount'] = 1;
+      }
+
+      _listKey.currentState?.insertItem(
+        _items.length - 1,
+        duration: const Duration(milliseconds: 300),
+      );
+
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    });
+  }
+
+  /// \ud83d\udd0d \u041e\u0431\u0440\u0430\u0431\u043e\u0442\u0447\u0438\u043a \u0441\u043a\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f \u0448\u0442\u0440\u0438\u0445-\u043a\u043e\u0434\u0430 \u0434\u043b\u044f \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u0430 \u041f\u0440\u043e\u0434\u0430\u0436\u0430
+  Future<void> _handleBarcodeScanning({String? manualBarcode}) async {
+    // \u041f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0430\u0435\u043c\u0441\u044f \u043d\u0430 \u0432\u043a\u043b\u0430\u0434\u043a\u0443 \u0422\u043e\u0432\u0430\u0440\u044b \u0435\u0441\u043b\u0438 \u043d\u0435 \u0442\u0430\u043c
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    final barcode = manualBarcode ?? await openBarcodeScanner(context);
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+
+    setState(() => _isBarcodeLoading = true);
+
+    final result = await handleBarcodeForDocument(
+      context: context,
+      items: _items,
+      barcode: barcode,
+      docType: DocumentBarcodeType.sale,
+      onItemAdded: (newItem) => _handleVariantSelectionFromBarcode(newItem),
+      onQuantityIncreased: (variantId, newQty) {
+        setState(() {
+          final index =
+              _items.indexWhere((item) => item['variantId'] == variantId);
+          if (index != -1) {
+            _items[index]['quantity'] = newQty;
+            final price = _items[index]['price'] ?? 0.0;
+            final amount = _items[index]['amount'] ?? 1;
+            _items[index]['total'] = (newQty * price * amount).round();
+            _quantityControllers[variantId]?.text =
+                newQty.toStringAsFixed(newQty == newQty.roundToDouble() ? 0 : 2);
+          }
+        });
+      },
+    );
+
+    if (!mounted) return;
+    setState(() => _isBarcodeLoading = false);
+
+    if (result.isSuccess) {
+      showBarcodeSuccessSnackBar(
+        context: context,
+        itemName: result.itemName ?? '',
+        isNewItem: result.isNewItem,
+        quantity: result.newQuantity ?? 1.0,
+      );
+    } else if (result.errorKey == 'barcode_not_found') {
+      showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+    } else {
+      showBarcodeScanErrorSnackBar(context: context);
     }
   }
 
@@ -842,20 +951,50 @@ class CreateClienSalesDocumentScreenState
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(
+          _isSearching ? Icons.close : Icons.arrow_back_ios,
+          color: const Color(0xff1E2E52),
+          size: 24,
+        ),
         onPressed: () async {
-          if (_items.isNotEmpty) {
-            final shouldExit = await ConfirmExitDialog.show(context);
-            if (shouldExit && mounted) {
+          if (_isSearching) {
+            setState(() {
+              _isSearching = false;
+              _searchController.clear();
+            });
+          } else {
+            if (_items.isNotEmpty) {
+              final shouldExit = await ConfirmExitDialog.show(context);
+              if (shouldExit && mounted) {
+                Navigator.pop(context);
+              }
+            } else {
               Navigator.pop(context);
             }
-          } else {
-            Navigator.pop(context);
           }
         },
       ),
-      title: Row(
+      title: _isSearching
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: localizations.translate('search_barcode_or_name') ?? 'Поиск...',
+                border: InputBorder.none,
+                hintStyle: const TextStyle(color: Colors.grey),
+              ),
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+              ),
+              onSubmitted: (value) async {
+                if (value.trim().isNotEmpty) {
+                  await _handleBarcodeScanning(manualBarcode: value.trim());
+                }
+              },
+            )
+          : Row(
         children: [
           Expanded(
             child: Text(
@@ -903,9 +1042,22 @@ class CreateClienSalesDocumentScreenState
           ],
         ],
       ),
+      actions: [
+        if (!_isSearching)
+          BarcodeAppBarButton(
+            isLoading: _isBarcodeLoading,
+            onPressed: _handleBarcodeScanning,
+            onSearchPressed: () {
+              setState(() {
+                _isSearching = true;
+              });
+            },
+          ),
+      ],
       centerTitle: false,
     );
   }
+
 
   Widget _buildDateField(AppLocalizations localizations) {
     return CustomTextFieldDate(

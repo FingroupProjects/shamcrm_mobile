@@ -14,6 +14,7 @@ import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/supplier_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
@@ -68,6 +69,10 @@ class _IncomingDocumentCreateScreenState
   final ApiService _apiService = ApiService();
   int? _organizationCurrencyId;
   String? _exchangeRateErrorText;
+  // 🔍 Barcode scanner
+  bool _isBarcodeLoading = false;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -218,6 +223,91 @@ class _IncomingDocumentCreateScreenState
           });
         }
       });
+    }
+  }
+
+  /// 🔍 Добавляет товар через штрих-код с quantity=1 (приход товаров)
+  void _handleVariantSelectionFromBarcode(Map<String, dynamic> newItem) {
+    if (!mounted) return;
+    setState(() {
+      for (var item in _items) {
+        final variantId = item['variantId'] as int;
+        _collapsedItems[variantId] = true;
+      }
+      final modifiedItem = Map<String, dynamic>.from(newItem);
+      modifiedItem['quantity'] = 1.0;
+      modifiedItem['price'] = 0.0;
+      _items.add(modifiedItem);
+      final variantId = newItem['variantId'] as int;
+      _priceControllers[variantId] = TextEditingController(text: '');
+      _quantityControllers[variantId] = TextEditingController(text: '1');
+      _quantityFocusNodes[variantId] = FocusNode();
+      _priceFocusNodes[variantId] = FocusNode();
+      _items.last['price'] = 0.0;
+      _priceErrors[variantId] = false;
+      _quantityErrors[variantId] = false;
+      _collapsedItems[variantId] = false;
+      if (!newItem.containsKey('amount')) {
+        _items.last['amount'] = 1;
+      }
+      _listKey.currentState?.insertItem(
+        _items.length - 1,
+        duration: const Duration(milliseconds: 300),
+      );
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    });
+  }
+
+  /// 🔍 Обработчик сканирования штрих-кода (приход товаров)
+  Future<void> _handleBarcodeScanning({String? manualBarcode}) async {
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    final barcode = manualBarcode ?? await openBarcodeScanner(context);
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+    setState(() => _isBarcodeLoading = true);
+    final result = await handleBarcodeForDocument(
+      context: context,
+      items: _items,
+      barcode: barcode,
+      docType: DocumentBarcodeType.income,
+      onItemAdded: (newItem) => _handleVariantSelectionFromBarcode(newItem),
+      onQuantityIncreased: (variantId, newQty) {
+        setState(() {
+          final index =
+              _items.indexWhere((item) => item['variantId'] == variantId);
+          if (index != -1) {
+            _items[index]['quantity'] = newQty;
+            final price = _items[index]['price'] ?? 0.0;
+            _items[index]['total'] = (newQty * price).round();
+            _quantityControllers[variantId]?.text =
+                newQty.toStringAsFixed(newQty == newQty.roundToDouble() ? 0 : 2);
+          }
+        });
+      },
+    );
+    if (!mounted) return;
+    setState(() => _isBarcodeLoading = false);
+    if (result.isSuccess) {
+      showBarcodeSuccessSnackBar(
+        context: context,
+        itemName: result.itemName ?? '',
+        isNewItem: result.isNewItem,
+        quantity: result.newQuantity ?? 1.0,
+      );
+    } else if (result.errorKey == 'barcode_not_found') {
+      showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+    } else {
+      showBarcodeScanErrorSnackBar(context: context);
     }
   }
 
@@ -825,20 +915,50 @@ class _IncomingDocumentCreateScreenState
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon: Icon(
+          _isSearching ? Icons.close : Icons.arrow_back_ios,
+          color: const Color(0xff1E2E52),
+          size: 24,
+        ),
         onPressed: () async {
-          if (_items.isNotEmpty) {
-            final shouldExit = await ConfirmExitDialog.show(context);
-            if (shouldExit && mounted) {
+          if (_isSearching) {
+            setState(() {
+              _isSearching = false;
+              _searchController.clear();
+            });
+          } else {
+            if (_items.isNotEmpty) {
+              final shouldExit = await ConfirmExitDialog.show(context);
+              if (shouldExit && mounted) {
+                Navigator.pop(context);
+              }
+            } else {
               Navigator.pop(context);
             }
-          } else {
-            Navigator.pop(context);
           }
         },
       ),
-      title: Row(
+      title: _isSearching
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: localizations.translate('search_barcode_or_name') ?? 'Поиск...',
+                border: InputBorder.none,
+                hintStyle: const TextStyle(color: Colors.grey),
+              ),
+              style: const TextStyle(
+                color: Color(0xff1E2E52),
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+              ),
+              onSubmitted: (value) async {
+                if (value.trim().isNotEmpty) {
+                  await _handleBarcodeScanning(manualBarcode: value.trim());
+                }
+              },
+            )
+          : Row(
         children: [
           // Заголовок — всегда виден, но усекается при нехватке места
           Expanded(
@@ -888,7 +1008,18 @@ class _IncomingDocumentCreateScreenState
         ],
       ),
       centerTitle: false,
-      actions: [],
+      actions: [
+        if (!_isSearching)
+          BarcodeAppBarButton(
+            isLoading: _isBarcodeLoading,
+            onPressed: _handleBarcodeScanning,
+            onSearchPressed: () {
+              setState(() {
+                _isSearching = true;
+              });
+            },
+          ),
+      ],
     );
   }
 

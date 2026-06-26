@@ -12,6 +12,7 @@ import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dar
 import 'package:crm_task_manager/page_2/goods/goods_details/label_list.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/units_widget.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   final TextEditingController goodsNameController = TextEditingController();
   final TextEditingController goodsDescriptionController =
       TextEditingController();
+  final TextEditingController barcodeController = TextEditingController();
   final TextEditingController discountPriceController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController stockQuantityController = TextEditingController();
@@ -91,6 +93,42 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         _manufactureLoaded = true;
       });
     }
+  }
+
+  Future<void> _scanBarcode() async {
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || scannedCode == null || scannedCode.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      barcodeController.text = scannedCode.trim();
+    });
+  }
+
+  Future<void> _scanRowBarcode(int rowIndex) async {
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || scannedCode == null || scannedCode.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      final controller =
+          tableAttributes[rowIndex]['barcode'] as TextEditingController?;
+      controller?.text = scannedCode.trim();
+    });
   }
 
   void _setProductionType(String type) {
@@ -213,6 +251,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
           in selectedCategory!.attributes.where((a) => a.isIndividual)) {
         newRow[attr.name] = TextEditingController();
       }
+      newRow['barcode'] = TextEditingController();
       if (selectedCategory!.hasPriceCharacteristics) {
         newRow['price'] = TextEditingController();
       }
@@ -283,6 +322,35 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
         );
       },
     );
+  }
+
+  Widget _buildBarcodeField() {
+    return CustomTextField(
+      controller: barcodeController,
+      hintText: 'Введите или отсканируйте штрих-код',
+      label: 'Штрих код',
+      keyboardType: TextInputType.text,
+      suffixIcon: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: IconButton(
+          onPressed: _scanBarcode,
+          tooltip: 'Сканировать штрих-код',
+          icon: Image.asset(
+            'assets/icons/AppBar/scanner.png',
+            width: 22,
+            height: 22,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGeneralBarcodeField() {
+    if (selectedCategory != null &&
+        selectedCategory!.attributes.any((attr) => attr.isIndividual)) {
+      return const SizedBox.shrink();
+    }
+    return _buildBarcodeField();
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
@@ -939,6 +1007,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           : null,
                     ),
                     const SizedBox(height: 8),
+                    _buildGeneralBarcodeField(),
+                    if (!(selectedCategory != null &&
+                        selectedCategory!.attributes
+                            .any((attr) => attr.isIndividual)))
+                      const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,
                       onSelectCategory: (category) {
@@ -1163,6 +1236,17 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                             ),
                                           DataColumn(
                                             label: Text(
+                                              'Штрих код',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                                fontFamily: 'Gilroy',
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
                                               AppLocalizations.of(context)!
                                                   .translate('status'),
                                               style: TextStyle(
@@ -1359,6 +1443,46 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                     ),
                                                   ),
                                                 ),
+                                              DataCell(
+                                                SizedBox(
+                                                  width: 190,
+                                                  child: TextField(
+                                                    controller: row['barcode'],
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Штрих код',
+                                                      hintStyle: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color:
+                                                            Color(0xff99A4BA),
+                                                      ),
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 16),
+                                                      suffixIcon: IconButton(
+                                                        onPressed: () =>
+                                                            _scanRowBarcode(
+                                                                index),
+                                                        icon: const Icon(
+                                                          Icons.qr_code_scanner,
+                                                          size: 18,
+                                                          color:
+                                                              Color(0xff1E2E52),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                               DataCell(
                                                 Switch(
                                                   value: row['is_active'],
@@ -1924,6 +2048,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             }
           }
 
+          final barcodeController = row['barcode'] as TextEditingController?;
+          if (barcodeController != null &&
+              barcodeController.text.trim().isNotEmpty) {
+            variant['barcode'] = barcodeController.text.trim();
+          }
+
           if (selectedCategory!.hasPriceCharacteristics) {
             final priceController = row['price'] as TextEditingController?;
             if (priceController != null &&
@@ -1966,6 +2096,9 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 quantity: int.tryParse(stockQuantityController.text),
                 unitId:
                     selectedUnit != null ? int.tryParse(selectedUnit!) : null,
+                barcode: barcodeController.text.trim().isEmpty
+                    ? null
+                    : barcodeController.text.trim(),
                 attributes: attributes,
                 variants: variants,
                 images: images,
@@ -2021,6 +2154,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   void dispose() {
     goodsNameController.dispose();
     goodsDescriptionController.dispose();
+    barcodeController.dispose();
     discountPriceController.dispose();
     priceController.dispose();
     stockQuantityController.dispose();

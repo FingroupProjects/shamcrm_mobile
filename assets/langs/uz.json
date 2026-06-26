@@ -2239,5 +2239,11 @@
   "answer_comment": "Javob: izoh sifatida",
   "instagram_post": "Instagram posti",
   "reply_to_post": "Postga javob",
-  "copied_to_clipboard": "Nusxalandi"
+  "copied_to_clipboard": "Nusxalandi",
+  "barcode_not_found": "Mahsulot topilmadi",
+  "barcode_scan_error": "Qidiruv xatosi",
+  "barcode_item_added": "Mahsulot qo'shildi",
+  "barcode_quantity_increased": "Miqdori oshirildi",
+  "search_item": "Mahsulotni qidirish",
+  "search_barcode_or_name": "Qidiruv..."
 }

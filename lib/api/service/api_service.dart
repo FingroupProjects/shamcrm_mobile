@@ -1505,6 +1505,7 @@ class ApiService {
   Future<Map<String, dynamic>> _buildGoodsRequestBody({
     required bool isService,
     required String name,
+    String? barcode,
     required int parentId,
     required String description,
     required int? quantity,
@@ -1525,6 +1526,7 @@ class ApiService {
 
     final body = <String, dynamic>{
       'name': name,
+      'barcode': barcode,
       'category_id': parentId.toString(),
       'label_id': labelId?.toString(),
       'quantity': quantity?.toString() ?? 'null',
@@ -1573,6 +1575,11 @@ class ApiService {
 
         if (variant['id'] != null) {
           item['id'] = variant['id'].toString();
+        }
+
+        if (variant['barcode'] != null &&
+            variant['barcode'].toString().isNotEmpty) {
+          item['barcode'] = variant['barcode'].toString();
         }
 
         final variantAttributes =
@@ -12714,6 +12721,7 @@ class ApiService {
   Future<Map<String, dynamic>> createGoods({
     required bool isService,
     required String name,
+    String? barcode,
     required int parentId,
     required String description,
     required int? quantity,
@@ -12735,6 +12743,7 @@ class ApiService {
       final requestBody = await _buildGoodsRequestBody(
         isService: isService,
         name: name,
+        barcode: barcode,
         parentId: parentId,
         description: description,
         quantity: quantity,
@@ -12769,6 +12778,7 @@ class ApiService {
         });
 
         request.fields['name'] = name;
+        request.fields['barcode'] = barcode ?? '';
         request.fields['category_id'] = parentId.toString();
         request.fields['description'] = description;
         request.fields['quantity'] = quantity?.toString() ?? 'null';
@@ -12823,6 +12833,11 @@ class ApiService {
               variants[i]['is_active'] ? '1' : '0';
           final variantPrice = variants[i]['price'] ?? 0.0;
           request.fields['variants[$i][price]'] = variantPrice.toString();
+          if (variants[i]['barcode'] != null &&
+              variants[i]['barcode'].toString().isNotEmpty) {
+            request.fields['variants[$i][barcode]'] =
+                variants[i]['barcode'].toString();
+          }
 
           List<dynamic> variantAttributes =
               variants[i]['variant_attributes'] ?? [];
@@ -12888,6 +12903,7 @@ class ApiService {
     required bool isService,
     required int goodId,
     required String name,
+    String? barcode,
     required int parentId,
     required String description,
     required int? quantity,
@@ -12909,6 +12925,7 @@ class ApiService {
       final requestBody = await _buildGoodsRequestBody(
         isService: isService,
         name: name,
+        barcode: barcode,
         parentId: parentId,
         description: description,
         quantity: quantity,
@@ -12944,6 +12961,7 @@ class ApiService {
         });
 
         request.fields['name'] = name;
+        request.fields['barcode'] = barcode ?? '';
         request.fields['category_id'] = parentId.toString();
         request.fields['description'] = description;
         request.fields['quantity'] = quantity?.toString() ?? 'null';
@@ -13009,6 +13027,11 @@ class ApiService {
               variants[i]['is_active'] ? '1' : '0';
           request.fields['variants[$i][price]'] =
               (variants[i]['price'] ?? 0.0).toString();
+          if (variants[i]['barcode'] != null &&
+              variants[i]['barcode'].toString().isNotEmpty) {
+            request.fields['variants[$i][barcode]'] =
+                variants[i]['barcode'].toString();
+          }
 
           List<dynamic> variantAttributes =
               variants[i]['variant_attributes'] ?? [];
@@ -13136,7 +13159,7 @@ class ApiService {
   }
 
   Future<List<Goods>> getGoodsByBarcode(String barcode) async {
-    String path = '/good/getByBarcode?barcode=$barcode';
+    String path = '/good/getByBarcode?search=$barcode';
     path = await _appendQueryParams(path);
     if (kDebugMode) {
       debugPrint('ApiService: Запрос товаров по штрихкоду: $path');

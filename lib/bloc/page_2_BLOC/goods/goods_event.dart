@@ -48,6 +48,7 @@ class ResetSubCategories
 
 class CreateGoods extends GoodsEvent {
   final String name;
+  final String? barcode;
   final String description;
   final int? unitId;
   final int? quantity;
@@ -70,6 +71,7 @@ class CreateGoods extends GoodsEvent {
   CreateGoods({
     required this.isService,
     required this.name,
+    this.barcode,
     required this.description,
     this.unitId,
     required this.quantity,
@@ -94,6 +96,7 @@ class UpdateGoods extends GoodsEvent {
   final bool isService; // Добавляем поле для указания услуги
   final int goodId;
   final String name;
+  final String? barcode;
   final String description;
   final int? unitId;
   final int? quantity;
@@ -116,6 +119,7 @@ class UpdateGoods extends GoodsEvent {
     required this.isService,
     required this.goodId,
     required this.name,
+    this.barcode,
     required this.description,
     required this.unitId,
     required this.quantity,

@@ -2239,5 +2239,11 @@
   "answer_comment": "Ответ: комментарий",
   "instagram_post": "Пост в Instagram",
   "reply_to_post": "Ответ на пост",
-  "copied_to_clipboard": "Скопировано"
+  "copied_to_clipboard": "Скопировано",
+  "barcode_not_found": "Товар не найден",
+  "barcode_scan_error": "Ошибка поиска товара",
+  "barcode_item_added": "Товар добавлен",
+  "barcode_quantity_increased": "Количество увеличено",
+  "search_item": "Поиск товара",
+  "search_barcode_or_name": "Поиск..."
 }

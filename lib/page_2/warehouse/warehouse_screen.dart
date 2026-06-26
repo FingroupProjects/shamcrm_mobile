@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
 class WarehouseAccountingScreen extends StatefulWidget {
   const WarehouseAccountingScreen({super.key});
 
@@ -200,14 +201,14 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
 
     // Добавляем документы только если есть соответствующее право
     if (_hasIncomeDocument) {
-      // allDocuments.add(
-      //   WarehouseDocument(
-      //     keyName: 'purchase_goods',
-      //     title: 'Покупка товаров',
-      //     icon: Icons.flash_on_outlined,
-      //     color: docColor,
-      //   ),
-      // );
+      allDocuments.add(
+        WarehouseDocument(
+          keyName: 'purchase_goods',
+          title: 'Покупка товаров',
+          icon: Icons.flash_on_outlined,
+          color: docColor,
+        ),
+      );
       allDocuments.add(
         WarehouseDocument(
           keyName: 'income_goods',

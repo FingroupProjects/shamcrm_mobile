@@ -199,6 +199,7 @@ class Goods {
   final bool isSale;
   final Label? label;
   final List<Discount>? discount;
+  final String? barcode;
   final String? article;
   final List<Unit>? units;
   final List<Measurement>? measurements;
@@ -230,6 +231,7 @@ class Goods {
     required this.isSale,
     this.label,
     this.discount,
+    this.barcode,
     this.article,
     this.units,
     this.measurements,
@@ -406,6 +408,7 @@ class Goods {
         isSale: data['is_sale'] == 1 || data['is_sale'] == true,
         label: data['label'] != null ? Label.fromJson(data['label']) : null,
         discount: discounts,
+        barcode: data['barcode'] as String? ?? data['article'] as String?,
         article: data['article'] as String?,
         units: units,
         measurements: measurements,

@@ -2222,5 +2222,11 @@
   "answer_comment": "Reply: as comment",
   "instagram_post": "Instagram post",
   "reply_to_post": "Reply to post",
-  "copied_to_clipboard": "Copied"
+  "copied_to_clipboard": "Copied",
+  "barcode_not_found": "Item not found",
+  "barcode_scan_error": "Error searching item",
+  "barcode_item_added": "Item added",
+  "barcode_quantity_increased": "Quantity increased",
+  "search_item": "Search item",
+  "search_barcode_or_name": "Search..."
 }
