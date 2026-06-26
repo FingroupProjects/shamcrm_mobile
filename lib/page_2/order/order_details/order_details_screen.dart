@@ -781,7 +781,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: colors.textPrimary,
+                        color: colors.textInverse,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -790,7 +790,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   const SizedBox(width: 4),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: colors.textPrimary,
+                    color: colors.textInverse,
                     size: 16,
                   ),
                 ],
