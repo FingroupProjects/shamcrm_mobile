@@ -61,9 +61,7 @@ class _OrderScreenState extends State<OrderScreen>
   void initState() {
     super.initState();
 
-    // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
-
     _orderBloc = OrderBloc(ApiService())..add(FetchOrderStatuses());
     _checkPermissions();
   }
@@ -103,7 +101,6 @@ class _OrderScreenState extends State<OrderScreen>
           _isFilterLoading = false;
           _shouldShowLoader = false;
           _currentFilters.clear();
-
           _statuses.clear();
           _tabKeys.clear();
           _currentTabIndex = 0;
@@ -120,7 +117,6 @@ class _OrderScreenState extends State<OrderScreen>
       orderBloc.add(FetchOrderStatuses(forceRefresh: true));
     } catch (e) {
       debugPrint('OrderScreen: Ошибка при обновлении данных: $e');
-
       if (mounted) {
         _orderBloc.add(FetchOrderStatuses(forceRefresh: false));
       }
@@ -134,8 +130,10 @@ class _OrderScreenState extends State<OrderScreen>
       final keyContext = _tabKeys[_currentTabIndex].currentContext;
       if (keyContext != null) {
         final box = keyContext.findRenderObject() as RenderBox;
-        final position = box.localToGlobal(Offset.zero,
-            ancestor: context.findRenderObject());
+        final position = box.localToGlobal(
+          Offset.zero,
+          ancestor: context.findRenderObject(),
+        );
         final tabWidth = box.size.width;
         double targetOffset = _scrollController.offset +
             position.dx -
@@ -152,7 +150,6 @@ class _OrderScreenState extends State<OrderScreen>
 
   bool _hasActiveFilters() {
     if (_currentFilters.isEmpty) return false;
-
     return (_currentFilters['managers'] != null &&
             (_currentFilters['managers'] as List).isNotEmpty) ||
         (_currentFilters['regions'] != null &&
@@ -178,11 +175,9 @@ class _OrderScreenState extends State<OrderScreen>
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
-
     setState(() {
       _isSearching = query.isNotEmpty;
     });
-
     if (_statuses.isEmpty || _currentTabIndex >= _statuses.length) return;
 
     if (_isSearching || _currentFilters.isNotEmpty) {
@@ -192,7 +187,6 @@ class _OrderScreenState extends State<OrderScreen>
           _shouldShowLoader = true;
         });
       }
-
       _orderBloc.add(FetchOrders(
         statusId: _statuses[_currentTabIndex].id,
         page: 1,
@@ -251,7 +245,6 @@ class _OrderScreenState extends State<OrderScreen>
             ?.map((key, value) =>
                 MapEntry(key.toString(), List<String>.from(value as List))),
       ));
-
       _orderBloc.add(FetchOrderStatuses(forceRefresh: true));
     }
   }
@@ -441,29 +434,23 @@ class _OrderScreenState extends State<OrderScreen>
                   _lastSearchQuery = '';
                 });
               }
-
               final orderBloc = _orderBloc;
               orderBloc.add(FetchOrderStatuses());
             },
             currentFilters: _currentFilters,
             onFilterGoodsSelected: (filters) {
-              debugPrint(
-                  'OrderScreen: onFilterGoodsSelected - START WITH NEW LOGIC');
-
               if (mounted) {
                 setState(() {
                   _isFilterLoading = true;
                   _shouldShowLoader = true;
                   _showCustomTabBar = true;
-                  _skipNextTabListener =
-                      true; // ← КРИТИЧНО: Пропускаем следующий TabListener!
+                  _skipNextTabListener = true;
                   _isSearching = false;
                   _searchController.clear();
                   _lastSearchQuery = '';
                   _currentFilters = filters;
                 });
               }
-
               _orderBloc.add(FetchOrderStatusesWithFilters(
                 managerIds: filters['managers'],
                 regionsIds: filters['regions'],
@@ -484,9 +471,6 @@ class _OrderScreenState extends State<OrderScreen>
                               List<String>.from(value as List),
                             )),
               ));
-
-              debugPrint(
-                  'OrderScreen: onFilterGoodsSelected - Dispatched FetchOrderStatusesWithFilters');
             },
           ),
         ),
@@ -500,12 +484,8 @@ class _OrderScreenState extends State<OrderScreen>
                   ),
                   BlocListener<OrderBloc, OrderState>(
                     listener: (context, state) async {
-                      debugPrint(
-                          'OrderScreen: BlocListener - state: ${state.runtimeType}');
-
                       if (state is OrderLoaded || state is OrderError) {
                         if (mounted && _isFilterLoading) {
-                          debugPrint('OrderScreen: Resetting loader flags');
                           setState(() {
                             _isFilterLoading = false;
                             _shouldShowLoader = false;
@@ -536,34 +516,27 @@ class _OrderScreenState extends State<OrderScreen>
                                 if (_tabController.length > 0) {
                                   _tabController.dispose();
                                 }
-
                                 _tabController = TabController(
                                     length: _statuses.length, vsync: this);
-
                                 _tabController.addListener(() {
                                   if (!_tabController.indexIsChanging) {
                                     if (_skipNextTabListener) {
-                                      debugPrint(
-                                          'OrderScreen: TabController listener - SKIPPED (filter just applied)');
                                       setState(() {
                                         _skipNextTabListener = false;
                                         _currentTabIndex = _tabController.index;
                                       });
                                       return;
                                     }
-
                                     if (_currentTabIndex !=
                                         _tabController.index) {
                                       setState(() {
                                         _currentTabIndex = _tabController.index;
                                       });
                                       _scrollToActiveTab();
-
                                       if (_statuses.isNotEmpty &&
                                           _showCustomTabBar) {
                                         bool hasActiveFilters =
                                             _hasActiveFilters();
-
                                         _orderBloc.add(FetchOrders(
                                           statusId:
                                               _statuses[_currentTabIndex].id,
@@ -605,10 +578,10 @@ class _OrderScreenState extends State<OrderScreen>
                                                       as Map?)
                                                   ?.map(
                                                       (key, value) => MapEntry(
-                                                            key.toString(),
-                                                            List<String>.from(
-                                                                value as List),
-                                                          ))
+                                                      key.toString(),
+                                                      List<String>.from(
+                                                          value as List),
+                                                    ))
                                               : null,
                                         ));
                                       }
@@ -626,7 +599,6 @@ class _OrderScreenState extends State<OrderScreen>
                                   _currentTabIndex = 0;
                                 }
                               }
-
                               _scrollToActiveTab();
 
                               if (_navigateToNewStatus &&
@@ -639,8 +611,8 @@ class _OrderScreenState extends State<OrderScreen>
                                     _currentTabIndex = newTabIndex;
                                     _navigateToNewStatus = false;
                                   });
-                                  Future.delayed(Duration(milliseconds: 100),
-                                      () {
+                                  Future.delayed(
+                                      Duration(milliseconds: 100), () {
                                     if (mounted) {
                                       _tabController.animateTo(newTabIndex);
                                       _scrollToActiveTab();
@@ -655,10 +627,8 @@ class _OrderScreenState extends State<OrderScreen>
                                     _currentTabIndex < _statuses.length) {
                                   final activeStatusId =
                                       _statuses[_currentTabIndex].id;
-
                                   final bool hasActiveFilters =
                                       _hasActiveFilters();
-
                                   if (!hasActiveFilters && _isInitialLoad) {
                                     _orderBloc.add(FetchOrders(
                                       statusId: activeStatusId,
@@ -666,9 +636,6 @@ class _OrderScreenState extends State<OrderScreen>
                                       perPage: 20,
                                     ));
                                     _isInitialLoad = false;
-                                  } else {
-                                    debugPrint(
-                                        'OrderScreen: Skip auto FetchOrders due to active filters or not initial load');
                                   }
                                 }
                               });
@@ -821,14 +788,6 @@ class _OrderScreenState extends State<OrderScreen>
                                         physics:
                                             const AlwaysScrollableScrollPhysics(),
                                         children: _statuses.map((status) {
-                                          final List<Order> statusOrders = state
-                                                  is OrderLoaded
-                                              ? state.orders
-                                                  .where((order) =>
-                                                      order.orderStatus.id ==
-                                                      status.id)
-                                                  .toList()
-                                              : <Order>[];
                                           return OrderColumn(
                                             statusId: status.id,
                                             name: status.name,
@@ -948,82 +907,102 @@ class _OrderScreenState extends State<OrderScreen>
 
   Widget _buildCustomTabBar(BuildContext context) {
     final colors = context.appColors;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      controller: _scrollController,
-      child: Row(
-        children: [
-          ...List.generate(_statuses.length, (index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildTabButton(index),
-            );
-          }),
-          if (_canCreateOrderStatus)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              child: GestureDetector(
-                onTap: () async {
-                  await showDialog(
-                    context: context,
-                    builder: (context) =>
-                        CreateOrderStatusDialog(orderBloc: _orderBloc),
-                  );
-                },
-                child: Text(
-                  '+',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: colors.textPrimary,
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        controller: _scrollController,
+        child: Row(
+          children: [
+            ...List.generate(_statuses.length, (index) {
+              if (_tabKeys.length <= index) {
+                _tabKeys.add(GlobalKey());
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _buildTabButton(index),
+              );
+            }),
+            if (_canCreateOrderStatus)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () async {
+                      await showDialog(
+                        context: context,
+                        builder: (context) =>
+                            CreateOrderStatusDialog(orderBloc: _orderBloc),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colors.surfacePrimary.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: colors.borderSubtle.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.add,
+                        size: 20,
+                        color: colors.iconPrimary,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
-    final colors = context.appColors;
+    final statusId = _statuses[index].id;
 
-    return FutureBuilder<int>(
-      future: OrderCache.getPersistentOrderCount(_statuses[index].id),
-      builder: (context, snapshot) {
-        int orderCount = snapshot.data ?? 0;
+    return BlocBuilder<OrderBloc, OrderState>(
+      builder: (context, state) {
+        int orderCount = _statuses[index].ordersCount;
 
-        if (orderCount == 0) {
-          return BlocBuilder<OrderBloc, OrderState>(
-            builder: (context, state) {
-              if (state is OrderLoaded) {
-                final statusId = _statuses[index].id;
-                final orderStatus = state.statuses.firstWhere(
-                  (status) => status.id == statusId,
-                  orElse: () => OrderStatus(
-                    id: 0,
-                    name: '',
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                    isSuccess: false,
-                    isFailed: false,
-                    canceled: false,
-                    color: '#000000',
-                    position: 1,
-                    ordersCount: 0,
-                  ),
-                );
-                orderCount = orderStatus.ordersCount;
-                OrderCache.setPersistentOrderCount(statusId, orderCount);
-              }
-
-              return _buildTabButtonUI(index, isActive, orderCount);
-            },
+        if (state is OrderLoaded) {
+          final orderStatus = state.statuses.firstWhere(
+            (status) => status.id == statusId,
+            orElse: () => OrderStatus(
+              id: 0,
+              name: '',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              isSuccess: false,
+              isFailed: false,
+              canceled: false,
+              color: '#000000',
+              position: 1,
+              ordersCount: 0,
+            ),
           );
+          orderCount = orderStatus.ordersCount;
         }
-
+        OrderCache.setPersistentOrderCount(statusId, orderCount);
         return _buildTabButtonUI(index, isActive, orderCount);
       },
     );
@@ -1031,48 +1010,88 @@ class _OrderScreenState extends State<OrderScreen>
 
   Widget _buildTabButtonUI(int index, bool isActive, int orderCount) {
     final colors = context.appColors;
+    final title = _statuses[index].name;
+
     return GestureDetector(
       key: _tabKeys[index],
       onTap: () {
+        if (_tabController.index != index) {
+          setState(() {
+            _isFilterLoading = true;
+            _shouldShowLoader = true;
+          });
+        }
         _tabController.animateTo(index);
       },
       onLongPress: () {
         _showStatusOptions(context, index);
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(8),
+          color: isActive
+              ? colors.buttonPrimaryBg.withValues(alpha: 0.16)
+              : colors.surfacePrimary.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isActive ? colors.textPrimary : colors.textSecondary,
+            color: isActive
+                ? colors.buttonPrimaryBg.withValues(alpha: 0.55)
+                : colors.borderSubtle.withValues(alpha: 0.35),
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : const [],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(width: 4),
-            Transform.translate(
-              offset: const Offset(12, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isActive
-                        ? colors.textPrimary
-                        : colors.textSecondary,
-                    width: 1,
-                  ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                title.isEmpty ? 'Статус' : title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isActive
+                      ? colors.textPrimary
+                      : colors.textSecondary,
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
-                child: Text(
-                  orderCount.toString(),
-                  style: TextStyle(
-                    color: isActive ? colors.textPrimary : colors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? colors.buttonPrimaryBg.withValues(alpha: 0.18)
+                    : colors.surfaceElevated.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isActive
+                      ? colors.buttonPrimaryBg.withValues(alpha: 0.85)
+                      : colors.textInverse.withValues(alpha: 0.22),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                orderCount.toString(),
+                style: TextStyle(
+                  color: isActive
+                      ? colors.buttonPrimaryBg
+                      : colors.textPrimary,
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -1086,13 +1105,9 @@ class _OrderScreenState extends State<OrderScreen>
     final colors = context.appColors;
     return BlocListener<OrderBloc, OrderState>(
       listener: (context, state) {
-        debugPrint(
-            'OrderScreen: _buildFilteredView listener - state: ${state.runtimeType}');
         if ((state is OrderLoaded || state is OrderError) &&
             mounted &&
             (_isFilterLoading || _shouldShowLoader)) {
-          debugPrint(
-              'OrderScreen: _buildFilteredView - Resetting loader flags');
           setState(() {
             _isFilterLoading = false;
             _shouldShowLoader = false;
@@ -1156,10 +1171,10 @@ class _OrderScreenState extends State<OrderScreen>
                       order: order,
                       onStatusUpdated: _onStatusUpdated,
                       onStatusId: (newStatusId) {
-                        final index = _statuses
+                        final tabIndex = _statuses
                             .indexWhere((status) => status.id == newStatusId);
-                        if (index != -1) {
-                          _tabController.animateTo(index);
+                        if (tabIndex != -1) {
+                          _tabController.animateTo(tabIndex);
                         }
                       },
                       onTabChange: (int p1) {},

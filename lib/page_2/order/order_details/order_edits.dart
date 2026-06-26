@@ -12,6 +12,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -56,6 +58,7 @@ class OrderEditScreen extends StatefulWidget {
 }
 
 class _OrderEditScreenState extends State<OrderEditScreen> {
+  AppThemeColors get colors => context.appColors;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _phoneController;
   late TextEditingController _commentController;
@@ -695,7 +698,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               onTap: () => _showAddAddressDialog(context),
               child: Text(
                 AppLocalizations.of(context)!.translate('add_address'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
@@ -837,7 +840,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item.name,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xff1E2E52),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -852,7 +855,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               selectedItem.name.isNotEmpty
                   ? selectedItem.name
                   : 'Выберите интернет магазин',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -1865,7 +1868,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               AppLocalizations.of(context)!.translate('cancel'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -1921,7 +1924,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('add'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -1960,7 +1963,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 SnackBar(
                   content: Text(
                     'Ошибка загрузки конфигурации: ${configState.message}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -2176,7 +2179,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('items_list'),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -2228,7 +2231,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.translate('total'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
@@ -2354,7 +2357,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 Text(
                   item['name'] ??
                       AppLocalizations.of(context)!.translate('no_name'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -2532,7 +2535,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('cancel'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -2696,7 +2699,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('save'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,

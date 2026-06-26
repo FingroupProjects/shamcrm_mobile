@@ -11,6 +11,8 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
@@ -66,6 +68,8 @@ class OrderAddScreen extends StatefulWidget {
 }
 
 class _OrderAddScreenState extends State<OrderAddScreen> {
+  AppThemeColors get colors => context.appColors;
+  
   static final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _phoneController;
   late TextEditingController _deliveryAddressController;
@@ -474,7 +478,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               onTap: () => _showAddAddressDialog(context),
               child: Text(
                 AppLocalizations.of(context)!.translate('add_address'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
@@ -591,7 +595,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('internet_store_label'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -622,7 +626,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item.name,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xff1E2E52),
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -637,7 +641,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               selectedItem.name.isNotEmpty
                   ? selectedItem.name
                   : 'Выберите интернет магазин',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -1868,7 +1872,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               AppLocalizations.of(context)!.translate('cancel'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -1927,7 +1931,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('add'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -1964,7 +1968,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 SnackBar(
                   content: Text(
                     'Ошибка загрузки конфигурации: ${configState.message}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -2149,7 +2153,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       ),
       title: Text(
         AppLocalizations.of(context)!.translate('new_order'),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
@@ -2227,7 +2231,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('items_list'),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -2240,7 +2244,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   const Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
                   const SizedBox(width: 4),
                   Text(AppLocalizations.of(context)!.translate('add_product'),
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
@@ -2279,7 +2283,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.translate('total'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
@@ -2295,7 +2299,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         textAlign: TextAlign.right,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
@@ -2324,7 +2328,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     const SizedBox(width: 4),
                     Text(
                       currencySymbol,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
@@ -2393,7 +2397,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 Text(
                     item['name'] ??
                         AppLocalizations.of(context)!.translate('no_name_chat'),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
@@ -2414,13 +2418,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       Text(
                           AppLocalizations.of(context)!
                               .translate('goods_price_details'),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
                               color: Color(0xff99A4BA))),
                       Text(_formatPrice(item['price']),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -2432,14 +2436,14 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(AppLocalizations.of(context)!.translate('summ'),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
                               color: Color(0xff99A4BA))),
                       Text(
                           _formatPrice(item['price'] * (item['quantity'] ?? 1)),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -2476,7 +2480,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             controller: _getQuantityController(index),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
@@ -2555,7 +2559,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('cancel'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -2726,7 +2730,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 12)),
               child: Text(
                 AppLocalizations.of(context)!.translate('create'),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
