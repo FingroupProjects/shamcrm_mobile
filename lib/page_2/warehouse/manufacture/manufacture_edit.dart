@@ -15,6 +15,7 @@ import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/page_2/widgets/dual_storage_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,6 +67,7 @@ class _EditManufactureDocumentScreenState
   // ✅ НОВОЕ: Флаги ошибок для полей складов
   bool _senderStorageError = false;
   bool _recipientStorageError = false;
+  bool _isBarcodeLoading = false;
 
   @override
   void initState() {
@@ -660,6 +662,78 @@ class _EditManufactureDocumentScreenState
     }
   }
 
+  /// 🔍 Обработчик сканирования штрих-кода (производство)
+  Future<void> _handleBarcodeScanning() async {
+    if (_selectedSenderStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_sender_storage') ??
+            'Сначала выберите склад-отправитель',
+        false,
+      );
+      return;
+    }
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    final barcode = await openBarcodeScanner(context);
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+    setState(() => _isBarcodeLoading = true);
+    final result = await handleBarcodeForDocument(
+      context: context,
+      items: _items,
+      barcode: barcode,
+      docType: DocumentBarcodeType.movement,
+      onItemAdded: (newItem) {
+        if (!mounted) return;
+        setState(() {
+          for (var item in _items) {
+            final variantId = item['variantId'] as int;
+            _collapsedItems[variantId] = true;
+          }
+          final itemWithMaterials = Map<String, dynamic>.from(newItem);
+          _items.add(itemWithMaterials);
+          final variantId = newItem['variantId'] as int;
+          _quantityControllers[variantId] = TextEditingController(text: '1');
+          _quantityFocusNodes[variantId] = FocusNode();
+          _quantityErrors[variantId] = false;
+          _collapsedItems[variantId] = false;
+          _collapsedMaterialSections[variantId] = false;
+          if (!newItem.containsKey('amount')) _items.last['amount'] = 1;
+          _listKey.currentState?.insertItem(
+            _items.length - 1,
+            duration: const Duration(milliseconds: 300),
+          );
+        });
+      },
+      onQuantityIncreased: (variantId, newQty) {
+        setState(() {
+          final index = _items.indexWhere((item) => item['variantId'] == variantId);
+          if (index != -1) {
+            _items[index]['quantity'] = newQty.toInt();
+            _quantityControllers[variantId]?.text =
+                newQty.toStringAsFixed(newQty == newQty.roundToDouble() ? 0 : 2);
+            _syncMaterialQuantitiesForItem(variantId);
+          }
+        });
+      },
+    );
+    if (!mounted) return;
+    setState(() => _isBarcodeLoading = false);
+    if (result.isSuccess) {
+      showBarcodeSuccessSnackBar(
+        context: context,
+        itemName: result.itemName ?? '',
+        isNewItem: result.isNewItem,
+        quantity: result.newQuantity ?? 1.0,
+      );
+    } else if (result.errorKey == 'barcode_not_found') {
+      showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+    } else {
+      showBarcodeScanErrorSnackBar(context: context);
+    }
+  }
+
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
 
@@ -945,6 +1019,12 @@ class _EditManufactureDocumentScreenState
         ],
       ),
       centerTitle: false,
+      actions: [
+        BarcodeAppBarButton(
+          isLoading: _isBarcodeLoading,
+          onPressed: _handleBarcodeScanning,
+        ),
+      ],
     );
   }
 

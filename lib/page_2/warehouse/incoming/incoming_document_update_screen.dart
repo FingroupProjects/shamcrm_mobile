@@ -377,6 +377,22 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
 
   /// 🔍 Обработчик сканирования штрих-кода (приход товаров)
   Future<void> _handleBarcodeScanning({String? manualBarcode}) async {
+    if (_selectedSupplier == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_supplier') ??
+            'Сначала выберите поставщика',
+        false,
+      );
+      return;
+    }
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage_first') ??
+            'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
     if (_tabController.index != 1) {
       _tabController.animateTo(1);
       await Future.delayed(const Duration(milliseconds: 300));

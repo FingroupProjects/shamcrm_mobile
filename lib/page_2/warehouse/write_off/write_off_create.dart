@@ -197,6 +197,22 @@ class CreateWriteOffDocumentScreenState
 
   /// 🔍 Обработчик сканирования штрих-кода (списание)
   Future<void> _handleBarcodeScanning({String? manualBarcode}) async {
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage') ??
+            'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
+    if (_selectedArticle == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('fill_all_required_fields') ??
+            'Заполните обязательные поля',
+        false,
+      );
+      return;
+    }
     if (_tabController.index != 1) {
       _tabController.animateTo(1);
       await Future.delayed(const Duration(milliseconds: 300));

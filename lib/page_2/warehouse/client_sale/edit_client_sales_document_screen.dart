@@ -324,6 +324,22 @@ class _EditClientSalesDocumentScreenState
 
   /// 🔍 Обработчик сканирования штрих-кода (редактирование продажи)
   Future<void> _handleBarcodeScanning({String? manualBarcode}) async {
+    if (_selectedLead == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_lead_first') ??
+            'Сначала выберите лида',
+        false,
+      );
+      return;
+    }
+    if (_selectedStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage_first') ??
+            'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
     if (_tabController.index != 1) {
       _tabController.animateTo(1);
       await Future.delayed(const Duration(milliseconds: 300));

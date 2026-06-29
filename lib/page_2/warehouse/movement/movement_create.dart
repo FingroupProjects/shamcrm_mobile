@@ -215,6 +215,14 @@ class CreateMovementDocumentScreenState
 
   /// 🔍 Обработчик сканирования штрих-кода (перемещение)
   Future<void> _handleBarcodeScanning({String? manualBarcode}) async {
+    if (_selectedSenderStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_sender_storage') ??
+            'Сначала выберите склад отправителя',
+        false,
+      );
+      return;
+    }
     if (_tabController.index != 1) {
       _tabController.animateTo(1);
       await Future.delayed(const Duration(milliseconds: 300));

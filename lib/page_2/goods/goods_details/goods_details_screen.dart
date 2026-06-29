@@ -458,7 +458,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ),
         const SizedBox(height: 16),
         _buildGoodsRelationsSection(goods),
-        if (goods.variants != null && goods.variants!.isNotEmpty)
+        if (goods.variants != null && 
+            goods.variants!.isNotEmpty &&
+            !(goods.variants!.length == 1 && goods.variants!.first.attributeValues.isEmpty))
           _buildVariantsSection(goods),
       ],
     );

@@ -12890,7 +12890,7 @@ class ApiService {
             errors.keys.any((k) => k == 'barcode' || k.startsWith('variants.') && k.endsWith('.barcode'));
         if (hasBarcodeError ||
             errorMessage.contains('barcode')) {
-          errorMessage = 'Такое значение поле штрих кода уже существует';
+          errorMessage = 'Такое значение штрих кода уже существует';
         }
         return {
           'success': false,
@@ -13098,7 +13098,7 @@ class ApiService {
         final bool hasBarcodeError = errors != null &&
             errors.keys.any((k) => k == 'barcode' || k.startsWith('variants.') && k.endsWith('.barcode'));
         if (hasBarcodeError || errorMessage.contains('barcode')) {
-          errorMessage = 'Такое значение поле штрих кода уже существует';
+          errorMessage = 'Такое значение штрих кода уже существует';
         }
         return {
           'success': false,

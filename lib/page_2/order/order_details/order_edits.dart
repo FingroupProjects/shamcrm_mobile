@@ -38,6 +38,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -322,6 +323,81 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _branchBloc.close();
     _deliveryAddressBloc.close();
     super.dispose();
+  }
+
+  Future<void> _scanBarcode() async {
+    final barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || barcode == null || barcode.isEmpty) return;
+
+    final apiService = ApiService();
+    try {
+      final variantResponse = await apiService.getVariants(search: barcode, perPage: 1);
+      final variants = variantResponse.data;
+
+      if (variants.isEmpty) {
+        showCustomSnackBar(
+          context: context,
+          message: 'Товар по штрихкоду не найден',
+          isSuccess: false,
+        );
+        return;
+      }
+
+      final variant = variants.first;
+      final variantId = variant.id;
+      final price = (variant.price as num?)?.toDouble() ?? 0.0;
+
+      final existingIndex = _items.indexWhere((item) => item['id'] == variantId);
+
+      if (existingIndex != -1) {
+        setState(() {
+          final currentQty = (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0).toInt();
+          _items[existingIndex]['quantity'] = currentQty + 1;
+
+          if (_isTotalEdited) {
+            final currentTotal = _getCurrentTotal();
+            _totalController.text = (currentTotal + price).toStringAsFixed(0);
+          }
+        });
+        showCustomSnackBar(
+          context: context,
+          message: 'Количество увеличено: ${variant.fullName ?? variant.good?.name ?? ''}',
+          isSuccess: true,
+        );
+      } else {
+        setState(() {
+          _items.add({
+            'id': variant.id,
+            'name': variant.fullName ?? variant.good?.name ?? '',
+            'price': price,
+            'quantity': 1,
+            'imagePath': variant.good?.mainImageUrl,
+          });
+
+          if (_isTotalEdited) {
+            final currentTotal = _getCurrentTotal();
+            _totalController.text = (currentTotal + price).toStringAsFixed(0);
+          }
+        });
+        showCustomSnackBar(
+          context: context,
+          message: 'Товар добавлен: ${variant.fullName ?? variant.good?.name ?? ''}',
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Ошибка поиска товара',
+        isSuccess: false,
+      );
+    }
   }
 
   void _navigateToAddProduct() async {
@@ -2182,6 +2258,24 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52)),
             ),
+            GestureDetector(
+              onTap: _scanBarcode,
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code_scanner, color: Color(0xff1E2E52), size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                    AppLocalizations.of(context)!.translate('barcode') ?? 'Штрихкод',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff1E2E52)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
             GestureDetector(
               onTap: _navigateToAddProduct,
               child: Row(

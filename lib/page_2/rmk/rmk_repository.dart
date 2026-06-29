@@ -285,34 +285,28 @@ class RmkRepository {
       }
     }
 
-    var page = 1;
-    while (true) {
-      final response = await _apiService.getVariants(
-        page: page,
-        perPage: _syncPageSize,
-        search: normalizedBarcode,
-        filters: {'storage_id': storageId},
-      );
-      final variants = response.data;
-      if (variants.isEmpty) return null;
+    final response = await _apiService.getVariants(
+      page: 1,
+      perPage: _syncPageSize,
+      search: normalizedBarcode,
+      filters: {'storage_id': storageId},
+    );
+    final variants = response.data;
+    if (variants.isEmpty) return null;
 
-      final exactMatch = variants
-          .where((variant) => variant.barcode == normalizedBarcode)
-          .firstOrNull;
-      final match = exactMatch ?? variants.firstOrNull;
-      if (match != null) {
-        await _saveGoods([match], page: page);
-        return (_db.select(_db.rmkGoods)
-              ..where((tbl) => tbl.id.equals(match.id)))
-            .getSingleOrNull();
-      }
-
-      if (page >= response.pagination.totalPages ||
-          variants.length < _syncPageSize) {
-        return null;
-      }
-      page += 1;
+    final exactMatch = variants
+        .where((variant) => variant.barcode == normalizedBarcode)
+        .firstOrNull;
+    final match = exactMatch ?? variants.firstOrNull;
+    
+    if (match != null) {
+      await _saveGoods([match], page: 1);
+      return (_db.select(_db.rmkGoods)
+            ..where((tbl) => tbl.id.equals(match.id)))
+          .getSingleOrNull();
     }
+    
+    return null;
   }
 
   Future<void> syncInBackground({
