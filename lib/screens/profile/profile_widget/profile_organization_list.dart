@@ -146,22 +146,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                   filled: true,
                   fillColor: context.appColors.fieldBg,
                   labelStyle: TextStyle(color: context.appColors.fieldHint),
-                  border: OutlineInputBorder(
-                    borderSide:
-                        BorderSide(color: context.appColors.fieldBorder),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide:
-                        BorderSide(color: context.appColors.fieldBorder),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: context.appColors.buttonPrimaryBg,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                 ),
                 dropdownColor: context.appColors.surfacePrimary,
                 icon: Transform.translate(

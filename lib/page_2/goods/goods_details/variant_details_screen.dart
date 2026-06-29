@@ -56,6 +56,11 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('goods_price_details'),
         'value': variant.price.toString() ?? '0', // NEW FIELD for price instead of old variantPrice
       },
+      if (variant.barcode != null && variant.barcode!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('barcode') ?? 'Штрих код',
+          'value': variant.barcode!,
+        },
       // {
       //   'label': AppLocalizations.of(context)!.translate('start_date'),
       //   'value': variant.variantPrice?.startDate ?? AppLocalizations.of(context)!.translate(''),

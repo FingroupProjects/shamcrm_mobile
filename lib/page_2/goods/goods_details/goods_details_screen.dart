@@ -352,6 +352,14 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('unit'),
         'value': goods.unit?.name ?? '',
       },
+      if (goods.variants != null &&
+          goods.variants!.length == 1 &&
+          goods.variants!.first.barcode != null &&
+          goods.variants!.first.barcode!.isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!.translate('barcode') ?? 'Штрих код',
+          'value': goods.variants!.first.barcode!
+        },
       if (goods.productionType != null && goods.productionType!.isNotEmpty)
         {
           'label': 'Тип товара',

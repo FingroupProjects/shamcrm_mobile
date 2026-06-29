@@ -603,15 +603,35 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final item = items[index];
-                        return _RmkSelectedCartCard(
-                          item: item,
-                          onTap: () async {
-                            Navigator.pop(context);
-                            final good =
-                                await _repository.getGoodById(item.goodId);
-                            if (!mounted || good == null) return;
-                            await _openQuantityScreen(good);
+                        return Dismissible(
+                          key: ValueKey(item.goodId),
+                          direction: DismissDirection.endToStart,
+                          onDismissed: (_) {
+                            _repository.removeCartItem(item.goodId);
                           },
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xffFF4D4D),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          child: _RmkSelectedCartCard(
+                            item: item,
+                            onTap: () async {
+                              Navigator.pop(context);
+                              final good =
+                                  await _repository.getGoodById(item.goodId);
+                              if (!mounted || good == null) return;
+                              await _openQuantityScreen(good);
+                            },
+                          ),
                         );
                       },
                     ),

@@ -960,7 +960,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
             listener: (context, state) {
               if (state is GoodsSuccess) {
                 //print('GoodsAddScreen: GoodsSuccess received - ${state.message}');
-                setState(() => isLoading = false); // Сбрасываем isLoading
+                if (mounted) setState(() => isLoading = false);
                 showCustomSnackBar(
                   context: context,
                   message: state.message,
@@ -969,15 +969,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                 Navigator.pop(context); // Закрываем экран
               } else if (state is GoodsError) {
                 //print('GoodsAddScreen: GoodsError received - ${state.message}');
-                setState(() => isLoading = false);
+                if (mounted) setState(() => isLoading = false);
                 showCustomSnackBar(
                   context: context,
                   message: state.message,
                   isSuccess: false,
                 );
-              } else if (state is GoodsLoading) {
-                //print('GoodsAddScreen: GoodsLoading state');
-                setState(() => isLoading = true);
               }
             },
           ),

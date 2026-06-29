@@ -12883,9 +12883,18 @@ class ApiService {
           'data': responseBody,
         };
       } else {
+        String errorMessage = responseBody['message'] ?? 'Не удалось создать товар';
+        // Локализуем ошибку штрих-кода
+        final errors = responseBody['errors'] as Map<String, dynamic>?;
+        final bool hasBarcodeError = errors != null &&
+            errors.keys.any((k) => k == 'barcode' || k.startsWith('variants.') && k.endsWith('.barcode'));
+        if (hasBarcodeError ||
+            errorMessage.contains('barcode')) {
+          errorMessage = 'Такое значение поле штрих кода уже существует';
+        }
         return {
           'success': false,
-          'message': responseBody['message'] ?? 'Не удалось создать товар',
+          'message': errorMessage,
           'error': responseBody,
         };
       }
@@ -13084,9 +13093,16 @@ class ApiService {
           'data': responseBody,
         };
       } else {
+        String errorMessage = responseBody['message'] ?? 'Failed to update goods';
+        final errors = responseBody['errors'] as Map<String, dynamic>?;
+        final bool hasBarcodeError = errors != null &&
+            errors.keys.any((k) => k == 'barcode' || k.startsWith('variants.') && k.endsWith('.barcode'));
+        if (hasBarcodeError || errorMessage.contains('barcode')) {
+          errorMessage = 'Такое значение поле штрих кода уже существует';
+        }
         return {
           'success': false,
-          'message': responseBody['message'] ?? 'Failed to update goods',
+          'message': errorMessage,
           'error': responseBody,
         };
       }
@@ -13159,7 +13175,7 @@ class ApiService {
   }
 
   Future<List<Goods>> getGoodsByBarcode(String barcode) async {
-    String path = '/good/getByBarcode?search=$barcode';
+    String path = '/good?search=$barcode';
     path = await _appendQueryParams(path);
     if (kDebugMode) {
       debugPrint('ApiService: Запрос товаров по штрихкоду: $path');
@@ -13192,7 +13208,11 @@ class ApiService {
         if (result is List) {
           goodsData = result;
         } else if (result is Map<String, dynamic>) {
-          goodsData = [result];
+          if (result.containsKey('data') && result['data'] is List) {
+            goodsData = result['data'];
+          } else {
+            goodsData = [result];
+          }
         } else {
           if (kDebugMode) {
             debugPrint(
@@ -15055,7 +15075,7 @@ class ApiService {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final path = await _appendQueryParams('/purchase-documents');
+      final path = await _appendQueryParams('/rmk-income-documents');
       final uri = Uri.parse('$baseUrl$path');
 
       final payload = <String, dynamic>{

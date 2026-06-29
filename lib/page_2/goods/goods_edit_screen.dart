@@ -90,8 +90,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           ? ''
           : (widget.goods.description ?? ''),
     );
-    barcodeController = TextEditingController(
-        text: widget.goods.barcode ?? widget.goods.article ?? '');
+    String initialBarcode = widget.goods.barcode ?? widget.goods.article ?? '';
+    if (initialBarcode.isEmpty && widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+      initialBarcode = widget.goods.variants!.first.barcode ?? '';
+    }
+    barcodeController = TextEditingController(text: initialBarcode);
     discountPriceController = TextEditingController(
         text: widget.goods.discountPrice?.toString() ?? '');
     stockQuantityController =
@@ -389,7 +392,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         for (var attr in individualAttrs) {
           newRow[attr.name] = TextEditingController();
         }
-        // newRow['barcode'] = TextEditingController(text: variant.barcode ?? '');
+        newRow['barcode'] = TextEditingController(text: variant.barcode ?? '');
 
         if (variant.attributeValues != null &&
             variant.attributeValues!.isNotEmpty) {

@@ -710,6 +710,7 @@ class GoodsVariant {
   final List<AttributeValue> attributeValues;
   // final VariantPrice? variantPrice; // instead of price NEW price String
   final String price; // NEW price String
+  final String? barcode;
   final List<GoodsFile>? files;
 
   GoodsVariant({
@@ -719,6 +720,7 @@ class GoodsVariant {
     required this.attributeValues,
     // this.variantPrice,
     required this.price,
+    this.barcode,
     this.files,
   });
 
@@ -742,6 +744,7 @@ class GoodsVariant {
                   ? (json['price'] as num).toString()
                   : '0'))
           : '0',
+      barcode: json['barcode'] as String?,
       files: (json['files'] as List<dynamic>?)?.map((f) {
             return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??

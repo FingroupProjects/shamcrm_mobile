@@ -359,6 +359,7 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                           label:
                               AppLocalizations.of(context)!.translate('note') ??
                                   'Примечание',
+                          maxLines: 5,
                         ),
                       ],
                     ),

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
+import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -32,41 +33,29 @@ class BarcodeHandleResult {
   });
 }
 
-/// Конвертирует Goods + первый вариант в Map для списка товаров документа
-Map<String, dynamic>? buildItemMapFromGoods({
-  required Goods good,
+/// Конвертирует Variant в Map для списка товаров документа
+Map<String, dynamic>? buildItemMapFromVariant({
+  required Variant variant,
   required DocumentBarcodeType docType,
-  int variantIndex = 0,
 }) {
-  final variants = good.variants;
-
-  int variantId;
-  double price;
-  List<Unit> availableUnits;
-
-  if (variants != null && variants.isNotEmpty) {
-    final variant = variants[variantIndex];
-    variantId = variant.id;
-    price = double.tryParse(variant.price) ?? 0.0;
-    availableUnits = good.units ?? [];
-  } else {
-    // Нет вариантов — используем id самого товара
-    variantId = good.id;
-    price = double.tryParse(good.price ?? '0') ?? 0.0;
-    availableUnits = good.units ?? [];
-  }
+  int variantId = variant.id;
+  int goodId = variant.goodId;
+  double price = variant.price ?? 0.0;
+  List<Unit> availableUnits = variant.availableUnits;
+  
+  String name = variant.fullName ?? variant.good?.name ?? '';
 
   final result = <String, dynamic>{
-    'id': good.id,
+    'id': goodId,
     'variantId': variantId,
-    'name': good.name,
+    'name': name,
     'quantity': 1.0,
     'price': price,
     'total': price * 1.0,
     'amount': 1,
     'availableUnits': availableUnits,
-    'remainder': 0,
-    'materialGoods': good.materialGoods ?? const [],
+    'remainder': variant.remainder ?? 0,
+    'materialGoods': variant.good?.materialGoods ?? const [],
   };
 
   // Для Прихода товаров — цена пустая, пользователь вводит сам
@@ -115,24 +104,18 @@ Future<BarcodeHandleResult> handleBarcodeForDocument({
 }) async {
   try {
     final apiService = ApiService();
-    final goods = await apiService.getGoodsByBarcode(barcode);
+    final variantResponse = await apiService.getVariants(search: barcode, perPage: 1);
+    final variants = variantResponse.data;
 
-    if (goods.isEmpty) {
+    if (variants.isEmpty) {
       return const BarcodeHandleResult(
         isSuccess: false,
         errorKey: 'barcode_not_found',
       );
     }
 
-    final good = goods.first;
-
-    // Определяем variantId из первого варианта или из самого товара
-    int variantId;
-    if (good.variants != null && good.variants!.isNotEmpty) {
-      variantId = good.variants!.first.id;
-    } else {
-      variantId = good.id;
-    }
+    final variant = variants.first;
+    int variantId = variant.id;
 
     // Проверяем, есть ли уже такой товар в списке
     final existingIndex =
@@ -150,13 +133,13 @@ Future<BarcodeHandleResult> handleBarcodeForDocument({
       return BarcodeHandleResult(
         isSuccess: true,
         isNewItem: false,
-        itemName: good.name,
+        itemName: variant.fullName ?? variant.good?.name ?? '',
         newQuantity: newQty,
       );
     } else {
       // Новый товар — добавляем с quantity = 1
-      final newItem = buildItemMapFromGoods(
-        good: good,
+      final newItem = buildItemMapFromVariant(
+        variant: variant,
         docType: docType,
       );
 
@@ -173,7 +156,7 @@ Future<BarcodeHandleResult> handleBarcodeForDocument({
       return BarcodeHandleResult(
         isSuccess: true,
         isNewItem: true,
-        itemName: good.name,
+        itemName: variant.fullName ?? variant.good?.name ?? '',
         newQuantity: 1.0,
       );
     }

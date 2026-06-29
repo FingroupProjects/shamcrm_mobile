@@ -9,6 +9,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
   final String? customLabelText;
+  final String? customHintText;
   final bool hasError;
   final bool isRequired;
   final Color backgroundColor;
@@ -18,6 +19,7 @@ class UserMultiSelectWidget extends StatefulWidget {
     required this.onSelectUsers,
     this.selectedUsers,
     this.customLabelText,
+    this.customHintText,
     this.hasError = false,
     this.isRequired = true,
     this.backgroundColor = const Color(0xFFF4F7FD),
@@ -208,7 +210,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
   String _selectedLabel(AppLocalizations localizations) {
     if (selectedUsersData.isEmpty) {
-      return localizations.translate('select_assignees_list');
+      return widget.customHintText ?? localizations.translate('select_assignees_list');
     }
 
     return selectedUsersData
@@ -374,7 +376,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        localizations.translate('select_assignees_list'),
+                        widget.customHintText ?? localizations.translate('select_assignees_list'),
                         style: userTextStyle.copyWith(
                           fontSize: 14,
                           color: const Color(0xFF6B7280),

@@ -194,6 +194,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
           UserMultiSelectWidget(
             selectedUsers: _selectedUserIds,
             customLabelText: 'Пользователи',
+            customHintText: 'Выберите пользователей',
             isRequired: false,
             hasError: false,
             backgroundColor: Colors.white,
