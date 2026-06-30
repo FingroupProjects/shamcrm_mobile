@@ -88,7 +88,8 @@ class _IncomingCardState extends State<IncomingCard> {
     final colors = context.appColors;
     final doc = widget.document;
     final localizations = AppLocalizations.of(context)!;
-    final cardBg = widget.isSelected ? colors.surfaceElevated : colors.surfacePrimary;
+    final cardBg =
+        widget.isSelected ? colors.surfaceElevated : colors.surfacePrimary;
     final primaryText = context.adaptiveForegroundOn(cardBg);
     final secondaryText = context.adaptiveHintOn(cardBg);
 

@@ -146,7 +146,8 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                colors.buttonPrimaryBg),
                           ),
                         ),
                       );
@@ -169,7 +170,8 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                colors.buttonPrimaryBg),
                           ),
                         ),
                       );
@@ -191,7 +193,8 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                           padding: const EdgeInsets.all(20.0),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                colors.buttonPrimaryBg),
                           ),
                         ),
                       );

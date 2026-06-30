@@ -24,7 +24,8 @@ class ClientSaleDeleteDocumentDialog extends StatelessWidget {
           if (state is ClientSaleError) {
             if (state.statusCode == 409) {
               final localizations = AppLocalizations.of(context)!;
-              showSimpleErrorDialog(context, localizations.translate('error') ?? 'Ошибка', state.message);
+              showSimpleErrorDialog(context,
+                  localizations.translate('error') ?? 'Ошибка', state.message);
               return;
             }
             ScaffoldMessenger.of(context).showSnackBar(
@@ -95,9 +96,9 @@ class ClientSaleDeleteDocumentDialog extends StatelessWidget {
                     buttonText:
                         AppLocalizations.of(context)!.translate('delete'),
                     onPressed: () {
-                      context
-                          .read<ClientSaleBloc>()
-                          .add(DeleteClientSale(documentId, AppLocalizations.of(context)!, shouldReload: true));
+                      context.read<ClientSaleBloc>().add(DeleteClientSale(
+                          documentId, AppLocalizations.of(context)!,
+                          shouldReload: true));
 
                       Navigator.of(context).pop();
                       Navigator.pop(context, true);

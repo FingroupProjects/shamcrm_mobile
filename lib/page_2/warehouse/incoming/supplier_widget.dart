@@ -197,7 +197,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                         child: SizedBox(
                           width: 20,
                           height: 20,
-                            child: CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                                 colors.buttonPrimaryBg),
@@ -222,7 +222,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                         child: SizedBox(
                           width: 20,
                           height: 20,
-                            child: CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                                 colors.buttonPrimaryBg),
@@ -247,7 +247,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                       return Center(
                         child: Padding(
                           padding: const EdgeInsets.all(20.0),
-                            child: CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
                                 colors.buttonPrimaryBg),

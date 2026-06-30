@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
@@ -42,6 +43,7 @@ class CreateManufactureDocumentScreenState
   String? _selectedRecipientStorage;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
+  bool _isBarcodeLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final Map<int, TextEditingController> _quantityControllers = {};
   final Map<int, TextEditingController> _priceControllers = {};
@@ -128,7 +130,8 @@ class CreateManufactureDocumentScreenState
     }
   }
 
-  void _handleVariantSelection(Map<String, dynamic>? newItem) {
+  void _handleVariantSelection(Map<String, dynamic>? newItem,
+      {bool isFromBarcode = false}) {
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items
@@ -150,7 +153,8 @@ class CreateManufactureDocumentScreenState
 
           final variantId = newItem['variantId'] as int;
 
-          _quantityControllers[variantId] = TextEditingController(text: '');
+          _quantityControllers[variantId] =
+              TextEditingController(text: isFromBarcode ? '1' : '');
           _priceControllers[variantId] = TextEditingController(
             text: (itemWithMaterials['price'] ?? 0).toString(),
           );
@@ -179,7 +183,8 @@ class CreateManufactureDocumentScreenState
                 curve: Curves.easeOut,
               );
 
-              _quantityFocusNodes[variantId]?.requestFocus();
+              if (!isFromBarcode)
+                _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -377,6 +382,57 @@ class CreateManufactureDocumentScreenState
       FocusScope.of(context).unfocus();
     } else {
       _handleVariantSelection(result);
+    }
+  }
+
+  Future<void> _handleBarcodeScanning([String? manualBarcode]) async {
+    if (_selectedSenderStorage == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_storage_first') ??
+            'Сначала выберите склад',
+        false,
+      );
+      return;
+    }
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    final barcode = manualBarcode ?? await openBarcodeScanner(context);
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+    setState(() => _isBarcodeLoading = true);
+    final result = await handleBarcodeForDocument(
+      context: context,
+      items: _items,
+      barcode: barcode,
+      docType: DocumentBarcodeType.income,
+      onItemAdded: (newItem) =>
+          _handleVariantSelection(newItem, isFromBarcode: true),
+      onQuantityIncreased: (variantId, newQty) {
+        setState(() {
+          final index =
+              _items.indexWhere((item) => item['variantId'] == variantId);
+          if (index != -1) {
+            _items[index]['quantity'] = newQty;
+            _quantityControllers[variantId]?.text = newQty
+                .toStringAsFixed(newQty == newQty.roundToDouble() ? 0 : 2);
+          }
+        });
+      },
+    );
+    if (!mounted) return;
+    setState(() => _isBarcodeLoading = false);
+    if (result.isSuccess) {
+      showBarcodeSuccessSnackBar(
+        context: context,
+        itemName: result.itemName ?? '',
+        isNewItem: result.isNewItem,
+        quantity: result.newQuantity ?? 1.0,
+      );
+    } else if (result.errorKey == 'barcode_not_found') {
+      showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+    } else {
+      showBarcodeScanErrorSnackBar(context: context);
     }
   }
 
@@ -932,6 +988,12 @@ class CreateManufactureDocumentScreenState
         ],
       ),
       centerTitle: false,
+      actions: [
+        BarcodeAppBarButton(
+          isLoading: _isBarcodeLoading,
+          onPressed: _handleBarcodeScanning,
+        ),
+      ],
     );
   }
 

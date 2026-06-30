@@ -47,8 +47,9 @@ class _SupplierContentState extends State<SupplierContent> {
     context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
 
     await context.read<SupplierOpeningsBloc>().stream.firstWhere(
-          (state) => state is SupplierOpeningsLoaded || state is SupplierOpeningsError,
-    );
+          (state) =>
+              state is SupplierOpeningsLoaded || state is SupplierOpeningsError,
+        );
 
     if (mounted) {
       setState(() {
@@ -180,7 +181,7 @@ class _SupplierContentState extends State<SupplierContent> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                  child: Container(
+                child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -222,13 +223,16 @@ class _SupplierContentState extends State<SupplierContent> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<SupplierOpeningsBloc>().add(LoadSupplierOpenings());
+                          context
+                              .read<SupplierOpeningsBloc>()
+                              .add(LoadSupplierOpenings());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -259,7 +263,8 @@ class _SupplierContentState extends State<SupplierContent> {
         // ✅ Handle success messages
         if (state is SupplierOpeningCreateSuccess) {
           _showSnackBarSafely(
-            AppLocalizations.of(context)?.translate('supplier_opening_created') ??
+            AppLocalizations.of(context)
+                    ?.translate('supplier_opening_created') ??
                 'Остаток поставщика создан',
             isSuccess: true,
           );

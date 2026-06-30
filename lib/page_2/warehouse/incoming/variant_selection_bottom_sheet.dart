@@ -646,9 +646,9 @@ class _VariantSelectionBottomSheetState
                         ),
                       )
                     : Icon(
-                    level > 0
-                        ? Icons.subdirectory_arrow_right
-                        : Icons.category,
+                        level > 0
+                            ? Icons.subdirectory_arrow_right
+                            : Icons.category,
                         color: colors.buttonPrimaryBg,
                         size: level > 0 ? 20 : 28,
                       ),

@@ -347,7 +347,7 @@ class _MovementDocumentDetailsScreenState
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
         ),
-        child:  Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
@@ -418,7 +418,7 @@ class _MovementDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style:  TextStyle(
+                  style: TextStyle(
                     color: context.appColors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -433,7 +433,7 @@ class _MovementDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style:  TextStyle(
+                    style: TextStyle(
                       color: context.appColors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
@@ -483,7 +483,7 @@ class _MovementDocumentDetailsScreenState
                       AppLocalizations.of(context)!
                               .translate('document_data_unavailable') ??
                           'Данные документа недоступны',
-                      style:  TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
@@ -700,7 +700,7 @@ class _MovementDocumentDetailsScreenState
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty') ??
                         'Нет товаров',
-                    style:  TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -773,7 +773,7 @@ class _MovementDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style:  TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
@@ -783,7 +783,7 @@ class _MovementDocumentDetailsScreenState
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style:  TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
@@ -802,7 +802,7 @@ class _MovementDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style:  TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
@@ -812,7 +812,7 @@ class _MovementDocumentDetailsScreenState
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style:  TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
@@ -929,7 +929,7 @@ class _MovementDocumentDetailsScreenState
         color: context.appColors.surfaceElevated,
         borderRadius: BorderRadius.circular(8),
       ),
-      child:  Center(
+      child: Center(
         child: Icon(Icons.image_not_supported,
             size: 40, color: context.appColors.textSecondary),
       ),
@@ -976,7 +976,7 @@ class _MovementDocumentDetailsScreenState
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style:  TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
@@ -988,7 +988,7 @@ class _MovementDocumentDetailsScreenState
   Widget _buildValue(String value) {
     return Text(
       value,
-      style:  TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,

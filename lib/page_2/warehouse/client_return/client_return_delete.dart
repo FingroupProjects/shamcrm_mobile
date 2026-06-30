@@ -55,7 +55,8 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
         backgroundColor: colors.surfacePrimary,
         title: Center(
           child: Text(
-            AppLocalizations.of(context)!.translate('delete_return_document') ?? 'Удалить возврат',
+            AppLocalizations.of(context)!.translate('delete_return_document') ??
+                'Удалить возврат',
             style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
@@ -82,7 +83,8 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
               Expanded(
                 child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)!.translate('close') ?? 'Отмена',
+                      AppLocalizations.of(context)!.translate('close') ??
+                          'Отмена',
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -94,12 +96,13 @@ class ClientReturnDeleteDocumentDialog extends StatelessWidget {
               Expanded(
                 child: CustomButton(
                   buttonText:
-                      AppLocalizations.of(context)!.translate('delete') ?? 'Удалить',
+                      AppLocalizations.of(context)!.translate('delete') ??
+                          'Удалить',
                   onPressed: () {
                     final localizations = AppLocalizations.of(context)!;
-                    context
-                        .read<ClientReturnBloc>()
-                        .add(DeleteClientReturnDocument(documentId, localizations, shouldReload: true));
+                    context.read<ClientReturnBloc>().add(
+                        DeleteClientReturnDocument(documentId, localizations,
+                            shouldReload: true));
                     Navigator.of(context).pop();
                     Navigator.pop(context, true);
                   },

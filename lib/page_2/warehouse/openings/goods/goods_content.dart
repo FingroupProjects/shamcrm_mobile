@@ -47,8 +47,9 @@ class _GoodsContentState extends State<GoodsContent> {
     context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
 
     await context.read<GoodsOpeningsBloc>().stream.firstWhere(
-          (state) => state is GoodsOpeningsLoaded || state is GoodsOpeningsError,
-    );
+          (state) =>
+              state is GoodsOpeningsLoaded || state is GoodsOpeningsError,
+        );
 
     if (mounted) {
       setState(() {
@@ -180,7 +181,7 @@ class _GoodsContentState extends State<GoodsContent> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                  child: Container(
+                child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -222,13 +223,16 @@ class _GoodsContentState extends State<GoodsContent> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<GoodsOpeningsBloc>().add(LoadGoodsOpenings());
+                          context
+                              .read<GoodsOpeningsBloc>()
+                              .add(LoadGoodsOpenings());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

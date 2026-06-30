@@ -18,7 +18,6 @@ import 'incoming_document_details_screen.dart';
 
 import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart';
 
-
 class IncomingScreen extends StatefulWidget {
   final int? organizationId;
 
@@ -52,7 +51,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _incomingBloc = context.read<IncomingBloc>()..add(const FetchIncoming(forceRefresh: true));
+    _incomingBloc = context.read<IncomingBloc>()
+      ..add(const FetchIncoming(forceRefresh: true));
     _scrollController.addListener(_onScroll);
   }
 
@@ -201,21 +201,63 @@ class _IncomingScreenState extends State<IncomingScreen> {
         child: Scaffold(
           backgroundColor: colors.surfacePrimary,
           appBar: AppBar(
-          automaticallyImplyLeading: !_selectionMode,
-          forceMaterialTransparency: true,
-          title: _selectionMode
-              ? BlocBuilder<IncomingBloc, IncomingState>(
-                  builder: (context, state) {
-                    if (state is IncomingLoaded) {
-                      bool showApprove = state.selectedData!.any(
-                          (doc) => doc.approved == 0 && doc.deletedAt == null);
-                      bool showDisapprove = state.selectedData!.any(
-                          (doc) => doc.approved == 1 && doc.deletedAt == null);
-                      // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
-                      bool showDelete = _hasDeletePermission && state.selectedData!
-                          .any((doc) => doc.deletedAt == null);
-                      bool showRestore = state.selectedData!
-                          .any((doc) => doc.deletedAt != null);
+            automaticallyImplyLeading: !_selectionMode,
+            forceMaterialTransparency: true,
+            title: _selectionMode
+                ? BlocBuilder<IncomingBloc, IncomingState>(
+                    builder: (context, state) {
+                      if (state is IncomingLoaded) {
+                        bool showApprove = state.selectedData!.any((doc) =>
+                            doc.approved == 0 && doc.deletedAt == null);
+                        bool showDisapprove = state.selectedData!.any((doc) =>
+                            doc.approved == 1 && doc.deletedAt == null);
+                        // ИЗМЕНЕНО: Показываем кнопку удаления только если есть право
+                        bool showDelete = _hasDeletePermission &&
+                            state.selectedData!
+                                .any((doc) => doc.deletedAt == null);
+                        bool showRestore = state.selectedData!
+                            .any((doc) => doc.deletedAt != null);
+
+                        return AppBarSelectionMode(
+                          title: localizations?.translate('appbar_incoming') ??
+                              'Приходы',
+                          onDismiss: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _incomingBloc.add(UnselectAllDocuments());
+                          },
+                          onApprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _incomingBloc.add(MassApproveIncomingDocuments());
+                          },
+                          onDisapprove: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _incomingBloc
+                                .add(MassDisapproveIncomingDocuments());
+                          },
+                          onDelete: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _incomingBloc.add(MassDeleteIncomingDocuments());
+                          },
+                          onRestore: () {
+                            setState(() {
+                              _selectionMode = false;
+                            });
+                            _incomingBloc.add(MassRestoreIncomingDocuments());
+                          },
+                          showApprove: showApprove,
+                          showDelete: showDelete,
+                          showDisapprove: showDisapprove,
+                          showRestore: showRestore,
+                        );
+                      }
 
                       return AppBarSelectionMode(
                         title: localizations?.translate('appbar_incoming') ??
@@ -226,523 +268,590 @@ class _IncomingScreenState extends State<IncomingScreen> {
                           });
                           _incomingBloc.add(UnselectAllDocuments());
                         },
-                        onApprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassApproveIncomingDocuments());
-                        },
-                        onDisapprove: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassDisapproveIncomingDocuments());
-                        },
-                        onDelete: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassDeleteIncomingDocuments());
-                        },
-                        onRestore: () {
-                          setState(() {
-                            _selectionMode = false;
-                          });
-                          _incomingBloc.add(MassRestoreIncomingDocuments());
-                        },
-                        showApprove: showApprove,
-                        showDelete: showDelete,
-                        showDisapprove: showDisapprove,
-                        showRestore: showRestore,
                       );
-                    }
-
-                    return AppBarSelectionMode(
-                      title: localizations?.translate('appbar_incoming') ??
-                          'Приходы',
-                      onDismiss: () {
+                    },
+                  )
+                : CustomAppBarPage2(
+                    title: localizations!.translate('appbar_incoming') ??
+                        'Приходы',
+                    showSearchIcon: true,
+                    showFilterIcon: false,
+                    showFilterOrderIcon: false,
+                    showFilterIncomeIcon: false,
+                    showFilterIncomingIcon: true,
+                    onFilterIncomingSelected: _onFilterSelected,
+                    onIncomingResetFilters: _onResetFilters,
+                    onChangedSearchInput: _onSearch,
+                    textEditingController: _searchController,
+                    focusNode: _focusNode,
+                    clearButtonClick: (value) {
+                      if (!value) {
                         setState(() {
-                          _selectionMode = false;
+                          _isSearching = false;
+                          _searchController.clear();
+                          _search = null;
                         });
-                        _incomingBloc.add(UnselectAllDocuments());
-                      },
-                    );
-                  },
-                )
-              : CustomAppBarPage2(
-                  title:
-                      localizations!.translate('appbar_incoming') ?? 'Приходы',
-                  showSearchIcon: true,
-                  showFilterIcon: false,
-                  showFilterOrderIcon: false,
-                  showFilterIncomeIcon: false,
-                  showFilterIncomingIcon: true,
-                  onFilterIncomingSelected: _onFilterSelected,
-                  onIncomingResetFilters: _onResetFilters,
-                  onChangedSearchInput: _onSearch,
-                  textEditingController: _searchController,
-                  focusNode: _focusNode,
-                  clearButtonClick: (value) {
-                    if (!value) {
+                        _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: null,
+                        ));
+                      }
+                    },
+                    onClickProfileAvatar: () {},
+                    clearButtonClickFiltr: (bool p1) {},
+                    currentFilters: _currentFilters,
+                  ),
+          ),
+          body: BlocListener<IncomingBloc, IncomingState>(
+            listener: (context, state) {
+              debugPrint("IncomingScreen.Bloc.State: ${_incomingBloc.state}");
+
+              if (!mounted) return;
+
+              if (state is IncomingLoaded) {
+                if (mounted) {
+                  setState(() {
+                    _hasReachedMax = state.hasReachedMax;
+                    _isInitialLoad = false;
+                    _isLoadingMore = false;
+                    _isRefreshing = false;
+                  });
+                }
+              } else if (state is IncomingError) {
+                if (mounted) {
+                  setState(() {
+                    _isInitialLoad = false;
+                    _isLoadingMore = false;
+                    _isRefreshing = false;
+                  });
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      _showSnackBar(state.message, false);
+                    }
+                  });
+                }
+              } else if (state is IncomingCreateSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _incomingBloc
+                          .add(const FetchIncoming(forceRefresh: true));
+                    }
+                  });
+                }
+              } else if (state is IncomingCreateError) {
+                if (mounted) {
+                  // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                  _incomingBloc.add(FetchIncoming(
+                      forceRefresh: true,
+                      filters: _currentFilters,
+                      search: _search));
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingDelete);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingUpdateSuccess) {
+                // ИЗМЕНЕНО: С addPostFrameCallback
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is IncomingUpdateError) {
+                if (mounted) {
+                  // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
+                  _incomingBloc.add(FetchIncoming(
+                      forceRefresh: true,
+                      filters: _currentFilters,
+                      search: _search));
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingDelete);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingApproveMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is IncomingApproveMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingApprove);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingDisapproveMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is IncomingDisapproveMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      debugPrint(
+                          "[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingUnapprove);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingDeleteSuccess) {
+                debugPrint(
+                    "IncomingScreen.Bloc.State.IncomingDeleteSuccess: ${_incomingBloc.state}");
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
                       setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                        _search = null;
+                        _isRefreshing = true; // ИЗМЕНЕНО: Как в client_sales
                       });
                       _incomingBloc.add(FetchIncoming(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: null,
-                      ));
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
                     }
-                  },
-                  onClickProfileAvatar: () {},
-                  clearButtonClickFiltr: (bool p1) {},
-                  currentFilters: _currentFilters,
-                ),
-        ),
-        body: BlocListener<IncomingBloc, IncomingState>(
-          listener: (context, state) {
-            debugPrint("IncomingScreen.Bloc.State: ${_incomingBloc.state}");
+                  });
+                }
+              } else if (state is IncomingDeleteError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingDelete);
+                        _incomingBloc.add(FetchIncoming(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingRestoreSuccess) {
+                debugPrint(
+                    "IncomingScreen.Bloc.State.IncomingRestoreSuccess: ${_incomingBloc.state}");
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      setState(() {
+                        _isRefreshing = true; // ИЗМЕНЕНО: Как в client_sales
+                      });
+                      _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is IncomingRestoreError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingRestore);
+                        _incomingBloc.add(FetchIncoming(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingDeleteMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is IncomingDeleteMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        debugPrint(
+                            "[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingDelete);
+                        _incomingBloc.add(FetchIncoming(
+                            forceRefresh: true,
+                            filters: _currentFilters,
+                            search: _search));
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              } else if (state is IncomingRestoreMassSuccess) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: true);
+                      _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search));
+                    }
+                  });
+                }
+              } else if (state is IncomingRestoreMassError) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && context.mounted) {
+                      if (state.statusCode == 409) {
+                        showSimpleErrorDialog(
+                            context,
+                            localizations?.translate('error') ?? 'Ошибка',
+                            state.message,
+                            errorDialogEnum:
+                                ErrorDialogEnum.goodsIncomingRestore);
+                        return;
+                      }
+                      showCustomSnackBar(
+                          context: context,
+                          message: state.message,
+                          isSuccess: false);
+                    }
+                  });
+                }
+              }
+            },
+            child: BlocBuilder<IncomingBloc, IncomingState>(
+              builder: (context, state) {
+                debugPrint(
+                    "IncomingScreen.Bloc.State.Build: ${_incomingBloc.state}");
 
-            if (!mounted) return;
-
-            if (state is IncomingLoaded) {
-              if (mounted) {
-                setState(() {
-                  _hasReachedMax = state.hasReachedMax;
-                  _isInitialLoad = false;
-                  _isLoadingMore = false;
-                  _isRefreshing = false;
-                });
-              }
-            } else if (state is IncomingError) {
-              if (mounted) {
-                setState(() {
-                  _isInitialLoad = false;
-                  _isLoadingMore = false;
-                  _isRefreshing = false;
-                });
-
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    _showSnackBar(state.message, false);
-                  }
-                });
-              }
-            } else if (state is IncomingCreateSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _incomingBloc.add(const FetchIncoming(forceRefresh: true));
-                  }
-                });
-              }
-            } else if (state is IncomingCreateError) {
-              if (mounted) {
-                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingUpdateSuccess) { // ИЗМЕНЕНО: С addPostFrameCallback
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _incomingBloc.add(FetchIncoming(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingUpdateError) {
-              if (mounted) {
-                // ✅ ИСПРАВЛЕНО: Обновляем данные после ошибки, чтобы избежать белого экрана
-                _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingApproveMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingApproveMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingApprove);
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingDisapproveMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingDisapproveMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    debugPrint(
-                        "[ERROR] IncomingDisapproveMassError: ${state.message}, enumType: ${ErrorDialogEnum.goodsIncomingUnapprove}");
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingUnapprove);
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingDeleteSuccess) {
-              debugPrint("IncomingScreen.Bloc.State.IncomingDeleteSuccess: ${_incomingBloc.state}");
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    setState(() {
-                      _isRefreshing = true; // ИЗМЕНЕНО: Как в client_sales
-                    });
-                    _incomingBloc.add(FetchIncoming(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingDeleteError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                      _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingRestoreSuccess) {
-              debugPrint("IncomingScreen.Bloc.State.IncomingRestoreSuccess: ${_incomingBloc.state}");
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    setState(() {
-                      _isRefreshing = true; // ИЗМЕНЕНО: Как в client_sales
-                    });
-                    _incomingBloc.add(FetchIncoming(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingRestoreError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
-                      _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingDeleteMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingDeleteMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      debugPrint(
-                          "[ERROR] IncomingMassDeleteError: ${state.message} enumType: ${ErrorDialogEnum.goodsIncomingDelete}");
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingDelete);
-                      _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            } else if (state is IncomingRestoreMassSuccess) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: true);
-                    _incomingBloc.add(FetchIncoming(forceRefresh: true, filters: _currentFilters, search: _search));
-                  }
-                });
-              }
-            } else if (state is IncomingRestoreMassError) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted && context.mounted) {
-                    if (state.statusCode == 409) {
-                      showSimpleErrorDialog(
-                          context,
-                          localizations?.translate('error') ?? 'Ошибка',
-                          state.message,
-                          errorDialogEnum: ErrorDialogEnum.goodsIncomingRestore);
-                      return;
-                    }
-                    showCustomSnackBar(context: context, message: state.message, isSuccess: false);
-                  }
-                });
-              }
-            }
-          },
-          child: BlocBuilder<IncomingBloc, IncomingState>(
-            builder: (context, state) {
-
-              debugPrint("IncomingScreen.Bloc.State.Build: ${_incomingBloc.state}");
-
-              // ИЗМЕНЕНО: Loading с _isInitialLoad
-              if (_isInitialLoad || state is IncomingLoading || state is IncomingDeleteLoading ||
-                  state is IncomingRestoreLoading || state is IncomingCreateLoading ||
-                  state is IncomingApproveMassLoading || state is IncomingDisapproveMassLoading ||
-                  state is IncomingDeleteMassLoading || state is IncomingRestoreMassLoading ||
-              _isRefreshing) {
-                return Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: const Duration(milliseconds: 1000),
-                  ),
-                );
-              }
-
-              final List<IncomingDocument> currentData =
-                  state is IncomingLoaded ? state.data : [];
-
-              if (currentData.isEmpty && state is IncomingLoaded) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? localizations!.translate('nothing_found') ??
-                            'Ничего не найдено'
-                        : localizations!.translate('no_incoming') ??
-                            'Нет приходов',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff99A4BA),
+                // ИЗМЕНЕНО: Loading с _isInitialLoad
+                if (_isInitialLoad ||
+                    state is IncomingLoading ||
+                    state is IncomingDeleteLoading ||
+                    state is IncomingRestoreLoading ||
+                    state is IncomingCreateLoading ||
+                    state is IncomingApproveMassLoading ||
+                    state is IncomingDisapproveMassLoading ||
+                    state is IncomingDeleteMassLoading ||
+                    state is IncomingRestoreMassLoading ||
+                    _isRefreshing) {
+                  return Center(
+                    child: PlayStoreImageLoading(
+                      size: 80.0,
+                      duration: const Duration(milliseconds: 1000),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              return RefreshIndicator(
-                color: const Color(0xff1E2E52),
-                backgroundColor: Colors.white,
-                onRefresh: _onRefresh,
-                child: ListView.separated(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
-                  itemBuilder: (context, index) {
-                    if (index >= currentData.length) {
-                      return _isLoadingMore
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: const Duration(milliseconds: 1000),
+                final List<IncomingDocument> currentData =
+                    state is IncomingLoaded ? state.data : [];
+
+                if (currentData.isEmpty && state is IncomingLoaded) {
+                  return Center(
+                    child: Text(
+                      _isSearching
+                          ? localizations!.translate('nothing_found') ??
+                              'Ничего не найдено'
+                          : localizations!.translate('no_incoming') ??
+                              'Нет приходов',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xff99A4BA),
+                      ),
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  color: const Color(0xff1E2E52),
+                  backgroundColor: Colors.white,
+                  onRefresh: _onRefresh,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: currentData.length + (_hasReachedMax ? 0 : 1),
+                    itemBuilder: (context, index) {
+                      if (index >= currentData.length) {
+                        return _isLoadingMore
+                            ? Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: PlayStoreImageLoading(
+                                    size: 80.0,
+                                    duration:
+                                        const Duration(milliseconds: 1000),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink();
+                      }
+                      // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
+                      return _hasDeletePermission
+                          ? Dismissible(
+                              key: Key(currentData[index].id.toString()),
+                              // Свайп только справа налево для обоих действий
+                              direction: DismissDirection.endToStart,
+
+                              background: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: currentData[index].deletedAt == null
+                                      ? Colors.red
+                                      : const Color(0xFF2196F3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.centerRight,
+                                child: Icon(
+                                  currentData[index].deletedAt == null
+                                      ? Icons.delete
+                                      : Icons.restore_from_trash,
+                                  color: Colors.white,
+                                  size: 24,
                                 ),
                               ),
+
+                              confirmDismiss: (direction) async {
+                                final isDeleted =
+                                    currentData[index].deletedAt != null;
+                                final docNumber =
+                                    currentData[index].docNumber ?? 'N/A';
+
+                                if (isDeleted) {
+                                  return await DocumentConfirmDialog
+                                      .showRestoreConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                } else {
+                                  return await DocumentConfirmDialog
+                                      .showDeleteConfirmation(
+                                    context,
+                                    docNumber,
+                                  );
+                                }
+                              },
+                              onDismissed: (direction) {
+                                final isDeleted =
+                                    currentData[index].deletedAt != null;
+
+                                if (isDeleted) {
+                                  // RESTORE - для удалённых документов
+                                  debugPrint(
+                                      "♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
+                                  _incomingBloc.add(RestoreIncoming(
+                                    currentData[index].id!,
+                                    localizations!,
+                                  ));
+                                } else {
+                                  // DELETE - для активных документов
+                                  debugPrint(
+                                      "🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
+                                  _incomingBloc.add(DeleteIncoming(
+                                    currentData[index].id!,
+                                    localizations!,
+                                    shouldReload: true,
+                                  ));
+                                }
+                              },
+
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _buildIncomingCard(
+                                    currentData, index, state),
+                              ),
                             )
-                          : const SizedBox.shrink();
-                    }
-                    // НОВОЕ: Dismissible только влево - delete или restore в зависимости от состояния
-                    return _hasDeletePermission
-                        ? Dismissible(
-                      key: Key(currentData[index].id.toString()),
-                      // Свайп только справа налево для обоих действий
-                      direction: DismissDirection.endToStart,
-
-                      background: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: currentData[index].deletedAt == null ? Colors.red : const Color(0xFF2196F3),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.centerRight,
-                        child: Icon(
-                          currentData[index].deletedAt == null 
-                              ? Icons.delete 
-                              : Icons.restore_from_trash,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-
-                      confirmDismiss: (direction) async {
-                        final isDeleted = currentData[index].deletedAt != null;
-                        final docNumber = currentData[index].docNumber ?? 'N/A';
-
-                        if (isDeleted) {
-                          return await DocumentConfirmDialog.showRestoreConfirmation(
-                            context,
-                            docNumber,
-                          );
-                        } else {
-                          return await DocumentConfirmDialog.showDeleteConfirmation(
-                            context,
-                            docNumber,
-                          );
-                        }
-                      },
-                      onDismissed: (direction) {
-                        final isDeleted = currentData[index].deletedAt != null;
-                        
-                        if (isDeleted) {
-                          // RESTORE - для удалённых документов
-                          debugPrint("♻️ [UI] Восстановление документа ID: ${currentData[index].id}");
-                          _incomingBloc.add(RestoreIncoming(
-                            currentData[index].id!,
-                            localizations!,
-                          ));
-                        } else {
-                          // DELETE - для активных документов
-                          debugPrint("🗑️ [UI] Удаление документа ID: ${currentData[index].id}");
-                          _incomingBloc.add(DeleteIncoming(
-                            currentData[index].id!,
-                            localizations!,
-                            shouldReload: true,
-                          ));
-                        }
-                      },
-
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildIncomingCard(currentData, index, state),
-                      ),
-                    )
-                        : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _buildIncomingCard(currentData, index, state),
-                    );
-                  },
-                ),
-              );
-            },
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child:
+                                  _buildIncomingCard(currentData, index, state),
+                            );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-        // ИЗМЕНЕНО: Показываем кнопку создания только если есть право
-        floatingActionButton: _hasCreatePermission
-            ? FloatingActionButton(
-                key: const Key('create_incoming_button'),
-                onPressed: () async {
-                  if (mounted) {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => IncomingDocumentCreateScreen(
-                          organizationId: widget.organizationId,
+          // ИЗМЕНЕНО: Показываем кнопку создания только если есть право
+          floatingActionButton: _hasCreatePermission
+              ? FloatingActionButton(
+                  key: const Key('create_incoming_button'),
+                  onPressed: () async {
+                    if (mounted) {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => IncomingDocumentCreateScreen(
+                            organizationId: widget.organizationId,
+                          ),
                         ),
-                      ),
-                    );
+                      );
 
-                    if (result == true && mounted) {
-                      _incomingBloc.add(FetchIncoming(
-                        forceRefresh: true,
-                        filters: _currentFilters,
-                        search: _search,
-                      ));
+                      if (result == true && mounted) {
+                        _incomingBloc.add(FetchIncoming(
+                          forceRefresh: true,
+                          filters: _currentFilters,
+                          search: _search,
+                        ));
+                      }
                     }
-                  }
-                },
-                backgroundColor: const Color(0xff1E2E52),
-                child: const Icon(Icons.add, color: Colors.white),
-              )
-            : null,
-      ),
+                  },
+                  backgroundColor: const Color(0xff1E2E52),
+                  child: const Icon(Icons.add, color: Colors.white),
+                )
+              : null,
+        ),
       ),
     );
   }
 
-  Widget _buildIncomingCard(List<IncomingDocument> currentData, int index, IncomingState state) {
+  Widget _buildIncomingCard(
+      List<IncomingDocument> currentData, int index, IncomingState state) {
     return IncomingCard(
       onTap: () {
         if (_selectionMode) {
@@ -753,7 +862,8 @@ class _IncomingScreenState extends State<IncomingScreen> {
           if (currentState is IncomingLoaded) {
             final selectedCount = currentState.selectedData?.length ?? 0;
             if (selectedCount <= 1 &&
-                currentState.selectedData?.contains(currentData[index]) == true) {
+                currentState.selectedData?.contains(currentData[index]) ==
+                    true) {
               setState(() {
                 _selectionMode = false;
               });
@@ -782,7 +892,10 @@ class _IncomingScreenState extends State<IncomingScreen> {
         );
       },
       isSelectionMode: _selectionMode,
-      isSelected: (state as IncomingLoaded).selectedData?.contains(currentData[index]) ?? false,
+      isSelected: (state as IncomingLoaded)
+              .selectedData
+              ?.contains(currentData[index]) ??
+          false,
       // ИЗМЕНЕНО: Разрешаем долгое нажатие только если есть право на удаление
       onLongPress: _hasDeletePermission
           ? () {
@@ -796,4 +909,4 @@ class _IncomingScreenState extends State<IncomingScreen> {
       document: currentData[index],
     );
   }
-} 
+}

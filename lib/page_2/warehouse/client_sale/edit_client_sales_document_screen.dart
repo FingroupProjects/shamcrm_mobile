@@ -26,6 +26,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 
 class EditClientSalesDocumentScreen extends StatefulWidget {
   final ExpenseDocumentDetail document;
@@ -54,6 +55,7 @@ class _EditClientSalesDocumentScreenState
 
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
+  bool _isBarcodeLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   // Контроллеры для редактирования полей товаров
@@ -218,7 +220,8 @@ class _EditClientSalesDocumentScreenState
     }
   }
 
-  void _handleVariantSelection(Map<String, dynamic>? newItem) {
+  void _handleVariantSelection(Map<String, dynamic>? newItem,
+      {bool isFromBarcode = false}) {
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items
@@ -238,7 +241,8 @@ class _EditClientSalesDocumentScreenState
           _priceControllers[variantId] = TextEditingController(
               text: initialPrice > 0 ? parseNumberToString(initialPrice) : '');
 
-          _quantityControllers[variantId] = TextEditingController(text: '');
+          _quantityControllers[variantId] =
+              TextEditingController(text: isFromBarcode ? '1' : '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
@@ -268,7 +272,8 @@ class _EditClientSalesDocumentScreenState
                 curve: Curves.easeOut,
               );
 
-              _quantityFocusNodes[variantId]?.requestFocus();
+              if (!isFromBarcode)
+                _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -352,6 +357,59 @@ class _EditClientSalesDocumentScreenState
       FocusScope.of(context).unfocus();
     } else {
       _handleVariantSelection(result);
+    }
+  }
+
+  Future<void> _handleBarcodeScanning([String? manualBarcode]) async {
+    if (_selectedLead == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_lead') ??
+            'Сначала выберите клиента',
+        false,
+      );
+      return;
+    }
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    final barcode = manualBarcode ?? await openBarcodeScanner(context);
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+    setState(() => _isBarcodeLoading = true);
+    final result = await handleBarcodeForDocument(
+      context: context,
+      items: _items,
+      barcode: barcode,
+      docType: DocumentBarcodeType.sale,
+      onItemAdded: (newItem) =>
+          _handleVariantSelection(newItem, isFromBarcode: true),
+      onQuantityIncreased: (variantId, newQty) {
+        setState(() {
+          final index =
+              _items.indexWhere((item) => item['variantId'] == variantId);
+          if (index != -1) {
+            _items[index]['quantity'] = newQty;
+            final price = _items[index]['price'] ?? 0.0;
+            _items[index]['total'] = (newQty * price).round();
+            _quantityControllers[variantId]?.text = newQty
+                .toStringAsFixed(newQty == newQty.roundToDouble() ? 0 : 2);
+          }
+        });
+      },
+    );
+    if (!mounted) return;
+    setState(() => _isBarcodeLoading = false);
+    if (result.isSuccess) {
+      showBarcodeSuccessSnackBar(
+        context: context,
+        itemName: result.itemName ?? '',
+        isNewItem: result.isNewItem,
+        quantity: result.newQuantity ?? 1.0,
+      );
+    } else if (result.errorKey == 'barcode_not_found') {
+      showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+    } else {
+      showBarcodeScanErrorSnackBar(context: context);
     }
   }
 
@@ -924,6 +982,12 @@ class _EditClientSalesDocumentScreenState
         ],
       ),
       centerTitle: false,
+      actions: [
+        BarcodeAppBarButton(
+          isLoading: _isBarcodeLoading,
+          onPressed: _handleBarcodeScanning,
+        ),
+      ],
     );
   }
 
@@ -1131,11 +1195,11 @@ class _EditClientSalesDocumentScreenState
                           ),
                         ),
                         const SizedBox(height: 4),
-                          CompactTextField(
-                            controller:
-                                quantityController ?? TextEditingController(),
-                            focusNode: quantityFocusNode,
-                            hintText: AppLocalizations.of(context)
+                        CompactTextField(
+                          controller:
+                              quantityController ?? TextEditingController(),
+                          focusNode: quantityFocusNode,
+                          hintText: AppLocalizations.of(context)
                                   ?.translate('quantity') ??
                               'Количество',
                           keyboardType: const TextInputType.numberWithOptions(

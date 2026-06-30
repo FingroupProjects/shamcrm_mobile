@@ -2228,5 +2228,11 @@
   "theme_dark": "Dark theme",
   "theme_dark_description": "Soft dark background with comfortable evening contrast",
   "theme_system": "System theme",
-  "theme_system_description": "Automatically follow your device settings"
+  "theme_system_description": "Automatically follow your device settings",
+  "barcode": "Barcode",
+  "barcode_not_found": "Product not found by barcode",
+  "barcode_success_add": "Product added:",
+  "barcode_success_increase": "Quantity increased:",
+  "barcode_scan_error": "Barcode scanning error",
+  "scan_barcode": "Scan barcode"
 }

@@ -23,8 +23,11 @@ class _ClientContentState extends State<ClientContent> {
   Future<void> _onRefresh() async {
     context.read<ClientOpeningsBloc>().add(LoadClientOpenings());
     await context.read<ClientOpeningsBloc>().stream.firstWhere(
-          (state) => state is! ClientOpeningsLoading || state is ClientOpeningsLoaded || state is ClientOpeningsError,
-    );
+          (state) =>
+              state is! ClientOpeningsLoading ||
+              state is ClientOpeningsLoaded ||
+              state is ClientOpeningsError,
+        );
   }
 
   Widget _buildClientList(List<ClientOpening> clients) {
@@ -42,7 +45,7 @@ class _ClientContentState extends State<ClientContent> {
             client: clients[index],
             onClick: (client) {
               final bloc = context.read<ClientOpeningsBloc>();
-              
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -82,7 +85,7 @@ class _ClientContentState extends State<ClientContent> {
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -139,7 +142,7 @@ class _ClientContentState extends State<ClientContent> {
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -153,7 +156,7 @@ class _ClientContentState extends State<ClientContent> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     color: colors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
@@ -192,13 +195,16 @@ class _ClientContentState extends State<ClientContent> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<ClientOpeningsBloc>().add(LoadClientOpenings());
+                          context
+                              .read<ClientOpeningsBloc>()
+                              .add(LoadClientOpenings());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -230,7 +236,8 @@ class _ClientContentState extends State<ClientContent> {
         if (state is ClientOpeningDeleteSuccess) {
           showCustomSnackBar(
             context: context,
-            message: AppLocalizations.of(context)?.translate('deleted_successfully') ??
+            message: AppLocalizations.of(context)
+                    ?.translate('deleted_successfully') ??
                 'Успешно удалено',
             isSuccess: true,
           );

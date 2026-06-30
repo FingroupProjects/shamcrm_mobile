@@ -23,6 +23,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../incoming/variant_selection_bottom_sheet.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 
 class CreateClientReturnDocumentScreen extends StatefulWidget {
   final int? organizationId;
@@ -46,6 +47,7 @@ class CreateClientReturnDocumentScreenState
   LeadData? _selectedLead;
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = false;
+  bool _isBarcodeLoading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final Map<int, TextEditingController> _priceControllers = {};
   final Map<int, TextEditingController> _quantityControllers = {};
@@ -131,7 +133,8 @@ class CreateClientReturnDocumentScreenState
     }
   }
 
-  void _handleVariantSelection(Map<String, dynamic>? newItem) {
+  void _handleVariantSelection(Map<String, dynamic>? newItem,
+      {bool isFromBarcode = false}) {
     if (mounted && newItem != null) {
       setState(() {
         final existingIndex = _items
@@ -149,15 +152,17 @@ class CreateClientReturnDocumentScreenState
 
           // ✅ ВАЖНО: НЕ устанавливаем quantity в item вообще
           // Убираем quantity из modifiedItem, если он там есть
-          modifiedItem.remove('quantity');
+          if (!isFromBarcode) modifiedItem.remove('quantity');
 
+          if (isFromBarcode) modifiedItem['quantity'] = 1;
           _items.add(modifiedItem);
 
           final variantId = newItem['variantId'] as int;
 
           // ✅ Initialize controllers with empty strings
           _priceControllers[variantId] = TextEditingController(text: '');
-          _quantityControllers[variantId] = TextEditingController(text: '');
+          _quantityControllers[variantId] =
+              TextEditingController(text: isFromBarcode ? '1' : '');
 
           _quantityFocusNodes[variantId] = FocusNode();
           _priceFocusNodes[variantId] = FocusNode();
@@ -184,7 +189,8 @@ class CreateClientReturnDocumentScreenState
                 curve: Curves.easeOut,
               );
 
-              _quantityFocusNodes[variantId]?.requestFocus();
+              if (!isFromBarcode)
+                _quantityFocusNodes[variantId]?.requestFocus();
             }
           });
         }
@@ -267,6 +273,59 @@ class CreateClientReturnDocumentScreenState
       FocusScope.of(context).unfocus();
     } else {
       _handleVariantSelection(result);
+    }
+  }
+
+  Future<void> _handleBarcodeScanning([String? manualBarcode]) async {
+    if (_selectedLead == null) {
+      _showSnackBar(
+        AppLocalizations.of(context)!.translate('select_lead') ??
+            'Сначала выберите клиента',
+        false,
+      );
+      return;
+    }
+    if (_tabController.index != 1) {
+      _tabController.animateTo(1);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    final barcode = manualBarcode ?? await openBarcodeScanner(context);
+    if (barcode == null || barcode.isEmpty || !mounted) return;
+    setState(() => _isBarcodeLoading = true);
+    final result = await handleBarcodeForDocument(
+      context: context,
+      items: _items,
+      barcode: barcode,
+      docType: DocumentBarcodeType.clientReturn,
+      onItemAdded: (newItem) =>
+          _handleVariantSelection(newItem, isFromBarcode: true),
+      onQuantityIncreased: (variantId, newQty) {
+        setState(() {
+          final index =
+              _items.indexWhere((item) => item['variantId'] == variantId);
+          if (index != -1) {
+            _items[index]['quantity'] = newQty;
+            final price = _items[index]['price'] ?? 0.0;
+            _items[index]['total'] = (newQty * price).round();
+            _quantityControllers[variantId]?.text = newQty
+                .toStringAsFixed(newQty == newQty.roundToDouble() ? 0 : 2);
+          }
+        });
+      },
+    );
+    if (!mounted) return;
+    setState(() => _isBarcodeLoading = false);
+    if (result.isSuccess) {
+      showBarcodeSuccessSnackBar(
+        context: context,
+        itemName: result.itemName ?? '',
+        isNewItem: result.isNewItem,
+        quantity: result.newQuantity ?? 1.0,
+      );
+    } else if (result.errorKey == 'barcode_not_found') {
+      showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+    } else {
+      showBarcodeScanErrorSnackBar(context: context);
     }
   }
 
@@ -739,12 +798,12 @@ class CreateClientReturnDocumentScreenState
             message: localizations.translate('save_hint') ??
                 "После добавления товаров перейдите в \"Основное\" для сохранения",
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: colors.surfacePrimary,
-              boxShadow: [
-                BoxShadow(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            boxShadow: [
+              BoxShadow(
                 color: Colors.grey.withValues(alpha: 0.10),
                 spreadRadius: 1,
                 blurRadius: 3,
@@ -796,8 +855,7 @@ class CreateClientReturnDocumentScreenState
       leadingWidth: 56,
       elevation: 0,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back_ios,
-          color: colors.iconPrimary, size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
         onPressed: () async {
           if (_items.isNotEmpty) {
             final shouldExit = await ConfirmExitDialog.show(context);
@@ -858,6 +916,12 @@ class CreateClientReturnDocumentScreenState
         ],
       ),
       centerTitle: false,
+      actions: [
+        BarcodeAppBarButton(
+          isLoading: _isBarcodeLoading,
+          onPressed: _handleBarcodeScanning,
+        ),
+      ],
     );
   }
 

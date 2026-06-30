@@ -2245,5 +2245,11 @@
   "theme_dark": "Тёмная тема",
   "theme_dark_description": "Мягкий тёмный фон и комфортный контраст вечером",
   "theme_system": "Системная тема",
-  "theme_system_description": "Автоматически следовать настройкам устройства"
+  "theme_system_description": "Автоматически следовать настройкам устройства",
+  "barcode": "Штрихкод",
+  "barcode_not_found": "Товар по штрихкоду не найден",
+  "barcode_success_add": "Товар добавлен:",
+  "barcode_success_increase": "Количество увеличено:",
+  "barcode_scan_error": "Ошибка сканирования штрихкода",
+  "scan_barcode": "Сканировать штрих-код"
 }

@@ -88,7 +88,9 @@ class _ClientReturnCardState extends State<ClientReturnCard> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: widget.isSelected ? colors.surfaceElevated : colors.surfacePrimary,
+          color: widget.isSelected
+              ? colors.surfaceElevated
+              : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: colors.borderSubtle),
           boxShadow: [

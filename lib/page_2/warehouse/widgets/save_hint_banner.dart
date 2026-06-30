@@ -26,4 +26,3 @@ class SaveHintBanner extends StatelessWidget {
     );
   }
 }
-

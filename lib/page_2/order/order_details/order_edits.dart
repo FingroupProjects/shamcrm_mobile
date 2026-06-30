@@ -31,6 +31,8 @@ import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dro
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
@@ -122,12 +124,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'imagePath': imagePath,
       };
     }).toList();
-    _selectedLead = widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
-        ? LeadData(
-            id: widget.order.lead.id,
-            name: widget.order.lead.name,
-          )
-        : null;
+    _selectedLead =
+        widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
+            ? LeadData(
+                id: widget.order.lead.id,
+                name: widget.order.lead.name,
+              )
+            : null;
     selectedManager = widget.order.manager?.id.toString();
     _selectedIntegrationId = widget.order.integrationId;
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
@@ -186,8 +189,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _loadFieldConfiguration();
       _loadInternetStores();
       _branchBloc.add(FetchBranches());
-      _deliveryAddressBloc
-          .add(FetchDeliveryAddresses(
+      _deliveryAddressBloc.add(FetchDeliveryAddresses(
         leadId: widget.order.deal == null ? widget.order.lead.id : null,
         dealId: widget.order.deal?.id,
       ));
@@ -403,6 +405,79 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       0,
       (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)),
     );
+  }
+
+  Future<void> _scanBarcode() async {
+    final barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || barcode == null || barcode.isEmpty) return;
+
+    final apiService = ApiService();
+    try {
+      final variantResponse =
+          await apiService.getVariants(search: barcode, perPage: 1);
+      final variants = variantResponse.data;
+
+      if (variants.isEmpty) {
+        showBarcodeNotFoundSnackBar(context: context, barcode: barcode);
+        return;
+      }
+
+      final variant = variants.first;
+      int variantId = variant.id;
+      final price = (variant.price as num?)?.toDouble() ?? 0.0;
+
+      final existingIndex =
+          _items.indexWhere((item) => item['id'] == variantId);
+
+      if (existingIndex != -1) {
+        setState(() {
+          final currentQty =
+              (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0)
+                  .toInt();
+          _items[existingIndex]['quantity'] = currentQty + 1;
+
+          if (_isTotalEdited) {
+            final currentTotal = _getCurrentTotal();
+            _totalController.text = (currentTotal + price).toStringAsFixed(0);
+          }
+        });
+        showBarcodeSuccessSnackBar(
+          context: context,
+          itemName: variant.fullName ?? variant.good?.name ?? '',
+          isNewItem: false,
+          quantity: 1,
+        );
+      } else {
+        setState(() {
+          _items.add({
+            'id': variant.id,
+            'name': variant.fullName ?? variant.good?.name ?? '',
+            'price': price,
+            'quantity': 1,
+            'imagePath': variant.good?.mainImageUrl,
+          });
+
+          if (_isTotalEdited) {
+            final currentTotal = _getCurrentTotal();
+            _totalController.text = (currentTotal + price).toStringAsFixed(0);
+          }
+        });
+        showBarcodeSuccessSnackBar(
+          context: context,
+          itemName: variant.fullName ?? variant.good?.name ?? '',
+          isNewItem: true,
+          quantity: 1,
+        );
+      }
+    } catch (e) {
+      showBarcodeScanErrorSnackBar(context: context);
+    }
   }
 
   double _getCurrentTotal() {
@@ -2185,20 +2260,46 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52)),
             ),
-            GestureDetector(
-              onTap: _navigateToAddProduct,
-              child: Row(
-                children: [
-                  const Icon(Icons.add, color: Color(0xff1E2E52), size: 20),
-                  const SizedBox(width: 4),
-                  Text(AppLocalizations.of(context)!.translate('add_product'),
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52))),
-                ],
-              ),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: _scanBarcode,
+                  child: Row(
+                    children: [
+                      Icon(Icons.qr_code_scanner,
+                          color: context.appColors.iconPrimary, size: 20),
+                      const SizedBox(width: 4),
+                      Text(
+                          AppLocalizations.of(context)!.translate('barcode') ??
+                              'Штрихкод',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: context.appColors.textPrimary)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                GestureDetector(
+                  onTap: _navigateToAddProduct,
+                  child: Row(
+                    children: [
+                      Icon(Icons.add,
+                          color: context.appColors.iconPrimary, size: 20),
+                      const SizedBox(width: 4),
+                      Text(
+                          AppLocalizations.of(context)!
+                              .translate('add_product'),
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: context.appColors.textPrimary)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -2450,7 +2551,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           width: 36,
                           child: TextField(
                             controller: _getQuantityController(index),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 16,
@@ -2649,8 +2751,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
                         phone: _fullPhoneNumber ?? widget.order.phone,
-                        leadId:
-                            widget.order.deal == null ? _selectedLead?.id : null,
+                        leadId: widget.order.deal == null
+                            ? _selectedLead?.id
+                            : null,
                         dealId: widget.order.deal?.id,
                         delivery: !isPickup,
                         deliveryAddress:

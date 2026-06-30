@@ -979,7 +979,7 @@ class _ClientReturnDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
+                          color: colors.surfaceElevated,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
@@ -1056,7 +1056,8 @@ class _ClientReturnDocumentDetailsScreenState
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: colors.textSecondary),
+        child: Icon(Icons.image_not_supported,
+            size: 40, color: colors.textSecondary),
       ),
     );
   }

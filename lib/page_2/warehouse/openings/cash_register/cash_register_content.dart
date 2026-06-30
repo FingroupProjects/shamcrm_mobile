@@ -34,7 +34,10 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
     final search = state is CashRegisterOpeningsLoaded ? state.search : null;
     bloc.add(RefreshCashRegisterOpenings(search: search));
     await bloc.stream.firstWhere(
-          (s) => s is! CashRegisterOpeningsLoading || s is CashRegisterOpeningsLoaded || s is CashRegisterOpeningsError,
+      (s) =>
+          s is! CashRegisterOpeningsLoading ||
+          s is CashRegisterOpeningsLoaded ||
+          s is CashRegisterOpeningsError,
     );
   }
 
@@ -53,13 +56,13 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           if (index >= cashRegisters.length) {
             return _isLoadingMore
                 ? const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(
-                child: PlayStoreImageLoading(
-                  size: 48,
-                ),
-              ),
-            )
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(
+                      child: PlayStoreImageLoading(
+                        size: 48,
+                      ),
+                    ),
+                  )
                 : const SizedBox.shrink();
           }
 
@@ -75,8 +78,8 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
                     value: bloc,
                     child: CashRegisterOpeningDetailsScreen(
                       opening: cashRegister,
+                    ),
                   ),
-                      ),
                 ),
               );
             },
@@ -107,7 +110,7 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -154,7 +157,7 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -165,7 +168,7 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                  child: Container(
+                child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -209,14 +212,17 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
                         onPressed: () {
                           final bloc = context.read<CashRegisterOpeningsBloc>();
                           final st = bloc.state;
-                          final q = st is CashRegisterOpeningsLoaded ? st.search : null;
+                          final q = st is CashRegisterOpeningsLoaded
+                              ? st.search
+                              : null;
                           bloc.add(LoadCashRegisterOpenings(search: q));
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -261,7 +267,8 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
         if (state is CashRegisterOpeningDeleteSuccess) {
           showCustomSnackBar(
             context: context,
-            message: AppLocalizations.of(context)?.translate('deleted_successfully') ??
+            message: AppLocalizations.of(context)
+                    ?.translate('deleted_successfully') ??
                 'Успешно удалено',
             isSuccess: true,
           );
@@ -278,7 +285,8 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           final bloc = context.read<CashRegisterOpeningsBloc>();
           final st = bloc.state;
           String? q;
-          if (st is CashRegisterOpeningsOperationError && st.previousState is CashRegisterOpeningsLoaded) {
+          if (st is CashRegisterOpeningsOperationError &&
+              st.previousState is CashRegisterOpeningsLoaded) {
             q = (st.previousState as CashRegisterOpeningsLoaded).search;
           } else if (st is CashRegisterOpeningsLoaded) {
             q = st.search;

@@ -236,34 +236,34 @@
 //       final formattedDate = entry.date != null
 //           ? DateFormat('dd.MM.yyyy HH:mm').format(entry.date!.toLocal())
 //           : AppLocalizations.of(context)!.translate('') ?? '';
-      
+
 //       String historyDetail = '${entry.status ?? ''}\n${entry.user?.fullName ?? 'Unknown'} $formattedDate';
 
 //       if (entry.changes != null && entry.changes!.isNotEmpty) {
 //         for (var change in entry.changes!) {
 //           if (change.body != null) {
 //             final body = change.body!;
-            
+
 //             // Обработка изменений даты
 //             if (body.dateChange != null) {
 //               final newDate = body.dateChange!.newValue ?? '';
 //               final prevDate = body.dateChange!.previousValue ?? '';
 //               historyDetail += '\nДата: $prevDate > $newDate';
 //             }
-            
+
 //             // Обработка изменений статуса утверждения
 //             if (body.approvedChange != null) {
 //               String previous = body.approvedChange!.previousValue == 1 ? 'Проведен' : 'Не проведен';
 //               String newValue = body.approvedChange!.newValue == true ? 'Проведен' : 'Не проведен';
 //               historyDetail += '\n${AppLocalizations.of(context)!.translate('status_history') ?? 'Статус'}: $previous > $newValue';
 //             }
-            
+
 //             // Обработка изменений товаров
 //             if (body.documentGoodsChange != null) {
 //               final prevCount = body.documentGoodsChange!.previousValue?.length ?? 0;
 //               final newCount = body.documentGoodsChange!.newValue?.length ?? 0;
 //               historyDetail += '\nТовары: $prevCount позиций > $newCount позиций';
-              
+
 //               // Можно добавить более детальную информацию о товарах
 //               if (body.documentGoodsChange!.newValue != null) {
 //                 for (var good in body.documentGoodsChange!.newValue!) {

@@ -2237,5 +2237,11 @@
   "theme_dark": "Qorong‘i mavzu",
   "theme_dark_description": "Kechki vaqt uchun yumshoq qorong‘i fon va qulay kontrast",
   "theme_system": "Tizim mavzusi",
-  "theme_system_description": "Qurilma sozlamalariga avtomatik ravishda moslashish"
+  "theme_system_description": "Qurilma sozlamalariga avtomatik ravishda moslashish",
+  "barcode": "Shtrix-kod",
+  "barcode_not_found": "Mahsulot shtrix-kod bo'yicha topilmadi",
+  "barcode_success_add": "Mahsulot qo'shildi:",
+  "barcode_success_increase": "Miqdori oshirildi:",
+  "barcode_scan_error": "Shtrix-kodni skanerlash xatosi",
+  "scan_barcode": "Shtrix-kodni skanerlash"
 }

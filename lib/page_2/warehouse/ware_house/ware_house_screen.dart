@@ -39,7 +39,8 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
   void initState() {
     super.initState();
     _checkPermissions();
-    _warehousebloc = context.read<WareHouseBloc>()..add(FetchWareHouse(query: null));
+    _warehousebloc = context.read<WareHouseBloc>()
+      ..add(FetchWareHouse(query: null));
     _scrollController.addListener(_onScroll);
   }
 
@@ -72,7 +73,7 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         !_hasReachedMax) {
       setState(() {
@@ -137,20 +138,22 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
       // ИЗМЕНЕНО: Показываем FAB только если есть право на создание
       floatingActionButton: _hasCreatePermission
           ? FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddWarehouseScreen(),
-            ),
-          ).then((value) {
-            final query = _currentFilters['query'] as String?;
-            context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
-          });
-        },
-        backgroundColor: const Color(0xff1E2E52),
-        child: const Icon(Icons.add, color: Colors.white),
-      )
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddWarehouseScreen(),
+                  ),
+                ).then((value) {
+                  final query = _currentFilters['query'] as String?;
+                  context
+                      .read<WareHouseBloc>()
+                      .add(FetchWareHouse(query: query));
+                });
+              },
+              backgroundColor: const Color(0xff1E2E52),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
           : null,
       body: BlocBuilder<WareHouseBloc, WareHouseState>(
         builder: (context, state) {
@@ -166,8 +169,10 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
               return Center(
                 child: Text(
                   _isSearching
-                      ? (localizations.translate('nothing_found') ?? 'Ничего не найдено')
-                      : (localizations.translate('no_warehouses') ?? 'Нет складов'),
+                      ? (localizations.translate('nothing_found') ??
+                          'Ничего не найдено')
+                      : (localizations.translate('no_warehouses') ??
+                          'Нет складов'),
                   style: const TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -188,7 +193,8 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
               child: ListView.builder(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: state.storages.length,
                 itemBuilder: (context, index) {
                   final WareHouse warehouse = state.storages[index];
@@ -199,7 +205,9 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                     hasDeletePermission: _hasDeletePermission,
                     onUpdate: () {
                       final query = _currentFilters['query'] as String?;
-                      context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
+                      context
+                          .read<WareHouseBloc>()
+                          .add(FetchWareHouse(query: query));
                     },
                   );
                 },
@@ -226,7 +234,9 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
                     ElevatedButton(
                       onPressed: () {
                         final query = _currentFilters['query'] as String?;
-                        context.read<WareHouseBloc>().add(FetchWareHouse(query: query));
+                        context
+                            .read<WareHouseBloc>()
+                            .add(FetchWareHouse(query: query));
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff1E2E52),

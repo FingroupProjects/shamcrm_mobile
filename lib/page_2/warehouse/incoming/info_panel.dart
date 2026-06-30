@@ -104,72 +104,74 @@ class _InfoPanelState extends State<InfoPanel> {
       },
       child: widget.show
           ? Container(
-        key: const ValueKey('info_panel_visible'),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: widget.backgroundColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: widget.borderColor.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              widget.icon,
-              color: widget.iconColor,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                widget.message,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: widget.textColor,
+              key: const ValueKey('info_panel_visible'),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: widget.backgroundColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: widget.borderColor.withOpacity(0.3),
+                  width: 1,
                 ),
               ),
-            ),
-            if (widget.onActionTap != null && widget.actionText != null) ...[
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: _handleActionTap,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: widget.actionButtonColor,
-                    borderRadius: BorderRadius.circular(6),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.icon,
+                    color: widget.iconColor,
+                    size: 18,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.actionText!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.message,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        color: widget.textColor,
+                      ),
+                    ),
+                  ),
+                  if (widget.onActionTap != null &&
+                      widget.actionText != null) ...[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: _handleActionTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: widget.actionButtonColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              widget.actionText!,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.arrow_forward,
-                        color: Colors.white,
-                        size: 12,
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
-        ),
-      )
+            )
           : const SizedBox.shrink(key: ValueKey('info_panel_hidden')),
     );
   }
