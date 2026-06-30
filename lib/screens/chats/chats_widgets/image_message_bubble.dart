@@ -11,6 +11,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -79,12 +80,10 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    final String normalizedFilePath = widget.filePath.startsWith('storage/')
-        ? widget.filePath
-        : 'storage/${widget.filePath.startsWith('/') ? widget.filePath.substring(1) : widget.filePath}';
-
+    // Если сервер уже вернул полный URL — используем как есть
+    // (сервер возвращает https://file-api.shamcrm.com/tenants/...)
     final String? fullUrl = baseUrl != null
-        ? Uri.parse(baseUrl!).resolve(normalizedFilePath).toString()
+        ? resolveFileUrl(widget.filePath, baseUrl!)
         : null;
 
     debugPrint(

@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -444,11 +445,7 @@ class _MediaTile extends StatelessWidget {
       item.path.startsWith('/') || item.path.startsWith('file:');
 
   String? _buildRemoteUrl() {
-    if (baseUrl == null) return null;
-    final normalizedPath = item.path.startsWith('storage/')
-        ? item.path
-        : 'storage/${item.path.startsWith('/') ? item.path.substring(1) : item.path}';
-    return Uri.parse(baseUrl!).resolve(normalizedPath).toString();
+    return resolveFileUrl(item.path, baseUrl);
   }
 
   int _resolveInitialIndex(String? remoteUrl) {
@@ -639,11 +636,7 @@ class _MediaTile extends StatelessWidget {
 }
 
 String? _buildImageUrl(String path, String? baseUrl) {
-  if (baseUrl == null) return null;
-  final normalizedPath = path.startsWith('storage/')
-      ? path
-      : 'storage/${path.startsWith('/') ? path.substring(1) : path}';
-  return Uri.parse(baseUrl).resolve(normalizedPath).toString();
+  return resolveFileUrl(path, baseUrl);
 }
 
 class _VideoThumbnailPreview extends StatelessWidget {

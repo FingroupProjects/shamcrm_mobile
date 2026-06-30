@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:voice_message_package/voice_message_package.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
 class VoiceMessageWidget extends StatefulWidget {
@@ -65,12 +66,8 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
   // Метод для определения источника аудио
   String _getAudioSource() {
     final filePath = widget.message.filePath ?? '';
-    // Если filePath начинается с https://, используем его как есть
-    if (filePath.startsWith('https://')) {
-      return filePath;
-    }
-    // Иначе формируем путь через baseUrl
-    return '${widget.baseUrl.replaceAll('/api', '')}/storage/$filePath';
+    final url = resolveFileUrl(filePath, widget.baseUrl.replaceAll('/api', ''));
+    return url.isNotEmpty ? url : filePath;
   }
 
   @override

@@ -6,31 +6,25 @@ import 'dart:io';
 
 class ApiServiceDownload {
   
-  // final String baseUrl = 'http://192.168.1.61:8008';
-
   // Метод для загрузки и открытия файла
-
   Future<void> downloadAndOpenFile(String filePath) async {
     try {
+      String fullUrl;
 
-      final ApiService _apiService = ApiService();
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-
-      //print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---======-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
-      //print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=START=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
-      //print('Полученный базовый домен: $enteredMainDomain');
-      //print('=-=-=--=-=-=-=-==-=-=--=-=-=-=-=---API-SERVICE-CHATS=END=====-=-=-=-=-=-=--=-=-=-=--=-==--=-=-=-=');
-
-
-      final String baseUrl = 'https://$enteredMainDomain';
-
-      // Полный URL файла для загрузки
-      final String fullUrl = '$baseUrl/storage/$filePath';
+      // Если сервер уже вернул полный URL — используем как есть
+      if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+        fullUrl = filePath;
+      } else {
+        final enteredDomainMap = await ApiService().getEnteredDomain();
+        String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
+        final String baseUrl = 'https://$enteredMainDomain';
+        fullUrl = '$baseUrl/$filePath';
+      }
 
       // Получаем путь для сохранения файла
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/${filePath.split('/').last}');
+      final fileName = fullUrl.split('/').last;
+      final file = File('${directory.path}/$fileName');
 
       // Проверяем, существует ли файл
       if (!file.existsSync()) {
@@ -41,7 +35,6 @@ class ApiServiceDownload {
         if (response.statusCode == 200) {
           await file.writeAsBytes(response.bodyBytes);
         } else {
-          //print('Ошибка загрузки файла: ${response.statusCode}');
           return; // Выходим из функции, если произошла ошибка
         }
       }
