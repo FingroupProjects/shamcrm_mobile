@@ -59,11 +59,33 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
     emit(state.copyWith(
       isSearching: true,
-      allVariants: const [],
-      categoryVariants: const [],
-      selectedCategoryId: null,
+      // We no longer clear allVariants here so we don't lose the list!
     ));
 
+    final lowerQuery = event.query.toLowerCase();
+
+    // 1. Поиск локально
+    final localVariants = state.allVariants.where((v) => 
+        (v.fullName != null && v.fullName!.toLowerCase().contains(lowerQuery)) ||
+        (v.good?.name != null && v.good!.name.toLowerCase().contains(lowerQuery)) ||
+        (v.barcode != null && v.barcode!.toLowerCase().contains(lowerQuery))
+    ).toList();
+
+    // 2. Если нашли локально, возвращаем сразу и не делаем запрос
+    if (localVariants.isNotEmpty) {
+      emit(state.copyWith(
+        isSearching: false,
+        searchQuery: event.query,
+        searchVariants: localVariants,
+        searchCategories: const [], 
+        searchVariantsPagination: null, 
+        currentPage: 1,
+        error: null,
+      ));
+      return;
+    }
+
+    // 3. Иначе делаем запрос к API
     if (!await _checkInternetConnection()) {
       emit(state.copyWith(
         isSearching: false,
@@ -94,9 +116,6 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         searchVariants: variants,
         searchVariantsPagination: pagination,
         currentPage: 1,
-        allVariants: const [],
-        categoryVariants: const [],
-        selectedCategoryId: null,
         error: null,
       ));
     } catch (e) {

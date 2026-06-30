@@ -16,8 +16,9 @@ class VariantResponse {
               ?.map((item) => Variant.fromJson(item as Map<String, dynamic>))
               .toList() ??
           [],
-      pagination: VariantPagination.fromJson(
-          json['pagination'] as Map<String, dynamic>),
+      pagination: json['pagination'] != null 
+          ? VariantPagination.fromJson(json['pagination'] as Map<String, dynamic>)
+          : VariantPagination(total: 0, count: 0, perPage: 15, currentPage: 1, totalPages: 1),
     );
   }
 }
@@ -128,7 +129,7 @@ class Variant {
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       isActive: json['is_active'] == 1,
-      barcode: json['barcode']?.toString(),
+      barcode: (json['barcode'] ?? json['barCode'])?.toString(),
       fullName: json['full_name'] as String? ?? '',
       price: price,
       attributeValues: attributeValues,

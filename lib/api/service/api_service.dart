@@ -12532,7 +12532,7 @@ class ApiService {
   }) async {
     String path = '/good?page=$page&per_page=$perPage';
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=$search&barCode=$search';
     }
 
     if (filters != null) {
@@ -12622,7 +12622,7 @@ class ApiService {
     }
 
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=$search&barcode=$search';
     }
 
     if (filters != null) {
@@ -12982,7 +12982,7 @@ class ApiService {
         request.fields['is_service'] = isService ? '1' : '0';
         request.fields['is_subscription'] = '0';
         request.fields['price'] = (discountPrice ?? 0).toString();
-
+        
         final organizationId = await getSelectedOrganization();
         final salesFunnelId = await getSelectedSalesFunnel();
         request.fields['organization_id'] = organizationId ?? '1';
@@ -13107,7 +13107,7 @@ class ApiService {
         };
       }
     } catch (e, stackTrace) {
-      ////debugPrint('ApiService: Error in updateGoods: ');
+      ////debugPrint('ApiService: Error in updateGoods: '); 
       ////debugPrint('ApiService: Stack trace: $stackTrace');
       return {
         'success': false,

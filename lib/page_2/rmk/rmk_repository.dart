@@ -309,6 +309,28 @@ class RmkRepository {
     return null;
   }
 
+  Future<bool> searchAndCacheGoods(String query, int storageId) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) return false;
+
+    try {
+      final response = await _apiService.getVariants(
+        page: 1,
+        perPage: _syncPageSize,
+        search: normalizedQuery,
+        filters: {'storage_id': storageId},
+      );
+      final variants = response.data;
+      if (variants.isNotEmpty) {
+        await _saveGoods(variants, page: 1);
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> syncInBackground({
     required int storageId,
     bool resetCatalogCache = false,
@@ -745,7 +767,7 @@ class RmkRepository {
             id: Value(variant.id),
             name: variant.fullName ?? good?.name ?? '',
             normalizedName: _normalize(
-              '${variant.fullName ?? good?.name ?? ''} ${good?.article ?? ''}',
+              '${variant.fullName ?? good?.name ?? ''} ${good?.article ?? ''} ${variant.barcode ?? ''}',
             ),
             categoryId: Value(categoryId == 0 ? null : categoryId),
             categoryName: Value(categoryName),

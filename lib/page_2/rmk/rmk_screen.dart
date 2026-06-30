@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/rmk/rmk_product_card.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -232,9 +233,28 @@ class _RmkScreenState extends State<RmkScreen> {
 
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 120), () {
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
       setState(() => _query = value);
+
+      final query = value.trim();
+      if (query.isNotEmpty && _selectedStorage != null) {
+        final localGoods = await _repository.watchGoods(query: query).first;
+        if (localGoods.isEmpty) {
+          final found = await _repository.searchAndCacheGoods(query, _selectedStorage!.id);
+          if (!found && mounted && _query == value) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)?.translate('product_not_found') ?? 'Товар не найден'
+                ),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
     });
   }
 
