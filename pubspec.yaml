@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.128+158
+version: 2.1.129+159
 
 
 environment:
