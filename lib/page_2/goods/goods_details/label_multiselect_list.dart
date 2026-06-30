@@ -48,7 +48,7 @@ class _LabelMultiSelectWidgetState extends State<LabelMultiSelectWidget> {
           initialItems: selectedLabelsData,
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
-          decoration:  CustomDropdownDecoration(
+          decoration: CustomDropdownDecoration(
             closedFillColor: Color(0xffF4F7FD),
             expandedFillColor: Colors.white,
             closedBorder: Border.all(
@@ -77,13 +77,15 @@ class _LabelMultiSelectWidgetState extends State<LabelMultiSelectWidget> {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                        border: Border.all(
+                            color: const Color(0xff1E2E52), width: 1),
                         color: isSelected
                             ? const Color(0xff1E2E52)
                             : Colors.transparent,
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white, size: 16)
+                          ? const Icon(Icons.check,
+                              color: Colors.white, size: 16)
                           : null,
                     ),
                     const SizedBox(width: 10),

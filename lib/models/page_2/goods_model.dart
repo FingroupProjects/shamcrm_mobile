@@ -207,6 +207,7 @@ class Goods {
   final String? productionType;
   final List<MaterialGood>? materialGoods;
   final List<RelatedGood>? relatedGoods;
+  final String? barcode;
 
   Goods({
     required this.id,
@@ -238,6 +239,7 @@ class Goods {
     this.productionType,
     this.materialGoods,
     this.relatedGoods,
+    this.barcode,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -415,6 +417,7 @@ class Goods {
         productionType: data['production_type'] as String?,
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
+        barcode: data['barcode']?.toString(),
       );
     } catch (e, stackTrace) {
       //print('GoodsModel: Ошибка парсинга товара: $e');
@@ -708,6 +711,7 @@ class GoodsVariant {
   // final VariantPrice? variantPrice; // instead of price NEW price String
   final String price; // NEW price String
   final List<GoodsFile>? files;
+  final String? barcode;
 
   GoodsVariant({
     required this.id,
@@ -717,6 +721,7 @@ class GoodsVariant {
     // this.variantPrice,
     required this.price,
     this.files,
+    this.barcode,
   });
 
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
@@ -743,6 +748,7 @@ class GoodsVariant {
             return GoodsFile.fromJson(f as Map<String, dynamic>);
           }).toList() ??
           [],
+      barcode: json['barcode']?.toString(),
     );
   }
 }

@@ -7,7 +7,6 @@ import 'package:path/path.dart' as path;
 class ImageListPopup extends StatefulWidget {
   final List<String> imagePaths;
 
-
   const ImageListPopup({Key? key, required this.imagePaths}) : super(key: key);
 
   @override

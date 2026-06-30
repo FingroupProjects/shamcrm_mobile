@@ -12,7 +12,7 @@
 //   MobileScannerController controller = MobileScannerController();
 //   bool isScanned = false;
 //   bool isFlashOn = false;
-  
+
 //   late AnimationController _scanLineController;
 //   late AnimationController _pulseController;
 //   late Animation<double> _scanLineAnimation;
@@ -21,13 +21,13 @@
 //   @override
 //   void initState() {
 //     super.initState();
-    
+
 //     // Анимация сканирующей линии
 //     _scanLineController = AnimationController(
 //       duration: Duration(seconds: 2),
 //       vsync: this,
 //     )..repeat();
-    
+
 //     _scanLineAnimation = Tween<double>(
 //       begin: 0.0,
 //       end: 1.0,
@@ -35,13 +35,13 @@
 //       parent: _scanLineController,
 //       curve: Curves.easeInOut,
 //     ));
-    
+
 //     // Анимация пульсации углов
 //     _pulseController = AnimationController(
 //       duration: Duration(milliseconds: 1500),
 //       vsync: this,
 //     )..repeat(reverse: true);
-    
+
 //     _pulseAnimation = Tween<double>(
 //       begin: 0.8,
 //       end: 1.0,
@@ -73,13 +73,13 @@
 //               }
 //             },
 //           ),
-          
+
 //           // Темный оверлей с вырезом для сканирования
 //           _buildScanOverlay(),
-          
+
 //           // Верхняя панель
 //           _buildTopBar(),
-          
+
 //           // Нижняя панель
 //           _buildBottomPanel(),
 //         ],
@@ -109,7 +109,7 @@
 //                     );
 //                   },
 //                 ),
-                
+
 //                 // Сканирующая линия
 //                 AnimatedBuilder(
 //                   animation: _scanLineAnimation,
@@ -187,7 +187,7 @@
 //                 onPressed: () => Navigator.of(context).pop('-1'),
 //               ),
 //             ),
-            
+
 //             Expanded(
 //               child: Text(
 //                 'Сканер штрих-кода',
@@ -199,16 +199,16 @@
 //                 textAlign: TextAlign.center,
 //               ),
 //             ),
-            
+
 //             // Кнопка фонарика
 //             Container(
 //               decoration: BoxDecoration(
-//                 color: isFlashOn 
+//                 color: isFlashOn
 //                     ? Color(0xFF00FF88).withOpacity(0.2)
 //                     : Colors.white.withOpacity(0.15),
 //                 borderRadius: BorderRadius.circular(12),
 //                 border: Border.all(
-//                   color: isFlashOn 
+//                   color: isFlashOn
 //                       ? Color(0xFF00FF88)
 //                       : Colors.white.withOpacity(0.2),
 //                 ),
@@ -287,9 +287,9 @@
 //                 ],
 //               ),
 //             ),
-            
+
 //             SizedBox(height: 24),
-            
+
 //             // Кнопки действий
 //             Row(
 //               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -302,7 +302,7 @@
 //                     // Здесь можно добавить выбор изображения из галереи
 //                   },
 //                 ),
-                
+
 //                 // Центральная кнопка отмены
 //                 Container(
 //                   width: 80,
@@ -324,7 +324,7 @@
 //                     onPressed: () => Navigator.of(context).pop('-1'),
 //                   ),
 //                 ),
-                
+
 //                 // Кнопка истории (если нужно)
 //                 _buildActionButton(
 //                   icon: Icons.history,

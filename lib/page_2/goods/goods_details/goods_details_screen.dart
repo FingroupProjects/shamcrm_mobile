@@ -272,9 +272,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ),
         ),
       ),
-      actions: widget.showActions &&
-              _canUpdateProduct &&
-              widget.showEditButton
+      actions: widget.showActions && _canUpdateProduct && widget.showEditButton
           ? [
               BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
                 builder: (context, state) {
@@ -285,9 +283,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         icon: Image.asset('assets/icons/edit.png',
-                            width: 24,
-                            height: 24,
-                            color: colors.iconPrimary),
+                            width: 24, height: 24, color: colors.iconPrimary),
                         onPressed: state is GoodsByIdLoaded
                             ? () async {
                                 final sortedFiles =
@@ -359,6 +355,15 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         'label': AppLocalizations.of(context)!.translate('unit'),
         'value': goods.unit?.name ?? '',
       },
+      if (goods.variants != null &&
+          goods.variants!.length == 1 &&
+          goods.variants!.first.barcode != null &&
+          goods.variants!.first.barcode!.isNotEmpty)
+        {
+          'label':
+              AppLocalizations.of(context)!.translate('barcode') ?? 'Штрих код',
+          'value': goods.variants!.first.barcode!
+        },
       if (goods.productionType != null && goods.productionType!.isNotEmpty)
         {
           'label': 'Тип товара',
@@ -457,7 +462,10 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ),
         const SizedBox(height: 16),
         _buildGoodsRelationsSection(goods),
-        if (goods.variants != null && goods.variants!.isNotEmpty)
+        if (goods.variants != null &&
+            goods.variants!.isNotEmpty &&
+            !(goods.variants!.length == 1 &&
+                goods.variants!.first.attributeValues.isEmpty))
           _buildVariantsSection(goods),
       ],
     );
@@ -548,9 +556,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   'Цена: ${_formatRelationPrice(item.price!)}',
               ],
               badgeText: item.isRequired ? 'Обязательный' : 'Необязательный',
-              badgeColor: item.isRequired
-                  ? colors.buttonPrimaryBg
-                  : colors.textMuted,
+              badgeColor:
+                  item.isRequired ? colors.buttonPrimaryBg : colors.textMuted,
             );
           }),
       ],
@@ -889,8 +896,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       child: Card(
         color: colors.surfacePrimary,
         elevation: 2,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.only(bottom: 16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -898,9 +904,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: _buildVariantImage(imageUrl)),
+                  width: 120, height: 120, child: _buildVariantImage(imageUrl)),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1086,8 +1090,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: colors.surfacePrimary,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1122,8 +1125,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: CustomButton(
-                buttonText:
-                    AppLocalizations.of(context)!.translate('close'),
+                buttonText: AppLocalizations.of(context)!.translate('close'),
                 onPressed: () => Navigator.pop(context),
                 buttonColor: colors.textPrimary,
                 textColor: colors.textInverse,
@@ -1163,8 +1165,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1187,8 +1188,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         builder: (context, state) {
           if (state is GoodsByIdLoading) {
             return Center(
-                child: CircularProgressIndicator(
-                    color: colors.buttonPrimaryBg));
+                child:
+                    CircularProgressIndicator(color: colors.buttonPrimaryBg));
           } else if (state is GoodsByIdLoaded) {
             final goods = state.goods;
             details = [
@@ -1214,8 +1215,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                 'value': goods.quantity?.toString() ?? '0'
               },
               {
-                'label': AppLocalizations.of(context)!
-                    .translate('category_details'),
+                'label':
+                    AppLocalizations.of(context)!.translate('category_details'),
                 'value': goods.category.name ?? ''
               },
               {
@@ -1257,8 +1258,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             return Center(child: Text(state.message));
           }
           return Center(
-              child: Text(
-                  AppLocalizations.of(context)!.translate('loading')));
+              child: Text(AppLocalizations.of(context)!.translate('loading')));
         },
       ),
     );

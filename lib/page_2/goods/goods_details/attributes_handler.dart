@@ -171,18 +171,18 @@ class _AttributesHandlerState extends State<AttributesHandler> {
               ),
               const SizedBox(height: 4),
               CustomCharacteristicField(
-               controller: attributeControllers.putIfAbsent(
-  attribute.name,
-  () => TextEditingController(),
-),
-
+                controller: attributeControllers.putIfAbsent(
+                  attribute.name,
+                  () => TextEditingController(),
+                ),
                 hintText:
                     '${AppLocalizations.of(context)!.translate('please_enter')} ${attribute.name.toLowerCase()}',
               ),
             ],
           );
         }).toList(),
-        if (widget.selectedCategory!.attributes.any((attr) => attr.isIndividual))
+        if (widget.selectedCategory!.attributes
+            .any((attr) => attr.isIndividual))
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -292,7 +292,8 @@ class _AttributesHandlerState extends State<AttributesHandler> {
                                       ),
                                     ))
                                 .toList(),
-                            if (widget.selectedCategory!.hasPriceCharacteristics)
+                            if (widget
+                                .selectedCategory!.hasPriceCharacteristics)
                               DataCell(
                                 SizedBox(
                                   width: 150,
@@ -308,13 +309,14 @@ class _AttributesHandlerState extends State<AttributesHandler> {
                                         color: Color(0xff99A4BA),
                                       ),
                                       border: OutlineInputBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       contentPadding: EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 16),
                                     ),
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
                                   ),
                                 ),
                               ),
@@ -326,8 +328,7 @@ class _AttributesHandlerState extends State<AttributesHandler> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                         image: DecorationImage(
                                           image: FileImage(
                                               File(row['images'].first)),
@@ -365,89 +366,89 @@ class _AttributesHandlerState extends State<AttributesHandler> {
                                             ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.visibility,
-                                          color: Colors.grey, size: 20),
-                                      onPressed: row['images'].isNotEmpty
-                                          ? () =>
-                                              _showImageListPopup(row['images'])
-                                          : null,
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.visibility,
+                                        color: Colors.grey, size: 20),
+                                    onPressed: row['images'].isNotEmpty
+                                        ? () =>
+                                            _showImageListPopup(row['images'])
+                                        : null,
+                                  ),
+                                ],
                               ),
-                              DataCell(
-                                Switch(
-                                  value: row['is_active'],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      row['is_active'] = value;
-                                    });
-                                  },
-                                  activeColor:
-                                      const Color.fromARGB(255, 255, 255, 255),
-                                  inactiveTrackColor: const Color.fromARGB(
-                                          255, 179, 179, 179)
-                                      .withOpacity(0.5),
-                                  activeTrackColor: const Color(0xff4759FF),
-                                  inactiveThumbColor:
-                                      const Color.fromARGB(255, 255, 255, 255),
-                                ),
+                            ),
+                            DataCell(
+                              Switch(
+                                value: row['is_active'],
+                                onChanged: (value) {
+                                  setState(() {
+                                    row['is_active'] = value;
+                                  });
+                                },
+                                activeColor:
+                                    const Color.fromARGB(255, 255, 255, 255),
+                                inactiveTrackColor:
+                                    const Color.fromARGB(255, 179, 179, 179)
+                                        .withOpacity(0.5),
+                                activeTrackColor: const Color(0xff4759FF),
+                                inactiveThumbColor:
+                                    const Color.fromARGB(255, 255, 255, 255),
                               ),
-                              DataCell(
-                                IconButton(
-                                  icon: Icon(Icons.delete,
-                                      color: Colors.red, size: 20),
-                                  onPressed: () => removeTableRow(index),
-                                ),
+                            ),
+                            DataCell(
+                              IconButton(
+                                icon: Icon(Icons.delete,
+                                    color: Colors.red, size: 20),
+                                onPressed: () => removeTableRow(index),
                               ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                      ...tableAttributes.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        if (index < tableAttributes.length - 1) {
-                          return Divider(
-                            color: Color(0xffE0E6F5),
-                            thickness: 1,
-                            height: 8,
-                          );
-                        }
-                        return SizedBox.shrink();
+                            ),
+                          ],
+                        );
                       }).toList(),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () => addTableRow(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: Icon(Icons.add, color: Colors.white),
+                    ...tableAttributes.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      if (index < tableAttributes.length - 1) {
+                        return Divider(
+                          color: Color(0xffE0E6F5),
+                          thickness: 1,
+                          height: 8,
+                        );
+                      }
+                      return SizedBox.shrink();
+                    }).toList(),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        );
-      }
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () => addTableRow(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Icon(Icons.add, color: Colors.white),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
 
-      @override
-      void dispose() {
-        attributeControllers.values.forEach((controller) => controller.dispose());
-        for (var row in tableAttributes) {
-          for (var attr in row.values) {
-            if (attr is TextEditingController) {
-              attr.dispose();
-            }
-          }
+  @override
+  void dispose() {
+    attributeControllers.values.forEach((controller) => controller.dispose());
+    for (var row in tableAttributes) {
+      for (var attr in row.values) {
+        if (attr is TextEditingController) {
+          attr.dispose();
         }
-        super.dispose();
       }
     }
+    super.dispose();
+  }
+}

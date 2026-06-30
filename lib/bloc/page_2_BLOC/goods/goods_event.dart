@@ -66,6 +66,7 @@ class CreateGoods extends GoodsEvent {
   final String? productionType;
   final List<Map<String, dynamic>> materialGoods;
   final List<Map<String, dynamic>> relatedGoods;
+  final String? barcode;
 
   CreateGoods({
     required this.isService,
@@ -87,6 +88,7 @@ class CreateGoods extends GoodsEvent {
     this.productionType,
     this.materialGoods = const [],
     this.relatedGoods = const [],
+    this.barcode,
   });
 }
 

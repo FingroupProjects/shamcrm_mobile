@@ -1519,6 +1519,7 @@ class ApiService {
     required List<Map<String, dynamic>> materialGoods,
     required List<Map<String, dynamic>> relatedGoods,
     String? comments,
+    String? barcode,
   }) async {
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
@@ -1552,6 +1553,10 @@ class ApiService {
 
     if (comments != null && comments.isNotEmpty) {
       body['comments'] = comments;
+    }
+
+    if (barcode != null && barcode.isNotEmpty) {
+      body['barcode'] = barcode;
     }
 
     if (attributes.isNotEmpty) {
@@ -12718,6 +12723,7 @@ class ApiService {
     String? productionType,
     List<Map<String, dynamic>> materialGoods = const [],
     List<Map<String, dynamic>> relatedGoods = const [],
+    String? barcode,
   }) async {
     try {
       final requestBody = await _buildGoodsRequestBody(
@@ -12736,6 +12742,7 @@ class ApiService {
         productionType: productionType,
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
+        barcode: barcode,
       );
 
       final hasFiles = await _goodsRequestHasFiles(images, variants);
@@ -12892,6 +12899,7 @@ class ApiService {
     String? productionType,
     List<Map<String, dynamic>> materialGoods = const [],
     List<Map<String, dynamic>> relatedGoods = const [],
+    String? barcode,
   }) async {
     try {
       final requestBody = await _buildGoodsRequestBody(
@@ -12911,6 +12919,7 @@ class ApiService {
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
         comments: comments,
+        barcode: barcode,
       );
 
       final hasFiles = await _goodsRequestHasFiles(images, variants);

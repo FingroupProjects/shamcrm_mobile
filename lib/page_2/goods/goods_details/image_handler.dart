@@ -137,9 +137,7 @@ class _ImageHandlerState extends State<ImageHandler> {
           color: const Color(0xffF4F7FD),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.isImagesValid
-                ? const Color(0xffF4F7FD)
-                : Colors.red,
+            color: widget.isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
             width: 1.5,
           ),
         ),
@@ -148,8 +146,7 @@ class _ImageHandlerState extends State<ImageHandler> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.camera_alt,
-                        color: Color(0xff99A4BA), size: 40),
+                    Icon(Icons.camera_alt, color: Color(0xff99A4BA), size: 40),
                     const SizedBox(height: 8),
                     Text(
                       AppLocalizations.of(context)!.translate('pick_image'),

@@ -61,7 +61,9 @@ class _LabelWidgetState extends State<LabelWidget> {
         builder: (context, state) {
           List<Label> labelsList = state is LabelLoaded ? state.labels : [];
 
-          if (state is LabelLoaded && widget.selectedLabel != null && labelsList.isNotEmpty) {
+          if (state is LabelLoaded &&
+              widget.selectedLabel != null &&
+              labelsList.isNotEmpty) {
             try {
               selectedLabelData = labelsList.firstWhere(
                 (label) => label.id.toString() == widget.selectedLabel,
@@ -85,7 +87,9 @@ class _LabelWidgetState extends State<LabelWidget> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Center(child: CircularProgressIndicator(color: colors.buttonPrimaryBg)),
+                Center(
+                    child: CircularProgressIndicator(
+                        color: colors.buttonPrimaryBg)),
               ],
             );
           }
@@ -107,7 +111,8 @@ class _LabelWidgetState extends State<LabelWidget> {
                 child: CustomDropdown<Label>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: labelsList,
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
@@ -156,14 +161,16 @@ class _LabelWidgetState extends State<LabelWidget> {
                             width: 16,
                             height: 16,
                             decoration: BoxDecoration(
-                              color: Color(int.parse('0xff${selectedItem.color}')),
+                              color:
+                                  Color(int.parse('0xff${selectedItem.color}')),
                               shape: BoxShape.circle,
                             ),
                           ),
                         const SizedBox(width: 8),
                         Text(
                           selectedItem?.name ??
-                              AppLocalizations.of(context)!.translate('select_label'),
+                              AppLocalizations.of(context)!
+                                  .translate('select_label'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -184,7 +191,8 @@ class _LabelWidgetState extends State<LabelWidget> {
                     ),
                   ),
                   excludeSelected: false,
-                  initialItem: selectedLabelData != null && labelsList.contains(selectedLabelData)
+                  initialItem: selectedLabelData != null &&
+                          labelsList.contains(selectedLabelData)
                       ? selectedLabelData
                       : null,
                   onChanged: (value) {

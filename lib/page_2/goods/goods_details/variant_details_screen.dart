@@ -269,5 +269,4 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
       ],
     );
   }
-
 }
