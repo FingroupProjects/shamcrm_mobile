@@ -921,6 +921,39 @@ class MessagingCubit extends Cubit<MessagingState> {
       return List<Message>.unmodifiable(updatedMessages);
     }
 
+    // ✅ Handle: incoming single media (image/video) matches local pending media_group
+    // Server sends each file as individual 'image'/'video', but local pending is 'media_group'.
+    // Note: We don't check incomingMessage.isMyMessage here because on some servers
+    // the is_my_message flag may be unreliable for file uploads. The critical check
+    // happens inside _findMatchingMediaGroupIndex which verifies isMyMessage match.
+    if (incomingMessage.type == 'image' || incomingMessage.type == 'video') {
+      final mediaGroupIndex = _findMatchingMediaGroupIndex(
+        updatedMessages,
+        incomingMessage,
+      );
+      if (mediaGroupIndex != -1) {
+        final pendingGroup = updatedMessages[mediaGroupIndex];
+        // Remove first matching item from media_group (FIFO order)
+        final remainingItems = List<MessageMediaItem>.from(pendingGroup.mediaItems);
+        if (remainingItems.isNotEmpty) {
+          remainingItems.removeAt(0);
+        }
+        if (remainingItems.isEmpty) {
+          // Last item: replace the media_group entirely with server version
+          // Preserve the server's isMyMessage value
+          updatedMessages[mediaGroupIndex] = incomingMessage;
+        } else {
+          // Still have items: update media_group + add incoming separately
+          updatedMessages[mediaGroupIndex] = pendingGroup.copyWith(
+            mediaItems: remainingItems,
+            isUploading: remainingItems.any((item) => item.uploadProgress < 1),
+          );
+          updatedMessages.insert(0, incomingMessage);
+        }
+        return List<Message>.unmodifiable(updatedMessages);
+      }
+    }
+
     final existingIndex = updatedMessages
         .indexWhere((message) => message.id == incomingMessage.id);
     if (existingIndex != -1) {
@@ -930,6 +963,35 @@ class MessagingCubit extends Cubit<MessagingState> {
 
     updatedMessages.insert(0, incomingMessage);
     return List<Message>.unmodifiable(updatedMessages);
+  }
+
+  /// Finds a pending local media_group that matches an incoming single media message.
+  /// Returns the index, or -1 if not found.
+  int _findMatchingMediaGroupIndex(
+    List<Message> messages,
+    Message incomingMessage,
+  ) {
+    final incomingCreatedAt =
+        _tryParseMessageDate(incomingMessage.createMessateTime);
+
+    for (int index = 0; index < messages.length; index++) {
+      final message = messages[index];
+      // Only match pending (negative id) media_group messages
+      if (message.id >= 0) continue;
+      if (message.type != 'media_group') continue;
+      // Pending media_groups are always our own messages. Don't check
+      // incomingMessage.isMyMessage — the server may send the wrong flag.
+      if (!message.isMyMessage) continue;
+      if (message.mediaItems.isEmpty) continue;
+
+      if (_isWithinPendingMatchWindow(
+        localMessage: message,
+        incomingCreatedAt: incomingCreatedAt,
+      )) {
+        return index;
+      }
+    }
+    return -1;
   }
 
   int _findPendingLocalMessageIndex(
