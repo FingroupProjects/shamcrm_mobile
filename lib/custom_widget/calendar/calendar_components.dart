@@ -64,9 +64,14 @@ class CalendarWidget extends StatelessWidget {
       locale: AppLocalizations.of(context)!.locale.languageCode,
       calendarStyle: CalendarStyle(
         cellMargin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025),
+        weekendTextStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width * 0.035,
+          color: colors.textPrimary.withValues(alpha: 0.92),
+          fontFamily: 'Gilroy',
+        ),
         defaultTextStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.035,
-          color: colors.textPrimary,
+          color: colors.textPrimary.withValues(alpha: 0.96),
           fontFamily: 'Gilroy',
         ),
         todayDecoration: BoxDecoration(
@@ -80,6 +85,28 @@ class CalendarWidget extends StatelessWidget {
         markerDecoration: BoxDecoration(
           color: colors.buttonPrimaryBg,
           shape: BoxShape.circle,
+        ),
+        todayTextStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width * 0.035,
+          color: colors.textInverse,
+          fontFamily: 'Gilroy',
+        ),
+        selectedTextStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width * 0.035,
+          color: colors.textInverse,
+          fontFamily: 'Gilroy',
+        ),
+      ),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: TextStyle(
+          color: colors.textPrimary.withValues(alpha: 0.84),
+          fontFamily: 'Gilroy',
+          fontSize: MediaQuery.of(context).size.width * 0.03,
+        ),
+        weekendStyle: TextStyle(
+          color: colors.textPrimary.withValues(alpha: 0.84),
+          fontFamily: 'Gilroy',
+          fontSize: MediaQuery.of(context).size.width * 0.03,
         ),
       ),
       headerStyle: HeaderStyle(
@@ -183,11 +210,11 @@ class EventListForDate extends StatelessWidget {
                         DateFormat('d MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
                             .format(selectedDate)
                             .capitalize(),
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Colors.transparent,
+                          color: colors.textPrimary,
                         ),
                       ),
                       ...eventsOnSelectedDate.map((event) {
@@ -238,11 +265,11 @@ class EventListForDate extends StatelessWidget {
                                   ),
                                   title: Text(
                                     event.title,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.transparent,
+                                      color: colors.textPrimary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -429,14 +456,14 @@ class DayViewEventList extends StatelessWidget {
                                               ? AppLocalizations.of(context)!.translate('task')
                                               : event.type == 'my_task'
                                                   ? AppLocalizations.of(context)!.translate('my_task')
-                                                  : '${AppLocalizations.of(context)!.translate('notice')}',
+                                        : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
                                           style: TextStyle(
-                                            color: colors.textSecondary,
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
+                                      color: colors.textSecondary,
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
                                    if (event.isFinished)
                                      Positioned(
                                        left: 0,
@@ -448,7 +475,7 @@ class DayViewEventList extends StatelessWidget {
                                            widthFactor: 0.65, 
                                              child: Container(
                                                height: 1.5,
-                                                color: colors.textPrimary.withOpacity(0.9),
+                                                color: colors.textPrimary.withValues(alpha: 0.9),
                                              ),
                                          ),
                                        ),
