@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -27,13 +28,6 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
   List<MyTaskStatus> statusList = [];
   MyTaskStatus? selectedStatusData;
 
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -42,6 +36,14 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final statusTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -56,7 +58,8 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
+                      style:
+                          statusTextStyle.copyWith(color: colors.buttonPrimaryFg),
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: const EdgeInsets.symmetric(
@@ -64,7 +67,7 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: colors.error,
                     elevation: 3,
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 16),
@@ -105,12 +108,12 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                   const SizedBox(height: 4),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
+                      color: colors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: widget.isSubmitted && selectedStatusData == null
-                            ? Colors.red
-                            : const Color(0xFFF4F7FD),
+                            ? colors.error
+                            : colors.fieldBg,
                         width: 1.5,
                       ),
                     ),
@@ -121,8 +124,8 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: colors.fieldBg,
+                        expandedFillColor: colors.surfacePrimary,
 
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorderRadius: BorderRadius.circular(12),
@@ -130,15 +133,13 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(
-                          item.title ?? '',
+                          item.title,
                           style: statusTextStyle,
                         );
                       },
                       headerBuilder: (context, selectedItem, enabled) {
                         return Text(
-                          selectedItem?.title ??
-                              AppLocalizations.of(context)!
-                                  .translate('select_status'),
+                          selectedItem.title,
                           style: statusTextStyle,
                         );
                       },

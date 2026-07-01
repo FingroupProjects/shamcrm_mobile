@@ -2,7 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
-
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -77,6 +77,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
   }
 
   Widget _buildCheckbox(String label, bool value, Function(bool?) onChanged) {
+    final colors = context.appColors;
     return Row(
       children: [
         Transform.scale(
@@ -84,7 +85,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: colors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -97,6 +98,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocConsumer<MyTaskBloc, MyTaskState>(
       bloc: _myTaskBloc,
       listener: (context, state) {
@@ -115,18 +117,18 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: colors.success,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
           final taskBloc = BlocProvider.of<MyTaskBloc>(context, listen: false);
@@ -142,18 +144,18 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.buttonPrimaryFg,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -170,7 +172,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surfacePrimary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -186,12 +188,12 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Colors.black.withOpacity(0.8),
+                          color: colors.textPrimary,
                         ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close,
-                            size: 24, color: Colors.grey[600]),
+                            size: 24, color: colors.iconSecondary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -201,9 +203,9 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
                   const SizedBox(height: 20),
                   Expanded(
                     child: state is MyTaskLoading
-                        ? const Center(
+                        ? Center(
                             child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)))
+                                color: colors.buttonPrimaryBg))
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +236,7 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
                       margin: const EdgeInsets.only(top: 16),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: const Color(0xff1E2E52),
+                        color: colors.buttonPrimaryBg,
                       ),
                       child: TextButton(
                         onPressed: _saveChanges,
@@ -293,11 +295,11 @@ class _EditMyTaskStatusScreenState extends State<EditMyTaskStatusScreen> {
     );
   }
 
-  TextStyle _textStyle() => const TextStyle(
+  TextStyle _textStyle() => TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: context.appColors.textPrimary,
         overflow: TextOverflow.ellipsis,
       );
 }

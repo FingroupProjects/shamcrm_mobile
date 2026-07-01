@@ -21,7 +21,7 @@ void DropdownBottomSheet(
     context: context,
     backgroundColor: colors.surfacePrimary,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
     ),
     builder: (BuildContext context) {
       return StatefulBuilder(
@@ -38,6 +38,18 @@ void DropdownBottomSheet(
                   decoration: BoxDecoration(
                     color: colors.borderSubtle,
                     borderRadius: BorderRadius.circular(1200),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('select_status'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -68,13 +80,13 @@ void DropdownBottomSheet(
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                selectedValue = status.title ?? '';
+                                selectedValue = status.title;
                                 selectedStatusId = status.id;
                               });
                             },
                             child: buildDropDownStyles(
                               context: context,
-                              text: status.title ?? '',
+                              text: status.title,
                               isSelected: selectedValue == status.title,
                             ),
                           );

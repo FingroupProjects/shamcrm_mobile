@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
@@ -295,26 +296,6 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     );
   }
 
-  Future<void> _handleMenuAction(String value) async {
-    switch (value) {
-      case 'execution':
-        _openStatusChangeSheet();
-        break;
-      case 'history':
-        await _scrollToHistorySection();
-        break;
-      case 'copy':
-        await _openCopyTask();
-        break;
-      case 'edit':
-        await _openEditTask();
-        break;
-      case 'delete':
-        _openDeleteTask();
-        break;
-    }
-  }
-
   void _openStatusChangeSheet() {
     if (currentMyTask == null) return;
 
@@ -584,8 +565,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final colors = context.appColors;
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -597,7 +579,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -605,15 +587,15 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                 ),
               ),
               Container(
-                constraints: BoxConstraints(maxHeight: 400),
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                constraints: const BoxConstraints(maxHeight: 400),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SingleChildScrollView(
                   child: Text(
                     content,
                     textAlign: TextAlign.justify, // Выровнять текст по ширине
 
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -626,8 +608,8 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],
@@ -639,6 +621,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return MultiBlocListener(
       listeners: [
         BlocListener<FieldConfigurationBloc, FieldConfigurationState>(
@@ -690,7 +673,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           if (state is MyTaskByIdLoading) {
             return Scaffold(
               body: Center(
-                child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+                child: CircularProgressIndicator(color: colors.buttonPrimaryBg),
               ),
             );
           } else if (state is MyTaskByIdLoaded) {
@@ -710,7 +693,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
             return Scaffold(
               appBar: _buildAppBar(context,
                   "${AppLocalizations.of(context)!.translate('view_task')} №${task.taskNumber ?? ''}"),
-              backgroundColor: Colors.white,
+              backgroundColor: colors.backgroundSecondary,
               body: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
@@ -754,8 +737,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundSecondary,
       forceMaterialTransparency: true, // Добавлено
       elevation: 0,
       centerTitle: false,
@@ -766,10 +750,10 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           offset: const Offset(
               0, -2), // Добавлен правильный offset как в первом варианте
           child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 22,
+              color: colors.iconPrimary,
             ),
             onPressed: () => _handleBackNavigation(),
           ),
@@ -780,100 +764,27 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
             -10, 0), // Добавлен правильный offset как в первом варианте
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
       actions: [
-        PopupMenuButton<String>(
-          padding: const EdgeInsets.only(right: 8),
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        IconButton(
+          onPressed: _openEditTask,
+          icon: Icon(
+            Icons.edit_outlined,
+            color: colors.iconPrimary,
           ),
-          onSelected: (value) => _handleMenuAction(value),
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              enabled: false,
-              value: 'title',
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'history',
-              child: Text(
-                AppLocalizations.of(context)!.translate('history'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'execution',
-              child: Text(
-                AppLocalizations.of(context)!.translate('execution_history'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'copy',
-              child: Text(
-                AppLocalizations.of(context)!.translate('copy_task'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'edit',
-              child: Text(
-                AppLocalizations.of(context)!.translate('edit_task'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'delete',
-              child: Text(
-                AppLocalizations.of(context)!.translate('delete'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-          icon: const Icon(
-            Icons.more_vert,
-            color: Color(0xff1E2E52),
+        ),
+        IconButton(
+          onPressed: _openDeleteTask,
+          icon: Icon(
+            Icons.delete_outline_rounded,
+            color: colors.error,
           ),
         ),
       ],
@@ -899,6 +810,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
   }
 
   Widget _buildDetailItem(String label, String value) {
+    final colors = context.appColors;
     if (label == AppLocalizations.of(context)!.translate('status_details')) {
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -906,7 +818,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLabel(label),
+            _buildLabel(context, label),
             const SizedBox(width: 8),
             Expanded(
               child: Row(
@@ -919,16 +831,16 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                         fontSize: 16,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xff1E2E52),
+                    color: colors.iconSecondary,
                     size: 16,
                   ),
                 ],
@@ -955,8 +867,8 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLabel(label),
-            SizedBox(width: 8),
+            _buildLabel(context, label),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 value,
@@ -964,7 +876,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                   decoration:
                       value.isNotEmpty ? TextDecoration.underline : null,
                 ),
@@ -981,9 +893,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLabel(label),
-          SizedBox(height: 8),
-          Container(
+          _buildLabel(context, label),
+          const SizedBox(height: 8),
+          SizedBox(
             height: 120, // Высота контейнера для файлов
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -993,7 +905,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                 final fileExtension = file.name.split('.').last.toLowerCase();
 
                 return Padding(
-                  padding: EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.only(right: 16),
                   child: GestureDetector(
                     onTap: () {
                       if (!_isDownloading) {
@@ -1008,7 +920,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                         );
                       }
                     },
-                    child: Container(
+                    child: SizedBox(
                       width: 100,
                       child: Column(
                         children: [
@@ -1033,14 +945,15 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                                 CircularProgressIndicator(
                                   value: _downloadProgress[file.id],
                                   strokeWidth: 3,
-                                  backgroundColor: Colors.grey.withOpacity(0.3),
+                                  backgroundColor:
+                                      colors.textSecondary.withValues(alpha: 0.25),
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xff1E2E52),
+                                    colors.buttonPrimaryBg,
                                   ),
                                 ),
                             ],
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             file.name,
                             maxLines: 2,
@@ -1049,7 +962,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -1066,10 +979,10 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel(label),
-        SizedBox(width: 8),
+        _buildLabel(context, label),
+        const SizedBox(width: 8),
         Expanded(
-          child: _buildValue(value),
+          child: _buildValue(context, value),
         ),
       ],
     );
@@ -1079,27 +992,27 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
 }
 
 // Построение метки
-Widget _buildLabel(String label) {
+Widget _buildLabel(BuildContext context, String label) {
   return Text(
     label,
     style: TextStyle(
       fontSize: 16,
       fontFamily: 'Gilroy',
       fontWeight: FontWeight.w400,
-      color: Color(0xff99A4BA),
+      color: context.appColors.textSecondary,
     ),
   );
 }
 
 // Построение значения
-Widget _buildValue(String value) {
+Widget _buildValue(BuildContext context, String value) {
   return Text(
     value,
     style: TextStyle(
       fontSize: 16,
       fontFamily: 'Gilroy',
       fontWeight: FontWeight.w500,
-      color: Color(0xff1E2E52),
+      color: context.appColors.textPrimary,
     ),
     overflow: TextOverflow.visible,
   );

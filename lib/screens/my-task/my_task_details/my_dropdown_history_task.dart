@@ -2,6 +2,7 @@ import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_event.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_state.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -86,7 +87,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
       child: Container(
         padding: EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: Color(0xFFF4F7FD),
+          color: context.appColors.surfacePrimary,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -121,7 +122,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xfff1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
         Image.asset(
@@ -173,7 +174,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
+              color: context.appColors.textPrimary,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -186,7 +187,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xfff1E2E52),
+              color: context.appColors.textPrimary,
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
@@ -210,7 +211,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,

@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_add_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_card.dart';
@@ -71,11 +72,13 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return BlocProvider.value(
-      value: _taskBloc,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: BlocBuilder<MyTaskBloc, MyTaskState>(
+  value: _taskBloc,
+  child: Scaffold(
+    backgroundColor: Colors.transparent, // было: colors.backgroundSecondary
+    body: BlocBuilder<MyTaskBloc, MyTaskState>(
           builder: (context, state) {
             if (state is MyTaskLoading) {
               return const Center(
@@ -91,24 +94,36 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
 
               if (tasks.isEmpty) {
                 return RefreshIndicator(
-                  backgroundColor: Colors.white,
-                  color: Color(0xff1E2E52),
+                  backgroundColor: colors.surfacePrimary,
+                  color: colors.buttonPrimaryBg,
                   onRefresh: _onRefresh,
                   child: ListView(
-                    physics: AlwaysScrollableScrollPhysics(),
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.4),
-                      Center(child: Text(AppLocalizations.of(context)!.translate('no_tasks_for_selected_status'))),
+                      Center(
+                        child: Text(
+                          AppLocalizations.of(context)!
+                              .translate('no_tasks_for_selected_status'),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: colors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ],
                   ),
                 );
               }
 
-              final ScrollController _scrollController = ScrollController();
-              _scrollController.addListener(() {
-                if (_scrollController.position.pixels ==
-                        _scrollController.position.maxScrollExtent &&
+              final ScrollController listScrollController = ScrollController();
+              listScrollController.addListener(() {
+                if (listScrollController.position.pixels ==
+                        listScrollController.position.maxScrollExtent &&
                     !_taskBloc.allMyTasksFetched) {
                   _taskBloc.add(
                       FetchMoreMyTasks(widget.statusId, state.currentPage));
@@ -116,35 +131,37 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
               });
 
               return RefreshIndicator(
-                color: Color(0xff1E2E52),
-                backgroundColor: Colors.white,
+                color: colors.buttonPrimaryBg,
+                backgroundColor: Colors.transparent,
                 onRefresh: _onRefresh,
                 child: Column(
                   children: [
-                    SizedBox(height: 15),
+                    const SizedBox(height: 15),
                     Expanded(
-                      child: ListView.builder(
-                        controller:
-                            _scrollController, // используйте существующий контроллер
-                        physics: AlwaysScrollableScrollPhysics(),
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: MyTaskCard(
-                              task: tasks[index],
-                              name: widget.name,
-                              statusId: widget.statusId,
-                              onStatusUpdated: () {
-                                _taskBloc.add(FetchMyTasks(widget.statusId));
-                              },
-                              onStatusId: (StatusMyTaskId) {
-                                widget.onStatusId(StatusMyTaskId);
-                              },
-                            ),
-                          );
-                        },
+                      child: ColoredBox(
+                        color: Colors.transparent,
+                        child: ListView.builder(
+                          controller: listScrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: tasks.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: MyTaskCard(
+                                task: tasks[index],
+                                name: widget.name,
+                                statusId: widget.statusId,
+                                onStatusUpdated: () {
+                                  _taskBloc.add(FetchMyTasks(widget.statusId));
+                                },
+                                onStatusId: (statusMyTaskId) {
+                                  widget.onStatusId(statusMyTaskId);
+                                },
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -154,20 +171,22 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${state.message}',
+                    content: Text(state.message,
                         style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white)),
+                            color: colors.buttonPrimaryFg)),
                     behavior: SnackBarBehavior.floating,
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.red,
+                    backgroundColor: colors.error,
                     elevation: 3,
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    duration: Duration(seconds: 3),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 16),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               });
@@ -185,9 +204,9 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
               ),
             ).then((_) => _taskBloc.add(FetchMyTasks(widget.statusId)));
           },
-          backgroundColor: Color(0xff1E2E52),
-          child: Image.asset('assets/icons/tabBar/add.png',
-              width: 24, height: 24),
+          backgroundColor: colors.buttonPrimaryBg,
+          foregroundColor: colors.buttonPrimaryFg,
+          child: const Icon(Icons.add_rounded, size: 26),
         ),
       ),
     );

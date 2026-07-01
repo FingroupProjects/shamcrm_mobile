@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_card_my-tasks_tabBar.dart';
-import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
@@ -45,8 +45,9 @@ class _MyTaskCardState extends State<MyTaskCard> {
   }
 
   String formatDate(String? dateString) {
-    if (dateString == null)
+    if (dateString == null) {
       return AppLocalizations.of(context)!.translate('date_not');
+    }
     try {
       DateTime dateTime = DateTime.parse(dateString);
       return DateFormat('dd.MM.yyyy').format(dateTime);
@@ -55,20 +56,13 @@ class _MyTaskCardState extends State<MyTaskCard> {
     }
   }
 
-  int _getOverdueDays(String? endDateString) {
-    if (endDateString == null) return 0;
-    try {
-      DateTime endDate = DateTime.parse(endDateString);
-      DateTime now = DateTime.now();
-      return endDate.isBefore(now) ? now.difference(endDate).inDays : 0;
-    } catch (e) {
-      return 0;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    int overdueDays = _getOverdueDays(widget.task.endDate);
+    final colors = context.appColors;
+    final bool isOverdue =
+        widget.task.overdue != null && widget.task.overdue! > 0;
+    final Color mutedText = colors.textSecondary;
+    final Color overdueColor = colors.error;
 
     return GestureDetector(
       onTap: () async {
@@ -77,8 +71,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
           MaterialPageRoute(
             builder: (context) => MyTaskDetailsScreen(
               taskId: widget.task.id.toString(),
-              taskName: widget.task.name ??
-                  AppLocalizations.of(context)!.translate('no_name'),
+              taskName: widget.task.name,
               startDate: widget.task.startDate,
               taskNumber: widget.task.taskNumber,
               endDate: widget.task.endDate,
@@ -109,8 +102,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        text: widget.task.name ??
-                            AppLocalizations.of(context)!.translate('no_name'),
+                        text: widget.task.name,
                         style: MyTaskCardStyles.titleStyle(context),
                         children: <TextSpan>[
                           TextSpan(
@@ -134,7 +126,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w400,
-                      color: Color(0xff99A4BA),
+                      color: mutedText,
                     ),
                   ),
                   IntrinsicWidth(
@@ -156,9 +148,10 @@ class _MyTaskCardState extends State<MyTaskCard> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
+                          color: colors.fieldBg.withValues(alpha: 0.55),
                           border: Border.all(
-                            color: const Color(0xff1E2E52),
-                            width: 0.2,
+                            color: colors.borderSubtle,
+                            width: 1,
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -170,20 +163,20 @@ class _MyTaskCardState extends State<MyTaskCard> {
                               constraints: BoxConstraints(maxWidth: 200),
                               child: Text(
                                 dropdownValue,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Image.asset(
-                              'assets/icons/tabBar/dropdown.png',
-                              width: 20,
-                              height: 20,
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                              color: colors.iconSecondary,
                             ),
                           ],
                         ),
@@ -202,10 +195,7 @@ class _MyTaskCardState extends State<MyTaskCard> {
                       children: [
                         ColorFiltered(
                           colorFilter: ColorFilter.mode(
-                            (widget.task.overdue != null &&
-                                    widget.task.overdue! > 0)
-                                ? const Color.fromARGB(255, 198, 40, 40)
-                                : const Color(0xff99A4BA),
+                            isOverdue ? overdueColor : mutedText,
                             BlendMode.srcIn,
                           ),
                           child: Image.asset(
@@ -222,28 +212,25 @@ class _MyTaskCardState extends State<MyTaskCard> {
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: (widget.task.overdue != null &&
-                                    widget.task.overdue! > 0)
-                                ? const Color.fromARGB(255, 198, 40, 40)
-                                : const Color(0xff99A4BA),
+                            color: isOverdue ? overdueColor : mutedText,
                           ),
                         ),
                       ],
                     ),
-                    if (widget.task.overdue != null && widget.task.overdue! > 0)
+                    if (isOverdue)
                       Container(
                         margin: const EdgeInsets.only(right: 10),
                         width: 24,
                         height: 24,
-                        decoration: const BoxDecoration(
-                          color: Color.fromARGB(255, 253, 98, 87),
+                        decoration: BoxDecoration(
+                          color: overdueColor,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
                             widget.task.overdue.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.buttonPrimaryFg,
                               fontSize: 12,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,

@@ -2,7 +2,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_status_add/task_event.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,15 +27,17 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       title: Text(
         AppLocalizations.of(context)!.translate('add_status'),
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       content: SingleChildScrollView(
@@ -60,51 +62,53 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textSecondary,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Color(0xffF4F7FD),
+                fillColor: colors.fieldBg,
                 contentPadding:
-                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                 errorText: _errorMessage,
                 errorMaxLines: 2,
                 errorStyle: TextStyle(
                   fontSize: 14,
-                  color: Colors.red,
+                  color: colors.error,
                   fontWeight: FontWeight.w400,
                   fontFamily: 'Gilroy',
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color:
-                        _errorMessage != null ? Colors.red : Colors.transparent,
+                    color: _errorMessage != null
+                        ? colors.error
+                        : Colors.transparent,
                     width: _errorMessage != null ? 1.5 : 0,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color:
-                        _errorMessage != null ? Colors.red : Color(0xff1E2E52),
+                    color: _errorMessage != null
+                        ? colors.error
+                        : colors.buttonPrimaryBg,
                     width: 1.5,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.red,
+                    color: colors.error,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.red,
+                    color: colors.error,
                     width: 1.5,
                   ),
                 ),
@@ -121,7 +125,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
-                      color: Color(0xFF1E2E52),
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -132,12 +136,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         isFinalStage = value;
                       });
                     },
-                    activeColor: const Color.fromARGB(255, 255, 255, 255),
-                    inactiveTrackColor: const Color.fromARGB(255, 179, 179, 179)
-                        .withOpacity(0.5),
-                    activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-                    inactiveThumbColor:
-                        const Color.fromARGB(255, 255, 255, 255),
+                    activeThumbColor: colors.buttonPrimaryFg,
+                    inactiveTrackColor:
+                        colors.textSecondary.withValues(alpha: 0.35),
+                    activeTrackColor: colors.buttonPrimaryBg,
+                    inactiveThumbColor: colors.surfacePrimary,
                   ),
                 ],
               ),
@@ -155,7 +158,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: Colors.red,
+                    backgroundColor: colors.buttonSecondaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -163,7 +166,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   child: Text(
                     AppLocalizations.of(context)!.translate('cancel'),
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.buttonSecondaryFg,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       fontFamily: 'Gilroy',
@@ -177,7 +180,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   onPressed: _createStatus,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: Color(0xFF1E2E52),
+                    backgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -185,7 +188,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   child: Text(
                     AppLocalizations.of(context)!.translate('add'),
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.buttonPrimaryFg,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       fontFamily: 'Gilroy',
@@ -201,6 +204,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   }
 
   void _createStatus() {
+    final colors = context.appColors;
     final statusName = _controller.text.trim();
 
     if (statusName.isEmpty) {
@@ -230,18 +234,18 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.buttonPrimaryFg,
           ),
         ),
         behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: colors.success,
         elevation: 3,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: Duration(seconds: 3),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 3),
       ),
     );
     Navigator.pop(context, true);

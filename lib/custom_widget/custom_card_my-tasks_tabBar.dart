@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 
 class MyTaskCardStyles {
   static BoxDecoration taskCardDecoration(BuildContext context) => BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.58),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: context.appColors.borderSubtle.withValues(alpha: 0.42),
+          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
         ),
         boxShadow: context.appShadows.card,
       );
@@ -34,10 +34,10 @@ class MyTaskCardStyles {
       );
 
   static BoxDecoration dropdownDecoration(BuildContext context) => BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.52),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: context.appColors.borderSubtle.withValues(alpha: 0.36),
+          color: context.appColors.borderSubtle.withValues(alpha: 0.24),
         ),
       );
 
@@ -46,7 +46,7 @@ class MyTaskCardStyles {
     return ElevatedButton.styleFrom(
       backgroundColor: isSelected
           ? context.appColors.buttonPrimaryBg
-          : context.appColors.surfacePrimary.withValues(alpha: 0.72),
+          : context.appColors.surfacePrimary.withValues(alpha: 0.52),
       foregroundColor: isSelected
           ? context.appColors.buttonPrimaryFg
           : context.appColors.textPrimary,

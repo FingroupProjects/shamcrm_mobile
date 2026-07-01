@@ -2,6 +2,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
@@ -16,6 +18,7 @@ import 'package:crm_task_manager/screens/my-task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,8 +42,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-  final ApiService _apiService = ApiService();
-  bool _canDeleteMyTaskStatus = false;
   bool navigateToEnd = false;
   bool navigateAfterDelete = false;
   int? _deletedIndex;
@@ -75,7 +76,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
           setState(() {
             _currentTabIndex = _tabController.index;
           });
-          final currentStatusId = _tabTitles[_currentTabIndex]['id'];
           if (_scrollController.hasClients) {
             _scrollToActiveTab();
           }
@@ -159,9 +159,11 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      extendBody: true,
       appBar: AppBar(
         forceMaterialTransparency: true,
+        backgroundColor: Colors.transparent,
         title: CustomAppBar(
           title: isClickAvatarIcon
               ? localizations!.translate('appbar_settings')
@@ -197,24 +199,33 @@ class _MyTaskScreenState extends State<MyTaskScreen>
               });
             }
           },
-          clearButtonClickFiltr: (bool) {},
+          clearButtonClickFiltr: (value) {},
         ),
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Column(
-              children: [
-                const SizedBox(height: 15),
-                if (!_isSearching && _selectedUserId == null)
-                  _buildCustomTabBar(),
-                // Оборачиваем TabBarView в Expanded
-                Expanded(
-                  child: _selectedUserId != null
-                      ? _buildUserView()
-                      : _buildTabBarView(),
-                ),
-              ],
+      body: ColoredBox(
+        color: Colors.transparent,
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
             ),
+            isClickAvatarIcon
+                ? ProfileScreen()
+                : Column(
+                    children: [
+                      const SizedBox(height: 15),
+                      if (!_isSearching && _selectedUserId == null)
+                        _buildCustomTabBar(),
+                      Expanded(
+                        child: _selectedUserId != null
+                            ? _buildUserView()
+                            : _buildTabBarView(),
+                      ),
+                    ],
+                  ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -235,19 +246,19 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         borderRadius: BorderRadius.circular(8),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       items: [
         PopupMenuItem(
           value: 'edit',
           child: ListTile(
-            leading: Icon(Icons.edit, color: Color(0xff99A4BA)),
+            leading: Icon(Icons.edit, color: context.appColors.textSecondary),
             title: Text(
               'Изменить',
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
           ),
@@ -255,14 +266,14 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         PopupMenuItem(
           value: 'delete',
           child: ListTile(
-            leading: Icon(Icons.delete, color: Color(0xff99A4BA)),
+            leading: Icon(Icons.delete, color: context.appColors.textSecondary),
             title: Text(
               'Удалить',
               style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             ),
           ),
@@ -299,11 +310,11 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -322,7 +333,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
               name: task.taskStatus?.title ?? "",
               statusId: task.statusId,
               onStatusUpdated: () {},
-              onStatusId: (StatusMyTaskId) {},
+              onStatusId: (statusMyTaskId) {},
             ),
           );
         },
@@ -355,11 +366,11 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       return Center(
         child: Text(
           AppLocalizations.of(context)!.translate('no_tasks_for_user'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
+            color: context.appColors.textSecondary,
           ),
         ),
       );
@@ -378,7 +389,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
               name: task.taskStatus?.title ?? "",
               statusId: task.statusId,
               onStatusUpdated: () {},
-              onStatusId: (StatusMyTaskId) {},
+              onStatusId: (statusMyTaskId) {},
             ),
           );
         },
@@ -402,8 +413,10 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             );
           }),
           IconButton(
-            icon: Image.asset('assets/icons/tabBar/add_black.png',
-                width: 24, height: 24),
+            icon: Icon(
+              Icons.add_circle_outline_rounded,
+              color: context.appColors.buttonPrimaryBg,
+            ),
             onPressed: _addNewTab,
           ),
         ],
@@ -442,7 +455,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             (status) => status.id == statusId,
             // orElse: () => null,
           );
-          taskCount = taskStatus?.tasksCount ?? 0; // Используем tasksCount
+          taskCount = taskStatus.tasksCount;
         }
 
         return GestureDetector(
@@ -475,20 +488,21 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isActive
-                            ? const Color(0xff1E2E52)
-                            : const Color(0xff99A4BA),
+                            ? context.appColors.buttonPrimaryBg
+                            : context.appColors.textSecondary,
                         width: 1,
                       ),
                     ),
                     child: Text(
                       taskCount.toString(),
                       style: TextStyle(
-                        color:
-                            isActive ? Colors.black : const Color(0xff99A4BA),
+                        color: isActive
+                            ? context.appColors.textPrimary
+                            : context.appColors.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -538,7 +552,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
         //print('Кэш полностью очищен, так как все статусы удалены.');
       } else if (_tabTitles.length == 1) {
         // Если остался только один статус, удаляем его из кэша
-        final remainingStatusId = _tabTitles.first['id'];
         await MyTaskCache
             .clearMyTaskStatuses(); // Удаляем все связанные статусы
         await MyTaskCache.cacheMyTaskStatuses(
@@ -557,12 +570,12 @@ class _MyTaskScreenState extends State<MyTaskScreen>
       listener: (context, state) async {
         if (state is MyTaskLoaded) {
           await MyTaskCache.cacheMyTaskStatuses(state.taskStatuses
-              .map((status) => {'id': status.id, 'title': status.title ?? ""})
+              .map((status) => {'id': status.id, 'title': status.title})
               .toList());
 
           setState(() {
             _tabTitles = state.taskStatuses
-                .map((status) => {'id': status.id, 'title': status.title ?? ""})
+                .map((status) => {'id': status.id, 'title': status.title})
                 .toList();
             _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 
@@ -573,7 +586,6 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                 setState(() {
                   _currentTabIndex = _tabController.index;
                 });
-                final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                 if (_scrollController.hasClients) {
                   _scrollToActiveTab();
                 }
@@ -594,9 +606,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
               //Логика для перехода к созданн статусе
               if (navigateToEnd) {
                 navigateToEnd = false;
-                if (_tabController != null) {
-                  _tabController.animateTo(_tabTitles.length - 1);
-                }
+                _tabController.animateTo(_tabTitles.length - 1);
               }
 
               //Логика для перехода к после удаления статусе на лево
@@ -633,7 +643,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: context.appColors.buttonPrimaryFg,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -641,7 +651,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: context.appColors.error,
                 elevation: 3,
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: Duration(seconds: 3),
