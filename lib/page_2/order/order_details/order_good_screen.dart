@@ -4,6 +4,7 @@ import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class OrderGoodsScreen extends StatefulWidget {
   final List<Good> goods;
@@ -47,6 +48,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   }
 
   Widget _buildGoodsList(List<Good> goods) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -62,11 +64,11 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty'),
-                    style: const TextStyle(
+                    style:  TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -91,6 +93,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   }
 
   Widget _buildGoodsItem(Good good) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
@@ -118,21 +121,21 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                         children: [
                           Text(
                             AppLocalizations.of(context)!.translate('counts'),
-                            style: const TextStyle(
+                            style:  TextStyle(
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             '${good.quantity}',
-                            style: const TextStyle(
+                            style:  TextStyle(
                               fontSize: 18,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w700,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -191,21 +194,23 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   }
 
   Widget _buildPlaceholderImage() {
+    final colors = context.appColors;
     return Container(
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: colors.surfaceAccent,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
+      child:  Center(
+        child: Icon(Icons.image_not_supported, size: 40, color: colors.textSecondary),
       ),
     );
   }
 
   // ИСПРАВЛЕННЫЙ МЕТОД - здесь была проблема!
   void _navigateToGoodsDetails(Good good) {
+    final colors = context.appColors;
     int correctGoodId = good.getCorrectGoodId();
     debugPrint('Navigating to GoodsDetailsScreen with ID: $correctGoodId (goodId: ${good.goodId}, variantGood.id: ${good.variantGood?.id}, good.id: ${good.good.id})');
 
@@ -213,7 +218,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Ошибка: Не удалось определить ID товара'),
-          backgroundColor: Colors.red,
+          backgroundColor: colors.error,
         ),
       );
       return;

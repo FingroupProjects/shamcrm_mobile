@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order? order;
@@ -365,6 +366,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   void _returnSelectedProducts() {
+    final colors = context.appColors;
     final selectedProducts = _selectedVariants.values
         .map((variant) => {
       'id': variant.id,
@@ -382,11 +384,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('please_select_product'),
-            style: const TextStyle(
+            style:  TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.white,
+              color: colors.textInverse,
             ),
           ),
           behavior: SnackBarBehavior.floating,
@@ -394,7 +396,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: colors.error,
           elevation: 3,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           duration: const Duration(seconds: 3),
@@ -431,6 +433,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final localizations = AppLocalizations.of(context)!;
 
     return BlocBuilder<VariantBottomSheetBloc, VariantBottomSheetState>(
@@ -454,9 +457,16 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           },
           child: Container(
             height: MediaQuery.of(context).size.height * _bottomSheetHeight,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -475,8 +485,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildHeader(AppLocalizations localizations, VariantBottomSheetState state) {
+    final colors = context.appColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(18, 14, 10, 12),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -491,13 +502,24 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 56,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: colors.borderSubtle,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
                 Text(
                   localizations.translate('add_producted'),
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 if (state.isInCategoryMode)
@@ -508,7 +530,10 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Color(0xff99A4BA)),
+            style: IconButton.styleFrom(
+              backgroundColor: colors.surfaceAccent,
+            ),
+            icon: Icon(Icons.close, color: colors.textSecondary),
             onPressed: () {
               FocusScope.of(context).unfocus();
               Navigator.pop(context);
@@ -520,6 +545,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildCategoryBreadcrumb(VariantBottomSheetState state) {
+    final colors = context.appColors;
     final categoryName = state.selectedCategoryName ??
         (state.categoryVariants.isNotEmpty
             ? state.categoryVariants.first.good?.category.name ?? ''
@@ -531,20 +557,20 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         onTap: _onBackFromCategory,
         child: Row(
           children: [
-            const Icon(
+             Icon(
               Icons.arrow_back,
               size: 14,
-              color: Color(0xff4759FF),
+              color: colors.buttonPrimaryBg,
             ),
             const SizedBox(width: 4),
             Flexible(
               child: Text(
                 categoryName,
-                style: const TextStyle(
+                style:  TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -558,24 +584,25 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   Widget _buildSearchBreadcrumb(VariantBottomSheetState state) {
     final totalResults = state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
-
+final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
         localizations.translate('found_results').replaceAll('{count}', totalResults.toString()),
-        style: const TextStyle(
+        style:  TextStyle(
           fontSize: 13,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff99A4BA),
+          color: colors.textSecondary,
         ),
       ),
     );
   }
 
   Widget _buildSearchField(AppLocalizations localizations, VariantBottomSheetState state) {
+    final colors = context.appColors;
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       child: Row(
         children: [
           Expanded(
@@ -584,15 +611,18 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: localizations.translate('search_variants'),
-                hintStyle: const TextStyle(
+                hintStyle:  TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
-                  color: Color(0xff99A4BA),
+                  color: colors.fieldHint,
                 ),
-                prefixIcon: const Icon(Icons.search, color: Color(0xff4759FF)),
+                prefixIcon: Icon(Icons.search, color: colors.buttonPrimaryBg),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
+                  icon: Icon(
+                    Icons.clear,
+                    color: colors.fieldHint,
+                  ),
                   onPressed: () {
                     _searchController.clear();
                     // Вместо SearchAll('') возвращаемся к предыдущему режиму
@@ -605,28 +635,44 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFFF4F7FD),
+                fillColor: colors.fieldBg,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide.none,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.45),
+                  ),
+                ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: colors.textPrimary,
               ),
             ),
           ),
           if (!state.isInSearchMode && !state.isInCategoryMode) ...[
             const SizedBox(width: 8),
             Container(
-              width: 48,
-              height: 48,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
-                borderRadius: BorderRadius.circular(12),
+                color: colors.fieldBg,
+                borderRadius: BorderRadius.circular(18),
               ),
               child: IconButton(
                 icon: Icon(
                   _showAllMode ? Icons.list : Icons.grid_view,
-                  color: const Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                   size: 24,
                 ),
                 tooltip: _showAllMode ? 'По категориям' : 'Все товары',
@@ -646,18 +692,19 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     }
 
     if (state.error != null && !state.hasData) { // Only show error if no data
+      final colors = context.appColors;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: colors.error),
             const SizedBox(height: 16),
             Text(
               state.error!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
-                color: Colors.red,
+                color: colors.error,
               ),
               textAlign: TextAlign.center,
             ),
@@ -734,33 +781,34 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildSectionHeader(String title, int count) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xff4759FF).withValues(alpha: 0.1),
+              color: colors.buttonPrimaryBg.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               count.toString(),
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 12,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff4759FF),
+                color: colors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -770,6 +818,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildCategories(AppLocalizations localizations, VariantBottomSheetState state) {
+    final colors = context.appColors;
     if (state.isLoading && state.categories.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -778,10 +827,10 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       return Center(
         child: Text(
           localizations.translate('no_categories_found'),
-          style: const TextStyle(
+          style:  TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
           ),
         ),
       );
@@ -800,7 +849,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   Widget _buildCategoryCard(CategoryWithCount categoryWithCount) {
     final category = categoryWithCount.category;
     final level = categoryWithCount.level;
-
+final colors = context.appColors;
     final leftPadding = 16.0 + (level * 24.0);
 
     return GestureDetector(
@@ -808,10 +857,10 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       child: Container(
         margin: EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: level > 0 ? const Color(0xFFE5E7EB).withValues(alpha: 0.7) : const Color(0xFFE5E7EB),
+            color: colors.borderSubtle,
             width: 1,
           ),
         ),
@@ -824,7 +873,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                   width: 3,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xff4759FF).withValues(alpha: 0.3),
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -834,7 +883,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 width: level > 0 ? 40 : 50,
                 height: level > 0 ? 40 : 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.fieldBg,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: category.image != null && category.image!.isNotEmpty
@@ -852,14 +901,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                     ),
                     errorWidget: (context, url, error) => Icon(
                       level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: level > 0 ? 20 : 28,
                     ),
                   ),
                 )
                     : Icon(
                   level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                  color: const Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                   size: level > 0 ? 20 : 28,
                 ),
               ),
@@ -871,13 +920,13 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                     fontSize: level > 0 ? 14 : 16,
                     fontFamily: 'Gilroy',
                     fontWeight: level > 0 ? FontWeight.w500 : FontWeight.w600,
-                    color: const Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
-              const Icon(
+               Icon(
                 Icons.arrow_forward_ios,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
                 size: 18,
               ),
             ],
@@ -910,19 +959,21 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildVariantsList({
+    
     required List<Variant> variants,
     required String emptyMessageKey,
     required VariantBottomSheetState state,
     required AppLocalizations localizations,
   }) {
     if (variants.isEmpty) {
+      final colors = context.appColors;
       return Center(
         child: Text(
           localizations.translate(emptyMessageKey),
-          style: const TextStyle(
+          style:  TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
-            color: Color(0xff99A4BA),
+            color: colors.textSecondary,
           ),
         ),
       );
@@ -930,7 +981,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       itemCount: variants.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == variants.length) {
@@ -956,28 +1007,29 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     required String title,
     required String subtitle,
   }) {
+    final colors = context.appColors;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: const Color(0xff99A4BA)),
+          Icon(icon, size: 64, color: colors.textSecondary),
           const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(
+            style:  TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
+            style:  TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 14,
-              color: Color(0xff99A4BA),
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -989,19 +1041,28 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final displayName = _getDisplayName(variant);
     final imageUrl = variant.good?.mainImageUrl;
     final isSelected = _isVariantSelected(variant);
-
+    final colors = context.appColors;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isSelected ? const Color(0xff4759FF) : const Color(0xFFE5E7EB),
+          color: isSelected
+              ? colors.buttonPrimaryBg
+              : colors.borderSubtle.withValues(alpha: 0.55),
           width: isSelected ? 2 : 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: [
             GestureDetector(
@@ -1017,11 +1078,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                       children: [
                         Text(
                           displayName,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style:  TextStyle(
+                            fontSize: 15,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -1032,11 +1093,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               _formatPrice(variant.price),
-                              style: const TextStyle(
-                                fontSize: 13,
+                              style:  TextStyle(
+                                fontSize: 15,
                                 fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff4759FF),
+                                fontWeight: FontWeight.w600,
+                                color: colors.buttonPrimaryBg,
                               ),
                             ),
                           ),
@@ -1054,80 +1115,113 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             if (isSelected) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
+                  color: colors.fieldBg,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       localizations.translate('quantity'),
-                      style: const TextStyle(
+                      style:  TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                        color: colors.textSecondary,
                       ),
                     ),
                     Row(
                       children: [
-                        GestureDetector(
-                          onTap: () => _decrementQuantity(variant),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.remove,
-                              size: 20,
-                              color: Color(0xff1E2E52),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: colors.borderSubtle,
                             ),
                           ),
-                        ),
-                        SizedBox(
-                          width: 36,
-                          child: TextField(
-                            controller: _getQuantityController(variant),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 8),
-                              border: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _decrementQuantity(variant),
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      right:
+                                          BorderSide(color: colors.borderSubtle),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.remove_rounded,
+                                    size: 18,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 44,
+                                child: TextField(
+                                  controller: _getQuantityController(variant),
+                                  keyboardType: const TextInputType
+                                      .numberWithOptions(decimal: true),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.textPrimary,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding:
+                                        EdgeInsets.symmetric(vertical: 8),
+                                    border: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
+                                  ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  onChanged: (value) =>
+                                      _handleQuantityInput(variant, value),
+                                  onEditingComplete: () {
+                                    if ((_quantityControllers[variant.id]?.text ??
+                                            '')
+                                        .isEmpty) {
+                                      _syncQuantityController(variant.id);
+                                    }
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                  onSubmitted: (value) =>
+                                      _handleQuantityInput(variant, value),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _incrementQuantity(variant),
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      left:
+                                          BorderSide(color: colors.borderSubtle),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.add_rounded,
+                                    size: 18,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ),
                             ],
-                            onChanged: (value) => _handleQuantityInput(variant, value),
-                            onEditingComplete: () {
-                              if ((_quantityControllers[variant.id]?.text ?? '').isEmpty) {
-                                _syncQuantityController(variant.id);
-                              }
-                              FocusScope.of(context).unfocus();
-                            },
-                            onSubmitted: (value) => _handleQuantityInput(variant, value),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _incrementQuantity(variant),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.add,
-                              size: 20,
-                              color: Color(0xff1E2E52),
-                            ),
                           ),
                         ),
                       ],
@@ -1147,29 +1241,30 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final hasStock = remainder != null && remainder > 0;
     final quantityText = localizations.translate('quantity');
     final outOfStockText = localizations.translate('out_of_stock');
-
+final colors = context.appColors;
     return Text(
       hasStock ? '$quantityText: $remainder' : outOfStockText,
       style: TextStyle(
         fontSize: 12,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: hasStock ? const Color(0xff99A4BA) : const Color(0xffff5722),
+        color: hasStock ? colors.textSecondary : const Color(0xffff5722),
       ),
     );
   }
 
   Widget _buildProductImage(Variant variant, String? imageUrl) {
+    final colors = context.appColors;
     return Container(
-      width: 50,
-      height: 50,
+      width: 58,
+      height: 58,
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
-        borderRadius: BorderRadius.circular(8),
+        color: colors.surfacePrimary,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: imageUrl != null
           ? ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
           imageUrl: imageUrl,
           fit: BoxFit.cover,
@@ -1180,57 +1275,77 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
-          errorWidget: (context, url, error) => const Icon(
+          errorWidget: (context, url, error) =>  Icon(
             Icons.shopping_cart_outlined,
-            color: Color(0xff4759FF),
+            color: colors.buttonPrimaryBg,
             size: 24,
           ),
         ),
       )
-          : const Icon(
+          :  Icon(
         Icons.shopping_cart_outlined,
-        color: Color(0xff4759FF),
+        color: colors.buttonPrimaryBg,
         size: 24,
       ),
     );
   }
 
   Widget _buildSelectionIndicator(Variant variant) {
+    final colors = context.appColors;
     final isSelected = _isVariantSelected(variant);
     return Container(
-      width: 24,
-      height: 24,
+      width: 34,
+      height: 34,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: isSelected
+            ? colors.buttonPrimaryBg.withValues(alpha: 0.08)
+            : Colors.transparent,
         border: Border.all(
-          color: isSelected ? const Color(0xff4CAF50) : const Color(0xff99A4BA),
+          color: isSelected
+              ? colors.buttonPrimaryBg
+              : colors.borderSubtle.withValues(alpha: 0.9),
           width: 2,
         ),
       ),
       child: isSelected
-          ? const Icon(Icons.check, color: Color(0xff4CAF50), size: 16)
+          ? Icon(Icons.check, color: colors.buttonPrimaryBg, size: 18)
           : null,
     );
   }
 
   Widget _buildAddButton(AppLocalizations localizations) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: ElevatedButton(
-        onPressed: _returnSelectedProducts,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff4759FF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        child: Center(
+    final colors = context.appColors;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary,
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _returnSelectedProducts,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colors.buttonPrimaryBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
           child: Text(
             localizations.translate('add'),
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 18,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              color: colors.textInverse,
             ),
           ),
         ),

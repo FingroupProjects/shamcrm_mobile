@@ -399,6 +399,23 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   }
 
   Future<void> _selectDateRange() async {
+    final theme = Theme.of(context);
+    final colors = context.appColors;
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+
+    final pickerColorScheme = ColorScheme(
+      brightness: brightness,
+      primary: colors.buttonPrimaryBg,
+      onPrimary: colors.buttonPrimaryFg,
+      secondary: colors.buttonSecondaryBg,
+      onSecondary: colors.buttonPrimaryFg,
+      error: colors.error,
+      onError: colors.buttonPrimaryFg,
+      surface: colors.surfacePrimary,
+      onSurface: colors.textPrimary,
+    );
+
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
@@ -408,22 +425,64 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
           : null,
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: this.context.appColors.surfacePrimary,
-            colorScheme: ColorScheme.light(
-              primary: this.context.appColors.buttonPrimaryBg,
-              onPrimary: this.context.appColors.buttonPrimaryFg,
-              onSurface: this.context.appColors.textPrimary,
-              secondary: this
-                  .context
-                  .appColors
-                  .buttonSecondaryBg
-                  .withValues(alpha: 0.1),
-              surface: this.context.appColors.surfacePrimary,
+          data: ThemeData(
+            useMaterial3: theme.useMaterial3,
+            brightness: brightness,
+            colorScheme: pickerColorScheme,
+            scaffoldBackgroundColor: colors.surfacePrimary,
+            dialogTheme: DialogThemeData(
+              backgroundColor: colors.surfacePrimary,
+            ),
+            textTheme: theme.textTheme.apply(
+              bodyColor: colors.textPrimary,
+              displayColor: colors.textPrimary,
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: colors.surfacePrimary,
+              dividerColor: colors.borderSubtle,
+              headerBackgroundColor: colors.surfacePrimary,
+              headerForegroundColor: colors.textPrimary,
+              rangeSelectionBackgroundColor:
+                  colors.buttonPrimaryBg.withValues(alpha: isDark ? 0.28 : 0.16),
+              rangeSelectionOverlayColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg.withValues(alpha: 0.14)),
+              todayBackgroundColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg.withValues(alpha: 0.22)),
+              todayForegroundColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return colors.textSecondary.withValues(alpha: 0.38);
+                }
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryFg;
+                }
+                return colors.textPrimary;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryBg;
+                }
+                return Colors.transparent;
+              }),
+              yearForegroundColor:
+                  WidgetStatePropertyAll(colors.textPrimary),
+              yearBackgroundColor:
+                  WidgetStatePropertyAll(colors.surfacePrimary),
+              weekdayStyle: context.appTextStyles.bodySm.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+              dayStyle: context.appTextStyles.bodyMd.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+              rangePickerHeaderForegroundColor: colors.textPrimary,
+              rangePickerHeaderBackgroundColor: colors.surfacePrimary,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: this.context.appColors.buttonPrimaryBg,
+                foregroundColor: colors.buttonPrimaryBg,
               ),
             ),
           ),

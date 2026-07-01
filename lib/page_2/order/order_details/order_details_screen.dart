@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -209,11 +208,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
+    final colors = context.appColors;
     if (phoneNumber.isEmpty || phoneNumber.trim() == '') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.translate('phone_number_empty'))),
+          content: Text(
+            AppLocalizations.of(context)!.translate('phone_number_empty'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              color: colors.textInverse,
+            ),
+          ),
+          backgroundColor: colors.error,
+        ),
       );
       return;
     }
@@ -224,8 +231,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     if (!await launchUrl(launchUri)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.translate('call_failed'))),
+          content: Text(
+            AppLocalizations.of(context)!.translate('call_failed'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              color: colors.textInverse,
+            ),
+          ),
+          backgroundColor: colors.error,
+        ),
       );
     }
   }
@@ -694,34 +708,43 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
       actions: [
         if (_canEditOrder && order != null)
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/edit.png',
-              width: 24,
-              height: 24,
-            ),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => OrderEditScreen(order: order),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrderEditScreen(order: order),
+                    ),
+                  );
+                  if (result != null) {
+                    context
+                        .read<OrderBloc>()
+                        .add(FetchOrderDetails(widget.orderId));
+                    if (result is Map<String, dynamic> &&
+                        result['success'] == true) {
+                      setState(() {
+                        _editResult = result;
+                      });
+                    }
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Image.asset(
+                    'assets/icons/edit.png',
+                    width: 20,
+                    height: 20,
+                    color: colors.buttonPrimaryBg,
+                  ),
                 ),
-              );
-              if (result != null) {
-                context
-                    .read<OrderBloc>()
-                    .add(FetchOrderDetails(widget.orderId));
-                // Сохраняем результат редактирования для последующей передачи
-                if (result is Map<String, dynamic> &&
-                    result['success'] == true) {
-                  setState(() {
-                    _editResult = result;
-                  });
-                }
-              }
-            },
+              ),
+            ),
           ),
       ],
     );
@@ -819,8 +842,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text(AppLocalizations.of(context)!
-                      .translate('lead_not_found'))),
+                content: Text(
+                  AppLocalizations.of(context)!.translate('lead_not_found'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    color: context.appColors.textInverse,
+                  ),
+                ),
+                backgroundColor: context.appColors.error,
+              ),
             );
           }
         },

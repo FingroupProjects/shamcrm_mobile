@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -12,12 +13,13 @@ class EditStatusOrder extends StatefulWidget {
   final OrderBloc orderBloc;
 
   const EditStatusOrder({
+    super.key,
     required this.status,
     required this.orderBloc,
   });
 
   @override
-  _EditStatusOrderState createState() => _EditStatusOrderState();
+  State<EditStatusOrder> createState() => _EditStatusOrderState();
 }
 
 class _EditStatusOrderState extends State<EditStatusOrder> {
@@ -25,10 +27,10 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
   late TextEditingController _messageController;
   late bool _isSuccess;
   late bool _isFailed;
-  bool _isExpanded = false;
 
   @override
   void initState() {
+    
     super.initState();
     // Предзаполняем поля данными из статуса
     _titleController = TextEditingController(text: widget.status.name);
@@ -45,14 +47,16 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
   }
 
   Widget _buildCheckbox(String label, bool value, Function(bool?) onChanged) {
+    final colors = context.appColors;
     return Row(
+      
       children: [
         Transform.scale(
           scale: 0.9,
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: colors.textPrimary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -86,18 +90,51 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
     );
   }
 
-  TextStyle _textStyle() => const TextStyle(
+  TextStyle _textStyle() => TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: context.appColors.textPrimary,
         overflow: TextOverflow.ellipsis,
       );
+
+  Widget _buildActionButton({
+    required String label,
+    required VoidCallback onPressed,
+    required Color backgroundColor,
+    required Color foregroundColor,
+  }) {
+    return Expanded(
+      child: SizedBox(
+        height: 48,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            foregroundColor: foregroundColor,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: foregroundColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-
+    final colors = context.appColors;
     return BlocProvider.value(
       value: widget.orderBloc,
       child: BlocListener<OrderBloc, OrderState>(
@@ -107,11 +144,11 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
               SnackBar(
                 content: Text(
                   "Статус успешно обновлен!",
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -119,7 +156,7 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: colors.success,
                 elevation: 3,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
@@ -131,11 +168,11 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -143,7 +180,7 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
                 elevation: 3,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
@@ -152,24 +189,26 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
           }
         },
         child: Dialog(
+          backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(24),
           ),
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: 480,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: colors.surfacePrimary,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: colors.borderSubtle.withValues(alpha: 0.5),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Заголовок
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -179,20 +218,19 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Colors.black.withOpacity(0.8),
+                          color: colors.textPrimary,
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                        icon: Icon(Icons.close, size: 24, color: colors.iconSecondary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // Основной контент
-                  Expanded(
+                  const SizedBox(height: 16),
+                  Flexible(
                     child: SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,61 +241,71 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                             isRequired: true,
                             hintText: 'Введите название',
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                           _buildTextFieldWithLabel(
-                            label: 'Введите текст который получит клиент при переходе его заказа в этот статус',
+                            label:
+                                'Введите текст который получит клиент при переходе его заказа в этот статус',
                             controller: _messageController,
                             isRequired: true,
                             hintText: localizations.translate('Введите текст'),
                           ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: _buildCheckbox(
-                                  localizations.translate('successful'),
-                                  _isSuccess,
-                                  (v) {
-                                    if (v != null) {
-                                      setState(() {
-                                        _isSuccess = v;
-                                        if (_isSuccess) _isFailed = false;
-                                      });
-                                    }
-                                  },
+                          const SizedBox(height: 18),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCheckbox(
+                                    localizations.translate('successful'),
+                                    _isSuccess,
+                                    (v) {
+                                      if (v != null) {
+                                        setState(() {
+                                          _isSuccess = v;
+                                          if (_isSuccess) _isFailed = false;
+                                        });
+                                      }
+                                    },
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: _buildCheckbox(
-                                  localizations.translate('is_failed'),
-                                  _isFailed,
-                                  (v) {
-                                    if (v != null) {
-                                      setState(() {
-                                        _isFailed = v;
-                                        if (_isFailed) _isSuccess = false;
-                                      });
-                                    }
-                                  },
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildCheckbox(
+                                    localizations.translate('is_failed'),
+                                    _isFailed,
+                                    (v) {
+                                      if (v != null) {
+                                        setState(() {
+                                          _isFailed = v;
+                                          if (_isFailed) _isSuccess = false;
+                                        });
+                                      }
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 24),
                         ],
                       ),
                     ),
                   ),
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: const Color(0xff1E2E52),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      _buildActionButton(
+                        label: localizations.translate('cancel'),
+                        onPressed: () => Navigator.of(context).pop(),
+                        backgroundColor: colors.buttonSecondaryBg,
+                        foregroundColor: colors.buttonSecondaryFg,
                       ),
-                      child: TextButton(
+                      const SizedBox(width: 12),
+                      _buildActionButton(
+                        label: localizations.translate('save'),
                         onPressed: () {
                           final title = _titleController.text.trim();
                           final message = _messageController.text.trim();
@@ -274,44 +322,34 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  localizations.translate('fill_all_required_fields'),
-                                  style: const TextStyle(
+                                  localizations
+                                      .translate('fill_all_required_fields'),
+                                  style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    color: colors.textInverse,
                                   ),
                                 ),
-                                backgroundColor: Colors.red,
+                                backgroundColor: colors.error,
                                 behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 3,
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 16),
                                 duration: const Duration(seconds: 3),
                               ),
                             );
                           }
                         },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 10,
-                          ),
-                        ),
-                        child: Text(
-                          localizations.translate('save'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
+                        backgroundColor: colors.buttonPrimaryBg,
+                        foregroundColor: colors.buttonPrimaryFg,
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),

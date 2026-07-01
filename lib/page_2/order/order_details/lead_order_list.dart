@@ -49,7 +49,7 @@
 //                 fontSize: 16,
 //                 fontWeight: FontWeight.w500,
 //                 fontFamily: 'Gilroy',
-//                 color: Color(0xff1E2E52),
+//                 color: colors.textPrimary,
 //               ),
 //             ),
 //             TextButton(
@@ -70,7 +70,7 @@
 //                   fontSize: 14,
 //                   fontWeight: FontWeight.w500,
 //                   fontFamily: 'Gilroy',
-//                   color: Color(0xff4759FF),
+//                   color: colors.buttonPrimaryBg,
 //                 ),
 //               ),
 //             ),
@@ -93,21 +93,21 @@
 //           fontSize: 14,
 //           fontWeight: FontWeight.w500,
 //           fontFamily: 'Gilroy',
-//           color: Color(0xff99A4BA),
+//           color: colors.textSecondary,
 //         ),
 //         filled: true,
-//         fillColor: Color(0xffF4F7FD),
+//         fillColor: colors.fieldBg,
 //         border: OutlineInputBorder(
 //           borderRadius: BorderRadius.circular(12),
-//           borderSide: BorderSide(color: Color(0xffF4F7FD), width: 1),
+//           borderSide: BorderSide(color: colors.fieldBg, width: 1),
 //         ),
 //         enabledBorder: OutlineInputBorder(
 //           borderRadius: BorderRadius.circular(12),
-//           borderSide: BorderSide(color: Color(0xffF4F7FD), width: 1),
+//           borderSide: BorderSide(color: colors.fieldBg, width: 1),
 //         ),
 //         focusedBorder: OutlineInputBorder(
 //           borderRadius: BorderRadius.circular(12),
-//           borderSide: BorderSide(color: Color(0xffF4F7FD), width: 1),
+//           borderSide: BorderSide(color: colors.fieldBg, width: 1),
 //         ),
 //         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
 //       ),
@@ -115,7 +115,7 @@
 //         fontSize: 14,
 //         fontWeight: FontWeight.w500,
 //         fontFamily: 'Gilroy',
-//         color: Color(0xff1E2E52),
+//         color: colors.textPrimary,
 //       ),
 //       onChanged: (value) {
 //         widget.onManualLeadOrderName(value);
@@ -156,15 +156,15 @@
 //                 overlayHeight: 400,
 //                 enabled: true,
 //                 decoration: CustomDropdownDecoration(
-//                   closedFillColor: Color(0xffF4F7FD),
+//                   closedFillColor: colors.fieldBg,
 //                   expandedFillColor: Colors.white,
 //                   closedBorder: Border.all(
-//                     color: Color(0xffF4F7FD),
+//                     color: colors.fieldBg,
 //                     width: 1,
 //                   ),
 //                   closedBorderRadius: BorderRadius.circular(12),
 //                   expandedBorder: Border.all(
-//                     color: Color(0xffF4F7FD),
+//                     color: colors.fieldBg,
 //                     width: 1,
 //                   ),
 //                   expandedBorderRadius: BorderRadius.circular(12),
@@ -173,7 +173,7 @@
 //                   return Text(
 //                     item.name,
 //                     style: TextStyle(
-//                       color: Color(0xff1E2E52),
+//                       color: colors.textPrimary,
 //                       fontSize: 14,
 //                       fontWeight: FontWeight.w500,
 //                       fontFamily: 'Gilroy',
@@ -190,7 +190,7 @@
 //                             fontSize: 14,
 //                             fontWeight: FontWeight.w500,
 //                             fontFamily: 'Gilroy',
-//                             color: Color(0xff1E2E52),
+//                             color: colors.textPrimary,
 //                           ),
 //                         ),
 //                       ],
@@ -203,7 +203,7 @@
 //                       fontSize: 14,
 //                       fontWeight: FontWeight.w500,
 //                       fontFamily: 'Gilroy',
-//                       color: Color(0xff1E2E52),
+//                       color: colors.textPrimary,
 //                     ),
 //                   );
 //                 },
@@ -213,7 +213,7 @@
 //                     fontSize: 14,
 //                     fontWeight: FontWeight.w500,
 //                     fontFamily: 'Gilroy',
-//                     color: Color(0xff1E2E52),
+//                     color: colors.textPrimary,
 //                   ),
 //                 ),
 //                 excludeSelected: false,

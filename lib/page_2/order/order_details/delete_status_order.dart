@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class DeleteStatusOrder extends StatelessWidget {
   final OrderBloc orderBloc;
 
   const DeleteStatusOrder({
+    super.key,
     required this.statusId,
     required this.statusName,
     required this.orderBloc,
@@ -21,6 +23,7 @@ class DeleteStatusOrder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return BlocListener<OrderBloc, OrderState>(
       listener: (context, state) {
@@ -33,7 +36,7 @@ class DeleteStatusOrder extends StatelessWidget {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: colors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -41,7 +44,7 @@ class DeleteStatusOrder extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: colors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -50,7 +53,10 @@ class DeleteStatusOrder extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
         title: Center(
           child: Text(
             localizations.translate('delete_status'),
@@ -58,17 +64,17 @@ class DeleteStatusOrder extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
         content: Text(
-          localizations.translate('confirm_delete_status'),
+          '${localizations.translate('confirm_delete_status')}\n\n$statusName',
           style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -81,8 +87,8 @@ class DeleteStatusOrder extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonSecondaryBg,
+                  textColor: colors.buttonSecondaryFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -90,8 +96,9 @@ class DeleteStatusOrder extends StatelessWidget {
                 child: CustomButton(
                   buttonText: localizations.translate('delete'),
                   onPressed: () async {
-                    final _apiService = ApiService();
-                    final hasOrders = await _apiService.checkIfStatusHasOrders(statusId);
+                    final apiService = ApiService();
+                    final hasOrders =
+                        await apiService.checkIfStatusHasOrders(statusId);
 
                     if (hasOrders) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +109,7 @@ class DeleteStatusOrder extends StatelessWidget {
                               fontFamily: 'Gilroy',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                              color: colors.textInverse,
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
@@ -110,7 +117,7 @@ class DeleteStatusOrder extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: colors.error,
                           elevation: 3,
                           padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                           duration: Duration(seconds: 3),
@@ -123,8 +130,8 @@ class DeleteStatusOrder extends StatelessWidget {
                       orderBloc.add(FetchOrderStatuses());
                     }
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.textInverse,
                 ),
               ),
             ],

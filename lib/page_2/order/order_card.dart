@@ -232,17 +232,6 @@ class _OrderCardState extends State<OrderCard> {
     }
   }
 
-  Color _getStatusTextColor(int statusId) {
-    switch (statusId) {
-      case 1:
-        return const Color.fromARGB(255, 58, 217, 66);
-      case 2:
-        return Colors.amber[900]!;
-      default:
-        return Colors.grey[800]!;
-    }
-  }
-
   String _formatDate(DateTime? date) {
     if (date == null) return AppLocalizations.of(context)!.translate('no_date');
     return DateFormat('dd.MM.yyyy').format(date);
@@ -410,10 +399,11 @@ class _OrderCardState extends State<OrderCard> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: primaryText.withValues(alpha: 0.3),
-                          width: 0.5,
+                          color: colors.borderSubtle,
+                          width: 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
+                        color: colors.fieldBg.withValues(alpha: 0.55),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       child: Row(
@@ -432,10 +422,10 @@ class _OrderCardState extends State<OrderCard> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Image.asset(
-                            'assets/icons/tabBar/dropdown.png',
-                            width: 18,
-                            height: 18,
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                            color: colors.iconSecondary,
                           ),
                         ],
                       ),

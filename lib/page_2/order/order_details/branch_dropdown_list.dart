@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class BranchRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
@@ -28,11 +29,11 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
   Branch? selectedStatusData;
   bool _hasInitialized = false;
 
-  final TextStyle statusTextStyle = const TextStyle(
+  final TextStyle statusTextStyle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
+    // color: colors.textPrimary,
   );
 
   @override
@@ -50,6 +51,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -58,31 +60,31 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
             if (state is BranchLoading) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('branches'),
-                    style:
-                        statusTextStyle.copyWith(fontWeight: FontWeight.w400),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    height: 50,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
-                      ),
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.translate('branches'),
+                      style:
+                          statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                     ),
-                    child: const SizedBox(
+                    const SizedBox(height: 4),
+                    Container(
+                      height: 50,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceAccent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          width: 1,
+                          color: colors.surfaceAccent,
+                        ),
+                      ),
+                    child:  SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                            AlwaysStoppedAnimation<Color>(colors.textPrimary),
                       ),
                     ),
                   ),
@@ -95,7 +97,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
+                      style: statusTextStyle.copyWith(color: colors.textInverse),
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin:
@@ -103,7 +105,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: colors.error,
                     elevation: 3,
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 16),
@@ -151,8 +153,8 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                           context: context,
                           backgroundColor: Colors.transparent,
                           builder: (context) => Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration:  BoxDecoration(
+                              color: colors.surfacePrimary,
                               borderRadius: BorderRadius.vertical(
                                   top: Radius.circular(16)),
                             ),
@@ -164,7 +166,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                                   width: 40,
                                   height: 4,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE5E7EB),
+                                    color: colors.borderSubtle,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
@@ -173,7 +175,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                                   AppLocalizations.of(context)!
                                       .translate('no_data'),
                                   style: statusTextStyle.copyWith(
-                                    color: const Color(0xff9CA3AF),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 20),
@@ -186,11 +188,11 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF4F7FD),
+                          color: colors.surfaceAccent,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             width: 1,
-                            color: const Color(0xFFF4F7FD),
+                            color: colors.surfaceAccent,
                           ),
                         ),
                         child: Row(
@@ -200,13 +202,13 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                               AppLocalizations.of(context)!
                                   .translate('select_branch'),
                               style: statusTextStyle.copyWith(
-                                color: const Color(0xff9CA3AF),
+                                color: colors.textSecondary,
                                 fontSize: 14,
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.arrow_drop_down,
-                              color: Color(0xff9CA3AF),
+                              color: colors.textSecondary,
                             ),
                           ],
                         ),
@@ -280,11 +282,11 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                   const SizedBox(height: 4),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
+                      color: colors.surfaceAccent,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         width: 1,
-                        color: const Color(0xFFF4F7FD),
+                        color: colors.surfaceAccent,
                       ),
                     ),
                     child: CustomDropdown<Branch>.searchRequest(
@@ -296,15 +298,15 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: colors.fieldBg,
+                        expandedFillColor: colors.surfacePrimary,
                         closedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
+                          color: colors.fieldBg,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: const Color(0xffF4F7FD),
+                          color: colors.fieldBg,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),

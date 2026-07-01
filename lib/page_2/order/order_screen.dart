@@ -667,7 +667,7 @@ class _OrderScreenState extends State<OrderScreen>
                                 horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
-                            backgroundColor: Colors.green,
+                            backgroundColor: snackColors.success,
                             elevation: 3,
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
@@ -701,7 +701,7 @@ class _OrderScreenState extends State<OrderScreen>
                                 horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
-                            backgroundColor: Colors.green,
+                            backgroundColor: snackColors.success,
                             elevation: 3,
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
@@ -728,7 +728,7 @@ class _OrderScreenState extends State<OrderScreen>
                                 horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
-                            backgroundColor: Colors.red,
+                            backgroundColor: snackColors.error,
                             elevation: 3,
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),

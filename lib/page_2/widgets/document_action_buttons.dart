@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +27,7 @@ class DocumentActionButtons extends StatefulWidget {
 
 class _DocumentActionButtonsState extends State<DocumentActionButtons> {
   bool _tapLocked = false;
+  AppThemeColors get colors => context.appColors;
 
   @override
   void didUpdateWidget(covariant DocumentActionButtons oldWidget) {
@@ -51,13 +54,14 @@ class _DocumentActionButtonsState extends State<DocumentActionButtons> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: colors.shadow.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -1),
@@ -82,6 +86,7 @@ class _DocumentActionButtonsState extends State<DocumentActionButtons> {
           child: Container(
             height: 48, // Уменьшено с 48 до 40 для компактности
             decoration: BoxDecoration(
+              color: colors.surfacePrimary,
               border: Border.all(color: const Color(0xff4CAF50), width: 1.5),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -130,40 +135,40 @@ class _DocumentActionButtonsState extends State<DocumentActionButtons> {
         Expanded(
           child: SizedBox(
             height: 48, // Уменьшено с 48 до 40 для компактности
-            child: ElevatedButton(
+              child: ElevatedButton(
               onPressed: widget.isLoading || _tapLocked
                   ? null
                   : () => _handleTap(widget.onSave),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                disabledBackgroundColor: const Color(0xffE5E7EB),
+                backgroundColor: colors.buttonPrimaryBg,
+                disabledBackgroundColor: colors.borderSubtle,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
               child: widget.isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18, // Уменьшено с 20 до 18
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryFg),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 18), // Уменьшено с 20 до 18
+                        Icon(Icons.save_outlined,
+                            color: colors.buttonPrimaryFg, size: 18), // Уменьшено с 20 до 18
                         const SizedBox(width: 6), // Уменьшено с 8 до 6
                         Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14, // Уменьшено с 16 до 14
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                           ),
                           overflow: TextOverflow.ellipsis, // Добавлено для предотвращения переполнения
                         ),
@@ -188,26 +193,26 @@ class _DocumentActionButtonsState extends State<DocumentActionButtons> {
             ? null
             : () => _handleTap(widget.onSave),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff4759FF),
-          disabledBackgroundColor: const Color(0xffE5E7EB),
+          backgroundColor: colors.buttonPrimaryBg,
+          disabledBackgroundColor: colors.borderSubtle,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
         ),
         child: widget.isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryFg),
                 ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                  Icon(Icons.save_outlined, color: colors.buttonPrimaryFg, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     localizations.translate('save') ?? 'Обновить',

@@ -385,7 +385,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: colors.error,
             elevation: 3,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             duration: Duration(seconds: 3),
@@ -557,7 +557,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff4759FF),
+                  color: colors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -674,7 +674,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -685,15 +685,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           overlayHeight: 400,
           enabled: !_isLoadingInternetStores,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
+            closedFillColor: colors.fieldBg,
             expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1.5,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: const Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1.5,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -702,7 +702,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             return Text(
               item.name,
               style: TextStyle(
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -720,19 +720,19 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             );
           },
-          hintBuilder: (context, hint, enabled) => const Text(
+          hintBuilder: (context, hint, enabled) =>  Text(
             'Выберите интернет магазин',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -847,7 +847,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             color: colors.textInverse,
           ),
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: colors.error,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
@@ -902,7 +902,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   color: colors.textInverse,
                 ),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: colors.success,
               behavior: SnackBarBehavior.floating,
               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
@@ -962,7 +962,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -974,7 +974,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -1102,7 +1102,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               content: Text(
@@ -1112,7 +1112,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               actions: [
@@ -1124,7 +1124,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
-                        buttonColor: Color(0xff1E2E52),
+                        buttonColor: colors.textPrimary,
                         textColor: colors.textInverse,
                       ),
                     ),
@@ -1134,7 +1134,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         buttonText: AppLocalizations.of(context)!
                             .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
-                        buttonColor: Colors.red,
+                        buttonColor: colors.error,
                         textColor: colors.textInverse,
                       ),
                     ),
@@ -1219,12 +1219,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
-
+final colors = context.appColors;
                   return Transform.scale(
                     scale: scale,
                     child: Material(
                       elevation: elevation,
-                      shadowColor: Colors.black.withOpacity(0.3),
+                      shadowColor: colors.shadow.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                       child: child,
@@ -1286,8 +1286,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   child: CustomButton(
                     buttonText:
                         AppLocalizations.of(context)!.translate('add_field'),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: colors.textInverse,
+                    buttonColor: colors.buttonPrimaryBg,
+                    textColor: colors.buttonPrimaryFg,
                     onPressed: _showAddFieldMenu,
                   ),
                 );
@@ -1303,15 +1303,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: colors.textInverse,
+                  color: colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Color(0xffE5E9F2),
+                    color: colors.borderSubtle.withValues(alpha: 0.5),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: colors.shadow.withValues(alpha: 0.08),
                       blurRadius: 4,
                       offset: Offset(0, 2),
                     ),
@@ -1322,7 +1322,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   children: [
                     Icon(
                       Icons.drag_handle,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                       size: 24,
                     ),
                     const SizedBox(width: 16),
@@ -1336,7 +1336,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -1348,7 +1348,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w400,
-                                  color: Color(0xff99A4BA),
+                                  color: colors.textSecondary,
                                 ),
                               ),
                             ],
@@ -1398,12 +1398,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                       height: 24,
                                       decoration: BoxDecoration(
                                         color: config.isActive
-                                            ? Color(0xff4759FF)
+                                            ? colors.buttonPrimaryBg
                                             : colors.surfacePrimary,
                                         border: Border.all(
                                           color: config.isActive
-                                              ? Color(0xff4759FF)
-                                              : Color(0xffCCD5E0),
+                                              ? colors.buttonPrimaryBg
+                                              : colors.borderSubtle,
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -1427,8 +1427,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         color: config.isActive
-                                            ? Color(0xff1E2E52)
-                                            : Color(0xff6B7A99),
+                                            ? colors.textPrimary
+                                            : colors.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -1479,12 +1479,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                       height: 24,
                                       decoration: BoxDecoration(
                                         color: config.showOnSite
-                                            ? Color(0xff4759FF)
+                                            ? colors.buttonPrimaryBg
                                             : colors.surfacePrimary,
                                         border: Border.all(
                                           color: config.showOnSite
-                                              ? Color(0xff4759FF)
-                                              : Color(0xffCCD5E0),
+                                              ? colors.buttonPrimaryBg
+                                              : colors.borderSubtle,
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -1508,8 +1508,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         color: config.showOnSite
-                                            ? Color(0xff1E2E52)
-                                            : Color(0xff6B7A99),
+                                            ? colors.textPrimary
+                                            : colors.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -1528,10 +1528,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: colors.textInverse,
+            color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: colors.shadow.withValues(alpha: 0.08),
                 blurRadius: 5,
                 offset: Offset(0, -2),
               )
@@ -1542,8 +1542,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               Expanded(
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                  buttonColor: const Color(0xffF4F7FD),
-                  textColor: Colors.black,
+                  buttonColor: colors.buttonSecondaryBg,
+                  textColor: colors.buttonSecondaryFg,
+                  borderColor: colors.borderSubtle,
+                  borderWidth: 1,
                   onPressed: () async {
                     if (_hasFieldChanges()) {
                       final shouldExit = await _showExitSettingsDialog();
@@ -1563,8 +1565,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               Expanded(
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: const Color(0xff4759FF),
-                  textColor: colors.textInverse,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
+                  borderColor: colors.buttonPrimaryBg,
+                  borderWidth: 1,
                   onPressed: isSavingFieldOrder
                       ? null
                       : () async {
@@ -1730,9 +1734,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     return Container(
       width: 48,
       height: 48,
-      color: Colors.grey[200],
+      color: colors.surfaceAccent,
       child:
-          const Center(child: Icon(Icons.image, color: Colors.grey, size: 24)),
+       Center(child: Icon(Icons.image, color: colors.textSecondary, size: 24)),
     );
   }
 
@@ -1782,6 +1786,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
       builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
     );
 
@@ -1951,7 +1957,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
             ),
           ),
@@ -1997,7 +2003,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -2020,6 +2026,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   @override
   Widget build(BuildContext context) {
+    
+    final colors = context.appColors;
     return MultiBlocProvider(
       providers: [
         BlocProvider<OrderBloc>.value(value: _orderBloc),
@@ -2049,16 +2057,16 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       color: colors.textInverse,
                     ),
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: colors.error,
                 ),
               );
             }
           },
           builder: (context, configState) {
             if (configState is FieldConfigurationLoading) {
-              return const Center(
+              return  Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               );
             }
@@ -2067,9 +2075,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children:  [
                     CircularProgressIndicator(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                     SizedBox(height: 16),
                     Text('Загрузка конфигурации...'),
@@ -2221,8 +2229,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xff1E2E52), size: 24),
+        icon:  Icon(Icons.arrow_back_ios,
+            color: colors.textPrimary, size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
@@ -2231,17 +2239,20 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
-      centerTitle: false,
+      centerTitle: true,
+      titleSpacing: 0,
       actions: [
-        IconButton(
-          icon: Icon(
-            isSettingsMode ? Icons.close : Icons.settings,
-            color: Color(0xff1E2E52),
-          ),
-          onPressed: () async {
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Material(
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () async {
             if (isSettingsMode) {
               if (_hasFieldChanges()) {
                 final shouldExit = await _showExitSettingsDialog();
@@ -2280,12 +2291,199 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 isSettingsMode = true;
               });
             }
-          },
-          tooltip: isSettingsMode
-              ? AppLocalizations.of(context)!.translate('close')
-              : AppLocalizations.of(context)!.translate('appbar_settings'),
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  isSettingsMode ? Icons.close : Icons.settings,
+                  color: colors.buttonPrimaryBg,
+                ),
+              ),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildItemsToolbarAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: colors.textPrimary, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemsEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 28,
+            color: colors.textSecondary,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            AppLocalizations.of(context)!.translate('add_at_least_one_product'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountColumn({
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w600,
+            color: colors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuantityStepper({
+    required int index,
+    required int quantity,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.fieldBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colors.borderSubtle,
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => _updateQuantity(index, quantity - 1),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: colors.borderSubtle),
+                ),
+              ),
+              child: Icon(
+                Icons.remove_rounded,
+                size: 18,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 44,
+            child: TextField(
+              controller: _getQuantityController(index),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              onChanged: (value) => _handleQuantityInput(index, value),
+              onEditingComplete: () => _handleQuantityEditingComplete(index),
+              onSubmitted: (value) => _handleQuantityInput(index, value),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _updateQuantity(index, quantity + 1),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: colors.borderSubtle),
+                ),
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2301,60 +2499,39 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              AppLocalizations.of(context)!.translate('items_list'),
-              style: TextStyle(
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.translate('items_list'),
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52)),
-            ),
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: _scanBarcode,
-                  child: Row(
-                    children: [
-                      Icon(Icons.qr_code_scanner,
-                          color: context.appColors.iconPrimary, size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                          AppLocalizations.of(context)!.translate('barcode') ??
-                              'Штрихкод',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: context.appColors.textPrimary)),
-                    ],
-                  ),
+                  color: colors.textPrimary,
                 ),
-                const SizedBox(width: 16),
-                GestureDetector(
+              ),
+            ),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                _buildItemsToolbarAction(
+                  icon: Icons.qr_code_scanner,
+                  label: AppLocalizations.of(context)!.translate('barcode'),
+                  onTap: _scanBarcode,
+                ),
+                _buildItemsToolbarAction(
+                  icon: Icons.add,
+                  label:
+                      AppLocalizations.of(context)!.translate('add_product'),
                   onTap: _navigateToAddProduct,
-                  child: Row(
-                    children: [
-                      Icon(Icons.add,
-                          color: context.appColors.iconPrimary, size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                          AppLocalizations.of(context)!
-                              .translate('add_product'),
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: context.appColors.textPrimary)),
-                    ],
-                  ),
                 ),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         if (_items.isNotEmpty)
           Column(
             children: _items
@@ -2362,17 +2539,19 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 .entries
                 .map((entry) => _buildItemCard(entry.key, entry.value))
                 .toList(),
-          ),
+          )
+        else
+          _buildItemsEmptyState(),
         if (_items.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(top: 16),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: colors.textInverse,
-              borderRadius: BorderRadius.circular(12),
+              color: colors.surfaceElevated,
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: colors.shadow.withValues(alpha: 0.08),
                     spreadRadius: 1,
                     blurRadius: 3,
                     offset: const Offset(0, 1))
@@ -2384,10 +2563,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 Text(
                   AppLocalizations.of(context)!.translate('total'),
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 Row(
@@ -2400,10 +2579,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             decimal: true),
                         textAlign: TextAlign.right,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 24,
                           fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
                         ),
                         decoration: const InputDecoration(
                           isDense: true,
@@ -2425,14 +2604,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      currencySymbol,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                    const SizedBox(width: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        currencySymbol,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
+                        ),
                       ),
                     ),
                   ],
@@ -2445,15 +2627,20 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget _buildItemCard(int index, Map<String, dynamic> item) {
+    final quantity = (item['quantity'] as num?)?.toInt() ??
+        int.tryParse('${item['quantity']}') ??
+        1;
+    final imagePath = item['imagePath']?.toString();
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colors.textInverse,
-        borderRadius: BorderRadius.circular(12),
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: colors.shadow.withValues(alpha: 0.08),
               spreadRadius: 1,
               blurRadius: 3,
               offset: const Offset(0, 1))
@@ -2463,25 +2650,25 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 48,
-            height: 48,
-            child: item['imagePath'] != null && baseUrl != null
+            width: 70,
+            height: 70,
+            child: imagePath != null && imagePath.isNotEmpty && baseUrl != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(14),
                     child: Image.network(
-                      '${item['imagePath']}',
-                      width: 48,
-                      height: 48,
+                      imagePath,
+                      width: 70,
+                      height: 70,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           _buildPlaceholderImage(),
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return const Center(
+                        return  Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff4759FF)),
+                                colors.buttonPrimaryBg),
                           ),
                         );
                       },
@@ -2489,7 +2676,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   )
                 : _buildPlaceholderImage(),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2498,138 +2685,55 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     item['name'] ??
                         AppLocalizations.of(context)!.translate('no_name_chat'),
                     style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52)),
-                    maxLines: 1,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildAmountColumn(
+                        label: AppLocalizations.of(context)!
+                            .translate('goods_price_details'),
+                        value: _formatPrice(item['price']),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildAmountColumn(
+                        label: AppLocalizations.of(context)!.translate('summ'),
+                        value: _formatPrice(item['price'] * quantity),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildQuantityStepper(
+                      index: index,
+                      quantity: quantity,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _removeItem(index),
+                      style: IconButton.styleFrom(
+                        backgroundColor: colors.surfaceAccent,
+                        minimumSize: const Size(42, 42),
+                      ),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: colors.textSecondary,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                          AppLocalizations.of(context)!
-                              .translate('goods_price_details'),
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text(_formatPrice(item['price']),
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(AppLocalizations.of(context)!.translate('summ'),
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text(
-                          _formatPrice(item['price'] * (item['quantity'] ?? 1)),
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: const Color(0xffF4F7FD)),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => _updateQuantity(
-                              index, (item['quantity'] ?? 1) - 1),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.remove,
-                              size: 20,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 36,
-                          child: TextField(
-                            controller: _getQuantityController(index),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 8),
-                              border: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) =>
-                                _handleQuantityInput(index, value),
-                            onEditingComplete: () =>
-                                _handleQuantityEditingComplete(index),
-                            onSubmitted: (value) =>
-                                _handleQuantityInput(index, value),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _updateQuantity(
-                              index, (item['quantity'] ?? 1) + 1),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.add,
-                              size: 20,
-                              color: Color(0xff1E2E52),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Color(0xff99A4BA), size: 20),
-                      onPressed: () => _removeItem(index)),
-                ],
-              ),
-            ],
           ),
         ],
       ),
@@ -2638,10 +2742,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   Widget _buildActionButtons(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: colors.textInverse, boxShadow: [
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+      decoration: BoxDecoration(color: colors.backgroundPrimary, boxShadow: [
         BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: colors.shadow.withValues(alpha: 0.08),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -1))
@@ -2652,11 +2756,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffF4F7FD),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('cancel'),
@@ -2664,7 +2770,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                  color: colors.textInverse.withValues(alpha: 0.86),
                 ),
               ),
             ),
@@ -2675,8 +2781,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               onPressed: () async {
                 final bool managerRequired =
                     _isFieldActiveByNames({'manager_id'});
-                final bool branchRequired =
-                    _isFieldActiveByNames({'branch_id', 'storage_id'});
                 final bool goodsRequired = _isFieldActiveByNames(
                     {'goods', 'order_goods', 'items', 'sum'});
                 final bool deliveryAddressRequired =
@@ -2825,17 +2929,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 ));
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff4759FF),
+                  backgroundColor: colors.buttonPrimaryBg,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12)),
+                      borderRadius: BorderRadius.circular(18)),
+                  padding: const EdgeInsets.symmetric(vertical: 16)),
               child: Text(
                 AppLocalizations.of(context)!.translate('create'),
-                style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: colors.textInverse),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: colors.buttonPrimaryFg),
               ),
             ),
           ),

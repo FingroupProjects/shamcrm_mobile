@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_multi_list/lead_multi_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +72,8 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     return Column(
       children: [
         Column(
@@ -78,11 +81,9 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('lead'),
-              style: TextStyle(
-                fontSize: 16,
+              style: textStyles.bodyLg.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -110,15 +111,15 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
                     AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
+                  closedFillColor: colors.fieldBg,
+                  expandedFillColor: colors.surfacePrimary,
                   closedBorder: Border.all(
-                    color: Color(0xffF4F7FD),
+                    color: colors.fieldBg,
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: Color(0xffF4F7FD),
+                    color: colors.fieldBg,
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
@@ -139,25 +140,24 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
                             height: 18,
                             decoration: BoxDecoration(
                               border: Border.all(
-                                  color: Color(0xff1E2E52), width: 1),
+                                  color: colors.buttonPrimaryBg, width: 1),
+                              borderRadius: BorderRadius.circular(4),
                               color: isSelected
-                                  ? Color(0xff1E2E52)
+                                  ? colors.buttonPrimaryBg
                                   : Colors.transparent,
                             ),
                             child: isSelected
                                 ? Icon(Icons.check,
-                                    color: Colors.white, size: 16)
+                                    color: colors.buttonPrimaryFg, size: 16)
                                 : null,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               '${item.name} ${item.lastname}',
-                              style: TextStyle(
-                                fontSize: 16,
+                              style: textStyles.bodyMd.copyWith(
                                 fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
+                                color: colors.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -178,21 +178,17 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
                     selectedLeadsCount == 0
                         ? AppLocalizations.of(context)!.translate('select_lead')
                         : '${AppLocalizations.of(context)!.translate('select_leads')} $selectedLeadsCount',
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   );
                 },
                 hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_leads'),
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     )),
                 onListChanged: (values) {
                   widget.onSelectLeads(values);

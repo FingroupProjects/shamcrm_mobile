@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class DeliveryAddressDropdown extends StatefulWidget {
   final int leadId;
@@ -65,6 +66,7 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocBuilder<DeliveryAddressBloc, DeliveryAddressState>(
       builder: (context, state) {
         List<DeliveryAddress> addresses = [];
@@ -76,11 +78,11 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('delivery_address'),
-                style: const TextStyle(
+                style:  TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
@@ -88,16 +90,16 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
                 height: 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.fieldBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const SizedBox(
+                child:  SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        AlwaysStoppedAnimation<Color>(colors.textPrimary),
                   ),
                 ),
               ),
@@ -169,20 +171,20 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
             children: [
               Text(
                 AppLocalizations.of(context)!.translate('delivery_address'),
-                style: const TextStyle(
+                style:  TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 state.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.red,
                   fontFamily: 'Gilroy',
+                  color: colors.error,
                 ),
               ),
             ],
@@ -194,11 +196,11 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
           children: [
             Text(
               AppLocalizations.of(context)!.translate('delivery_address'),
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -211,15 +213,15 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               overlayHeight: 400,
               enabled: true,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
+                closedFillColor: colors.fieldBg,
+                expandedFillColor: colors.surfacePrimary,
                 closedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.fieldBg,
                   width: 1,
                 ),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
+                  color: colors.fieldBg,
                   width: 1,
                 ),
                 expandedBorderRadius: BorderRadius.circular(12),
@@ -227,8 +229,8 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.address,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style:  TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -238,22 +240,22 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               headerBuilder: (context, selectedItem, enabled) {
                 return Text(
                   selectedItem.address,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
                 AppLocalizations.of(context)!
                     .translate('select_delivery_address'),
-                style: const TextStyle(
+                style:  TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               excludeSelected: false,

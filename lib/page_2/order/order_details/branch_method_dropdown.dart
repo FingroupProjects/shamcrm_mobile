@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class BranchesDropdown extends StatefulWidget {
   final String label;
@@ -24,6 +25,7 @@ class BranchesDropdown extends StatefulWidget {
 class _BranchesDropdownState extends State<BranchesDropdown> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     // Фильтруем филиалы с isActive = 1
     final filteredBranches = widget.branches?.where((branch) => branch.isActive == 1).toList() ?? [];
 
@@ -40,14 +42,15 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
+          style:  TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -56,20 +59,20 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
             ? Container(
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7FD),
+                  color: colors.surfaceAccent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     width: 1,
-                    color: const Color(0xFFF4F7FD),
+                    color: colors.surfaceAccent,
                   ),
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.translate('no_active_branches'),
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               )
@@ -80,23 +83,23 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
-                    closedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
-                      width: 1,
+                    decoration: CustomDropdownDecoration(
+                      closedFillColor: colors.fieldBg,
+                      expandedFillColor: colors.surfacePrimary,
+                      closedBorder: Border.all(
+                        color: colors.fieldBg,
+                        width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: Color(0xffF4F7FD),
+                      color: colors.fieldBg,
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
                     errorStyle: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Colors.red,
+                      color: colors.error,
                       height: 1.0,
                     ),
                   ),
@@ -104,7 +107,7 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
                     return Text(
                       item.name,
                       style: TextStyle(
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
@@ -113,12 +116,12 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
-                      selectedItem?.name ?? AppLocalizations.of(context)!.translate('select_branch'),
+                      selectedItem.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
@@ -128,7 +131,7 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   excludeSelected: false,

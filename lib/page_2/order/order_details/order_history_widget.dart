@@ -6,6 +6,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class OrderHistoryWidget extends StatefulWidget {
   final int orderId;
@@ -28,6 +29,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocBuilder<OrderHistoryBloc, OrderHistoryState>(
       builder: (context, state) {
         if (state is OrderHistoryLoading) {
@@ -40,11 +42,11 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
@@ -52,7 +54,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
                 elevation: 3,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 duration: const Duration(seconds: 3),
@@ -73,6 +75,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
       String title,
       List<String> items,
       ) {
+    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -82,7 +85,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
       child: Container(
         padding: const EdgeInsets.only(right: 16, left: 16, top: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F7FD),
+          color: colors.surfaceAccent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -105,14 +108,14 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
                       ? items.map((item) => _buildHistoryItem(item)).toList()
                       : [
                     Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
+                      padding:  EdgeInsets.only(top: 8.0),
                       child: Text(
                         AppLocalizations.of(context)!.translate('no_history_available'),
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),
@@ -127,16 +130,17 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
   }
 
   Row _buildTitleRow(String title) {
+    final colors = context.appColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style:  TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         AnimatedRotation(
@@ -175,6 +179,7 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
   }
 
   Row _buildStatusRow(String status, String userName) {
+    final colors = context.appColors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,11 +187,11 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
         Expanded(
           child: Text(
             status,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+            color: colors.success,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -195,11 +200,11 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
         Flexible(
           child: Text(
             userName,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 14,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+            color: colors.textSecondary,
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
@@ -211,22 +216,46 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
   }
 
   Column _buildAdditionalDetails(List<String> details) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: details.where((detail) => detail.isNotEmpty).map((detail) {
+        final parts = detail.split(':');
+        final keyText = parts.isNotEmpty ? parts.first.trim() : detail;
+        final valueText = parts.length > 1 ? parts.sublist(1).join(':').trim() : '';
         return Padding(
           padding: const EdgeInsets.only(bottom: 4.0),
-          child: Text(
-            detail,
-            style: const TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w400,
-              color: Color(0xff1E2E52),
-            ),
+          child: RichText(
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w400,
+                color: colors.textPrimary,
+              ),
+              children: [
+                TextSpan(
+                  text: keyText,
+                  style: TextStyle(
+                    color: colors.buttonPrimaryBg,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (valueText.isNotEmpty) ...[
+                  TextSpan(
+                    text: ': ',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                  TextSpan(
+                    text: valueText,
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                ],
+              ],
+            ),
           ),
         );
       }).toList(),

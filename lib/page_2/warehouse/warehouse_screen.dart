@@ -7,6 +7,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
@@ -102,7 +103,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           await _apiService.hasPermission('checking_account_pko.read');
       _hasMoneyOutcome =
           await _apiService.hasPermission('checking_account_rko.read');
-      // _hasOrder = await _apiService.hasPermission('order.read'); // Проверка права для заказов
+      _hasOrder = await _apiService.hasPermission('order.read');
 
       // Проверяем права для справочников
       final hasStorage = await _apiService.hasPermission('storage.read');
@@ -285,6 +286,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       );
     }
 
+    if (_hasOrder) {
+      allDocuments.add(
+        WarehouseDocument(
+          keyName: 'order',
+          title: AppLocalizations.of(context)!.translate('orders') ?? 'Заказы',
+          icon: Icons.receipt_long_outlined,
+          color: docColor,
+        ),
+      );
+    }
+
     if (_hasManufactureDocument) {
       allDocuments.add(
         WarehouseDocument(
@@ -403,6 +415,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
+      );
+    } else if (document.keyName == 'order') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const OrderScreen()),
       );
     } else if (document.keyName == 'references') {
       Navigator.push(

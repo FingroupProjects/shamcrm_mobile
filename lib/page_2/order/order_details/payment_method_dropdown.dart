@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class PaymentMethodDropdown extends StatefulWidget {
   final String? selectedPaymentMethod;
@@ -27,7 +28,7 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
 
   @override
   Widget build(BuildContext context) {
-
+final colors = context.appColors;
   final List<String> paymentMethods = [
     AppLocalizations.of(context)!.translate('cash'),
     AppLocalizations.of(context)!.translate('ALIF'),
@@ -40,11 +41,11 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('payment_method'),
-          style: const TextStyle(
+          style:  TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52), // Исправлен цвет с 0xfff1E2E52 на корректный
+            color: colors.textPrimary, // Исправлен цвет с 0xfff1E2E52 на корректный
           ),
         ),
         const SizedBox(height: 4),
@@ -55,15 +56,15 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
           overlayHeight: 400,
           enabled: true,
           decoration:  CustomDropdownDecoration(
-            closedFillColor: Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor: colors.fieldBg,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -71,8 +72,8 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style:  TextStyle(
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -84,21 +85,21 @@ class _PaymentMethodDropdownState extends State<PaymentMethodDropdown> {
               selectedItem.isNotEmpty
                   ? selectedItem
                   : AppLocalizations.of(context)!.translate('select_payment_method'),
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
             AppLocalizations.of(context)!.translate('select_payment_method'),
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           excludeSelected: false,

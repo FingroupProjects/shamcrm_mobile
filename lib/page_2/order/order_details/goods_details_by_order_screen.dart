@@ -1,6 +1,5 @@
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/page_2/goods/goods_details/goods_delete.dart';
-import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -57,12 +56,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
       appBar: _buildAppBar(
         context,
         AppLocalizations.of(context)!.translate('view_goods'),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       body: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16),
         child: ListView(
@@ -76,6 +76,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
   }
 
   Widget _buildImageSlider() {
+    final colors = context.appColors;
     return Column(
       children: [
         Container(
@@ -103,13 +104,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
         Container(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black54,
+            color: colors.textPrimary,
             borderRadius: BorderRadius.circular(30),
           ),
           child: Text(
             '${_currentPage + 1}/${widget.imagePaths.length}',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.textInverse,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -120,8 +121,9 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context, String title) {
+    final colors = context.appColors;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -146,11 +148,11 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
         offset: const Offset(-10, 0),
         child: Text(
           title,
-          style: const TextStyle(
+          style:  TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -255,7 +257,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xfff99A4BA),
+        color: context.appColors.textSecondary,
       ),
     );
   }
@@ -277,11 +279,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -293,7 +296,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
@@ -308,7 +311,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
                     content,
                     textAlign: TextAlign.start,
                     style: TextStyle(
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -321,8 +324,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsByOrderScreen> {
                 child: CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('close'),
                   onPressed: () => Navigator.pop(context),
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.textPrimary,
+                  textColor: colors.textInverse,
                 ),
               ),
             ],

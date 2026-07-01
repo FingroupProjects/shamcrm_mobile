@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class StatusMethodDropdown extends StatefulWidget {
   final String? selectedstatusMethod;
@@ -41,18 +42,19 @@ class _StatusMethodDropdownState extends State<StatusMethodDropdown> {
     AppLocalizations.of(context)!.translate('completed'),
     AppLocalizations.of(context)!.translate('canceled'),
   ];
-  
+  final colors = context.appColors;
     return Column(
+      
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('status_method'),
-          style: const TextStyle(
+          style:  TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
             color:
-                Color(0xff1E2E52), // Исправлен цвет с 0xfff1E2E52 на корректный
+                colors.textPrimary, // Исправлен цвет с 0xfff1E2E52 на корректный
           ),
         ),
         const SizedBox(height: 4),
@@ -63,15 +65,15 @@ class _StatusMethodDropdownState extends State<StatusMethodDropdown> {
           overlayHeight: 400,
           enabled: true,
           decoration: CustomDropdownDecoration(
-            closedFillColor: Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor: colors.fieldBg,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: Color(0xffF4F7FD),
+              color: colors.fieldBg,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -79,8 +81,8 @@ class _StatusMethodDropdownState extends State<StatusMethodDropdown> {
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
+              style:  TextStyle(
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
@@ -93,21 +95,21 @@ class _StatusMethodDropdownState extends State<StatusMethodDropdown> {
                   ? selectedItem
                   : AppLocalizations.of(context)!
                       .translate('select_status_method'),
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
             AppLocalizations.of(context)!.translate('select_status_method'),
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           excludeSelected: false,

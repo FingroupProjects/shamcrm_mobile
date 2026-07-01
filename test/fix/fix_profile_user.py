@@ -108,3 +108,7 @@ with open('lib/screens/chats/chats_widgets/profile_user_corporate.dart', 'w', en
     f.write(content)
 
 print("Done profile user")
+
+
+
+

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 class DeleteOrderDialog extends StatelessWidget {
   final int orderId;
@@ -8,8 +9,9 @@ class DeleteOrderDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       title:  Center(
         child: Text(
           AppLocalizations.of(context)!.translate('delete_order'),
@@ -17,7 +19,7 @@ class DeleteOrderDialog extends StatelessWidget {
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -27,7 +29,7 @@ class DeleteOrderDialog extends StatelessWidget {
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       actions: [
@@ -38,14 +40,14 @@ class DeleteOrderDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, false),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: colors.error,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.translate('cancel'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
               ),
@@ -55,14 +57,14 @@ class DeleteOrderDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
+                  backgroundColor: colors.textPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.translate('delete'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
               ),
