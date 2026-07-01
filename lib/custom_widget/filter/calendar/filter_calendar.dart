@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/calendar/user_calendar_multi_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -55,22 +56,23 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
     }
   }
 
-  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
+  Widget _buildSwitchTile(BuildContext context, String title, bool value, Function(bool) onChanged) {
+    final colors = context.appColors;
     return SwitchListTile(
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
-          color: Colors.black54,
+          color: colors.textPrimary,
           fontFamily: 'Gilroy',
         ),
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: Colors.white,
-      inactiveTrackColor: Colors.grey.withOpacity(0.5),
-      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-      inactiveThumbColor: Colors.white,
+      activeColor: colors.textInverse,
+      inactiveTrackColor: colors.fieldBg,
+      activeTrackColor: colors.buttonPrimaryBg,
+      inactiveThumbColor: colors.textInverse,
     );
   }
 
@@ -84,31 +86,37 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
+      backgroundColor: Colors.transparent,
+      extendBody: true,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('filter'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
             fontFamily: 'Gilroy',
           ),
         ),
-        backgroundColor: Colors.white,
-        forceMaterialTransparency: true,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         leadingWidth: 50,
         leading: Padding(
           padding: const EdgeInsets.only(left: 0),
           child: Transform.translate(
             offset: const Offset(0, -2),
             child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
+              icon: ColorFiltered(
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+                child: Image.asset(
+                  'assets/icons/arrow-left.png',
+                  width: 24,
+                  height: 24,
+                ),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -127,18 +135,18 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
             },
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+              backgroundColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: BorderSide(color: colors.buttonPrimaryBg.withValues(alpha: 0.5), width: 0.5),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: colors.buttonPrimaryBg,
                 fontFamily: 'Gilroy',
               ),
             ),
@@ -152,18 +160,18 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
             },
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+              backgroundColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              side: const BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: BorderSide(color: colors.buttonPrimaryBg.withValues(alpha: 0.5), width: 0.5),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: colors.buttonPrimaryBg,
                 fontFamily: 'Gilroy',
               ),
             ),
@@ -183,21 +191,24 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      color: Colors.white,
+                      color: colors.surfacePrimary.withValues(alpha: 0.78),
                       elevation: 0,
                       child: Column(
                         children: [
                           _buildSwitchTile(
+                            context,
                             AppLocalizations.of(context)!.translate('view_task'),
                             _hasTask,
                             (value) => setState(() => _hasTask = value),
                           ),
                           _buildSwitchTile(
+                            context,
                             AppLocalizations.of(context)!.translate('my_task'),
                             _hasMyTask,
                             (value) => setState(() => _hasMyTask = value),
                           ),
                           _buildSwitchTile(
+                            context,
                             AppLocalizations.of(context)!.translate('notice'),
                             _hasNotice,
                             (value) => setState(() => _hasNotice = value),
@@ -210,7 +221,7 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: colors.surfacePrimary.withValues(alpha: 0.78),
                       elevation: 0,
                       child: Padding(
                         padding: const EdgeInsets.all(8),

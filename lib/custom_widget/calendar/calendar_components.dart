@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_event.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_myTask.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_task.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ class CalendarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return TableCalendar(
       rowHeight: MediaQuery.of(context).size.height * 0.065,
       daysOfWeekHeight: MediaQuery.of(context).size.height * 0.028,
@@ -64,26 +66,26 @@ class CalendarWidget extends StatelessWidget {
         cellMargin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025),
         defaultTextStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.035,
-          color: const Color(0xff1E2E52),
+          color: colors.textPrimary,
           fontFamily: 'Gilroy',
         ),
-        todayDecoration: const BoxDecoration(
-          color: Color(0xff1E2E52),
+        todayDecoration: BoxDecoration(
+          color: colors.buttonPrimaryBg,
           shape: BoxShape.circle,
         ),
         selectedDecoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.4),
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.35),
           shape: BoxShape.circle,
         ),
-        markerDecoration: const BoxDecoration(
-          color: Colors.blue,
+        markerDecoration: BoxDecoration(
+          color: colors.buttonPrimaryBg,
           shape: BoxShape.circle,
         ),
       ),
       headerStyle: HeaderStyle(
         titleTextStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.045,
-          color: const Color(0xff1E2E52),
+          color: colors.textPrimary,
           fontFamily: 'Gilroy',
         ),
         formatButtonVisible: false,
@@ -91,8 +93,8 @@ class CalendarWidget extends StatelessWidget {
         titleTextFormatter: (date, locale) => DateFormat('MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
             .format(date)
             .capitalize(),
-        leftChevronIcon: const Icon(Icons.arrow_left, color: Color(0xff1E2E52)),
-        rightChevronIcon: const Icon(Icons.arrow_right, color: Color(0xff1E2E52)),
+        leftChevronIcon: Icon(Icons.arrow_left, color: colors.iconPrimary),
+        rightChevronIcon: Icon(Icons.arrow_right, color: colors.iconPrimary),
       ),
       calendarBuilders: CalendarBuilders(
         markerBuilder: (context, date, events) {
@@ -138,6 +140,7 @@ class EventListForDate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final eventDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final eventsOnSelectedDate = events[eventDate] ?? [];
     return Padding(
@@ -146,13 +149,13 @@ class EventListForDate extends StatelessWidget {
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xffF4F7FD),
+                color: colors.surfacePrimary.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('no_events'),
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w500,
                   fontSize: 16,
                   fontFamily: 'Gilroy',
@@ -169,8 +172,8 @@ class EventListForDate extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary.withValues(alpha: 0.72),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,13 +187,13 @@ class EventListForDate extends StatelessWidget {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: Colors.transparent,
                         ),
                       ),
                       ...eventsOnSelectedDate.map((event) {
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4),
-                          color: const Color(0xffF4F7FD),
+                          color: colors.surfacePrimary.withValues(alpha: 0.8),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -224,10 +227,10 @@ class EventListForDate extends StatelessWidget {
                                                   ? Icons.task
                                                   : Icons.assignment,
                                           color: event.type == 'notice'
-                                              ? Colors.orange
+                                              ? colors.warning
                                               : event.type == 'task'
-                                                  ? Colors.blue
-                                                  : Colors.purpleAccent,
+                                                  ? colors.buttonPrimaryBg
+                                                  : colors.surfaceAccent,
                                           size: 20,
                                         ),
                                       ),
@@ -239,7 +242,7 @@ class EventListForDate extends StatelessWidget {
                                       fontSize: 16,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xff1E2E52),
+                                      color: Colors.transparent,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -251,7 +254,7 @@ class EventListForDate extends StatelessWidget {
                                             ? AppLocalizations.of(context)!.translate('my_task')
                                             : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: colors.textSecondary,
                                       fontFamily: 'Gilroy',
                                       fontSize: 14,
                                     ),
@@ -268,7 +271,7 @@ class EventListForDate extends StatelessWidget {
                                       widthFactor: 0.7, 
                                       child: Container(
                                         height: 1.5,
-                                        color: Color(0xff1E2E52).withOpacity(0.9),
+                  color: colors.textPrimary.withOpacity(0.9),
                                       ),
                                     ),
                                   ),
@@ -302,6 +305,7 @@ class DayViewEventList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final eventDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final eventsOnSelectedDate = events[eventDate] ?? [];
     final sortedEvents = eventsOnSelectedDate..sort((a, b) => a.date.compareTo(b.date));
@@ -312,13 +316,13 @@ class DayViewEventList extends StatelessWidget {
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xffF4F7FD),
+                color: colors.surfacePrimary.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('no_events'),
-                style: const TextStyle(
-                  color: Color(0xff1E2E52),
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
                   fontSize: 16,
@@ -337,11 +341,11 @@ class DayViewEventList extends StatelessWidget {
                       DateFormat('d MMMM yyyy', AppLocalizations.of(context)!.locale.languageCode)
                           .format(selectedDate)
                           .capitalize(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -356,17 +360,17 @@ class DayViewEventList extends StatelessWidget {
                                 width: 60,
                                 child: Text(
                                   DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5))),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ),
                             Expanded(
                               child: Card(
-                                color: const Color(0xffF4F7FD),
+                                color: colors.surfacePrimary.withValues(alpha: 0.8),
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -400,10 +404,10 @@ class DayViewEventList extends StatelessWidget {
                                                         ? Icons.task
                                                         : Icons.assignment,
                                                 color: event.type == 'notice'
-                                                    ? Colors.orange
+                                                    ? colors.warning
                                                     : event.type == 'task'
-                                                        ? Colors.blue
-                                                        : Colors.purpleAccent,
+                                                        ? colors.buttonPrimaryBg
+                                                        : colors.surfaceAccent,
                                                 size: 20,
                                               ),
                                             ),
@@ -411,11 +415,11 @@ class DayViewEventList extends StatelessWidget {
                                         ),
                                         title: Text(
                                           event.title,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontFamily: 'Gilroy',
                                             fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
+                                            color: colors.textPrimary,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -427,7 +431,7 @@ class DayViewEventList extends StatelessWidget {
                                                   ? AppLocalizations.of(context)!.translate('my_task')
                                                   : '${AppLocalizations.of(context)!.translate('notice')}',
                                           style: TextStyle(
-                                            color: Colors.grey[600],
+                                            color: colors.textSecondary,
                                             fontFamily: 'Gilroy',
                                             fontSize: 14,
                                           ),
@@ -442,10 +446,10 @@ class DayViewEventList extends StatelessWidget {
                                        child: Center(
                                          child: FractionallySizedBox(
                                            widthFactor: 0.65, 
-                                           child: Container(
-                                             height: 1.5,
-                                             color: Color(0xff1E2E52).withOpacity(0.9),
-                                           ),
+                                             child: Container(
+                                               height: 1.5,
+                                                color: colors.textPrimary.withOpacity(0.9),
+                                             ),
                                          ),
                                        ),
                                      ),
@@ -479,10 +483,11 @@ class CalendarViewDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
+        color: colors.surfacePrimary.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
       ),
       child: DropdownButtonHideUnderline(
@@ -492,12 +497,12 @@ class CalendarViewDropdown extends StatelessWidget {
               : currentFormat == CalendarFormat.week
                   ? 'week'
                   : 'day',
-          dropdownColor: Colors.white,
-          icon: const Icon(Icons.arrow_drop_down, color: Color(0xff1E2E52)),
-          style: const TextStyle(
+          dropdownColor: colors.surfacePrimary,
+          icon: Icon(Icons.arrow_drop_down, color: colors.iconPrimary),
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
           items: [
             DropdownMenuItem(
@@ -536,11 +541,12 @@ class YearPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final screenHeight = MediaQuery.of(context).size.height;
     final dialogHeight = screenHeight * 0.4;
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       title: Text(AppLocalizations.of(context)!.translate('select_year')),
       content: SizedBox(
         width: double.maxFinite,
@@ -561,7 +567,7 @@ class YearPickerDialog extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: year == focusedDate.year ? const Color(0xff1E2E52) : Colors.grey.withOpacity(0.2),
+                  color: year == focusedDate.year ? colors.buttonPrimaryBg : colors.fieldBg,
                 ),
                 child: Center(
                   child: Text(
@@ -569,7 +575,7 @@ class YearPickerDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: year == focusedDate.year ? Colors.white : Colors.black,
+                      color: year == focusedDate.year ? colors.textInverse : colors.textPrimary,
                     ),
                   ),
                 ),
@@ -581,13 +587,13 @@ class YearPickerDialog extends StatelessWidget {
      actions: [
   ElevatedButton(
     style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xff1E2E52),
+      backgroundColor: colors.buttonPrimaryBg,
       minimumSize: const Size(double.infinity, 48),
     ),
     onPressed: () => Navigator.pop(context),
     child: Text(
       AppLocalizations.of(context)!.translate('close'),
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: colors.textInverse),
     ),
   ),
 ],
@@ -609,11 +615,12 @@ class MonthPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final screenHeight = MediaQuery.of(context).size.height;
     final dialogHeight = screenHeight * 0.4;
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       title: Text(AppLocalizations.of(context)!.translate('select_month')),
       content: SizedBox(
         width: double.maxFinite,
@@ -636,8 +643,8 @@ class MonthPickerDialog extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: month == focusedDate.month && selectedYear == focusedDate.year
-                      ? const Color(0xff1E2E52)
-                      : Colors.grey.withOpacity(0.2),
+                      ? colors.buttonPrimaryBg
+                      : colors.fieldBg,
                 ),
                 child: Center(
                   child: Text(
@@ -648,8 +655,8 @@ class MonthPickerDialog extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: month == focusedDate.month && selectedYear == focusedDate.year
-                          ? Colors.white
-                          : Colors.black,
+                          ? colors.textInverse
+                          : colors.textPrimary,
                     ),
                   ),
                 ),
@@ -661,13 +668,13 @@ class MonthPickerDialog extends StatelessWidget {
     actions: [
   ElevatedButton(
     style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xff1E2E52),
+      backgroundColor: colors.buttonPrimaryBg,
       minimumSize: const Size(double.infinity, 48),
     ),
     onPressed: () => Navigator.pop(context),
     child: Text(
       AppLocalizations.of(context)!.translate('close'),
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: colors.textInverse),
     ),
   ),
 ],
@@ -683,7 +690,7 @@ void showOptionsBottomSheet(
 ) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: context.appColors.surfacePrimary,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -715,16 +722,17 @@ class OptionsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(Icons.task, color: Colors.blue),
+            leading: Icon(Icons.task, color: colors.buttonPrimaryBg),
             title: Text(
               AppLocalizations.of(context)!.translate('task'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colors.textPrimary),
             ),
             onTap: () {
               Navigator.pop(context);
@@ -739,10 +747,10 @@ class OptionsBottomSheet extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.event, color: Colors.orange),
+            leading: Icon(Icons.event, color: colors.warning),
             title: Text(
               AppLocalizations.of(context)!.translate('events'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colors.textPrimary),
             ),
             onTap: () {
               Navigator.pop(context);
@@ -757,10 +765,10 @@ class OptionsBottomSheet extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.assignment, color: Colors.purpleAccent),
+            leading: Icon(Icons.assignment, color: colors.surfaceAccent),
             title: Text(
               AppLocalizations.of(context)!.translate('appbar_my_tasks'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colors.textPrimary),
             ),
             onTap: () async {
               bool hasStatuses = await _checkTaskStatuses(context);

@@ -7,6 +7,9 @@ import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -204,7 +207,11 @@ void _changeView(String view) {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBody: true,
       appBar: AppBar(
         title: _isSearching
             ? SizedBox(
@@ -217,11 +224,11 @@ void _changeView(String view) {
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.only(bottom: 10),
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                   onChanged: (value) {
                     context.read<CalendarBloc>().add(FetchCalendarEvents(
@@ -245,27 +252,36 @@ void _changeView(String view) {
                           : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode)
                               .format(_focusedDate)
                               .capitalize(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const Icon(Icons.arrow_drop_down, size: 24),
                   ],
                 ),
               ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        foregroundColor: colors.textPrimary,
         leadingWidth: 50,
         leading: Padding(
           padding: const EdgeInsets.only(left: 0),
           child: Transform.translate(
             offset: const Offset(0, -2),
             child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
+              icon: ColorFiltered(
+                colorFilter: ColorFilter.mode(
+                  colors.iconPrimary,
+                  BlendMode.srcIn,
+                ),
+                child: Image.asset(
+                  'assets/icons/arrow-left.png',
+                  width: 24,
+                  height: 24,
+                ),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -274,11 +290,17 @@ void _changeView(String view) {
         actions: [
           IconButton(
             icon: _isSearching
-                ? const Icon(Icons.close, size: 24)
-                : Image.asset(
-                    'assets/icons/AppBar/search.png',
-                    width: 24,
-                    height: 24,
+                ? Icon(Icons.close, size: 24, color: colors.iconPrimary)
+                : ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      colors.iconPrimary,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/icons/AppBar/search.png',
+                      width: 24,
+                      height: 24,
+                    ),
                   ),
             onPressed: _onSearchPressed,
           ),
@@ -289,8 +311,8 @@ void _changeView(String view) {
                 icon: ColorFiltered(
                   colorFilter: ColorFilter.mode(
                     (_selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty)
-                        ? _colorAnimation.value ?? const Color(0xff1E2E52)
-                        : const Color(0xff1E2E52),
+                        ? _colorAnimation.value ?? colors.buttonPrimaryBg
+                        : colors.iconPrimary,
                     BlendMode.srcIn,
                   ),
                   child: Image.asset(
@@ -311,45 +333,46 @@ void _changeView(String view) {
             ),
         ],
       ),
-      body: BlocConsumer<CalendarBloc, CalendarBlocState>(
-  listener: (context, state) {
-    if (state is CalendarLoaded) {
-      setState(() {
-        _events.clear();
-        _filteredDates.clear();
+      body: Stack(
+        children: [
+          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          BlocConsumer<CalendarBloc, CalendarBlocState>(
+            listener: (context, state) {
+              if (state is CalendarLoaded) {
+                setState(() {
+                  _events.clear();
+                  _filteredDates.clear();
 
-        debugPrint('📅 Загружено событий: ${state.events.length}');
+                  for (var event in state.events) {
+                    final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
+                    _events[eventDate] = _events[eventDate] ?? [];
+                    _events[eventDate]!.add(
+                      CalendarEventData(
+                        id: event.id,
+                        title: event.name,
+                        date: event.date,
+                        startTime: event.date,
+                        endTime: event.date.add(const Duration(hours: 1)),
+                        color: CalendarUtils.getEventColor(event.type),
+                        type: event.type,
+                        isFinished: event.isFinished,
+                      ),
+                    );
 
-        for (var event in state.events) {
-          final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
-          _events[eventDate] = _events[eventDate] ?? [];
-          _events[eventDate]!.add(
-            CalendarEventData(
-              id: event.id,
-              title: event.name,  // ← Проверьте, что event.name не пустое
-              date: event.date,
-              startTime: event.date,
-              endTime: event.date.add(const Duration(hours: 1)),
-              color: CalendarUtils.getEventColor(event.type),
-              type: event.type,
-              isFinished: event.isFinished,
-            ),
-          );
-          
-          debugPrint('  ✏️ Добавлено: id=${event.id}, name="${event.name}", type=${event.type}');
-          
-          if (_searchController.text.isNotEmpty || _selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty) {
-            _filteredDates.add(eventDate);
-          }
-        }
-        
-        debugPrint('📊 Итого в _events: ${_events.length} дат');
-      });
-    }
-  },
-        builder: (context, state) {
+                    if (_searchController.text.isNotEmpty ||
+                        _selectedTypes.isNotEmpty ||
+                        _selectedUsers.isNotEmpty) {
+                      _filteredDates.add(eventDate);
+                    }
+                  }
+                });
+              }
+            },
+            builder: (context, state) {
           if (state is CalendarLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+            return Center(
+              child: CircularProgressIndicator(color: colors.buttonPrimaryBg),
+            );
           }
 
           if (_isSearching && _searchController.text.isNotEmpty && _events.isEmpty) {
@@ -358,10 +381,10 @@ void _changeView(String view) {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   AppLocalizations.of(context)!.translate('nothing_found'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
@@ -419,10 +442,12 @@ void _changeView(String view) {
             ),
           );
         },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showOptionsBottomSheet(context, _focusedDate, _events, setState),
-        backgroundColor: const Color(0xff1E2E52),
+        backgroundColor: colors.buttonPrimaryBg,
         child: Image.asset(
           'assets/icons/tabBar/add.png',
           width: 24,

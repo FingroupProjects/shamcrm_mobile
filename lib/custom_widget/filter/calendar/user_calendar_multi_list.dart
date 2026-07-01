@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +52,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return FormField<List<AuthorData>>(
       validator: (value) {
         if (selectedAuthorsData.isEmpty) {
@@ -67,16 +69,17 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
               style: authorTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.surfacePrimary.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetAllAuthorBloc, GetAllAuthorState>(
@@ -96,8 +99,8 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                      expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
@@ -112,7 +115,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       if (authorsList.indexOf(item) == 0) {
                         return Column(
-                          children: [
+                        children: [
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -127,11 +130,11 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: const Color(0xff1E2E52),
+                                            color: colors.buttonPrimaryBg,
                                             width: 1),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? colors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
@@ -153,12 +156,12 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                                 ),
                               ),
                             ),
-                            Divider( height: 20, color: const Color(0xFFE5E7EB)), 
-                            _buildListItem(item, isSelected, onItemSelect),
+                            Divider( height: 20, color: colors.borderSubtle), 
+                            _buildListItem(context, item, isSelected, onItemSelect),
                           ],
                         );
                       }
-                      return _buildListItem(item, isSelected, onItemSelect);
+                      return _buildListItem(context, item, isSelected, onItemSelect);
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedAuthorsNames = selectedAuthorsData.isEmpty
@@ -207,7 +210,8 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
     );
   }
 
-  Widget _buildListItem(AuthorData item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(BuildContext context, AuthorData item, bool isSelected, Function() onItemSelect) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -219,11 +223,11 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
