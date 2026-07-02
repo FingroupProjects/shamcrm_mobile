@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:flutter/material.dart';
@@ -30,13 +31,6 @@ class _TaskStatusRadioGroupWidgetState
   List<TaskStatus> statusList = [];
   TaskStatus? selectedStatusData;
   bool _hasLoadedFromCache = false;
-
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -93,6 +87,13 @@ class _TaskStatusRadioGroupWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final statusTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
     debugPrint('🟦🟦🟦 TaskStatusRadioGroupWidget: build() called 🟦🟦🟦');
     debugPrint(
         '🟦 TaskStatusRadioGroupWidget: selectedStatus = ${widget.selectedStatus}');
@@ -123,7 +124,7 @@ class _TaskStatusRadioGroupWidgetState
                     SnackBar(
                       content: Text(
                         AppLocalizations.of(context)!.translate(state.message),
-                        style: statusTextStyle.copyWith(color: Colors.white),
+                        style: statusTextStyle.copyWith(color: colors.textInverse),
                       ),
                       behavior: SnackBarBehavior.floating,
                       margin: const EdgeInsets.symmetric(
@@ -156,7 +157,7 @@ class _TaskStatusRadioGroupWidgetState
                     Container(
                       height: 50,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FD),
+                        color: colors.surfacePrimary.withValues(alpha: 0.72),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           width: 1.5,
@@ -224,7 +225,7 @@ class _TaskStatusRadioGroupWidgetState
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           width: 1,
-                          color: const Color(0xFFF4F7FD),
+                          color: colors.borderSubtle,
                         ),
                       ),
                       child: CustomDropdown<TaskStatus>.search(
@@ -234,8 +235,8 @@ class _TaskStatusRadioGroupWidgetState
                             AppLocalizations.of(context)!.translate('search'),
                         overlayHeight: 400,
                         decoration: CustomDropdownDecoration(
-                          closedFillColor: const Color(0xffF4F7FD),
-                          expandedFillColor: Colors.white,
+                          closedFillColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                          expandedFillColor: colors.surfacePrimary,
                           closedBorder: Border.all(
                             color: widget
                                     .hasError // ✅ НОВОЕ: красная граница при ошибке
@@ -248,7 +249,7 @@ class _TaskStatusRadioGroupWidgetState
                             color: widget
                                     .hasError // ✅ НОВОЕ: красная граница при ошибке
                                 ? Colors.red
-                                : const Color(0xFFE5E7EB),
+                                : colors.borderSubtle,
                             width: widget.hasError ? 1.5 : 1,
                           ),
                           expandedBorderRadius: BorderRadius.circular(12),
@@ -272,7 +273,7 @@ class _TaskStatusRadioGroupWidgetState
                                 AppLocalizations.of(context)!
                                     .translate('select_status'),
                             style: statusTextStyle.copyWith(
-                              color: const Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           );
                         },
@@ -281,7 +282,7 @@ class _TaskStatusRadioGroupWidgetState
                               .translate('select_status'),
                           style: statusTextStyle.copyWith(
                             fontSize: 14,
-                            color: const Color(0xFF6B7280),
+                            color: colors.textSecondary,
                           ),
                         ),
                         excludeSelected: false,
@@ -338,11 +339,11 @@ class _TaskStatusRadioGroupWidgetState
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FD),
+                        color: colors.surfacePrimary.withValues(alpha: 0.72),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           width: 1,
-                          color: const Color(0xFFF4F7FD),
+                          color: colors.borderSubtle,
                         ),
                       ),
                       child: CustomDropdown<TaskStatus>.search(
@@ -352,8 +353,8 @@ class _TaskStatusRadioGroupWidgetState
                             AppLocalizations.of(context)!.translate('search'),
                         overlayHeight: 400,
                         decoration: CustomDropdownDecoration(
-                          closedFillColor: const Color(0xffF4F7FD),
-                          expandedFillColor: Colors.white,
+                          closedFillColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                          expandedFillColor: colors.surfacePrimary,
                           closedBorder: Border.all(
                             color: widget.hasError
                                 ? Colors.red
@@ -364,7 +365,7 @@ class _TaskStatusRadioGroupWidgetState
                           expandedBorder: Border.all(
                             color: widget.hasError
                                 ? Colors.red
-                                : const Color(0xFFE5E7EB),
+                                : colors.borderSubtle,
                             width: widget.hasError ? 1.5 : 1,
                           ),
                           expandedBorderRadius: BorderRadius.circular(12),
@@ -388,7 +389,7 @@ class _TaskStatusRadioGroupWidgetState
                                 AppLocalizations.of(context)!
                                     .translate('select_status'),
                             style: statusTextStyle.copyWith(
-                              color: const Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           );
                         },
@@ -397,7 +398,7 @@ class _TaskStatusRadioGroupWidgetState
                               .translate('select_status'),
                           style: statusTextStyle.copyWith(
                             fontSize: 14,
-                            color: const Color(0xFF6B7280),
+                            color: colors.textSecondary,
                           ),
                         ),
                         excludeSelected: false,

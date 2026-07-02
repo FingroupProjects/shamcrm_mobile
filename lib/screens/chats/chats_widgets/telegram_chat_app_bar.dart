@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -19,9 +20,11 @@ class TelegramChatAppBar extends StatelessWidget
   final bool isGroupChat;
   final bool isSearching;
   final bool isSupportChat;
+  final ChatAppearanceData? appearance;
   final TextEditingController? searchController;
   final FocusNode? searchFocusNode;
   final VoidCallback onBack;
+  final VoidCallback? onAppearanceTap;
   final VoidCallback? onProfileTap;
   final VoidCallback onSearchToggle;
   final ValueChanged<String>? onSearchChanged;
@@ -34,9 +37,11 @@ class TelegramChatAppBar extends StatelessWidget
     this.isGroupChat = false,
     this.isSearching = false,
     this.isSupportChat = false,
+    this.appearance,
     this.searchController,
     this.searchFocusNode,
     required this.onBack,
+    this.onAppearanceTap,
     this.onProfileTap,
     required this.onSearchToggle,
     this.onSearchChanged,
@@ -49,6 +54,14 @@ class TelegramChatAppBar extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final chatAppearance = appearance ?? ChatAppearanceData.defaults();
+    final showPhoneAction =
+        !isSearching && onPhoneTap != null && !isSupportChat;
+    final showAppearanceAction = !isSearching && onAppearanceTap != null;
+    final actionCount =
+        1 + (showAppearanceAction ? 1 : 0) + (showPhoneAction ? 1 : 0);
+    final actionWidth =
+        isSearching ? _kOrbSize : (_kOrbSize * actionCount) + (actionCount - 1);
 
     return SizedBox(
       height: kToolbarHeight + 14 + topPadding,
@@ -60,6 +73,7 @@ class TelegramChatAppBar extends StatelessWidget
             children: [
               _buildGlassCapsule(
                 context: context,
+                appearance: chatAppearance,
                 width: _kOrbSize,
                 height: _kOrbSize,
                 padding: EdgeInsets.zero,
@@ -77,6 +91,7 @@ class TelegramChatAppBar extends StatelessWidget
               Expanded(
                 child: _buildGlassCapsule(
                   context: context,
+                  appearance: chatAppearance,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 4,
@@ -160,9 +175,8 @@ class TelegramChatAppBar extends StatelessWidget
               const SizedBox(width: 10),
               _buildGlassCapsule(
                 context: context,
-                width: isSearching
-                    ? _kOrbSize
-                    : (onPhoneTap != null && !isSupportChat ? 108 : _kOrbSize),
+                appearance: chatAppearance,
+                width: actionWidth,
                 height: _kOrbSize,
                 padding: EdgeInsets.zero,
                 child: Row(
@@ -180,9 +194,26 @@ class TelegramChatAppBar extends StatelessWidget
                         onPressed: onSearchToggle,
                       ),
                     ),
-                    if (!isSearching &&
-                        onPhoneTap != null &&
-                        !isSupportChat) ...[
+                    if (showAppearanceAction) ...[
+                      Container(
+                        width: 1,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        color: context.appColors.borderSubtle
+                            .withValues(alpha: 0.26),
+                      ),
+                      Expanded(
+                        child: IconButton(
+                          splashRadius: 22,
+                          icon: Icon(
+                            Icons.palette_outlined,
+                            size: 21,
+                            color: chatAppearance.accentColor(context),
+                          ),
+                          onPressed: onAppearanceTap,
+                        ),
+                      ),
+                    ],
+                    if (showPhoneAction) ...[
                       Container(
                         width: 1,
                         margin: const EdgeInsets.symmetric(vertical: 12),
@@ -213,23 +244,27 @@ class TelegramChatAppBar extends StatelessWidget
 
   Widget _buildGlassCapsule({
     required BuildContext context,
+    ChatAppearanceData? appearance,
     double? width,
     double? height,
     required Widget child,
     EdgeInsetsGeometry padding =
         const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
   }) {
+    final resolvedAppearance = appearance ?? ChatAppearanceData.defaults();
+    final blurSigma = resolvedAppearance.chromeBlurSigma();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(_kCapsuleRadius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
         child: SizedBox(
           width: width,
           height: height,
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: context.appColors.surfacePrimary.withValues(alpha: 0.54),
+              color: resolvedAppearance.chromeSurfaceColor(context),
               borderRadius: BorderRadius.circular(_kCapsuleRadius),
               border: Border.all(
                 color: context.appColors.borderSubtle.withValues(alpha: 0.28),

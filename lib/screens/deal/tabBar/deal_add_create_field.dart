@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 class AddCustomFieldDialog extends StatelessWidget {
@@ -9,17 +10,18 @@ class AddCustomFieldDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final TextEditingController fieldNameController = TextEditingController();
 
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       title: Text(
         AppLocalizations.of(context)!.translate('add_field'), 
         style: TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w600,
-          color: Color(0xfff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       content: Column(
@@ -33,14 +35,14 @@ class AddCustomFieldDialog extends StatelessWidget {
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
-                color: Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               filled: true,
-              fillColor: Color(0xffF4F7FD),
+              fillColor: colors.fieldBg,
               contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             ),
           ),
@@ -56,8 +58,8 @@ class AddCustomFieldDialog extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+                buttonColor: colors.error.withValues(alpha: 0.16),
+                textColor: colors.error,
               ),
             ),
             SizedBox(width: 8),
@@ -70,8 +72,8 @@ class AddCustomFieldDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                   }
                 },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
+                buttonColor: colors.buttonPrimaryBg,
+                textColor: colors.textInverse,
               ),
             ),
           ],

@@ -216,49 +216,57 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
       child: AnimatedContainer(
         duration: Duration(milliseconds: soundRecordNotifier.isShow ? 0 : 300),
         height: widget.fullRecordPackageHeight,
-        width: (soundRecordNotifier.isShow)
-            ? MediaQuery.of(context).size.width
+        width: soundRecordNotifier.isShow
+            ? (MediaQuery.of(context).size.width - 24).clamp(
+                widget.initRecordPackageWidth,
+                MediaQuery.of(context).size.width - 24,
+              )
             : widget.initRecordPackageWidth,
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width - 24,
+        ),
         child: Stack(
           children: [
             Center(
               child: Padding(
                 padding: EdgeInsets.only(right: state.edge),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: soundRecordNotifier.isShow
-                        ? BorderRadius.circular(12)
-                        : widget.radius != null && !soundRecordNotifier.isShow
-                            ? widget.radius
-                            : BorderRadius.circular(0),
-                    color: widget.backGroundColor ?? Colors.grey.shade100,
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: ShowMicWithText(
-                          initRecordPackageWidth: widget.initRecordPackageWidth,
-                          counterBackGroundColor: widget.counterBackGroundColor,
-                          backGroundColor: widget.recordIconBackGroundColor,
-                          fullRecordPackageHeight:
-                              widget.fullRecordPackageHeight,
-                          recordIcon: widget.recordIcon,
-                          shouldShowText: soundRecordNotifier.isShow,
-                          soundRecorderState: state,
-                          slideToCancelTextStyle: widget.slideToCancelTextStyle,
-                          slideToCancelText: widget.slideToCancelText,
-                        ),
-                      ),
-                      if (soundRecordNotifier.isShow)
+                child: ClipRRect(
+                  borderRadius: soundRecordNotifier.isShow
+                      ? (widget.radius ?? BorderRadius.circular(20))
+                      : widget.radius != null && !soundRecordNotifier.isShow
+                          ? widget.radius!
+                          : BorderRadius.circular(999),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: widget.backGroundColor ?? Colors.grey.shade100,
+                    ),
+                    child: Stack(
+                      children: [
                         Center(
-                          child: ShowCounter(
-                              counterBackGroundColor:
-                                  widget.counterBackGroundColor,
-                              soundRecorderState: state,
-                              fullRecordPackageHeight:
-                                  widget.fullRecordPackageHeight),
+                          child: ShowMicWithText(
+                            initRecordPackageWidth: widget.initRecordPackageWidth,
+                            counterBackGroundColor: widget.counterBackGroundColor,
+                            backGroundColor: widget.recordIconBackGroundColor,
+                            fullRecordPackageHeight:
+                                widget.fullRecordPackageHeight,
+                            recordIcon: widget.recordIcon,
+                            shouldShowText: soundRecordNotifier.isShow,
+                            soundRecorderState: state,
+                            slideToCancelTextStyle: widget.slideToCancelTextStyle,
+                            slideToCancelText: widget.slideToCancelText,
+                          ),
                         ),
-                    ],
+                        if (soundRecordNotifier.isShow)
+                          Center(
+                            child: ShowCounter(
+                                counterBackGroundColor:
+                                    widget.counterBackGroundColor,
+                                soundRecorderState: state,
+                                fullRecordPackageHeight:
+                                    widget.fullRecordPackageHeight),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

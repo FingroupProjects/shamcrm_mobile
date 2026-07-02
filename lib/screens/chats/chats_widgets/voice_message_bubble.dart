@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_message_package/voice_message_package.dart';
@@ -15,20 +16,20 @@ class VoiceMessageWidget extends StatefulWidget {
   final Function(String)? onReactionTap;
 
   const VoiceMessageWidget({
-    Key? key,
+    super.key,
     required this.message,
     required this.baseUrl,
     this.isLeadChat = false,
     this.isGroupChat,
     this.reactions = const [],
     this.onReactionTap,
-  }) : super(key: key);
+  });
 
   @override
-  _VoiceMessageWidgetState createState() => _VoiceMessageWidgetState();
+  VoiceMessageWidgetState createState() => VoiceMessageWidgetState();
 }
 
-class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
+class VoiceMessageWidgetState extends State<VoiceMessageWidget>
     with AutomaticKeepAliveClientMixin {
   late VoiceController _audioController;
 
@@ -75,6 +76,14 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final appearance = ChatAppearanceScope.of(context);
+    final bubbleColor = widget.message.isMyMessage
+        ? appearance.senderBubbleColor(context)
+        : appearance.receiverBubbleColor(context);
+    final foreground = widget.message.isMyMessage
+        ? appearance.outgoingForeground(context)
+        : appearance.incomingForeground(context);
+
     return Container(
       margin: EdgeInsets.only(
         top: 8,
@@ -99,27 +108,24 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
               widget.message.senderName,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: widget.message.isMyMessage
-                    ? context.appColors.textSecondary
-                    : context.appColors.textPrimary,
+                color: appearance.secondaryForeground(
+                  context,
+                  widget.message.isMyMessage,
+                ),
               ),
             ),
           VoiceMessageView(
             innerPadding: 8,
-            backgroundColor: widget.message.isMyMessage
-                ? context.appColors.buttonPrimaryBg
-                : context.appColors.surfacePrimary,
+            backgroundColor: bubbleColor,
             activeSliderColor: widget.message.isMyMessage
-                ? context.appColors.surfacePrimary
-                : context.appColors.buttonPrimaryBg,
+                ? foreground.withValues(alpha: 0.78)
+                : appearance.accentColor(context),
             circlesColor: widget.message.isMyMessage
-                ? context.appColors.surfacePrimary.withValues(alpha: 0.2)
-                : context.appColors.buttonPrimaryBg,
+                ? foreground.withValues(alpha: 0.18)
+                : appearance.accentColor(context).withValues(alpha: 0.28),
             controller: _audioController,
             counterTextStyle: TextStyle(
-              color: widget.message.isMyMessage
-                  ? context.appColors.surfacePrimary
-                  : context.appColors.buttonPrimaryBg,
+              color: foreground,
             ),
           ),
           if (widget.reactions.isNotEmpty)
@@ -146,7 +152,10 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
               Text(
                 time(widget.message.createMessateTime),
                 style: context.appTextStyles.bodySm.copyWith(
-                  color: context.appColors.textPrimary,
+                  color: appearance.secondaryForeground(
+                    context,
+                    widget.message.isMyMessage,
+                  ),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -156,8 +165,11 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                   widget.message.isRead ? Icons.done_all : Icons.done_all,
                   size: 18,
                   color: widget.message.isRead
-                      ? context.appColors.buttonPrimaryBg
-                      : context.appColors.textSecondary.withValues(alpha: 0.45),
+                      ? foreground
+                      : appearance.secondaryForeground(
+                          context,
+                          widget.message.isMyMessage,
+                        ),
                 ),
             ],
           ),

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
@@ -81,7 +82,7 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -100,10 +101,8 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.translate('rate_call'),
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
+                  style: context.appTextStyles.titleMd.copyWith(
+                    color: context.appColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -111,11 +110,9 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
                 const SizedBox(height: 16),
                 Text(
                   AppLocalizations.of(context)!.translate('rating_stars'),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -160,7 +157,7 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: Colors.red,
+                          backgroundColor: context.appColors.buttonSecondaryBg,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -182,7 +179,7 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: const Color(0xff1E2E52),
+                          backgroundColor: context.appColors.buttonPrimaryBg,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -220,12 +217,14 @@ class _CallRatingDialogState extends State<CallRatingDialog> {
                                 Navigator.of(context).pop();
                               },
                         child: _isSubmitting
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    context.appColors.buttonPrimaryFg,
+                                  ),
                                 ),
                               )
                             : Text(

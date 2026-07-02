@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 
 class FileMessageBubble extends StatelessWidget {
@@ -82,9 +83,16 @@ class FileMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textStyles = context.appTextStyles;
+    final appearance = ChatAppearanceScope.of(context);
     final fileExtension = _extractFileExtension();
     final iconPath = _buildPrimaryIconPath(fileExtension);
     final fallbackIconPath = _buildFallbackIconPath(fileExtension);
+    final bubbleColor = isSender
+        ? appearance.senderBubbleColor(context)
+        : appearance.receiverBubbleColor(context);
+    final foreground = isSender
+        ? appearance.outgoingForeground(context)
+        : appearance.incomingForeground(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -115,9 +123,7 @@ class FileMessageBubble extends StatelessWidget {
                 senderName,
                 style: textStyles.labelMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: isSender
-                      ? context.appColors.textSecondary
-                      : context.appColors.textPrimary,
+                  color: appearance.senderNameColor(context),
                 ),
               ),
             GestureDetector(
@@ -127,10 +133,11 @@ class FileMessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 constraints: BoxConstraints(maxWidth: 200),
                 decoration: BoxDecoration(
-                  color: isSender
-                      ? context.appColors.buttonPrimaryBg
-                      : context.appColors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(10),
+                  color: bubbleColor,
+                  borderRadius: appearance.bubbleRadius(isSender),
+                  border: Border.all(
+                    color: appearance.borderColor(context, isSender),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: context.appColors.shadow.withValues(alpha: 0.1),
@@ -170,9 +177,9 @@ class FileMessageBubble extends StatelessWidget {
                       child: Text(
                         fileName,
                         style: textStyles.bodyMd.copyWith(
-                          color: isSender
-                              ? context.appColors.textInverse
-                              : context.appColors.textPrimary,
+                          color: foreground,
+                          fontSize: appearance.scaledFont(14),
+                          fontWeight: appearance.messageFontWeight,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -204,8 +211,8 @@ class FileMessageBubble extends StatelessWidget {
                 Text(
                   time,
                   style: textStyles.caption.copyWith(
-                    fontSize: 12,
-                    color: context.appColors.textSecondary,
+                    fontSize: appearance.scaledFont(12),
+                    color: appearance.secondaryForeground(context, isSender),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -215,8 +222,8 @@ class FileMessageBubble extends StatelessWidget {
                     isRead ? Icons.done_all : Icons.done_all,
                     size: 18,
                     color: isRead
-                        ? context.appColors.info
-                        : context.appColors.textSecondary.withValues(alpha: 0.5),
+                        ? foreground
+                        : appearance.secondaryForeground(context, isSender),
                   ),
               ],
             ),

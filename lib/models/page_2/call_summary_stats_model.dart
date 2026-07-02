@@ -1,6 +1,3 @@
-
-import 'dart:convert';
-
 class CallSummaryStats {
   final CallSummaryResult result;
   final String? errors;
@@ -11,8 +8,13 @@ class CallSummaryStats {
   });
 
   factory CallSummaryStats.fromJson(Map<String, dynamic> json) {
+    final resultJson = json['result'];
     return CallSummaryStats(
-      result: CallSummaryResult.fromJson(json['result']),
+      result: CallSummaryResult.fromJson(
+        resultJson is Map<String, dynamic>
+            ? resultJson
+            : <String, dynamic>{},
+      ),
       errors: json['errors'],
     );
   }
@@ -40,11 +42,25 @@ class CallSummaryResult {
 
   factory CallSummaryResult.fromJson(Map<String, dynamic> json) {
     return CallSummaryResult(
-      averageCallDuration: json['average_call_duration'].toDouble(),
-      averageDailyDuration: json['average_daily_duration'],
-      totalCalls: json['total_calls'],
-      countsByType: CallCountsByType.fromJson(json['counts_by_type']),
+      averageCallDuration: _toDouble(json['average_call_duration']),
+      averageDailyDuration: _toInt(json['average_daily_duration']),
+      totalCalls: _toInt(json['total_calls']),
+      countsByType: CallCountsByType.fromJson(
+        (json['counts_by_type'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
     );
+  }
+
+  static double _toDouble(dynamic value, {double defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? defaultValue;
+  }
+
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
   }
 
   Map<String, dynamic> toJson() {
@@ -72,11 +88,17 @@ class CallCountsByType {
 
   factory CallCountsByType.fromJson(Map<String, dynamic> json) {
     return CallCountsByType(
-      incoming: json['incoming'],
-      outgoing: json['outgoing'],
-      unanswered: json['unanswered'],
-      missed: json['missed'],
+      incoming: _toInt(json['incoming']),
+      outgoing: _toInt(json['outgoing']),
+      unanswered: _toInt(json['unanswered']),
+      missed: _toInt(json['missed']),
     );
+  }
+
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
   }
 
   Map<String, dynamic> toJson() {

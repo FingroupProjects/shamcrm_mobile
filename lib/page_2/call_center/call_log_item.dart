@@ -1,12 +1,12 @@
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_event.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/page_2/call_center/operator_details.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 class CallReportList extends StatefulWidget {
   final String searchQuery;
@@ -51,7 +51,7 @@ class _CallReportListState extends State<CallReportList> {
                       context.read<OperatorBloc>().add(FetchOperators());
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6C5CE7),
+                      backgroundColor: context.appColors.buttonPrimaryBg,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -88,8 +88,8 @@ class _CallReportListState extends State<CallReportList> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: widget.onResetSearch,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6C5CE7),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: context.appColors.buttonPrimaryBg,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -135,22 +135,22 @@ class _CallReportListState extends State<CallReportList> {
                       duration: const Duration(milliseconds: 300),
                       margin: const EdgeInsets.only(bottom: 12.0),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.appColors.surfacePrimary,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.15),
+                            color: context.appColors.shadow.withOpacity(0.08),
                             spreadRadius: 2,
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
                         ],
-                        border: Border.all(color: Colors.grey.shade100, width: 1),
+                        border: Border.all(color: context.appColors.borderSubtle, width: 1),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16.0),
                         leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF6C5CE7),
+                          backgroundColor: context.appColors.buttonPrimaryBg,
                           child: operator.image.isNotEmpty
                               ? ClipOval(
                                   child: Image.network(
@@ -186,11 +186,11 @@ class _CallReportListState extends State<CallReportList> {
                         ),
                         title: Text(
                           operator.fullName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
-                            color: Colors.black,
+                            color: context.appColors.textPrimary,
                           ),
                           maxLines: 1,
                         ),
@@ -213,7 +213,7 @@ class _CallReportListState extends State<CallReportList> {
                               }),
                             ),
                             if (rating == 0) // Добавляем текст, если рейтинг отсутствует
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(top: 4.0),
                                 child: Text(
                                   'Рейтинг отсутствует',
@@ -221,7 +221,7 @@ class _CallReportListState extends State<CallReportList> {
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: context.appColors.textSecondary,
                                   ),
                                 ),
                               ),

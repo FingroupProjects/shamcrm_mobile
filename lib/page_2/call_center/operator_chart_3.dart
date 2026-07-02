@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -71,19 +72,18 @@ class _OperatorChart3State extends State<OperatorChart3> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final monthNames = getMonthNames(context);
-    final callTypes = getCallTypes(context);
-    final chartData = _getChartData();
     final hasData = widget.monthlyStats.isNotEmpty &&
         widget.monthlyStats.any((stat) => stat.total > 0);
 
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
+        border: Border.all(color: context.appColors.borderSubtle),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: context.appColors.shadow.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -94,11 +94,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
         children: [
           Text(
             localizations.translate('operator_efficiency'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
-              color: Color(0xFF2D3748),
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 24),
@@ -142,7 +142,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                                     style: TextStyle(
                                       fontFamily: 'Gilroy',
                                       fontSize: 10,
-                                      color: hasData ? const Color(0xFF9CA3AF) : Colors.grey.withOpacity(0.5),
+                                      color: hasData ? context.appColors.textSecondary : context.appColors.textSecondary.withOpacity(0.5),
                                     ),
                                   ),
                                 ),
@@ -164,7 +164,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 11,
-                                color: hasData ? const Color(0xFF9CA3AF) : Colors.grey.withOpacity(0.5),
+                                color: hasData ? context.appColors.textSecondary : context.appColors.textSecondary.withOpacity(0.5),
                               ),
                             );
                           },
@@ -176,8 +176,8 @@ class _OperatorChart3State extends State<OperatorChart3> {
                     borderData: FlBorderData(
                       show: true,
                       border: Border(
-                        bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                        left: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                        bottom: BorderSide(color: context.appColors.borderSubtle),
+                        left: BorderSide(color: context.appColors.borderSubtle),
                       ),
                     ),
                     gridData: FlGridData(
@@ -187,7 +187,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                       getDrawingHorizontalLine: (value) {
                         if (value > _getMaxY()) return const FlLine(color: Colors.transparent);
                         return FlLine(
-                          color: hasData ? const Color(0xFFF8F9FA) : Colors.grey.withOpacity(0.1),
+                          color: hasData ? context.appColors.backgroundSecondary : context.appColors.borderSubtle.withOpacity(0.4),
                           strokeWidth: 0.5,
                         );
                       },
@@ -203,11 +203,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
                 Center(
                   child: Text(
                     localizations.translate('no_data_to_display'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Colors.black54,
+                      color: context.appColors.textSecondary,
                     ),
                   ),
                 ),
@@ -272,7 +272,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
         barRods: [
           BarChartRodData(
             toY: displayTotal,
-            color: hasData ? Colors.transparent : Colors.grey.withOpacity(0.3),
+            color: hasData ? Colors.transparent : context.appColors.borderSubtle.withOpacity(0.3),
             width: hasData && isSelected ? 24 : 20,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
@@ -365,7 +365,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                     fontFamily: 'Gilroy',
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 12,
-                    color: isSelected ? segmentColors[index] : const Color(0xFF4A5568),
+                    color: isSelected ? segmentColors[index] : context.appColors.textSecondary,
                   ),
                 ),
                 if (isSelected && selectedBarIndex != null) ...[
@@ -396,7 +396,6 @@ class _OperatorChart3State extends State<OperatorChart3> {
   }
 
   Widget _buildInteractiveChartLabels() {
-    final chartData = _getChartData();
     final totals = widget.monthlyStats.isNotEmpty
         ? List.generate(12, (index) => widget.monthlyStats.firstWhere((stat) => stat.month == index + 1, orElse: () => MonthlyCallStat(month: index + 1, incoming: 0, outgoing: 0, unanswered: 0, missed: 0, total: 0)).total)
         : List.generate(12, (_) => 0);
@@ -434,11 +433,11 @@ class _OperatorChart3State extends State<OperatorChart3> {
                       vertical: isSelected ? 4 : 2,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF2D3748) : Colors.white,
+                      color: isSelected ? context.appColors.buttonPrimaryBg : context.appColors.surfacePrimary,
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(isSelected ? 0.15 : 0.05),
+                          color: context.appColors.shadow.withOpacity(isSelected ? 0.15 : 0.05),
                           blurRadius: isSelected ? 6 : 2,
                           offset: const Offset(0, 2),
                         ),
@@ -450,7 +449,7 @@ class _OperatorChart3State extends State<OperatorChart3> {
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         fontSize: isSelected ? 13 : 12,
-                        color: isSelected ? Colors.white : const Color(0xFF2D3748),
+                        color: isSelected ? Colors.white : context.appColors.textPrimary,
                       ),
                     ),
                   ),

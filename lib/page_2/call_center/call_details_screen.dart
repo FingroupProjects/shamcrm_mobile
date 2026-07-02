@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
 import 'package:crm_task_manager/models/page_2/call_center_by_id_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_rating_dialog.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -138,7 +139,7 @@ String formatDate(DateTime? date) {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(context, AppLocalizations.of(context)!.translate('call_details')),
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.backgroundSecondary,
       body: BlocListener<CallCenterBloc, CallCenterState>(
         listener: (context, state) {
           if (state is CallCenterError) {
@@ -146,13 +147,13 @@ String formatDate(DateTime? date) {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 16,
-                    color: Colors.white,
+                    color: context.appColors.surfacePrimary,
                   ),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: context.appColors.error,
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -182,7 +183,8 @@ String formatDate(DateTime? date) {
 
   AppBar _buildAppBar(BuildContext context, String title) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.surfacePrimary,
+      surfaceTintColor: Colors.transparent,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -196,6 +198,7 @@ String formatDate(DateTime? date) {
               'assets/icons/arrow-left.png',
               width: 24,
               height: 24,
+              color: context.appColors.iconPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -205,11 +208,11 @@ String formatDate(DateTime? date) {
         offset: const Offset(-10, 0),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1E2E52),
+            color: context.appColors.textPrimary,
           ),
         ),
       ),
@@ -305,7 +308,7 @@ String formatDate(DateTime? date) {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: const Color(0xFF1E2E52),
+                    backgroundColor: context.appColors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -411,7 +414,7 @@ String formatDate(DateTime? date) {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: const Color(0xFF1E2E52),
+                    backgroundColor: context.appColors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -486,13 +489,15 @@ String formatDate(DateTime? date) {
     if (label == 'call_details') {
       bool isMissed = call.missed;
       bool isIncoming = call.incoming;
-      Color statusColor = isMissed ? const Color(0xffFEE6E6) : const Color(0xffE6F4EA);
+      Color statusColor = isMissed
+          ? context.appColors.error.withValues(alpha: 0.12)
+          : context.appColors.buttonPrimaryBg.withValues(alpha: 0.12);
       String statusText = _getCallTypeText(call.incoming, call.missed);
 
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xffF5F7FA),
+          color: context.appColors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -589,7 +594,7 @@ String formatDate(DateTime? date) {
                 children: [
                   Icon(
                     Icons.info,
-                    color: isMissed ? Colors.red : Colors.green,
+                    color: isMissed ? context.appColors.error : context.appColors.success,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -599,7 +604,7 @@ String formatDate(DateTime? date) {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: isMissed ? Colors.red : Colors.green,
+                      color: isMissed ? context.appColors.error : context.appColors.success,
                     ),
                   ),
                 ],
@@ -608,11 +613,11 @@ String formatDate(DateTime? date) {
             const SizedBox(height: 12),
             Text(
               AppLocalizations.of(context)!.translate('call_recording'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+                color: context.appColors.textSecondary,
               ),
             ),
             if (call.callDuration != null && call.callDuration! > 0 && !call.missed) ...[
@@ -646,11 +651,11 @@ String formatDate(DateTime? date) {
             Expanded(
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -700,14 +705,15 @@ String formatDate(DateTime? date) {
 
     if (label == 'call_details') {
       bool isMissed = call.callType == CallType.missed;
-      bool isIncoming = call.callType == CallType.incoming;
-      Color statusColor = isMissed ? const Color(0xffFEE6E6) : const Color(0xffE6F4EA);
+      Color statusColor = isMissed
+          ? context.appColors.error.withValues(alpha: 0.12)
+          : context.appColors.buttonPrimaryBg.withValues(alpha: 0.12);
       String statusText = _getCallTypeTextFromEntry(call.callType);
 
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xffF5F7FA),
+          color: context.appColors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -718,9 +724,9 @@ String formatDate(DateTime? date) {
                 Container(
                   width: 24,
                   height: 24,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.buttonPrimaryBg,
                   ),
                   child: const Center(
                     child: Icon(
@@ -733,11 +739,11 @@ String formatDate(DateTime? date) {
                 const SizedBox(width: 8),
                 Text(
                   AppLocalizations.of(context)!.translate('lead_deal_card'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
+                    color: context.appColors.textSecondary,
                   ),
                 ),
                 Expanded(
@@ -774,20 +780,20 @@ String formatDate(DateTime? date) {
                 const SizedBox(width: 8),
                 Text(
                   AppLocalizations.of(context)!.translate('call_duration_title') + ' ',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff99A4BA),
-                  ),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w400,
+                  color: context.appColors.textSecondary,
+                ),
                 ),
                 Text(
                   callData!['call_duration']!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ],
@@ -804,7 +810,7 @@ String formatDate(DateTime? date) {
                 children: [
                   Icon(
                     Icons.info,
-                    color: isMissed ? Colors.red : Colors.green,
+                    color: isMissed ? context.appColors.error : context.appColors.success,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -814,7 +820,7 @@ String formatDate(DateTime? date) {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: isMissed ? Colors.red : Colors.green,
+                      color: isMissed ? context.appColors.error : context.appColors.success,
                     ),
                   ),
                 ],
@@ -823,11 +829,11 @@ String formatDate(DateTime? date) {
             const SizedBox(height: 12),
             Text(
               AppLocalizations.of(context)!.translate('call_recording'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
+                color: context.appColors.textSecondary,
               ),
             ),
             if (call.duration != null && call.callType != CallType.missed) ...[
@@ -902,12 +908,12 @@ String formatDate(DateTime? date) {
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: const TextStyle(
-        fontSize: 16,
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
-      ),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: context.appColors.textPrimary,
+                ),
     );
   }
 
@@ -920,11 +926,11 @@ String formatDate(DateTime? date) {
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.appColors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: context.appColors.shadow.withOpacity(0.1),
                 spreadRadius: 2,
                 blurRadius: 4,
                 offset: const Offset(0, 2),
@@ -965,7 +971,7 @@ String formatDate(DateTime? date) {
                             color: Colors.white,
                           ),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: context.appColors.error,
                         duration: const Duration(seconds: 3),
                       ),
                     );
@@ -974,12 +980,12 @@ String formatDate(DateTime? date) {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: context.appColors.buttonPrimaryBg.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     _isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: Colors.blue,
+                    color: context.appColors.buttonPrimaryBg,
                     size: 24,
                   ),
                 ),
@@ -987,9 +993,9 @@ String formatDate(DateTime? date) {
               const SizedBox(width: 12),
               Text(
                 _formatDuration(_position),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
                 ),
@@ -1002,8 +1008,8 @@ String formatDate(DateTime? date) {
                   max: _duration.inSeconds > 0
                       ? _duration.inSeconds.toDouble()
                       : callDuration.toDouble(),
-                  activeColor: Colors.blue,
-                  inactiveColor: Colors.grey[300],
+                  activeColor: context.appColors.buttonPrimaryBg,
+                  inactiveColor: context.appColors.borderSubtle,
                   onChanged: (value) async {
                     final newPosition = Duration(seconds: value.toInt());
                     try {
@@ -1020,9 +1026,9 @@ String formatDate(DateTime? date) {
               const SizedBox(width: 8),
               Text(
                 _formatDuration(Duration(seconds: callDuration)),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
                 ),
@@ -1054,7 +1060,7 @@ String formatDate(DateTime? date) {
                             color: Colors.white,
                           ),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor: context.appColors.error,
                         duration: const Duration(seconds: 3),
                       ),
                     );

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -15,12 +16,12 @@ class PieChartCalled extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appColors.borderSubtle),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: context.appColors.shadow.withOpacity(0.08),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -32,11 +33,11 @@ class PieChartCalled extends StatelessWidget {
         children: [
           Text(
             AppLocalizations.of(context)!.translate('called_during'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 20,
-              color: Colors.black,
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -52,13 +53,13 @@ class PieChartCalled extends StatelessWidget {
                     centerSpaceColor: Colors.transparent,
                     sections: [
                       PieChartSectionData(
-                        color: const Color(0xFF6C5CE7),
+                        color: context.appColors.buttonPrimaryBg,
                         value: answeredPercentage,
                         radius: 15,
                         showTitle: false,
                       ),
                       PieChartSectionData(
-                        color: Colors.grey.shade300,
+                        color: context.appColors.borderSubtle,
                         value: 100 - answeredPercentage,
                         radius: 15,
                         showTitle: false,
@@ -68,11 +69,11 @@ class PieChartCalled extends StatelessWidget {
                 ),
                 Text(
                   '${answeredPercentage.toStringAsFixed(1)}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF6C5CE7),
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ],

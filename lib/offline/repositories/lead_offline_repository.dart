@@ -11,19 +11,20 @@ import 'package:flutter/foundation.dart';
 class LeadOfflineRepository {
   LeadOfflineRepository({
     required ApiService apiService,
-    required LocalCacheRepository cacheRepository,
+    required LocalCacheRepository? cacheRepository,
   })  : _apiService = apiService,
         _cacheRepository = cacheRepository;
 
   factory LeadOfflineRepository.fromRuntime(ApiService apiService) {
+    final runtime = OfflineRuntime.maybeInstance;
     return LeadOfflineRepository(
       apiService: apiService,
-      cacheRepository: OfflineRuntime.instance.localCacheRepository,
+      cacheRepository: runtime?.localCacheRepository,
     );
   }
 
   final ApiService _apiService;
-  final LocalCacheRepository _cacheRepository;
+  final LocalCacheRepository? _cacheRepository;
 
   String _cacheKey({
     required int page,
@@ -39,7 +40,12 @@ class LeadOfflineRepository {
     required bool showDebt,
     String? search,
   }) async {
-    final entry = await _cacheRepository.read(
+    final cacheRepository = _cacheRepository;
+    if (cacheRepository == null) {
+      return null;
+    }
+
+    final entry = await cacheRepository.read(
       module: OfflineModule.lead.value,
       cacheKey: _cacheKey(page: page, showDebt: showDebt, search: search),
     );
@@ -56,21 +62,31 @@ class LeadOfflineRepository {
     required bool showDebt,
     String? search,
   }) async {
-    final result = await OfflineRuntime.instance.requestScheduler.schedule(
-      priority: RequestPriority.high,
-      task: () => _apiService.getLeadPage(
-        page,
-        showDebt: showDebt,
-        search: search,
-      ),
-    );
+    final runtime = OfflineRuntime.maybeInstance;
+    final result = runtime?.requestScheduler != null
+        ? await runtime!.requestScheduler.schedule(
+            priority: RequestPriority.high,
+            task: () => _apiService.getLeadPage(
+              page,
+              showDebt: showDebt,
+              search: search,
+            ),
+          )
+        : await _apiService.getLeadPage(
+            page,
+            showDebt: showDebt,
+            search: search,
+          );
 
-    await _cacheRepository.write(
-      module: OfflineModule.lead.value,
-      cacheKey: _cacheKey(page: page, showDebt: showDebt, search: search),
-      payload: _serialize(result),
-      lastSyncedAt: DateTime.now(),
-    );
+    final cacheRepository = _cacheRepository;
+    if (cacheRepository != null) {
+      await cacheRepository.write(
+        module: OfflineModule.lead.value,
+        cacheKey: _cacheKey(page: page, showDebt: showDebt, search: search),
+        payload: _serialize(result),
+        lastSyncedAt: DateTime.now(),
+      );
+    }
 
     return result;
   }
@@ -103,8 +119,12 @@ class LeadOfflineRepository {
     return cached;
   }
 
-  Future<void> clearCache() {
-    return _cacheRepository.clearModule(OfflineModule.lead.value);
+  Future<void> clearCache() async {
+    final cacheRepository = _cacheRepository;
+    if (cacheRepository == null) {
+      return;
+    }
+    await cacheRepository.clearModule(OfflineModule.lead.value);
   }
 
   Map<String, dynamic> _serialize(LeadsDataResponse response) {

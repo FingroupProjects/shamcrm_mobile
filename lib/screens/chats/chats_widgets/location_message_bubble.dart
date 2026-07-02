@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -36,6 +37,14 @@ class LocationMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final appearance = ChatAppearanceScope.of(context);
+    final bubbleColor = isSender
+        ? appearance.senderBubbleColor(context)
+        : appearance.receiverBubbleColor(context);
+    final foreground = isSender
+        ? appearance.outgoingForeground(context)
+        : appearance.incomingForeground(context);
+
     return Align(
       alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
@@ -50,9 +59,7 @@ class LocationMessageBubble extends StatelessWidget {
                 senderName,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: isSender
-                      ? context.appColors.textSecondary
-                      : context.appColors.textPrimary,
+                  color: appearance.senderNameColor(context),
                 ),
               ),
             ),
@@ -64,12 +71,12 @@ class LocationMessageBubble extends StatelessWidget {
               width: MediaQuery.of(context).size.width * 0.72,
               margin: const EdgeInsets.symmetric(vertical: 5),
               decoration: BoxDecoration(
-                color: context.appColors.surfacePrimary,
-                borderRadius: BorderRadius.circular(16),
+                color: bubbleColor,
+                borderRadius: appearance.bubbleRadius(isSender),
                 border: Border.all(
                   color: isHighlighted
-                      ? context.appColors.buttonPrimaryBg
-                      : context.appColors.borderSubtle,
+                      ? appearance.accentColor(context)
+                      : appearance.borderColor(context, isSender),
                   width: isHighlighted ? 1.5 : 1,
                 ),
                 boxShadow: [
@@ -131,29 +138,33 @@ class LocationMessageBubble extends StatelessWidget {
                             localizations.translate('geolocation'),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: context.appColors.textPrimary,
+                              fontSize: appearance.scaledFont(14),
+                              fontWeight: appearance.messageFontWeight,
+                              color: foreground,
                             ),
                           ),
                         ),
                         Text(
                           time,
                           style: TextStyle(
-                            fontSize: 11,
-                            color: context.appColors.textSecondary,
+                            fontSize: appearance.scaledFont(11),
+                            color: appearance.secondaryForeground(
+                              context,
+                              isSender,
+                            ),
                             fontFamily: 'Gilroy',
                           ),
                         ),
                         if (isSender) ...[
                           const SizedBox(width: 3),
-                            Icon(
-                              Icons.done_all,
-                              size: 16,
-                              color: isRead
-                                ? context.appColors.buttonPrimaryBg
-                                : context.appColors.textSecondary.withValues(alpha: 0.6),
-                            ),
+                          Icon(
+                            Icons.done_all,
+                            size: 16,
+                            color: isRead
+                                ? foreground
+                                : appearance.secondaryForeground(
+                                    context, isSender),
+                          ),
                         ],
                       ],
                     ),

@@ -7,8 +7,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
@@ -79,6 +79,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final appearance = ChatAppearanceScope.of(context);
     final String normalizedFilePath = widget.filePath.startsWith('storage/')
         ? widget.filePath
         : 'storage/${widget.filePath.startsWith('/') ? widget.filePath.substring(1) : widget.filePath}';
@@ -119,9 +120,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                 widget.senderName,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: widget.isSender
-                      ? context.appColors.textSecondary
-                      : context.appColors.textPrimary,
+                  color: appearance.senderNameColor(context),
                 ),
               ),
             GestureDetector(
@@ -151,20 +150,31 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     decoration: BoxDecoration(
+                      color: widget.isSender
+                          ? appearance
+                              .senderBubbleColor(context)
+                              .withValues(alpha: 0.18)
+                          : appearance
+                              .receiverBubbleColor(context)
+                              .withValues(alpha: 0.22),
                       border: Border.all(
-                          width: 1, color: context.appColors.borderSubtle),
-                      borderRadius:
-                          const BorderRadius.all(Radius.circular(12)),
+                        width: 1,
+                        color: appearance.borderColor(
+                          context,
+                          widget.isSender,
+                        ),
+                      ),
+                      borderRadius: appearance.bubbleRadius(widget.isSender),
                       boxShadow: [
                         BoxShadow(
-                          color: context.appColors.shadow
-                              .withValues(alpha: 0.1),
+                          color:
+                              context.appColors.shadow.withValues(alpha: 0.1),
                           offset: const Offset(0, 4),
                           blurRadius: 6,
                         ),
                       ],
                     ),
-                  child: ClipRRect(
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: fullUrl != null
                           ? _ShimmerImageLoader(
@@ -202,10 +212,13 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                         ),
                         child: Text(
                           widget.time,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: ChatSmsStyles.appBarTitleColor,
-                            fontWeight: FontWeight.w400,
+                          style: TextStyle(
+                            fontSize: appearance.scaledFont(12),
+                            color: appearance.secondaryForeground(
+                              context,
+                              widget.isSender,
+                            ),
+                            fontWeight: FontWeight.w500,
                             fontFamily: 'Gilroy',
                           ),
                         ),
@@ -216,9 +229,11 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                           widget.isRead ? Icons.done_all : Icons.done_all,
                           size: 18,
                           color: widget.isRead
-                              ? const Color.fromARGB(255, 45, 28, 235)
-                              : context.appColors.textSecondary
-                                  .withValues(alpha: 0.5),
+                              ? appearance.accentColor(context)
+                              : appearance.secondaryForeground(
+                                  context,
+                                  widget.isSender,
+                                ),
                         ),
                     ],
                   ),
@@ -264,7 +279,8 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
   @override
   void initState() {
     super.initState();
-    _cachedFileFuture = ChatMediaPersistentCache.instance.getImageFile(widget.url);
+    _cachedFileFuture =
+        ChatMediaPersistentCache.instance.getImageFile(widget.url);
   }
 
   void _onLoaded() {

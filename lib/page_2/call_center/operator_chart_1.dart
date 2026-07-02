@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class OperatorChartRating extends StatelessWidget {
@@ -23,8 +24,8 @@ class OperatorChartRating extends StatelessWidget {
         'mainUnit': 'мин',
         'secondaryValue': averageCallDuration['seconds'].toString(),
         'secondaryUnit': 'сек',
-        'backgroundColor': const Color(0xFFBFDBFE),
-        'textColor': const Color(0xFF1E40AF),
+        'backgroundColor': const Color(0xFFD8E8FF),
+        'textColor': const Color(0xFF1F2F5D),
         'icon': Icons.chat_bubble_outline,
         'details': [
           {'label': 'Самый долгий', 'value': '45 мин'},
@@ -38,8 +39,8 @@ class OperatorChartRating extends StatelessWidget {
         'mainUnit': 'час',
         'secondaryValue': averageDailyDuration['minutes'].toString(),
         'secondaryUnit': 'мин',
-        'backgroundColor': const Color(0xFFBBF7D0),
-        'textColor': const Color(0xFF047857),
+        'backgroundColor': const Color(0xFFDDF7E6),
+        'textColor': const Color(0xFF1F5A3E),
         'icon': Icons.access_time_outlined,
         'details': [
           {'label': 'Максимум в день', 'value': '12 час 30 мин'},
@@ -52,7 +53,7 @@ class OperatorChartRating extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 16.0),
           child: Text(
             '    Длительность разговора',
@@ -60,7 +61,7 @@ class OperatorChartRating extends StatelessWidget {
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
-              color: Color(0xFF2D3748),
+              color: context.appColors.textPrimary,
             ),
           ),
         ),
@@ -83,7 +84,7 @@ class OperatorChartRating extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: context.appColors.shadow.withOpacity(0.08),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -107,7 +108,7 @@ class OperatorChartRating extends StatelessWidget {
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
                                   fontSize: 14,
-                                  color: data['textColor'].withOpacity(0.8),
+                                  color: data['textColor'].withOpacity(0.9),
                                   height: 1.3,
                                 ),
                               ),
@@ -140,7 +141,7 @@ class OperatorChartRating extends StatelessWidget {
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         fontSize: 12,
-                                        color: data['textColor'].withOpacity(0.7),
+                                        color: data['textColor'].withOpacity(0.85),
                                       ),
                                     ),
                                   ],
@@ -166,7 +167,7 @@ class OperatorChartRating extends StatelessWidget {
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
                                         fontSize: 12,
-                                        color: data['textColor'].withOpacity(0.7),
+                                        color: data['textColor'].withOpacity(0.85),
                                       ),
                                     ),
                                   ],

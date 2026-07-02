@@ -143,8 +143,8 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
   }
 
   Future<bool> _checkInternetConnection() async {
-    return OfflineRuntime
-        .instance.networkProfileService.currentProfile.isOnline;
+    final runtime = OfflineRuntime.maybeInstance;
+    return runtime?.networkProfileService.currentProfile.isOnline ?? true;
   }
 
   // ИСПРАВЛЕНО: Метод теперь принимает параметр showDebt

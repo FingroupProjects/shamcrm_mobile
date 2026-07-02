@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bl
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_event.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_state.dart';
 import 'package:crm_task_manager/models/notice_subject_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -65,16 +66,17 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('subject'),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -86,11 +88,11 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: colors.textInverse,
                       ),
                     ),
                     behavior: SnackBarBehavior.floating,
@@ -134,19 +136,18 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
                   overlayHeight: 400,
                   enabled: true,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor:
+                        colors.surfacePrimary.withValues(alpha: 0.72),
+                    expandedFillColor: colors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: widget.hasError
-                          ? Colors.red
-                          : const Color(0xffF4F7FD),
+                      color:
+                          widget.hasError ? colors.error : colors.borderSubtle,
                       width: 1.5,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: widget.hasError
-                          ? Colors.red
-                          : const Color(0xffF4F7FD),
+                      color:
+                          widget.hasError ? colors.error : colors.borderSubtle,
                       width: 1.5,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
@@ -154,32 +155,32 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
                     return Text(
                       selectedItem.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_subject'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                   noResultFoundBuilder: (context, text) {
@@ -216,8 +217,8 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
                     padding: const EdgeInsets.only(top: 0, left: 12),
                     child: Text(
                       AppLocalizations.of(context)!.translate('field_required'),
-                      style: const TextStyle(
-                        color: Colors.red,
+                      style: TextStyle(
+                        color: colors.error,
                       ),
                     ),
                   ),

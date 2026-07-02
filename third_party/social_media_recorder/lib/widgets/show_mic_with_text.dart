@@ -41,6 +41,8 @@ class ShowMicWithText extends StatelessWidget {
   );
   @override
   Widget build(BuildContext context) {
+    final showWave = shouldShowText || soundRecorderState.buttonPressed;
+
     return Row(
       mainAxisAlignment: !soundRecorderState.buttonPressed
           ? MainAxisAlignment.center
@@ -52,7 +54,7 @@ class ShowMicWithText extends StatelessWidget {
           children: [
             Transform.scale(
               key: soundRecorderState.key,
-              scale: soundRecorderState.buttonPressed ? 1.3 : 1,
+              scale: soundRecorderState.buttonPressed ? 1.12 : 1,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(600),
                 child: AnimatedContainer(
@@ -84,7 +86,31 @@ class ShowMicWithText extends StatelessWidget {
             ),
           ],
         ),
-        if (shouldShowText)
+        if (showWave)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10, right: 12),
+              child: Row(
+                children: List.generate(6, (index) {
+                  final height = (soundRecorderState.second % 4) + 4 + (index % 3);
+                  return Expanded(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      margin: EdgeInsets.symmetric(horizontal: 1.5),
+                      height: (showWave ? (height * 2.2) : 6).toDouble(),
+                      decoration: BoxDecoration(
+                        color: soundRecorderState.buttonPressed
+                            ? Colors.white.withValues(alpha: 0.92)
+                            : Colors.black.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          )
+        else
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(left: 8, right: 8),

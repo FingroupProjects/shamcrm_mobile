@@ -5,6 +5,7 @@ import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:crm_task_manager/page_2/call_center/operator_chart_1.dart';
 import 'package:crm_task_manager/page_2/call_center/operator_chart_2.dart';
 import 'package:crm_task_manager/page_2/call_center/operator_chart_3.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -34,11 +35,9 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
         Text(
              AppLocalizations.of(context)!
                               .translate('average_rating'),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w600,
-            fontSize: 16,
-            color: Colors.black87,
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(width: 8),
@@ -59,11 +58,11 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
         const SizedBox(width: 8),
         Text(
           '(${widget.rating}/5)',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             fontSize: 14,
-            color: Colors.black54,
+            color: context.appColors.textSecondary,
           ),
         ),
       ],
@@ -76,17 +75,16 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
       appBar: AppBar(
         title: Text(
           widget.operatorName,
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: Colors.black,
+            color: context.appColors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: context.appColors.iconPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         // Убираем actions со звездочками из AppBar
@@ -136,7 +134,7 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
                     fontSize: 16,
-                    color: Colors.black,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               );
@@ -153,9 +151,9 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: context.appColors.backgroundSecondary,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: context.appColors.borderSubtle),
                     ),
                     child: _buildRatingStars(),
                   ),
@@ -164,13 +162,13 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
                     operatorId: widget.operatorId,
                     summaryStats: callSummaryStats,
                   ),
-                  Divider(thickness: 1, color: Colors.grey[300]),
+                  Divider(thickness: 1, color: context.appColors.borderSubtle),
                   const SizedBox(height: 16),
                   OperatorChart2(
                     operatorId: widget.operatorId,
                     summaryStats: callSummaryStats,
                   ),
-                  Divider(thickness: 1, color: Colors.grey[300]),
+                  Divider(thickness: 1, color: context.appColors.borderSubtle),
                   const SizedBox(height: 16),
                   OperatorChart3(
                     operatorId: widget.operatorId,
@@ -189,7 +187,7 @@ class _OperatorDetailsScreenState extends State<OperatorDetailsScreen> {
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
                   fontSize: 16,
-                  color: Colors.black,
+                  color: context.appColors.textPrimary,
                 ),
               ),
             );

@@ -1,5 +1,6 @@
 
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -47,11 +48,9 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('status'),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+          style: context.appTextStyles.bodyMd.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.appColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -60,16 +59,16 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
           initialItems: selectedStatusesData,
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
-          decoration:  CustomDropdownDecoration(
-            closedFillColor: Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: context.appColors.fieldBg,
+            expandedFillColor: context.appColors.surfacePrimary,
             closedBorder: Border.all(
-              color: Color(0xffF4F7FD),
+              color: context.appColors.fieldBorder,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: Color(0xffF4F7FD),
+              color: context.appColors.fieldBorder,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -80,6 +79,9 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
               minVerticalPadding: 2,
               contentPadding: EdgeInsets.zero,
               dense: true,
+              tileColor: Colors.transparent,
+              selectedTileColor: Colors.transparent,
+              selected: isSelected,
               title: Padding(
                 padding: EdgeInsets.zero,
                 child: Row(
@@ -89,21 +91,19 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xff1E2E52), width: 1),
-                        color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                        border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
+                        color: isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white, size: 16)
+                          ? Icon(Icons.check, color: context.appColors.buttonPrimaryFg, size: 16)
                           : null,
                     ),
                     const SizedBox(width: 10),
                     Text(
                       item.name,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   ],
@@ -121,21 +121,17 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
               selectedStatusesCount == 0
                   ? AppLocalizations.of(context)!.translate('select_status')
                   : '${AppLocalizations.of(context)!.translate('select_status')} $selectedStatusesCount',
-              style: const TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.bodyMd.copyWith(
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: context.appColors.textPrimary,
               ),
             );
           },
           hintBuilder: (context, hint, enabled) => Text(
             AppLocalizations.of(context)!.translate('select_status'),
-            style: const TextStyle(
-              fontSize: 14,
+            style: context.appTextStyles.bodySm.copyWith(
               fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+              color: context.appColors.textSecondary,
             ),
           ),
           onListChanged: (values) {

@@ -7,6 +7,7 @@ import 'package:crm_task_manager/page_2/call_center/pie_chart_not_called.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_called.dart';
 import 'package:crm_task_manager/page_2/call_center/pie_chart_waiting.dart';
 import 'package:crm_task_manager/page_2/call_center/statistic_chart_1.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
@@ -44,13 +45,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight + 48),
         child: StatefulBuilder(
           builder: (BuildContext context, StateSetter appBarSetState) {
             return AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surfacePrimary,
+              surfaceTintColor: Colors.transparent,
               elevation: 0,
               title: _isSearchActive && _tabController.index == 1
                   ? TextField(
@@ -64,7 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
-                          color: Colors.grey.shade500,
+                          color: context.appColors.textSecondary,
                         ),
                       ),
                       style: const TextStyle(
@@ -79,15 +81,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                     )
                   : Text(
                       AppLocalizations.of(context)!.translate('dashboard'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         fontSize: 20,
-                        color: Colors.black,
+                        color: context.appColors.textPrimary,
                       ),
-                    ),
+                  ),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: context.appColors.iconPrimary),
                 onPressed: () => Navigator.pop(context),
               ),
               actions: [
@@ -96,7 +98,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     _isSearchActive && _tabController.index == 1
                         ? Icons.close
                         : Icons.search,
-                    color: Colors.black,
+                    color: context.appColors.iconPrimary,
                   ),
                   onPressed: () {
                     appBarSetState(() {
@@ -116,8 +118,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
               bottom: TabBar(
                 controller: _tabController,
-                labelColor: const Color(0xFF6C5CE7),
-                unselectedLabelColor: Colors.grey.shade600,
+                labelColor: context.appColors.buttonPrimaryBg,
+                unselectedLabelColor: context.appColors.textSecondary,
                 labelStyle: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
@@ -128,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   fontWeight: FontWeight.w500,
                   fontSize: 16,
                 ),
-                indicatorColor: const Color(0xFF6C5CE7),
+                indicatorColor: context.appColors.buttonPrimaryBg,
                 indicatorWeight: 3,
                 tabs: [
                   Tab(
@@ -174,17 +176,17 @@ class _DashboardScreenState extends State<DashboardScreen>
               );
             } else if (snapshot.hasError) {
               // Обработка ошибки
-              return Center(
-                child: Text(
-                  'Ошибка загрузки данных: ${snapshot.error}',
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 16,
-                    color: Colors.red,
-                  ),
-                ),
-              );
+                  return Center(
+                    child: Text(
+                      'Ошибка загрузки данных: ${snapshot.error}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        color: context.appColors.error,
+                      ),
+                    ),
+                  );
             } else if (snapshot.hasData) {
               // Данные загружены успешно
               final callStatistics = snapshot.data![0] as CallStatistics;
@@ -201,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
                       fontSize: 16,
-                      color: Colors.black,
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                 );
@@ -213,14 +215,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 children: [
                   if (callAnalytics.result.isNotEmpty) ...[
                     PieChartNotCalled(statistics: callAnalytics.result),
-                    Divider(thickness: 1, color: Colors.grey[300]),
+                    Divider(thickness: 1, color: context.appColors.borderSubtle),
                     PieChartAllCalls(statistics: callAnalytics.result),
-                    Divider(thickness: 1, color: Colors.grey[300]),
+                    Divider(thickness: 1, color: context.appColors.borderSubtle),
                     PieChartCalled(statistics: callAnalytics.result),
-                    Divider(
-                        thickness: 1,
-                        color: Colors
-                            .grey), // если хочешь разделить от следующего блока
+                    Divider(thickness: 1, color: context.appColors.borderSubtle),
                   ],
                   if (callStatistics.result.isNotEmpty)
                     StatisticChart1(statistics: callStatistics),
@@ -236,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
                     fontSize: 16,
-                    color: Colors.black,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               );

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/delete_message/delete_message_event.dart';
@@ -15,6 +16,8 @@ import 'package:crm_task_manager/utils/active_chat_tracker.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_screen.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
@@ -138,6 +141,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   bool _isLoadingOlderFromScroll = false;
   final Set<int> _pendingScrollButtonMessageIds = <int>{};
   final List<Message> _queuedSocketMessagesDuringSend = <Message>[];
+  ChatAppearanceData _chatAppearance = ChatAppearanceData.defaults();
 
   int get _pendingNewMessagesCount => _pendingScrollButtonMessageIds.length;
 
@@ -1042,6 +1046,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadChatAppearance();
     _checkPermissions();
     _getMyDisplayName();
     ChatUnreadCounterService.instance.markChatOpened(
@@ -1077,6 +1082,52 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       // ✅ ШАГ 2: Параллельно инициализируем сервисы и загружаем свежие данные
       _initializeServicesOptimized();
     });
+  }
+
+  Future<void> _loadChatAppearance() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(ChatAppearanceData.storageKey);
+    if (raw == null || raw.isEmpty) {
+      return;
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map && mounted) {
+        setState(() {
+          _chatAppearance = ChatAppearanceData.fromJson(
+            Map<String, dynamic>.from(decoded),
+          );
+        });
+      }
+    } catch (error) {
+      debugPrint('Failed to decode chat appearance: $error');
+    }
+  }
+
+  Future<void> _saveChatAppearance(ChatAppearanceData appearance) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      ChatAppearanceData.storageKey,
+      jsonEncode(appearance.toJson()),
+    );
+  }
+
+  Future<void> _openChatAppearanceSheet() async {
+    final updated = await showChatAppearanceSheet(
+      context: context,
+      initialValue: _chatAppearance,
+    );
+
+    if (updated == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _chatAppearance = updated;
+    });
+
+    await _saveChatAppearance(updated);
   }
 
   @override
@@ -2077,6 +2128,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           }
         },
         child: Scaffold(
+          extendBodyBehindAppBar: true,
           appBar: TelegramChatAppBar(
             name: isSupportChat
                 ? AppLocalizations.of(context)!.translate('support_chat_name')
@@ -2087,9 +2139,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             isGroupChat: _isGroupChat == true,
             isSearching: _isSearching,
             isSupportChat: isSupportChat,
+            appearance: _chatAppearance,
             searchController: _searchController,
             searchFocusNode: _searchFocusNode,
             onBack: () => Navigator.pop(context),
+            onAppearanceTap: _openChatAppearanceSheet,
             onProfileTap: isSupportChat
                 ? null
                 : () async {
@@ -2114,8 +2168,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                         );
                       } else if (widget.endPointInTab == 'corporate') {
                         try {
-                          final getChatById =
-                              await widget.apiService.getChatById(widget.chatId);
+                          final getChatById = await widget.apiService
+                              .getChatById(widget.chatId);
                           if (getChatById.chatUsers.isNotEmpty &&
                               getChatById.chatUsers.length == 2 &&
                               getChatById.group == null) {
@@ -2123,7 +2177,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                             final userIdCheck = prefs.getString('userID') ?? '';
                             final otherUsers = getChatById.chatUsers
                                 .where((user) =>
-                                    user.participant.id.toString() != userIdCheck)
+                                    user.participant.id.toString() !=
+                                    userIdCheck)
                                 .toList();
 
                             if (otherUsers.isNotEmpty) {
@@ -2131,7 +2186,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ParticipantProfileScreen(
+                                  builder: (context) =>
+                                      ParticipantProfileScreen(
                                     userId: participant.id.toString(),
                                     image: participant.image,
                                     name: participant.name,
@@ -2195,11 +2251,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                   _searchQuery = null;
                 }
               });
-                      if (!_isSearching) {
-                        _searchDebounce?.cancel();
-                        context.read<MessagingCubit>().resetAndSearch(
-                              widget.chatId,
-                              search: null,
+              if (!_isSearching) {
+                _searchDebounce?.cancel();
+                context.read<MessagingCubit>().resetAndSearch(
+                      widget.chatId,
+                      search: null,
                       chatType: widget.endPointInTab,
                     );
               } else {
@@ -2212,33 +2268,52 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             },
             onSearchChanged: _onSearchChanged,
           ),
-          backgroundColor: context.appColors.backgroundSecondary,
-          body: Column(
-            children: [
-              Expanded(child: messageListUi()),
-              if (widget.canSendMessage && _canCreateChat)
-                inputWidget()
-              else
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 50),
-                  child: Center(
-                    child: Text(
-                      widget.canSendMessage
-                          ? AppLocalizations.of(context)!
-                              .translate('not_premission_to_send_sms')
-                          : AppLocalizations.of(context)!
-                              .translate('24_hour_leads'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        color: context.appColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+          backgroundColor: Colors.transparent,
+          body: ChatAppearanceScope(
+            appearance: _chatAppearance,
+            child: DecoratedBox(
+              decoration: _chatAppearance.buildFullScreenDecoration(context),
+              child: Stack(
+                children: [
+                  _chatAppearance.buildBackgroundLayer(context),
+                  ..._chatAppearance.buildBackgroundOrbs(context),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top +
+                          kToolbarHeight +
+                          22,
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(child: messageListUi()),
+                        if (widget.canSendMessage && _canCreateChat)
+                          inputWidget()
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 50),
+                            child: Center(
+                              child: Text(
+                                widget.canSendMessage
+                                    ? AppLocalizations.of(context)!
+                                        .translate('not_premission_to_send_sms')
+                                    : AppLocalizations.of(context)!
+                                        .translate('24_hour_leads'),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  color: context.appColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -2518,19 +2593,45 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                       List<Widget> widgets = [];
 
                       if (shouldShowDate) {
+                        final appearance = ChatAppearanceScope.of(context);
                         widgets.add(
                           Padding(
                             padding: const EdgeInsets.only(top: 16, bottom: 8),
                             child: GestureDetector(
                               onTap: () => _showDatePicker(context, messages),
                               child: Center(
-                                child: Text(
-                                  formatDate(messageDate),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: "Gilroy",
-                                    fontWeight: FontWeight.w400,
-                                    color: context.appColors.textPrimary,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: appearance.chromeBlurSigma(),
+                                      sigmaY: appearance.chromeBlurSigma(),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 7,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: appearance
+                                            .chromeSurfaceColor(context),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: context.appColors.borderSubtle
+                                              .withValues(alpha: 0.28),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        formatDate(messageDate),
+                                        style: TextStyle(
+                                          fontSize: appearance.scaledFont(13),
+                                          fontFamily: "Gilroy",
+                                          fontWeight: FontWeight.w600,
+                                          color: context.appColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -4479,6 +4580,7 @@ class MessageItemWidget extends StatelessWidget {
 
   Widget _buildPostPreview(BuildContext context, Post post) {
     final localizations = AppLocalizations.of(context)!;
+    final appearance = ChatAppearanceScope.of(context);
     final caption = post.caption.trim();
     final text = caption.isNotEmpty
         ? caption
@@ -4493,9 +4595,13 @@ class MessageItemWidget extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: context.appColors.surfacePrimary,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.appColors.borderSubtle),
+          color: message.isMyMessage
+              ? appearance.senderBubbleColor(context).withValues(alpha: 0.88)
+              : appearance.receiverBubbleColor(context).withValues(alpha: 0.9),
+          borderRadius: appearance.bubbleRadius(message.isMyMessage),
+          border: Border.all(
+            color: appearance.borderColor(context, message.isMyMessage),
+          ),
           boxShadow: [
             BoxShadow(
               color: context.appColors.shadow.withValues(alpha: 0.05),
@@ -4521,7 +4627,10 @@ class MessageItemWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: context.appColors.textSecondary,
+                    color: appearance.secondaryForeground(
+                      context,
+                      message.isMyMessage,
+                    ),
                   ),
                 ),
               ],
@@ -4533,8 +4642,11 @@ class MessageItemWidget extends StatelessWidget {
               overflow:
                   isPostExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 13.5,
-                color: context.appColors.textPrimary,
+                fontSize: appearance.scaledFont(13.5),
+                color: message.isMyMessage
+                    ? appearance.outgoingForeground(context)
+                    : appearance.incomingForeground(context),
+                fontWeight: appearance.messageFontWeight,
                 height: 1.25,
               ),
             ),

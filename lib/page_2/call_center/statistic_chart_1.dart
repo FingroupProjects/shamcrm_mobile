@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -67,12 +68,12 @@ class StatisticChart1 extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appColors.borderSubtle),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: context.appColors.shadow.withOpacity(0.08),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -82,13 +83,13 @@ class StatisticChart1 extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Статистика звонков',
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 20,
-              color: Colors.black,
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -102,11 +103,11 @@ class StatisticChart1 extends StatelessWidget {
                   horizontalInterval: horizontalInterval,
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.grey.shade200,
+                    color: context.appColors.borderSubtle,
                     strokeWidth: 0.5,
                   ),
                   getDrawingVerticalLine: (value) => FlLine(
-                    color: Colors.grey.shade200,
+                    color: context.appColors.borderSubtle,
                     strokeWidth: 0.5,
                   ),
                 ),
@@ -134,7 +135,6 @@ class StatisticChart1 extends StatelessWidget {
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
                                 fontSize: 12,
-                                color: Colors.black, // Явно задаем цвет для согласованности
                               ),
                             ),
                           ),
@@ -153,6 +153,7 @@ class StatisticChart1 extends StatelessWidget {
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w500,
                           fontSize: 12,
+                          color: Colors.black,
                         ),
                       ),
                       interval: horizontalInterval,
@@ -162,7 +163,7 @@ class StatisticChart1 extends StatelessWidget {
                 ),
                 borderData: FlBorderData(
                   show: true,
-                  border: Border.all(color: Colors.grey.shade200, width: 0.5),
+                  border: Border.all(color: context.appColors.borderSubtle, width: 0.5),
                 ),
 
                 minX: 0,
@@ -339,27 +340,27 @@ class StatisticChart1 extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity, // Forces each item to take full width
-                child: _buildLegendItem('Общее количество звонков', const Color(0xFF038FFB)),
+                child: _buildLegendItem(context, 'Общее количество звонков', const Color(0xFF038FFB)),
               ),
               Container(
                 width: double.infinity,
-                child: _buildLegendItem('Среднее время ответа', const Color(0xFF01E396)),
+                child: _buildLegendItem(context, 'Среднее время ответа', const Color(0xFF01E396)),
               ),
               Container(
                 width: double.infinity,
-                child: _buildLegendItem('Звонки без перезвона', const Color(0xFFFEB01A)),
+                child: _buildLegendItem(context, 'Звонки без перезвона', const Color(0xFFFEB01A)),
               ),
               Container(
                 width: double.infinity,
-                child: _buildLegendItem('Пропущенные звонки', const Color(0xFFFF4560)),
+                child: _buildLegendItem(context, 'Пропущенные звонки', const Color(0xFFFF4560)),
               ),
               Container(
                 width: double.infinity,
-                child: _buildLegendItem('Исходящие звонки', const Color(0xFF775DD0)),
+                child: _buildLegendItem(context, 'Исходящие звонки', const Color(0xFF775DD0)),
               ),
               Container(
                 width: double.infinity,
-                child: _buildLegendItem('Входящие звонки', const Color(0xFF038FFB).withOpacity(0.7)),
+                child: _buildLegendItem(context, 'Входящие звонки', const Color(0xFF038FFB).withOpacity(0.7)),
               ),
             ],
           ),
@@ -368,7 +369,7 @@ class StatisticChart1 extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(String title, Color color) {
+  Widget _buildLegendItem(BuildContext context, String title, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -384,7 +385,7 @@ class StatisticChart1 extends StatelessWidget {
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             fontSize: 14,
-            color: Colors.grey.shade700,
+            color: context.appColors.textSecondary,
           ),
         ),
       ],

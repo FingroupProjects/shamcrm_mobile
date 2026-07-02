@@ -5,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_s
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_wh.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:flutter/material.dart';
@@ -369,23 +370,22 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
     return PopScope(
       canPop: true,
       child: Scaffold(
-        backgroundColor: const Color(0xffF4F7FD),
+        backgroundColor: context.appColors.backgroundSecondary,
         appBar: AppBar(
           titleSpacing: 0,
           title: Text(
             AppLocalizations.of(context)!.translate('filter'),
-            style: const TextStyle(
-              fontSize: 20,
+            style: context.appTextStyles.titleLg.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-              fontFamily: 'Gilroy',
+              color: context.appColors.textPrimary,
             ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surfacePrimary,
+          surfaceTintColor: Colors.transparent,
           forceMaterialTransparency: true,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            icon: Icon(Icons.arrow_back, color: context.appColors.iconPrimary),
             onPressed: _handleBackPressed,
           ),
           actions: [
@@ -394,19 +394,17 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
               style: TextButton.styleFrom(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                backgroundColor: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                side: const BorderSide(color: Colors.blueAccent, width: 0.5),
+                side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('reset'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueAccent,
-                  fontFamily: 'Gilroy',
+                  color: context.appColors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -416,19 +414,17 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
               style: TextButton.styleFrom(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                backgroundColor: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                side: const BorderSide(color: Colors.blueAccent, width: 0.5),
+                side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('apply'),
-                style: const TextStyle(
-                  fontSize: 16,
+                style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueAccent,
-                  fontFamily: 'Gilroy',
+                  color: context.appColors.buttonPrimaryBg,
                 ),
               ),
             ),
@@ -447,7 +443,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
@@ -480,7 +476,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
@@ -511,7 +507,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: Column(
@@ -540,7 +536,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: OperatorMultiSelectWidget(
@@ -561,7 +557,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: RatingMultiSelectWidget(
@@ -581,7 +577,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
                       child: Column(
                         children: [
                           _buildSwitchTile(
@@ -607,19 +603,16 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
     return SwitchListTile(
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Colors.black54,
-          fontFamily: 'Gilroy',
+        style: context.appTextStyles.bodyMd.copyWith(
+          color: context.appColors.textSecondary,
         ),
       ),
       value: selectedRemarkStatus ?? false,
       onChanged: _handleRemarkStatusChanged,
-      activeThumbColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:
-          const Color.fromARGB(255, 179, 179, 179).withValues(alpha: 0.5),
-      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+      activeThumbColor: context.appColors.buttonPrimaryFg,
+      inactiveTrackColor: context.appColors.borderSubtle.withValues(alpha: 0.5),
+      activeTrackColor: context.appColors.buttonPrimaryBg,
+      inactiveThumbColor: context.appColors.surfacePrimary,
     );
   }
 }

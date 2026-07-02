@@ -25,13 +25,6 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
   List<AuthorData> selectedAuthorsData = [];
   bool allSelected = false;
 
-  final TextStyle authorTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -42,9 +35,9 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
     setState(() {
       allSelected = !allSelected;
       if (allSelected) {
-        selectedAuthorsData = List.from(authorsList); 
+        selectedAuthorsData = List.from(authorsList);
       } else {
-        selectedAuthorsData = []; 
+        selectedAuthorsData = [];
       }
       widget.onSelectAuthors(selectedAuthorsData);
     });
@@ -53,10 +46,17 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final authorTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
     return FormField<List<AuthorData>>(
       validator: (value) {
         if (selectedAuthorsData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -86,9 +86,14 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                 builder: (context, state) {
                   if (state is GetAllAuthorSuccess) {
                     authorsList = state.dataAuthor.result ?? [];
-                    if (widget.selectedAuthors != null && authorsList.isNotEmpty) {
-                      selectedAuthorsData = authorsList.where((author) => widget.selectedAuthors!.contains(author.id.toString())).toList();
-                      allSelected = selectedAuthorsData.length == authorsList.length;
+                    if (widget.selectedAuthors != null &&
+                        authorsList.isNotEmpty) {
+                      selectedAuthorsData = authorsList
+                          .where((author) => widget.selectedAuthors!
+                              .contains(author.id.toString()))
+                          .toList();
+                      allSelected =
+                          selectedAuthorsData.length == authorsList.length;
                     }
                   }
 
@@ -99,7 +104,8 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                      closedFillColor:
+                          colors.surfacePrimary.withValues(alpha: 0.72),
                       expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
@@ -107,7 +113,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -115,7 +121,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       if (authorsList.indexOf(item) == 0) {
                         return Column(
-                        children: [
+                          children: [
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -138,9 +144,9 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
-                                          ? const Icon(
+                                          ? Icon(
                                               Icons.check,
-                                              color: Colors.white,
+                                              color: colors.textInverse,
                                               size: 14,
                                             )
                                           : null,
@@ -148,7 +154,8 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
                                         style: authorTextStyle,
                                       ),
                                     ),
@@ -156,17 +163,22 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                                 ),
                               ),
                             ),
-                            Divider( height: 20, color: colors.borderSubtle), 
-                            _buildListItem(context, item, isSelected, onItemSelect),
+                            Divider(height: 20, color: colors.borderSubtle),
+                            _buildListItem(
+                                context, item, isSelected, onItemSelect),
                           ],
                         );
                       }
-                      return _buildListItem(context, item, isSelected, onItemSelect);
+                      return _buildListItem(
+                          context, item, isSelected, onItemSelect);
                     },
                     headerListBuilder: (context, hint, enabled) {
                       String selectedAuthorsNames = selectedAuthorsData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_users')
-                          : selectedAuthorsData.map((e) => '${e.name} ${e.lastname ?? ''}').join(', ');
+                          ? AppLocalizations.of(context)!
+                              .translate('select_users')
+                          : selectedAuthorsData
+                              .map((e) => '${e.name} ${e.lastname ?? ''}')
+                              .join(', ');
                       return Text(
                         selectedAuthorsNames,
                         style: authorTextStyle,
@@ -210,7 +222,8 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
     );
   }
 
-  Widget _buildListItem(BuildContext context, AuthorData item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(BuildContext context, AuthorData item, bool isSelected,
+      Function() onItemSelect) {
     final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -230,9 +243,9 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                 color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
-                      color: Colors.white,
+                      color: colors.textInverse,
                       size: 14,
                     )
                   : null,
@@ -241,7 +254,12 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
             Expanded(
               child: Text(
                 '${item.name!} ${item.lastname ?? ''}',
-                style: authorTextStyle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: colors.textPrimary,
+                ),
               ),
             ),
           ],

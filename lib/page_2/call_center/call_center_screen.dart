@@ -12,6 +12,7 @@ import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_item.dart';
 import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/dashboard_call_center_screen.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -370,22 +371,21 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(
           AppLocalizations.of(context)!.translate('call_center'),
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.titleLg.copyWith(
             fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: Colors.black,
+            color: context.appColors.textPrimary,
           ),
         ),
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: context.appColors.iconPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -401,7 +401,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                       AppLocalizations.of(context)!.translate('search_appbar'),
                   border: InputBorder.none,
                 ),
-                style: const TextStyle(fontSize: 16, color: Colors.black),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: context.appColors.textPrimary,
+                ),
                 autofocus: true,
               ),
             ),
@@ -409,7 +412,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
             icon: _isSearching
-                ? const Icon(Icons.close, color: Colors.black)
+                ? Icon(Icons.close, color: context.appColors.iconPrimary)
                 : Image.asset(
                     'assets/icons/AppBar/search.png',
                     width: 24,
@@ -438,6 +441,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               'assets/icons/MyNavBar/dashboard_call.png',
               width: 24,
               height: 24,
+              color: context.appColors.iconPrimary,
             ),
             tooltip: AppLocalizations.of(context)!.translate('dashboard'),
             onPressed: () {
@@ -454,7 +458,9 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               'assets/icons/AppBar/filter.png',
               width: 24,
               height: 24,
-              color: _areFiltersApplied ? Colors.blue : Colors.black,
+              color: _areFiltersApplied
+                  ? context.appColors.buttonPrimaryBg
+                  : context.appColors.iconPrimary,
             ),
             tooltip: AppLocalizations.of(context)!.translate('filter'),
             onPressed: () {
@@ -500,7 +506,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       body: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: context.appColors.surfacePrimary,
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -517,7 +523,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               ),
             ),
           ),
-          Container(height: 1, color: Colors.grey.shade200),
+          Container(height: 1, color: context.appColors.borderSubtle),
           Expanded(
             // Заменяем обычный контент на PageView для swipe навигации
             child: PageView.builder(
@@ -543,7 +549,9 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade100,
+          color: isSelected
+              ? context.appColors.buttonPrimaryBg
+              : context.appColors.backgroundSecondary,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -552,7 +560,9 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             fontSize: 14,
-            color: isSelected ? Colors.white : Colors.black,
+            color: isSelected
+                ? context.appColors.buttonPrimaryFg
+                : context.appColors.textPrimary,
           ),
         ),
       ),
@@ -564,15 +574,13 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.call, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.call, size: 64, color: context.appColors.iconSecondary),
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context)!.translate('no_calls_found'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
+            style: context.appTextStyles.titleMd.copyWith(
               fontWeight: FontWeight.w500,
-              fontSize: 18,
-              color: Colors.grey.shade600,
+              color: context.appColors.textSecondary,
             ),
           ),
         ],

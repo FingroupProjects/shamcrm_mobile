@@ -26,9 +26,13 @@ import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:intl/intl.dart';
+
 class CreateTaskFromCalendare extends StatefulWidget {
   final DateTime? initialDate;
 
@@ -38,9 +42,9 @@ class CreateTaskFromCalendare extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CreateTaskFromCalendareState createState() => _CreateTaskFromCalendareState();
+  _CreateTaskFromCalendareState createState() =>
+      _CreateTaskFromCalendareState();
 }
-
 
 class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -69,12 +73,13 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
     _fetchAndAddCustomFields();
     _setDefaultValues();
 
-      if (widget.initialDate != null) {
-      endDateController.text = DateFormat('dd/MM/yyyy').format(widget.initialDate!);
+    if (widget.initialDate != null) {
+      endDateController.text =
+          DateFormat('dd/MM/yyyy').format(widget.initialDate!);
     }
   }
 
-   void _setDefaultValues() {
+  void _setDefaultValues() {
     selectedPriority = 1;
   }
 
@@ -93,14 +98,11 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
     }
   }
 
- 
-
   void _addCustomField(String fieldName) {
     setState(() {
       customFields.add(CustomField(fieldName: fieldName));
     });
   }
-
 
   void _showAddFieldDialog() {
     showDialog(
@@ -115,205 +117,219 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
     );
   }
 
-Widget _buildFileSelection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        AppLocalizations.of(context)!.translate('file'),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-          color: Color(0xff1E2E52),
+  Widget _buildFileSelection() {
+    final colors = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: colors.textPrimary,
+          ),
         ),
-      ),
-      SizedBox(height: 16),
-      Container(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
-          itemBuilder: (context, index) {
-            // Кнопка добавления файла
-            if (fileNames.isEmpty || index == fileNames.length) {
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: GestureDetector(
-                  onTap: _pickFile,
-                  child: Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        Image.asset('assets/icons/files/add.png', width: 60, height: 60),
-                        SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.translate('add_file'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-            
-            // Отображение выбранных файлов
-            final fileName = fileNames[index];
-            final fileExtension = fileName.split('.').last.toLowerCase();
-            
-            return Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    child: Column(
-                      children: [
-                        // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
-                        _buildFileIcon(fileName, fileExtension),
-                        SizedBox(height: 8),
-                        Text(
-                          fileName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Кнопка удаления файла
-                  Positioned(
-                    right: -2,
-                    top: -6,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedFiles.removeAt(index);
-                          fileNames.removeAt(index);
-                          fileSizes.removeAt(index);
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: fileNames.isEmpty ? 1 : fileNames.length + 1,
+            itemBuilder: (context, index) {
+              // Кнопка добавления файла
+              if (fileNames.isEmpty || index == fileNames.length) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset('assets/icons/files/add.png',
+                              width: 60, height: 60),
+                          SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: colors.textPrimary,
                             ),
-                          ],
-                        ),
-                        child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
+                );
+              }
+
+              // Отображение выбранных файлов
+              final fileName = fileNames[index];
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          // НОВОЕ: Используем метод _buildFileIcon для показа превью или иконки
+                          _buildFileIcon(fileName, fileExtension),
+                          SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Кнопка удаления файла
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedFiles.removeAt(index);
+                            fileNames.removeAt(index);
+                            fileSizes.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.shadow.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.close,
+                              size: 16, color: colors.iconPrimary),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
 // ==========================================
 // НОВЫЙ ВСПОМОГАТЕЛЬНЫЙ МЕТОД
 // Добавьте этот метод в класс _DealAddScreenState
 // ==========================================
 
-/// Строит иконку файла или превью изображения
-Widget _buildFileIcon(String fileName, String fileExtension) {
-  // Список расширений изображений
-  final imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
-  
-  // Если файл - изображение, показываем превью
-  if (imageExtensions.contains(fileExtension)) {
-    final filePath = selectedFiles[fileNames.indexOf(fileName)];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.file(
-        File(filePath),
+  /// Строит иконку файла или превью изображения
+  Widget _buildFileIcon(String fileName, String fileExtension) {
+    // Список расширений изображений
+    final imageExtensions = [
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'bmp',
+      'webp',
+      'heic',
+      'heif'
+    ];
+
+    // Если файл - изображение, показываем превью
+    if (imageExtensions.contains(fileExtension)) {
+      final filePath = selectedFiles[fileNames.indexOf(fileName)];
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(filePath),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Если не удалось загрузить превью, показываем иконку
+            return Image.asset(
+              'assets/icons/files/file.png',
+              width: 60,
+              height: 60,
+            );
+          },
+        ),
+      );
+    } else {
+      // Для остальных типов файлов показываем иконку по расширению
+      return Image.asset(
+        'assets/icons/files/$fileExtension.png',
         width: 60,
         height: 60,
-        fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Если не удалось загрузить превью, показываем иконку
+          // Если нет иконки для этого типа, показываем общую иконку файла
           return Image.asset(
             'assets/icons/files/file.png',
             width: 60,
             height: 60,
           );
         },
-      ),
-    );
-  } else {
-    // Для остальных типов файлов показываем иконку по расширению
-    return Image.asset(
-      'assets/icons/files/$fileExtension.png',
-      width: 60,
-      height: 60,
-      errorBuilder: (context, error, stackTrace) {
-        // Если нет иконки для этого типа, показываем общую иконку файла
-        return Image.asset(
-          'assets/icons/files/file.png',
-          width: 60,
-          height: 60,
-        );
-      },
-    );
+      );
+    }
   }
-}
 
+  Future<void> _pickFile() async {
+    // Вычисляем текущий общий размер файлов
+    double totalSize = selectedFiles.fold<double>(
+      0.0,
+      (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
+    );
 
- Future<void> _pickFile() async {
-  // Вычисляем текущий общий размер файлов
-  double totalSize = selectedFiles.fold<double>(
-    0.0,
-    (sum, file) => sum + File(file).lengthSync() / (1024 * 1024),
-  );
+    // Показываем диалог выбора типа файла
+    final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
 
-  // Показываем диалог выбора типа файла
-  final List<PickedFileInfo>? pickedFiles = await FilePickerDialog.show(
-    context: context,
-    allowMultiple: true,
-    maxSizeMB: 50.0,
-    currentTotalSizeMB: totalSize,
-    fileLabel: AppLocalizations.of(context)!.translate('file'),
-    galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
-    cameraLabel: AppLocalizations.of(context)!.translate('camera'),
-    cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
-    fileSizeTooLargeMessage: AppLocalizations.of(context)!.translate('file_size_too_large'),
-    errorPickingFileMessage: AppLocalizations.of(context)!.translate('error_picking_file'),
-  );
-
-  // Если файлы выбраны, добавляем их
-  if (pickedFiles != null && pickedFiles.isNotEmpty) {
-    setState(() {
-      for (var file in pickedFiles) {
-        selectedFiles.add(file.path);
-        fileNames.add(file.name);
-        fileSizes.add(file.sizeKB);
-      }
-    });
+    // Если файлы выбраны, добавляем их
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          selectedFiles.add(file.path);
+          fileNames.add(file.name);
+          fileSizes.add(file.sizeKB);
+        }
+      });
+    }
   }
-}
 
   Widget _buildActionButtons(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
       child: Row(
@@ -321,8 +337,8 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
           Expanded(
             child: CustomButton(
               buttonText: AppLocalizations.of(context)!.translate('cancel'),
-              buttonColor: const Color(0xffF4F7FD),
-              textColor: Colors.black,
+              buttonColor: colors.surfacePrimary.withValues(alpha: 0.72),
+              textColor: colors.textPrimary,
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -331,16 +347,16 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
             child: BlocBuilder<TaskBloc, TaskState>(
               builder: (context, state) {
                 return state is TaskLoading
-                    ? const Center(
+                    ? Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xff1E2E52),
+                          color: colors.buttonPrimaryBg,
                         ),
                       )
                     : CustomButton(
                         buttonText:
                             AppLocalizations.of(context)!.translate('add'),
-                        buttonColor: const Color(0xff4759FF),
-                        textColor: Colors.white,
+                        buttonColor: colors.buttonPrimaryBg,
+                        textColor: colors.textInverse,
                         onPressed: _submitForm,
                       );
               },
@@ -366,20 +382,17 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
     }
 
     if (isFormValid && !hasMissingStatus) {
-
       try {
-
         final DateTime? endDate = endDateController.text.isNotEmpty
             ? DateFormat('dd/MM/yyyy').parse(endDateController.text)
             : null;
 
-      
         List<Map<String, String>> customFieldMap = customFields
             .where((field) => field.controller.text.isNotEmpty)
             .map((field) => {field.fieldName: field.controller.text})
             .toList();
-            
-    final localizations = AppLocalizations.of(context)!;
+
+        final localizations = AppLocalizations.of(context)!;
 
         context.read<TaskBloc>().add(
               CreateTask(
@@ -406,33 +419,42 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
                         );
                       }).toList()
                     : null,
-                localizations: localizations, 
+                localizations: localizations,
               ),
             );
-
       } catch (e) {
-          showCustomSnackBar(
-               context: context,
-               message: AppLocalizations.of(context)!.translate('error_create_task'),
-               isSuccess: false,
-             );
+        showCustomSnackBar(
+          context: context,
+          message: AppLocalizations.of(context)!.translate('error_create_task'),
+          isSuccess: false,
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      extendBody: true,
       appBar: AppBar(
         leading: IconButton(
-          icon: Image.asset(
-            'assets/icons/arrow-left.png',
-            width: 24,
-            height: 24,
+          icon: ColorFiltered(
+            colorFilter: ColorFilter.mode(
+              colors.textPrimary,
+              BlendMode.srcIn,
+            ),
+            child: Image.asset(
+              'assets/icons/arrow-left.png',
+              width: 24,
+              height: 24,
+            ),
           ),
           onPressed: () {
-            Navigator.pop(context, );
+            Navigator.pop(
+              context,
+            );
           },
         ),
         title: Text(
@@ -441,179 +463,193 @@ Widget _buildFileIcon(String fileName, String fileExtension) {
             fontSize: 18,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         centerTitle: false,
       ),
-      body: BlocListener<TaskBloc, TaskState>(
-        listener: (context, state) {
-          if (state is TaskError) {
-               showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate(state.message),
-                   isSuccess: false,
-                 );
-          } else if (state is TaskSuccess) {
+      body: Stack(
+        children: [
+          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          BlocListener<TaskBloc, TaskState>(
+            listener: (context, state) {
+              if (state is TaskError) {
                 showCustomSnackBar(
-                   context: context,
-                   message: AppLocalizations.of(context)!.translate(state.message),
-                   isSuccess: true,
-                 );
-            Navigator.pop(context);
-            context.read<CalendarBloc>().add(FetchCalendarEvents(widget.initialDate?.month ?? DateTime.now().month, widget.initialDate?.year ?? DateTime.now().year));
-          }
-        },
-        child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TaskStatusRadioGroupWidget(
-                        selectedStatus: selectedStatusId?.toString(),
-                        hasError: isStatusInvalid,
-                        onSelectStatus: (TaskStatus selectedStatusData) {
-                          setState(() {
-                            selectedStatusId = selectedStatusData.id;
-                            isStatusInvalid = false;
-                          });
-                        },
-                      ),
-                      if (isStatusInvalid)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, left: 12),
-                          child: Text(
-                            AppLocalizations.of(context)!
-                                .translate('field_required'),
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      CustomTextFieldWithPriority(
-                        controller: nameController,
-                        hintText: AppLocalizations.of(context)!.translate('enter_title'),
-                        label: AppLocalizations.of(context)!.translate('event_name'),
-                        showPriority: true,
-                        isPrioritySelected: selectedPriority == 3,
-                        onPriorityChanged: (bool? value) {
-                          setState(() {
-                            selectedPriority = value == true ? 3 : 1;
-                          });
-                        },
-                        priorityText:
-                            AppLocalizations.of(context)!.translate('urgent'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return AppLocalizations.of(context)!
-                                .translate('field_required');
-                          }
-                          return null;
-                        },
-                      ),
-                    
-                      const SizedBox(height: 8),
-                      CustomTextField(
-                        controller: descriptionController,
-                        hintText: AppLocalizations.of(context)!
-                            .translate('enter_description'),
-                        label: AppLocalizations.of(context)!
-                            .translate('description_list'),
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-
-                      ),
-                      const SizedBox(height: 8),
-                      UserMultiSelectWidget(
-                        selectedUsers: selectedUsers,
-                        onSelectUsers: (List<UserData> selectedUsersData) {
-                          setState(() {
-                            selectedUsers = selectedUsersData
-                                .map((user) => user.id.toString())
-                                .toList();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      ProjectTaskGroupWidget(
-                        selectedProject: selectedProject,
-                        onSelectProject: (ProjectTask selectedProjectData) {
-                          setState(() {
-                            selectedProject = selectedProjectData.id.toString();
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      if (!_showAdditionalFields)
-                        CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('additionally'),
-                          buttonColor: Color(0xff1E2E52),
-                          textColor: Colors.white,
-                          onPressed: () {
-                            setState(() {
-                              _showAdditionalFields = true;
-                            });
-                          },
-                        )
-                      else ...[
-              
-                        _buildFileSelection(),
-                        const SizedBox(height: 8),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: customFields.length,
-                          itemBuilder: (context, index) {
-                            return CustomFieldWidget(
-                              fieldName: customFields[index].fieldName,
-                              valueController: customFields[index].controller,
-                              onRemove: () {
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
+                  isSuccess: false,
+                );
+              } else if (state is TaskSuccess) {
+                showCustomSnackBar(
+                  context: context,
+                  message:
+                      AppLocalizations.of(context)!.translate(state.message),
+                  isSuccess: true,
+                );
+                Navigator.pop(context);
+                context.read<CalendarBloc>().add(FetchCalendarEvents(
+                    widget.initialDate?.month ?? DateTime.now().month,
+                    widget.initialDate?.year ?? DateTime.now().year));
+              }
+            },
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        FocusScope.of(context).unfocus();
+                      },
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TaskStatusRadioGroupWidget(
+                              selectedStatus: selectedStatusId?.toString(),
+                              hasError: isStatusInvalid,
+                              onSelectStatus: (TaskStatus selectedStatusData) {
                                 setState(() {
-                                  customFields.removeAt(index);
+                                  selectedStatusId = selectedStatusData.id;
+                                  isStatusInvalid = false;
                                 });
                               },
-                            );
-                          },
+                            ),
+                            if (isStatusInvalid)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 4, left: 12),
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('field_required'),
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                            CustomTextFieldWithPriority(
+                              controller: nameController,
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_title'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('event_name'),
+                              showPriority: true,
+                              isPrioritySelected: selectedPriority == 3,
+                              onPriorityChanged: (bool? value) {
+                                setState(() {
+                                  selectedPriority = value == true ? 3 : 1;
+                                });
+                              },
+                              priorityText: AppLocalizations.of(context)!
+                                  .translate('urgent'),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return AppLocalizations.of(context)!
+                                      .translate('field_required');
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              controller: descriptionController,
+                              hintText: AppLocalizations.of(context)!
+                                  .translate('enter_description'),
+                              label: AppLocalizations.of(context)!
+                                  .translate('description_list'),
+                              maxLines: 5,
+                              keyboardType: TextInputType.multiline,
+                            ),
+                            const SizedBox(height: 8),
+                            UserMultiSelectWidget(
+                              selectedUsers: selectedUsers,
+                              backgroundColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                              onSelectUsers:
+                                  (List<UserData> selectedUsersData) {
+                                setState(() {
+                                  selectedUsers = selectedUsersData
+                                      .map((user) => user.id.toString())
+                                      .toList();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            ProjectTaskGroupWidget(
+                              selectedProject: selectedProject,
+                              onSelectProject:
+                                  (ProjectTask selectedProjectData) {
+                                setState(() {
+                                  selectedProject =
+                                      selectedProjectData.id.toString();
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            if (!_showAdditionalFields)
+                              CustomButton(
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('additionally'),
+                                buttonColor: colors.buttonPrimaryBg,
+                                textColor: colors.textInverse,
+                                onPressed: () {
+                                  setState(() {
+                                    _showAdditionalFields = true;
+                                  });
+                                },
+                              )
+                            else ...[
+                              _buildFileSelection(),
+                              const SizedBox(height: 8),
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemCount: customFields.length,
+                                itemBuilder: (context, index) {
+                                  return CustomFieldWidget(
+                                    fieldName: customFields[index].fieldName,
+                                    valueController:
+                                        customFields[index].controller,
+                                    onRemove: () {
+                                      setState(() {
+                                        customFields.removeAt(index);
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              CustomButton(
+                                buttonText: AppLocalizations.of(context)!
+                                    .translate('add_field'),
+                                buttonColor: colors.buttonPrimaryBg,
+                                textColor: colors.textInverse,
+                                onPressed: _showAddFieldDialog,
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        CustomButton(
-                          buttonText: AppLocalizations.of(context)!
-                              .translate('add_field'),
-                          buttonColor: Color(0xff1E2E52),
-                          textColor: Colors.white,
-                          onPressed: _showAddFieldDialog,
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                    ],
+                      ),
+                    ),
                   ),
-                ),
+                  _buildActionButtons(context),
+                ],
               ),
-              ),
-              _buildActionButtons(context),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
-  }
-
-  
+}
 
 class CustomField {
   final String fieldName;

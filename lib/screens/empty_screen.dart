@@ -1,9 +1,13 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class EmptyScreen extends StatefulWidget {
   const EmptyScreen({super.key});
@@ -18,8 +22,9 @@ class _EmptyScreenState extends State<EmptyScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final themeController = context.watch<AppThemeController>();
     return Scaffold(
-      backgroundColor: context.appColors.backgroundPrimary,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         forceMaterialTransparency: true,
         title: CustomAppBar(
@@ -47,31 +52,54 @@ class _EmptyScreenState extends State<EmptyScreen> {
           clearButtonClickFiltr: (_) {},
         ),
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  AutoSizeText(
-                    AppLocalizations.of(context)!.translate('welcome'),
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Gilroy',
-                      color: context.appColors.textPrimary,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          AppBackgroundOverlay(
+            preset: themeController.backgroundPreset == AppBackgroundPreset.none
+                ? AppBackgroundPreset.aurora
+                : themeController.backgroundPreset,
+            imagePath: themeController.backgroundImagePath,
+            assetPath: themeController.backgroundAssetPath,
+            blurSigma: themeController.backgroundBlurSigma,
+          ),
+          if (isClickAvatarIcon)
+            ProfileScreen()
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AutoSizeText(
+                      AppLocalizations.of(context)!.translate('welcome'),
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Gilroy',
+                        color: context.appColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      minFontSize: 12,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
-                    maxLines: 1,
-                    minFontSize: 12,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 10),
-                  Image.asset('assets/images/new_icon_shamCRM.jpg', height: 80),
-                ],
+                    const SizedBox(height: 14),
+                    Image.asset(
+                      'assets/icons/newLogo.png',
+                      height: 92,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
               ),
             ),
+        ],
+      ),
     );
   }
 }

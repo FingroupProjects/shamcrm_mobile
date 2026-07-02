@@ -1,5 +1,6 @@
 // lib/page_2/call_center/pie_chart_all_calls.dart
 import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -65,12 +66,12 @@ class _PieChartAllCallsState extends State<PieChartAllCalls> {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appColors.borderSubtle),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: context.appColors.shadow.withOpacity(0.08),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -82,11 +83,11 @@ class _PieChartAllCallsState extends State<PieChartAllCalls> {
         children: [
           Text(
             AppLocalizations.of(context)!.translate('all_calls'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 20,
-              color: Colors.black,
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -153,11 +154,11 @@ class _PieChartAllCallsState extends State<PieChartAllCalls> {
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: context.appColors.textSecondary,
           ),
         ),
       ],

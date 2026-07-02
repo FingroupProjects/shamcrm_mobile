@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_event.dart';
 import 'package:crm_task_manager/bloc/call_bloc/operator_bloc/operator_state.dart';
@@ -49,11 +50,9 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
         children: [
           Text(
             AppLocalizations.of(context)!.translate('operator'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
+            style: context.appTextStyles.bodyMd.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -83,15 +82,15 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xffF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: context.appColors.fieldBg,
+                    expandedFillColor: context.appColors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: const Color(0xffF4F7FD),
+                      color: context.appColors.fieldBorder,
                       width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: const Color(0xffF4F7FD),
+                      color: context.appColors.fieldBorder,
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
@@ -102,6 +101,9 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                       minVerticalPadding: 2,
                       contentPadding: EdgeInsets.zero,
                       dense: true,
+                      tileColor: Colors.transparent,
+                      selectedTileColor: Colors.transparent,
+                      selected: isSelected,
                       title: Padding(
                         padding: EdgeInsets.zero,
                         child: Row(
@@ -111,21 +113,19 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                               width: 18,
                               height: 18,
                               decoration: BoxDecoration(
-                                border: Border.all(color: const Color(0xff1E2E52), width: 1),
-                                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                                border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
+                                color: isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
                               ),
                               child: isSelected
-                                  ? const Icon(Icons.check, color: Colors.white, size: 16)
+                                  ? Icon(Icons.check, color: context.appColors.buttonPrimaryFg, size: 16)
                                   : null,
                             ),
                             const SizedBox(width: 10),
                             Text(
                               item.fullName,
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: context.appTextStyles.bodyMd.copyWith(
                                 fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: Color(0xff1E2E52),
+                                color: context.appColors.textPrimary,
                               ),
                             ),
                           ],
@@ -143,21 +143,17 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                       selectedOperatorsCount == 0
                           ? AppLocalizations.of(context)!.translate('select_operator')
                           : '${AppLocalizations.of(context)!.translate('select_operator')} $selectedOperatorsCount',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Gilroy',
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.textPrimary,
                       ),
                     );
                   },
                   hintBuilder: (context, hint, enabled) => Text(
                     AppLocalizations.of(context)!.translate('select_operator'),
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: context.appTextStyles.bodySm.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textSecondary,
                     ),
                   ),
                   onListChanged: (values) {
@@ -174,11 +170,9 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                       children: [
                         Text(
                           errorMessage!,
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
+                          style: context.appTextStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                            color: Colors.red,
+                            color: context.appColors.error,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -187,7 +181,7 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                             context.read<OperatorBloc>().add(FetchOperators());
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6C5CE7),
+                            backgroundColor: context.appColors.buttonPrimaryBg,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

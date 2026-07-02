@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -43,13 +44,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> initialUsersList = [];
   List<UserData> selectedUsersData = [];
   bool isLoading = false;
-
-  final TextStyle userTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -219,7 +213,14 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final localizations = AppLocalizations.of(context)!;
+    final userTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
 
     return FormField<List<UserData>>(
       initialValue: selectedUsersData,
@@ -240,6 +241,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
               style: userTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -251,7 +253,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                   width: 1.5,
                   color: (widget.hasError || field.hasError)
                       ? Colors.red
-                      : const Color(0xFFE5E7EB),
+                      : colors.borderSubtle,
                 ),
               ),
               child: isLoading
@@ -278,14 +280,14 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: widget.backgroundColor,
-                        expandedFillColor: Colors.white,
+                        expandedFillColor: colors.surfacePrimary,
                         closedBorder: Border.all(
                           color: Colors.transparent,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: const Color(0xFFE5E7EB),
+                          color: colors.borderSubtle,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
@@ -352,11 +354,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                         ? localizations.translate('select_all')
                                         : '${item.name} ${item.lastname}'
                                             .trim(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Gilroy',
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -377,7 +379,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         localizations.translate('select_assignees_list'),
                         style: userTextStyle.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF6B7280),
+                          color: colors.textSecondary,
                         ),
                       ),
                       onListChanged: (values) {

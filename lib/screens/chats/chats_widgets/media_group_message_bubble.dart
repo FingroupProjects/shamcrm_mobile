@@ -4,6 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
@@ -71,6 +72,7 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final appearance = ChatAppearanceScope.of(context);
     final firstMessage = widget.messages.first;
     final items =
         firstMessage.type == 'media_group' && firstMessage.mediaItems.isNotEmpty
@@ -125,9 +127,7 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
                   widget.senderName,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: widget.isSender
-                        ? context.appColors.textSecondary
-                        : context.appColors.textPrimary,
+                    color: appearance.senderNameColor(context),
                   ),
                 ),
               ),
@@ -231,7 +231,7 @@ class _MediaCollage extends StatelessWidget {
   Widget _buildLayout(BuildContext context) {
     switch (items.length) {
       case 1:
-      return _tile(context, items[0], height: _singleHeight);
+        return _tile(context, items[0], height: _singleHeight);
       case 2:
         return SizedBox(
           height: _doubleHeight,
@@ -486,9 +486,10 @@ class _MediaTile extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                      builder: (context) => FullImageScreenViewer(
-                    imagePaths:
-                        viewerImagePaths.isNotEmpty ? viewerImagePaths : [remoteUrl],
+                  builder: (context) => FullImageScreenViewer(
+                    imagePaths: viewerImagePaths.isNotEmpty
+                        ? viewerImagePaths
+                        : [remoteUrl],
                     initialIndex: initialIndex,
                     time: time,
                     fileName: item.name,
@@ -635,7 +636,6 @@ class _MediaTile extends StatelessWidget {
       ),
     );
   }
-
 }
 
 String? _buildImageUrl(String path, String? baseUrl) {
@@ -668,8 +668,8 @@ class _MemoizedVideoThumbnail extends StatefulWidget {
 }
 
 class _MemoizedVideoThumbnailState extends State<_MemoizedVideoThumbnail> {
-  late final Future<File?> _thumbnailFuture =
-      ChatMediaPersistentCache.instance.getVideoThumbnailFile(widget.videoSource);
+  late final Future<File?> _thumbnailFuture = ChatMediaPersistentCache.instance
+      .getVideoThumbnailFile(widget.videoSource);
 
   @override
   Widget build(BuildContext context) {
@@ -865,11 +865,18 @@ class _StatusOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appearance = ChatAppearanceScope.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.42),
+        color: (isSender
+                ? appearance.senderBubbleColor(context)
+                : appearance.receiverBubbleColor(context))
+            .withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: appearance.borderColor(context, isSender),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -888,9 +895,11 @@ class _StatusOverlay extends StatelessWidget {
             ),
           Text(
             time,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white,
+            style: TextStyle(
+              fontSize: appearance.scaledFont(12),
+              color: isSender
+                  ? appearance.outgoingForeground(context)
+                  : appearance.incomingForeground(context),
               fontWeight: FontWeight.w500,
               fontFamily: 'Gilroy',
             ),
@@ -900,7 +909,9 @@ class _StatusOverlay extends StatelessWidget {
             Icon(
               Icons.done_all,
               size: 16,
-              color: isRead ? const Color(0xFF7DD3FC) : Colors.white70,
+              color: isRead
+                  ? appearance.outgoingForeground(context)
+                  : appearance.secondaryForeground(context, isSender),
             ),
           ],
         ],

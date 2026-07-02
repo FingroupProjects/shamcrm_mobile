@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/page_2/call_summary_stats_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -73,11 +74,12 @@ class _OperatorChart2State extends State<OperatorChart2> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.appColors.borderSubtle),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: context.appColors.shadow.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -88,11 +90,11 @@ class _OperatorChart2State extends State<OperatorChart2> {
         children: [
           Text(
             localizations.translate('call_type_stats'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
-              color: Color(0xFF2D3748),
+              color: context.appColors.textPrimary,
             ),
           ),
           const SizedBox(height: 24),
@@ -110,7 +112,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                       pieTouchData: PieTouchData(enabled: false),
                       sections: [
                         PieChartSectionData(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: context.appColors.borderSubtle,
                           value: 100,
                           title: '',
                           radius: 25,
@@ -121,11 +123,11 @@ class _OperatorChart2State extends State<OperatorChart2> {
                 ),
                 Text(
                   localizations.translate('no_data_to_display'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: Colors.black54,
+                    color: context.appColors.textSecondary,
                   ),
                 ),
               ],
@@ -152,7 +154,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                                   selectedSectionIndex! >= 0 &&
                                   selectedSectionIndex! < sectionColors.length)
                               ? sectionColors[selectedSectionIndex!]
-                              : Colors.grey.shade600,
+                              : context.appColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -173,7 +175,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                                     selectedSectionIndex! >= 0 &&
                                     selectedSectionIndex! < sectionColors.length)
                                 ? sectionColors[selectedSectionIndex!]
-                                : const Color(0xFF2D3748),
+                                : context.appColors.textPrimary,
                             height: 1.0,
                           ),
                         ),
@@ -188,7 +190,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
-                            color: Colors.grey.shade500,
+                            color: context.appColors.textSecondary,
                           ),
                         ),
                       ],
@@ -238,7 +240,6 @@ class _OperatorChart2State extends State<OperatorChart2> {
 
   List<PieChartSectionData> _buildInteractivePieChartSections() {
     final sectionValues = _getSectionValues();
-    final callTypes = getCallTypes(context);
     return sectionValues.asMap().entries.map((entry) {
       final index = entry.key;
       final value = entry.value;
@@ -321,7 +322,7 @@ class _OperatorChart2State extends State<OperatorChart2> {
                     fontFamily: 'Gilroy',
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 14,
-                    color: isSelected ? sectionColors[index] : const Color(0xFF4A5568),
+                    color: isSelected ? sectionColors[index] : context.appColors.textSecondary,
                   ),
                 ),
                 if (isSelected) ...[
