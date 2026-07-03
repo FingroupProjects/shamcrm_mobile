@@ -918,6 +918,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'true');
+    unawaited(_syncIncomingCallPushPreference(true));
     _logSipConfig('connect');
     await _startSipRegistration();
   }
@@ -1021,6 +1022,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'false');
+    unawaited(_syncIncomingCallPushPreference(false));
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1058,6 +1060,7 @@ class SipService extends ChangeNotifier
     _sipEnabled = false;
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
+    unawaited(_syncIncomingCallPushPreference(false));
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -2708,6 +2711,22 @@ class SipService extends ChangeNotifier
       callStatus: _state.callStatus,
     );
     _notifyListenersSafely();
+  }
+
+  Future<void> _syncIncomingCallPushPreference(bool enabled) async {
+    try {
+      await _apiService.setSendIncomingCallPush(enabled);
+      debugPrint(
+        'SipService: send_incoming_call_push synced -> enabled=$enabled',
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'SipService: failed to sync send_incoming_call_push=$enabled: $error',
+      );
+      debugPrint(
+        'SipService: send_incoming_call_push sync stackTrace: $stackTrace',
+      );
+    }
   }
 
   void _logSipConfig(String stage, {Map<String, String>? extra}) {

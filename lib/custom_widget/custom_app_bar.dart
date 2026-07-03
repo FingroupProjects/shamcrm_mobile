@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_filter_screen.dart';
@@ -20,6 +21,7 @@ import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/gps/background_location_service.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -379,6 +381,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
   bool _canReadGps = false; // Новая переменная для GPS®
+  bool _canReadSip = false;
   bool _canOpenTimesheet = false;
   // DEAL custom fields were moved to filter screen
 
@@ -666,6 +669,9 @@ class _CustomAppBarState extends State<CustomAppBar>
         await _apiService.hasPermission('call-center'); // Исправлено
     final canReadGps =
         await _apiService.hasPermission('call-center'); // Проверка прав для GPS
+    final permissions = await _apiService.getPermissions();
+    final canReadSip = permissions.contains('sip.read') ||
+        !permissions.any((permission) => permission.startsWith('sip.'));
     final prefs = await SharedPreferences.getInstance();
     final rawRoles = (prefs.getString('userAllRoles') ??
             prefs.getString('userRoleName') ??
@@ -685,6 +691,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
       _canReadGps = canReadGps;
+      _canReadSip = kShowSip && canReadSip;
       _canOpenTimesheet = isAdmin && workdayEnabled;
     });
   }
@@ -1628,14 +1635,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           );
                           break;
-                        // case 'sip':
-                        //   Navigator.push(
-                        //     context,
-                        //     MaterialPageRoute(
-                        //       builder: (context) => const SipScreen(),
-                        //     ),
-                        //   );
-                        //   break;
+                        case 'sip':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SipScreen(),
+                            ),
+                          );
+                          break;
                         case 'filter_dashboard':
                           widget.onDashboardFilterPressed?.call();
                           break;
@@ -1841,18 +1848,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 ],
                               ),
                             ),
-                          // if (_canReadSip)
-                          //   PopupMenuItem<String>(
-                          //     value: 'sip',
-                          //     child: Row(
-                          //       children: [
-                          //         const Icon(Icons.phone_in_talk_outlined),
-                          //         const SizedBox(width: 8),
-                          //         Text(AppLocalizations.of(context)!
-                          //             .translate('appbar_sip')),
-                          //       ],
-                          //     ),
-                          //   ),
+                          if (_canReadSip)
+                            PopupMenuItem<String>(
+                              value: 'sip',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.phone_in_talk_outlined),
+                                  const SizedBox(width: 8),
+                                  Text(AppLocalizations.of(context)!
+                                      .translate('appbar_sip')),
+                                ],
+                              ),
+                            ),
                           // if (widget.showGps && _canReadGps) // Новый пункт для GPS
                           //             PopupMenuItem<String>(
                           //               value: 'gps',

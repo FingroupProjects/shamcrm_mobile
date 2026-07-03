@@ -2199,6 +2199,33 @@ class ApiService {
     await sendVoipToken(pending);
   }
 
+  Future<void> setSendIncomingCallPush(bool enabled) async {
+    await ensureInitialized();
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId =
+        prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+
+    if (userId.trim().isEmpty) {
+      throw Exception(
+        'ApiService.setSendIncomingCallPush: userID not found in SharedPreferences',
+      );
+    }
+
+    final response = await _postRequest(
+      '/user/send-incoming-call-push/$userId',
+      <String, dynamic>{
+        'send_incoming_call_push': enabled,
+      },
+    );
+
+    if (kDebugMode) {
+      debugPrint(
+        'ApiService.setSendIncomingCallPush: userId=$userId, enabled=$enabled, status=${response.statusCode}',
+      );
+    }
+  }
+
   // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)
   Future<void> ensureInitialized() async {
     if (baseUrl != null && baseUrl!.isNotEmpty) return;
