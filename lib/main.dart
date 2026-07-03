@@ -135,6 +135,7 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
@@ -989,7 +990,9 @@ class _MyAppState extends State<MyApp> {
               if (kDebugMode) const HttpInspectorFab(),
             ],
           );
-          return appChild;
+          return SipCallOverlayHost(
+            child: appChild,
+          );
         },
         home: Builder(
           builder: (context) {

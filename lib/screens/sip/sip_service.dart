@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 import 'sip_state.dart';
@@ -31,6 +33,8 @@ class SipService extends ChangeNotifier
   static const String _portKey = 'sip_port';
   static const String _enabledKey = 'sip_enabled';
   static const String _voipPushTokenKey = 'sip_ios_voip_push_token';
+  static const String _pendingIncomingCallPushPayloadKey =
+      'sip_pending_incoming_call_push_payload_v1';
   static const String _backgroundReliabilityPromptedKey =
       'sip_background_reliability_prompted_v2';
   static const String _fullScreenIntentPromptedKey =
@@ -115,6 +119,8 @@ class SipService extends ChangeNotifier
   DateTime? _lastTerminalNativeCallAt;
   bool _secureStorageRecoveryTriggered = false;
   String? _pendingStorageRecoveryMessage;
+  String? _lastIncomingCallPushId;
+  DateTime? _lastIncomingCallPushAt;
 
   Future<void> initialize() async {
     if (_disposed) return;
@@ -208,6 +214,7 @@ class SipService extends ChangeNotifier
       _configLoaded = true;
       unawaited(refreshRecentCallLogs(force: true));
       unawaited(_restorePersistentConnection());
+      unawaited(recoverPendingIncomingCallPush());
       _notifyListenersSafely();
       completer.complete();
     } catch (error, stackTrace) {
@@ -797,6 +804,209 @@ class SipService extends ChangeNotifier
     if (notifyUi) {
       _notifyListenersSafely();
     }
+  }
+
+  Future<void> handleIncomingCallPushPayload(
+    Map<String, dynamic> rawPayload, {
+    String source = 'unknown',
+    bool persist = true,
+  }) async {
+    final payload = _normalizeIncomingCallPushPayload(rawPayload, source: source);
+    if (payload == null) {
+      debugPrint(
+        'SipService incoming_call push ignored: invalid payload from $source -> $rawPayload',
+      );
+      return;
+    }
+
+    if (persist) {
+      await _savePendingIncomingCallPushPayload(payload);
+    }
+
+    if (_isDuplicateIncomingCallPush(payload)) {
+      debugPrint(
+        'SipService incoming_call push deduplicated -> call_id=${payload['call_id']}, source=$source',
+      );
+      return;
+    }
+
+    await initialize();
+
+    final shouldWakeSip = _sipEnabled || _persistentSipEnabled;
+    final remoteIdentity = payload['remote_identity']?.toString();
+    final callId = payload['call_id']?.toString();
+
+    _lastIncomingCallPushId = callId;
+    _lastIncomingCallPushAt = DateTime.now();
+    _rememberIncomingFingerprint(
+      callUUID: null,
+      callId: callId,
+      remoteIdentity: remoteIdentity,
+    );
+
+    if (_state.callStatus == SipCallUiStatus.idle ||
+        _state.callStatus == SipCallUiStatus.ended ||
+        _state.callStatus == SipCallUiStatus.failed) {
+      _state = _state.copyWith(
+        remoteIdentity: remoteIdentity,
+        errorMessage: 'Входящий вызов: пробуждаем SIP...',
+      );
+      _notifyListenersSafely();
+    }
+
+    if (shouldWakeSip &&
+        _networkAvailable &&
+        _hasSipCredentials() &&
+        _state.registrationStatus != SipRegistrationUiStatus.registered &&
+        _state.registrationStatus != SipRegistrationUiStatus.registering) {
+      _shouldStayConnected = true;
+      _persistentSipEnabled = true;
+      _sipEnabled = true;
+      await _storage.write(key: _enabledKey, value: 'true');
+      unawaited(_syncIncomingCallPushPreference(true));
+
+      if (_shouldUseNativeSip()) {
+        unawaited(_restoreNativeRegistrationIfNeeded('incoming-call-push'));
+      } else {
+        unawaited(connect());
+      }
+    }
+  }
+
+  Future<void> recoverPendingIncomingCallPush() async {
+    final payload = await _consumePendingIncomingCallPushPayload();
+    if (payload == null) {
+      return;
+    }
+
+    final receivedAt = payload['received_at_ms'] as int?;
+    if (receivedAt != null) {
+      final age = DateTime.now().difference(
+        DateTime.fromMillisecondsSinceEpoch(receivedAt),
+      );
+      if (age > const Duration(minutes: 2)) {
+        debugPrint('SipService pending incoming_call push expired -> age=$age');
+        return;
+      }
+    }
+
+    await handleIncomingCallPushPayload(
+      payload,
+      source: payload['source']?.toString() ?? 'recovered',
+      persist: false,
+    );
+  }
+
+  Map<String, dynamic>? _normalizeIncomingCallPushPayload(
+    Map<String, dynamic> rawPayload, {
+    required String source,
+  }) {
+    String? pickString(List<String> keys) {
+      for (final key in keys) {
+        final value = rawPayload[key];
+        if (value == null) {
+          continue;
+        }
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+          return normalized;
+        }
+      }
+      return null;
+    }
+
+    int? pickInt(List<String> keys) {
+      final value = pickString(keys);
+      return value == null ? null : int.tryParse(value);
+    }
+
+    final type = pickString(<String>['type']);
+    if (type != 'incoming_call') {
+      return null;
+    }
+
+    final callId = pickString(<String>['call_id', 'id']);
+    final leadId = pickInt(<String>['lead_id']);
+    final callerName = pickString(<String>[
+      'caller_name',
+      'lead_name',
+      'phone',
+      'from',
+    ]);
+    final remoteIdentity = pickString(<String>[
+          'remote_identity',
+          'phone',
+          'lead_name',
+          'caller_name',
+          'from',
+        ]) ??
+        callerName;
+
+    if ((callId == null || callId.isEmpty) &&
+        (remoteIdentity == null || remoteIdentity.isEmpty)) {
+      return null;
+    }
+
+    return <String, dynamic>{
+      'type': 'incoming_call',
+      'call_id': callId,
+      'lead_id': leadId,
+      'lead_name': pickString(<String>['lead_name']),
+      'caller_name': callerName,
+      'remote_identity': remoteIdentity,
+      'source': source,
+      'received_at_ms': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  bool _isDuplicateIncomingCallPush(Map<String, dynamic> payload) {
+    final callId = payload['call_id']?.toString().trim();
+    final lastAt = _lastIncomingCallPushAt;
+    if (callId == null || callId.isEmpty || lastAt == null) {
+      return false;
+    }
+
+    if (_lastIncomingCallPushId != callId) {
+      return false;
+    }
+
+    return DateTime.now().difference(lastAt) < const Duration(seconds: 12);
+  }
+
+  Future<void> _savePendingIncomingCallPushPayload(
+    Map<String, dynamic> payload,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _pendingIncomingCallPushPayloadKey,
+      jsonEncode(payload),
+    );
+  }
+
+  Future<Map<String, dynamic>?> _consumePendingIncomingCallPushPayload() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingIncomingCallPushPayloadKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+
+    await prefs.remove(_pendingIncomingCallPushPayloadKey);
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (error) {
+      debugPrint(
+        'SipService failed to decode pending incoming_call push payload: $error',
+      );
+    }
+
+    return null;
   }
 
   Future<void> prepareSipRuntimePermissions() async {

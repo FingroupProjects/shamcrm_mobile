@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
@@ -11,12 +12,97 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+const String _pendingIncomingCallPushPayloadKey =
+    'sip_pending_incoming_call_push_payload_v1';
+
+bool _isIncomingCallPushData(Map<String, dynamic> data) {
+  return data['type']?.toString().trim() == 'incoming_call';
+}
+
+Map<String, dynamic>? _normalizeIncomingCallPushData(
+  Map<String, dynamic> rawData, {
+  required String source,
+}) {
+  String? pickString(List<String> keys) {
+    for (final key in keys) {
+      final value = rawData[key];
+      if (value == null) {
+        continue;
+      }
+      final normalized = value.toString().trim();
+      if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  int? pickInt(List<String> keys) {
+    final value = pickString(keys);
+    return value == null ? null : int.tryParse(value);
+  }
+
+  if (!_isIncomingCallPushData(rawData)) {
+    return null;
+  }
+
+  final callId = pickString(<String>['call_id', 'id']);
+  final callerName = pickString(<String>[
+    'caller_name',
+    'lead_name',
+    'phone',
+    'from',
+  ]);
+  final remoteIdentity = pickString(<String>[
+        'remote_identity',
+        'phone',
+        'lead_name',
+        'caller_name',
+        'from',
+      ]) ??
+      callerName;
+
+  if ((callId == null || callId.isEmpty) &&
+      (remoteIdentity == null || remoteIdentity.isEmpty)) {
+    return null;
+  }
+
+  return <String, dynamic>{
+    'type': 'incoming_call',
+    'call_id': callId,
+    'lead_id': pickInt(<String>['lead_id']),
+    'lead_name': pickString(<String>['lead_name']),
+    'caller_name': callerName,
+    'remote_identity': remoteIdentity,
+    'source': source,
+    'received_at_ms': DateTime.now().millisecondsSinceEpoch,
+  };
+}
+
+Future<void> _persistIncomingCallPushData(
+  Map<String, dynamic> rawData, {
+  required String source,
+}) async {
+  final normalized = _normalizeIncomingCallPushData(rawData, source: source);
+  if (normalized == null) {
+    return;
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(
+    _pendingIncomingCallPushPayloadKey,
+    jsonEncode(normalized),
+  );
+}
 
 // ВАЖНО: Эта функция должна быть top-level, не методом класса
 @pragma('vm:entry-point')
@@ -38,6 +124,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     }
     debugPrint('Заголовок: ${message.notification?.title}');
     debugPrint('Сообщение: ${message.notification?.body}');
+    if (_isIncomingCallPushData(message.data)) {
+      await _persistIncomingCallPushData(
+        Map<String, dynamic>.from(message.data),
+        source: 'fcm_background',
+      );
+    }
   } catch (e) {
     debugPrint('Ошибка обработки фонового сообщения: $e');
   }
@@ -189,15 +281,35 @@ class FirebaseApi {
   Future<void> initPushNotification() async {
     try {
       _initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      await _recoverPendingIncomingCallPushIfNeeded();
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         debugPrint('Пользователь нажал на уведомление: ${message.messageId}');
+        if (_isIncomingCallPushData(message.data)) {
+          unawaited(
+            _handleIncomingCallPushMessage(
+              message,
+              source: 'opened_app',
+              openSipScreen: true,
+            ),
+          );
+          return;
+        }
         handleMessage(message);
       });
 
       FirebaseMessaging.onMessage.listen((message) {
         debugPrint(
             'Уведомление при активном приложении: ${message.notification?.title}');
+        if (_isIncomingCallPushData(message.data)) {
+          unawaited(
+            _handleIncomingCallPushMessage(
+              message,
+              source: 'foreground',
+            ),
+          );
+          return;
+        }
         _printCustomData(message);
       });
     } catch (e) {
@@ -219,6 +331,51 @@ class FirebaseApi {
     }
   }
 
+  Future<void> _recoverPendingIncomingCallPushIfNeeded() async {
+    try {
+      await SipService().recoverPendingIncomingCallPush();
+    } catch (error) {
+      debugPrint(
+        'FirebaseApi: failed to recover pending incoming_call push: $error',
+      );
+    }
+  }
+
+  Future<void> _handleIncomingCallPushMessage(
+    RemoteMessage message, {
+    required String source,
+    bool openSipScreen = false,
+  }) async {
+    final payload = Map<String, dynamic>.from(message.data);
+    await _persistIncomingCallPushData(payload, source: source);
+    await SipService().handleIncomingCallPushPayload(
+      payload,
+      source: source,
+      persist: false,
+    );
+
+    if (!openSipScreen) {
+      return;
+    }
+
+    int attempts = 0;
+    while (navigatorKey.currentState == null && attempts < 20) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      attempts++;
+    }
+
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) {
+      return;
+    }
+
+    await navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => const SipScreen(),
+      ),
+    );
+  }
+
   Future<void> handleMessage(RemoteMessage? message) async {
     try {
       debugPrint('════════════════════════════════════════════════════════');
@@ -234,6 +391,15 @@ class FirebaseApi {
 
       if (message.data.isEmpty) {
         debugPrint('❌ Message data is EMPTY');
+        return;
+      }
+
+      if (_isIncomingCallPushData(message.data)) {
+        await _handleIncomingCallPushMessage(
+          message,
+          source: 'handle_message',
+          openSipScreen: true,
+        );
         return;
       }
 
