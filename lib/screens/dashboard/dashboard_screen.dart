@@ -261,7 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _initTutorialTargets() {
     targets.clear();
-    if (userRoles.contains('admin')) {
+    if (TestAccessOverride.hasElevatedAccessFromRoles(userRoles)) {
       _initAdminTutorialTargets();
     } else if (userRoles.contains('manager')) {
       _initTutorialTargetsManagers();
@@ -737,9 +737,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               filterTrigger: _analyticsFilterTrigger,
                               chartSettingsTrigger:
                                   _analyticsChartSettingsTrigger,
-                              showStatistics:
-                                  TestAccessOverride.hasElevatedAccessFromRoles(
-                                      userRoles),
+                              showStatistics: true,
                               showInitialLoader: false,
                             )
                           : RefreshIndicator(
@@ -774,7 +772,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<Widget> _buildDashboardContent() {
-    if (userRoles.contains('admin')) {
+    if (TestAccessOverride.hasElevatedAccessFromRoles(userRoles)) {
       return [
         LeadConversionChart(key: keyAdminLeadConversion),
         Divider(thickness: 1, color: Colors.grey[300]),
