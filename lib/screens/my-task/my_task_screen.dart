@@ -19,6 +19,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/utils/test_access_override.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,8 +104,10 @@ class _MyTaskScreenState extends State<MyTaskScreen>
           await ApiService().getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ??
-              ['No role assigned'];
+          userRoles = TestAccessOverride.elevateRoles(
+            userProfile.role?.map((role) => role.name).toList() ??
+                ['No role assigned'],
+          );
           showFilter = userRoles.any((role) =>
               role.toLowerCase() == 'admin' || role.toLowerCase() == 'manager');
         });

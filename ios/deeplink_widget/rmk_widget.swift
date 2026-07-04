@@ -83,7 +83,7 @@ struct rmk_widget: Widget {
             rmk_widgetEntryView(entry: entry)
                 .containerBackground(Color(red: 0.10, green: 0.17, blue: 0.31), for: .widget)
         }
-        .configurationDisplayName("shamCRM RMK")
+        .configurationDisplayName("Авезов RMK")
         .description("Быстрый вход в RMK")
         .supportedFamilies([.systemSmall])
     }

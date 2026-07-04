@@ -1,4 +1,4 @@
-package com.softtech.crm_task_manager
+package com.softtech.avezov
 
 import android.app.ActivityOptions
 import android.app.AlarmManager

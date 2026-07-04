@@ -9,7 +9,7 @@ import WidgetKit
 import SwiftUI
 
 // MARK: - App Group ID
-private let appGroupId = "group.com.softtech.crmTaskManager"
+private let appGroupId = "group.com.softtech.avezov"
 
 // MARK: - Localization Helper for References
 struct ReferencesWidgetLocalizations {
@@ -332,7 +332,7 @@ struct references_widget: Widget {
             references_widgetEntryView(entry: entry)
                 .containerBackground(Color.white, for: .widget)
         }
-        .configurationDisplayName("shamCRM Справочники")
+        .configurationDisplayName("Авезов Справочники")
         .description("Быстрый доступ к справочникам")
         .supportedFamilies([.systemMedium])
     }

@@ -20,6 +20,7 @@ import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
+import 'package:crm_task_manager/utils/test_access_override.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -673,7 +674,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         .map((role) => role.trim().toLowerCase())
         .where((role) => role.isNotEmpty)
         .toSet();
-    final isAdmin = roles.contains('admin');
+    final isAdmin = TestAccessOverride.hasElevatedAccessFromRoles(roles);
     final workdayEnabled = await _apiService.isWorkdayFeatureEnabled();
     if (!mounted) return;
     setState(() {

@@ -6,7 +6,7 @@
 	<string>$(APS_ENVIRONMENT)</string>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.softtech.crmTaskManager</string>
+		<string>group.com.softtech.avezov</string>
 	</array>
 </dict>
 </plist>

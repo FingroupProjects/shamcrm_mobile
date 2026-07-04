@@ -23,6 +23,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart'
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/task/task_status_edit.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
+import 'package:crm_task_manager/utils/test_access_override.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -285,7 +286,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           (now - cacheTime) < 3600000) {
         if (mounted) {
           setState(() {
-            userRoles = cachedRoles;
+            userRoles = TestAccessOverride.elevateRoles(cachedRoles);
           });
         }
         return;
@@ -308,8 +309,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         throw Exception('Timeout loading user profile');
       });
 
-      final roles = userProfile.role?.map((role) => role.name).toList() ??
-          ['No role assigned'];
+      final roles = TestAccessOverride.elevateRoles(
+        userProfile.role?.map((role) => role.name).toList() ??
+            ['No role assigned'],
+      );
 
       // Сохраняем в кэш
       await prefs.setStringList('cached_user_roles', roles);

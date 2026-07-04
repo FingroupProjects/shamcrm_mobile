@@ -9,7 +9,7 @@ import WidgetKit
 import SwiftUI
 
 // MARK: - App Group ID
-private let appGroupId = "group.com.softtech.crmTaskManager"
+private let appGroupId = "group.com.softtech.avezov"
 
 // MARK: - Localization Helper
 struct WidgetLocalizations {
@@ -367,8 +367,8 @@ struct deeplink_widget: Widget {
             deeplink_widgetEntryView(entry: entry)
                 .containerBackground(Color.white, for: .widget)
         }
-        .configurationDisplayName("shamCRM")
-        .description("Быстрый доступ к разделам shamCRM")
+        .configurationDisplayName("Авезов")
+        .description("Быстрый доступ к разделам Авезов")
         .supportedFamilies([.systemMedium])
     }
 }

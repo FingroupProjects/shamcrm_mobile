@@ -23,7 +23,7 @@
                 android:layout_width="34dp"
                 android:layout_height="34dp"
                 android:background="@drawable/rmk_logo_badge_bg"
-                android:contentDescription="shamCRM"
+                android:contentDescription="Авезов"
                 android:padding="5dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/sham_crm_logo" />

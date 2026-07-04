@@ -38,6 +38,7 @@ import 'package:crm_task_manager/screens/dashboard/users_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/process_speed.dart';
 import 'package:crm_task_manager/screens/dashboard/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
+import 'package:crm_task_manager/utils/test_access_override.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/graphic_dashboard.dart';
@@ -193,7 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       String? storedRoles = prefs.getString('userRoles');
       if (storedRoles != null) {
         setState(() {
-          userRoles = storedRoles.split(',');
+          userRoles = TestAccessOverride.elevateRoles(storedRoles.split(','));
         });
         return;
       }
@@ -202,8 +203,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           await _apiService.getUserById(int.parse(userId));
       if (mounted) {
         setState(() {
-          userRoles = userProfile.role?.map((role) => role.name).toList() ??
-              ['No role assigned'];
+          userRoles = TestAccessOverride.elevateRoles(
+            userProfile.role?.map((role) => role.name).toList() ??
+                ['No role assigned'],
+          );
         });
         await prefs.setString('userRoles', userRoles.join(','));
       }
@@ -734,7 +737,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               filterTrigger: _analyticsFilterTrigger,
                               chartSettingsTrigger:
                                   _analyticsChartSettingsTrigger,
-                              showStatistics: userRoles.contains('admin'),
+                              showStatistics:
+                                  TestAccessOverride.hasElevatedAccessFromRoles(
+                                      userRoles),
                               showInitialLoader: false,
                             )
                           : RefreshIndicator(

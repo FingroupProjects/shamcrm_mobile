@@ -9,7 +9,7 @@ import WidgetKit
 import SwiftUI
 
 // MARK: - App Group ID
-private let appGroupId = "group.com.softtech.crmTaskManager"
+private let appGroupId = "group.com.softtech.avezov"
 
 // MARK: - Localization Helper for Accounting
 struct AccountingWidgetLocalizations {
@@ -332,7 +332,7 @@ struct accounting_widget: Widget {
             accounting_widgetEntryView(entry: entry)
                 .containerBackground(Color.white, for: .widget)
         }
-        .configurationDisplayName("shamCRM Учет")
+        .configurationDisplayName("Авезов Учет")
         .description("Быстрый доступ к навигации учета")
         .supportedFamilies([.systemMedium])
     }

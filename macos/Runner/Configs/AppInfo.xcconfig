@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = crm_task_manager
+PRODUCT_NAME = avezov
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.softtech.crmTaskManager
+PRODUCT_BUNDLE_IDENTIFIER = com.softtech.avezov
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2024 com.softtech. All rights reserved.

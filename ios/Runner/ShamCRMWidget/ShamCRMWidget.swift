@@ -43,7 +43,7 @@ struct ShamCRMWidgetEntryView : View {
                         .frame(width: 28, height: 28)
                         .cornerRadius(6)
                     
-                    Text("shamCRM")
+                    Text("Авезов")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(Color(red: 0.12, green: 0.18, blue: 0.32))
                     
@@ -137,8 +137,8 @@ struct ShamCRMWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             ShamCRMWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("shamCRM")
-        .description("Быстрый доступ к разделам shamCRM")
+        .configurationDisplayName("Авезов")
+        .description("Быстрый доступ к разделам Авезов")
         .supportedFamilies([.systemMedium])
     }
 }

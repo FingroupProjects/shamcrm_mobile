@@ -12,7 +12,7 @@ import WidgetKit
 struct ShamCRMWidgetControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
-            kind: "com.softtech.crmTaskManager.ShamCRMWidget",
+            kind: "com.softtech.avezov.ShamCRMWidget",
             provider: Provider()
         ) { value in
             ControlWidgetToggle(

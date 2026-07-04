@@ -35,6 +35,7 @@ import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/test_access_override.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
@@ -871,6 +872,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (!mounted) return;
 
+    final isTesterAdmin = await TestAccessOverride.isTesterAdmin();
+
     // ✅ КЛЮЧЕВАЯ ЛОГИКА: Если нет доступа (пустой массив) - показываем экран
     if (permissionsBloc.state is PermissionsNoAccess) {
       if (mounted) {
@@ -935,6 +938,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     bool hasAnyPermissionWithPrefix(String prefix) {
+      if (isTesterAdmin) {
+        return true;
+      }
       final allPermissions = isNetworkError && savedPermissions.isNotEmpty
           ? savedPermissions
           : permissionsBloc.getAllPermissions();

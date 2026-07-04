@@ -6,6 +6,7 @@ import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/test_access_override.dart';
 import 'package:flutter/material.dart';
 
 // OnlineStoreScreen - главная страница онлайн магазина
@@ -31,14 +32,16 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
 
   Future<void> _checkPermissions() async {
     List<StoreSection> sections = [];
-    
+
     try {
       final permissions = await _apiService.getPermissions();
+      final isTesterAdmin = await TestAccessOverride.isTesterAdmin();
       bool hasAnyPermissionWithPrefix(String prefix) =>
+          isTesterAdmin ||
           permissions.any((permission) => permission.startsWith(prefix));
 
       // Категории
-      if (permissions.contains('category.read')) {
+      if (isTesterAdmin || permissions.contains('category.read')) {
         sections.add(StoreSection(
           title: 'appbar_categories',
           icon: 'assets/icons/MyNavBar/category_ON.png',
@@ -48,7 +51,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
       }
 
       // Товары
-      if (permissions.contains('product.read')) {
+      if (isTesterAdmin || permissions.contains('product.read')) {
         sections.add(StoreSection(
           title: 'appbar_goods',
           icon: 'assets/icons/MyNavBar/goods_ON.png',
@@ -93,7 +96,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
 
   Widget _buildSectionCard(StoreSection section) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Material(
@@ -137,9 +140,9 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Текст и описание
                 Expanded(
                   child: Column(
@@ -167,7 +170,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Стрелка
                 Icon(
                   Icons.arrow_forward_ios,
@@ -198,7 +201,7 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
@@ -283,12 +286,13 @@ class _OnlineStoreScreenState extends State<OnlineStoreScreen> {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 8),
-                          
+
                           // Список секций
-                          ..._availableSections.map((section) => _buildSectionCard(section)),
-                          
+                          ..._availableSections
+                              .map((section) => _buildSectionCard(section)),
+
                           const SizedBox(height: 32),
                         ],
                       ),

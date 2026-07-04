@@ -11,7 +11,7 @@ import WidgetKit
     private var networkEventSink: FlutterEventSink?
     private var nativeSipManager: IOSNativeSipManager?
 
-    private let appGroupId = "group.com.softtech.crmTaskManager"
+    private let appGroupId = "group.com.softtech.avezov"
     private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
     private let networkMonitor = NWPathMonitor()
     private let networkQueue = DispatchQueue(label: "NetworkMonitor")
@@ -57,7 +57,7 @@ import WidgetKit
 
     private func setupWidgetMethodChannel(controller: FlutterViewController) {
         widgetMethodChannel = FlutterMethodChannel(
-            name: "com.softtech.crm_task_manager/widget",
+            name: "com.softtech.avezov/widget",
             binaryMessenger: controller.binaryMessenger
         )
 

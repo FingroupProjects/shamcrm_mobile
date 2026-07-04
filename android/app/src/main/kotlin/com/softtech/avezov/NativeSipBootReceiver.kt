@@ -1,4 +1,4 @@
-package com.softtech.crm_task_manager
+package com.softtech.avezov
 
 import android.content.BroadcastReceiver
 import android.content.Context

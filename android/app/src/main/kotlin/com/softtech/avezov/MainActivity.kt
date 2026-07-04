@@ -1,4 +1,4 @@
-package com.softtech.crm_task_manager
+package com.softtech.avezov
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -34,7 +34,7 @@ import java.io.File
 
 class MainActivity : FlutterFragmentActivity() {
     
-    private val CHANNEL = "com.softtech.crm_task_manager/widget"
+    private val CHANNEL = "com.softtech.avezov/widget"
     private val NETWORK_EVENT_CHANNEL = "com.shamcrm/network_status"
     private val IN_APP_UPDATE_METHOD_CHANNEL = "com.shamcrm/in_app_update/methods"
     private val IN_APP_UPDATE_EVENT_CHANNEL = "com.shamcrm/in_app_update/events"

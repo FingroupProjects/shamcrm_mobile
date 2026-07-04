@@ -6,7 +6,7 @@ import UIKit
 import linphone
 
 private enum CallKitBranding {
-    static let appName = "shamCRM"
+    static let appName = "Авезов"
     static let incomingFallbackHandle = "Входящий звонок"
 }
 
@@ -384,7 +384,7 @@ final class IOSCallKitManager: NSObject, CXProviderDelegate {
     private var pendingAnswerActions: [UUID: CXAnswerCallAction] = [:]
 
     override init() {
-        let configuration = CXProviderConfiguration(localizedName: "shamCRM")
+        let configuration = CXProviderConfiguration(localizedName: "Авезов")
         configuration.supportsVideo = false
         configuration.maximumCallGroups = 1
         configuration.maximumCallsPerCallGroup = 1
