@@ -17,12 +17,14 @@ class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
   final String leadName;
   final List<Map<String, dynamic>>? chats;
+  final bool autoOpen;
 
   LeadNavigateToChat({
     Key? key,
     required this.leadId,
     required this.leadName,
     this.chats,
+    this.autoOpen = false,
   }) : super(key: key);
 
   @override
@@ -31,6 +33,8 @@ class LeadNavigateToChat extends StatefulWidget {
 }
 
 class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
+  bool _autoOpened = false;
+
   BoxDecoration _sectionDecoration(BuildContext context) => BoxDecoration(
         color: context.appColors.surfacePrimary,
         borderRadius: BorderRadius.circular(24),
@@ -95,46 +99,75 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               duration: Duration(seconds: 3),
             ),
           );
+        } else if (widget.autoOpen &&
+            !_autoOpened &&
+            state is LeadToChatLoaded) {
+          _autoOpened = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _openChatsFromState(state);
+          });
         }
       },
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(0),
-          child: Form(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomButton(
-                  buttonText: '',
-                  onPressed: () {
-                    //print('LeadNavigateToChat: Opening chat list dialog');
-                    _showChatListDialog(context);
-                  },
-                  buttonColor: context.appColors.buttonPrimaryBg,
-                  textColor: context.appColors.buttonPrimaryFg,
-                  child: Row(
+      child: widget.autoOpen
+          ? const SizedBox.shrink()
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(0),
+                child: Form(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('go_to_chat'),
-                        style: TextStyle(
-                          color: context.appColors.buttonPrimaryFg,
-                          fontSize: 16,
+                      CustomButton(
+                        buttonText: '',
+                        onPressed: () {
+                          _showChatListDialog(context);
+                        },
+                        buttonColor: context.appColors.buttonPrimaryBg,
+                        textColor: context.appColors.buttonPrimaryFg,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('go_to_chat'),
+                              style: TextStyle(
+                                color: context.appColors.buttonPrimaryFg,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: context.appColors.buttonPrimaryFg,
+                            ),
+                          ],
                         ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward,
-                        color: context.appColors.buttonPrimaryFg,
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
+  }
+
+  void _openChatsFromState(LeadToChatLoaded state) {
+    final leadtochat = state.leadtochat;
+    if (leadtochat.isEmpty) {
+      _showChatListDialog(context);
+      return;
+    }
+
+    final channels = leadtochat.map((chat) => chat.channel.name).toSet().toList();
+    if (channels.length == 1) {
+      final channelName = channels.first;
+      final chatsForChannel =
+          leadtochat.where((chat) => chat.channel.name == channelName).toList();
+      _handleChannelTap(context, channelName, chatsForChannel);
+      return;
+    }
+
+    _showChatListDialog(context);
   }
 
   void _showChatListDialog(BuildContext context) {
@@ -252,53 +285,11 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                       .toList();
                                   //print('LeadNavigateToChat: Found ${chatsForChannel.length} chats for $channelName: $chatsForChannel');
 
-                                  if (chatsForChannel.length == 1) {
-                                    //print('LeadNavigateToChat: Single chat found, navigating to chat ID: ${chatsForChannel[0].id}');
-                                    navigateToScreen(
-                                      context,
-                                      chatsForChannel[0].id,
-                                      chatsForChannel[0].canSendMessage,
-                                      chatsForChannel[0].channel.name,
-                                    );
-                                  } else {
-                                    //print('LeadNavigateToChat: Multiple chats found, opening IntegrationListDialog');
-                                    final integrations =
-                                        chatsForChannel.map((chat) {
-                                      // Ищем соответствующий чат в widget.chats
-                                      final chatData = widget.chats?.firstWhere(
-                                        (c) => c['id'] == chat.id,
-                                        orElse: () => <String, dynamic>{},
-                                      );
-                                      final username = chatData != null &&
-                                              chatData['integration'] != null
-                                          ? chatData['integration']
-                                                  ['username'] ??
-                                              ''
-                                          : '';
-                                      //print('LeadNavigateToChat: Processing chat ID: ${chat.id}, Username: $username');
-                                      return {
-                                        'id': chat.id,
-                                        'username': username,
-                                        'channel_name': chat.channel.name,
-                                      };
-                                    }).toList();
-                                    //print('LeadNavigateToChat: Integrations for dialog: $integrations');
-                                    Navigator.pop(
-                                        context); // Закрываем список чатов
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return IntegrationListDialog(
-                                          integrations: integrations,
-                                          leadId: widget.leadId,
-                                          leadName: widget.leadName,
-                                          canSendMessage:
-                                              chatsForChannel[0].canSendMessage,
-                                          initialChannelName: channelName,
-                                        );
-                                      },
-                                    );
-                                  }
+                                  _handleChannelTap(
+                                    context,
+                                    channelName,
+                                    chatsForChannel,
+                                  );
                                 },
                               ),
                             );
@@ -337,6 +328,51 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _handleChannelTap(
+    BuildContext context,
+    String channelName,
+    List<dynamic> chatsForChannel,
+  ) {
+    if (chatsForChannel.length == 1) {
+      navigateToScreen(
+        context,
+        chatsForChannel[0].id,
+        chatsForChannel[0].canSendMessage,
+        chatsForChannel[0].channel.name,
+      );
+      return;
+    }
+
+    final integrations = chatsForChannel.map((chat) {
+      final chatData = widget.chats?.firstWhere(
+        (c) => c['id'] == chat.id,
+        orElse: () => <String, dynamic>{},
+      );
+      final username = chatData != null && chatData['integration'] != null
+          ? chatData['integration']['username'] ?? ''
+          : '';
+      return {
+        'id': chat.id,
+        'username': username,
+        'channel_name': chat.channel.name,
+      };
+    }).toList();
+
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return IntegrationListDialog(
+          integrations: integrations,
+          leadId: widget.leadId,
+          leadName: widget.leadName,
+          canSendMessage: chatsForChannel[0].canSendMessage,
+          initialChannelName: channelName,
         );
       },
     );

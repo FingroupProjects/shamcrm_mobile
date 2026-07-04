@@ -133,10 +133,6 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                     decoration: BoxDecoration(
                       color: fieldFill,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: field.hasError ? colors.error : fieldBorder,
-                      ),
                     ),
                     child: errorMessage != null
                         ? Padding(
@@ -156,13 +152,12 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                               closedFillColor: fieldFill,
                               expandedFillColor: dropdownFill,
                               closedBorder: Border.all(
-                                color: context.appColors.overlay
-                                    .withValues(alpha: 0),
+                                color: field.hasError ? colors.error : fieldBorder,
                                 width: 1,
                               ),
                               closedBorderRadius: BorderRadius.circular(12),
                               expandedBorder: Border.all(
-                                color: fieldBorder,
+                                color: field.hasError ? colors.error : fieldBorder,
                                 width: 1,
                               ),
                               expandedBorderRadius: BorderRadius.circular(12),

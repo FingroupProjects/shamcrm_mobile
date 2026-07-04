@@ -743,7 +743,12 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
             decoration: InputDecoration(
               errorStyle: decoration?.errorStyle ?? _defaultErrorStyle,
               errorText: formFieldState.errorText,
-              // border: InputBorder.none,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
               contentPadding: EdgeInsets.zero,
             ),
             child: _OverlayBuilder(

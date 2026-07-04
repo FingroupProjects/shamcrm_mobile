@@ -1,14 +1,20 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LeadCard extends StatefulWidget {
   final Lead lead;
@@ -171,6 +177,215 @@ class _LeadCardState extends State<LeadCard>
         const SizedBox(width: 8),
       ],
     );
+  }
+
+  String? get _leadPhone {
+    final phone = widget.lead.phone?.trim();
+    if (phone == null || phone.isEmpty) return null;
+    return phone;
+  }
+
+  Future<void> _handlePhoneTap(String phoneNumber) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: context.appColors.surfacePrimary,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: context.appColors.borderSubtle),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.appColors.borderSubtle,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildPhoneActionTile(
+                    icon: Icons.phone_in_talk_rounded,
+                    title: 'Позвонить',
+                    subtitle: phoneNumber,
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await _makeSystemPhoneCall(phoneNumber);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPhoneActionTile(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    title: 'WhatsApp',
+                    subtitle: 'Открыть диалог в WhatsApp',
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await _openWhatsApp(phoneNumber);
+                    },
+                  ),
+                  if (widget.lead.chats != null && widget.lead.chats!.isNotEmpty)
+                    ...[
+                      const SizedBox(height: 12),
+                      _buildPhoneActionTile(
+                        icon: Icons.forum_outlined,
+                        title: 'Открыть чат',
+                        subtitle: widget.lead.source?.name ??
+                            'Источник лида',
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          showDialog(
+                            context: context,
+                            builder: (dialogContext) {
+                              return Dialog(
+                                backgroundColor:
+                                    dialogContext.appColors.surfacePrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  side: BorderSide(
+                                    color:
+                                        dialogContext.appColors.borderSubtle,
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: LeadNavigateToChat(
+                                    leadId: widget.lead.id,
+                                    leadName: widget.lead.name,
+                                    chats: widget.lead.chats,
+                                    autoOpen: true,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhoneActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.appColors.fieldBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.appColors.borderSubtle),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: context.appColors.buttonPrimaryBg),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: context.appColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _makeSystemPhoneCall(String phoneNumber) async {
+    final launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+    if (cleanNumber.startsWith('8')) {
+      cleanNumber = '+7${cleanNumber.substring(1)}';
+    } else if (cleanNumber.startsWith('7')) {
+      cleanNumber = '+$cleanNumber';
+    }
+
+    try {
+      final Uri whatsappUri = Platform.isIOS
+          ? Uri.parse('https://wa.me/$cleanNumber')
+          : Uri.parse('whatsapp://send?phone=$cleanNumber');
+
+      if (!await launchUrl(
+        whatsappUri,
+        mode: LaunchMode.externalApplication,
+      )) {
+        showCustomSnackBar(
+          context: context,
+          message:
+              AppLocalizations.of(context)!.translate('whatsapp_not_installed'),
+          isSuccess: false,
+        );
+      }
+    } catch (_) {
+      showCustomSnackBar(
+        context: context,
+        message:
+            AppLocalizations.of(context)!.translate('whatsapp_open_failed'),
+        isSuccess: false,
+      );
+    }
   }
 
   @override
@@ -351,19 +566,22 @@ class _LeadCardState extends State<LeadCard>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          widget.lead.source?.name ?? '',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: colors.textPrimary,
+                        Expanded(
+                          child: Text(
+                            widget.lead.source?.name ?? '',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: colors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
                         ),
                       ],
                     ),
+                    const SizedBox(height: 10),
                     // Заменяем секцию с кружочками в Column внутри build
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -391,6 +609,7 @@ class _LeadCardState extends State<LeadCard>
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Row(
                           children: [
@@ -416,29 +635,93 @@ class _LeadCardState extends State<LeadCard>
                           ],
                         ),
                         const SizedBox(width: 12),
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color:
-                                  colors.surfaceAccent.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              widget.lead.manager?.name ??
-                                  AppLocalizations.of(context)!
-                                      .translate('system_text'),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: colors.textSecondary,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_leadPhone != null) ...[
+                              GestureDetector(
+                                onTap: () => _handlePhoneTap(_leadPhone!),
+                                onLongPress: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: _leadPhone!),
+                                  );
+                                  showCustomSnackBar(
+                                    context: context,
+                                    message: AppLocalizations.of(context)!
+                                        .translate('copied_to_clipboard'),
+                                    isSuccess: true,
+                                  );
+                                },
+                                child: Container(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 170),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.fieldBg,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: colors.borderSubtle,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.phone_outlined,
+                                        size: 14,
+                                        color: colors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          _leadPhone!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w600,
+                                            color: colors.textPrimary,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 10),
+                            ],
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 110),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceAccent
+                                      .withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  widget.lead.manager?.name ??
+                                      AppLocalizations.of(context)!
+                                          .translate('system_text'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),

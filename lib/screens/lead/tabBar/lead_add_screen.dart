@@ -1899,6 +1899,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                       .translate('cancel'),
                                   buttonColor: _screenFieldBackground(context),
                                   textColor: primaryText,
+                                  borderColor: subtleBorder,
+                                  borderWidth: 1,
                                   onPressed: () {
                                     Navigator.pop(context, widget.statusId);
                                     context

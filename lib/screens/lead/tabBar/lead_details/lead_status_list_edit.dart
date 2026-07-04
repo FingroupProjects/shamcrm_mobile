@@ -133,10 +133,6 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                     decoration: BoxDecoration(
                       color: fieldFill,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: fieldBorder,
-                      ),
                     ),
                     child: CustomDropdown<LeadStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
@@ -158,6 +154,64 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
+                        closedSuffixIcon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: primaryText.withValues(alpha: 0.92),
+                        ),
+                        expandedSuffixIcon: Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          color: primaryText.withValues(alpha: 0.92),
+                        ),
+                        hintStyle: statusTextStyle.copyWith(
+                          fontSize: 14,
+                          color: hintTextColor,
+                        ),
+                        headerStyle: statusTextStyle.copyWith(
+                          color: primaryText,
+                        ),
+                        listItemStyle: statusTextStyle.copyWith(
+                          color: primaryText,
+                        ),
+                        searchFieldDecoration: SearchFieldDecoration(
+                          fillColor: fieldFill,
+                          hintStyle: statusTextStyle.copyWith(
+                            fontSize: 14,
+                            color: hintTextColor,
+                          ),
+                          textStyle: statusTextStyle.copyWith(
+                            fontSize: 14,
+                            color: primaryText,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: hintTextColor,
+                          ),
+                          suffixIcon: (onClear) => IconButton(
+                            onPressed: onClear,
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: hintTextColor,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: fieldBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: fieldBorder,
+                              width: 1.2,
+                            ),
+                          ),
+                        ),
+                        listItemDecoration: ListItemDecoration(
+                          selectedColor: colors.surfaceElevated,
+                          highlightColor:
+                              colors.surfaceElevated.withValues(alpha: 0.72),
+                          splashColor:
+                              colors.overlay.withValues(alpha: 0),
+                        ),
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {

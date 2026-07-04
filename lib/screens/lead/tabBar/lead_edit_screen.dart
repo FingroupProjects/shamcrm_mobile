@@ -2219,6 +2219,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       .translate('cancel'),
                                   buttonColor: _screenFieldBackground(context),
                                   textColor: primaryText,
+                                  borderColor: subtleBorder,
+                                  borderWidth: 1,
                                   onPressed: () => Navigator.pop(context, null),
                                 ),
                               ),
