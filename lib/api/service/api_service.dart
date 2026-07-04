@@ -1984,7 +1984,7 @@ class ApiService {
 
       final organizationId = await getSelectedOrganization();
       final url =
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+          '$baseUrl/user/add-voip-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
       debugPrint('sendDeviceToken: URL: $url');
 
@@ -2084,7 +2084,7 @@ class ApiService {
 
       final organizationId = await getSelectedOrganization();
       final url =
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+          '$baseUrl/user/add-voip-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
       debugPrint('sendVoipToken: URL: $url');
 
@@ -2100,7 +2100,6 @@ class ApiService {
           'type': 'mobile',
           'token': voipToken,
           'platform': 'ios',
-          'push_type': 'voip',
           'provider': 'apns_voip',
         }),
       );
