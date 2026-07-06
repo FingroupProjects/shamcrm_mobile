@@ -1984,7 +1984,7 @@ class ApiService {
 
       final organizationId = await getSelectedOrganization();
       final url =
-          '$baseUrl/user/add-voip-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
       debugPrint('sendDeviceToken: URL: $url');
 
@@ -2083,8 +2083,20 @@ class ApiService {
       }
 
       final organizationId = await getSelectedOrganization();
+      final prefs = await SharedPreferences.getInstance();
+      final userId =
+          prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+      if (userId.trim().isEmpty) {
+        debugPrint('sendVoipToken: user_id не найден → отложенный');
+        await _savePendingVoipToken(voipToken);
+        await _saveVoipSyncDiagnostics(
+          status: 'pending_user_id',
+          error: 'User ID is missing',
+        );
+        return;
+      }
       final url =
-          '$baseUrl/user/add-voip-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+          '$baseUrl/user/add-voip-token/${userId.trim()}${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
       debugPrint('sendVoipToken: URL: $url');
 
@@ -2101,6 +2113,8 @@ class ApiService {
           'token': voipToken,
           'platform': 'ios',
           'provider': 'apns_voip',
+          if (organizationId != null) 'organization_id': organizationId,
+          if (userId.trim().isNotEmpty) 'user_id': userId.trim(),
         }),
       );
 
