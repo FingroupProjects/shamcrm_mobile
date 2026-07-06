@@ -659,17 +659,22 @@ class SipService extends ChangeNotifier
         false;
   }
 
-  Future<void> _syncCurrentIosVoipPushTokenIfAvailable() async {
+  Future<void> _syncCurrentIosVoipPushTokenIfAvailable({
+    bool force = false,
+  }) async {
     if (!Platform.isIOS) {
       return;
     }
 
     final token = await getVoipPushToken();
     if (token == null || token.trim().isEmpty) {
+      debugPrint(
+        'SipService: iOS VoIP token is not available yet, backend sync skipped',
+      );
       return;
     }
 
-    await _syncIosVoipPushTokenWithBackend(token);
+    await _syncIosVoipPushTokenWithBackend(token, force: force);
   }
 
   Future<void> _restoreNativeRegistrationIfNeeded(String reason) async {
@@ -1129,6 +1134,10 @@ class SipService extends ChangeNotifier
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'true');
     unawaited(_syncIncomingCallPushPreference(true));
+    if (Platform.isIOS) {
+      unawaited(_syncCurrentIosVoipPushTokenIfAvailable(force: true));
+      unawaited(_apiService.sendPendingVoipTokenIfNeeded());
+    }
     _logSipConfig('connect');
     await _startSipRegistration();
   }
@@ -1679,13 +1688,16 @@ class SipService extends ChangeNotifier
     unawaited(_apiService.clearPendingVoipToken());
   }
 
-  Future<void> _syncIosVoipPushTokenWithBackend(String token) async {
+  Future<void> _syncIosVoipPushTokenWithBackend(
+    String token, {
+    bool force = false,
+  }) async {
     if (!Platform.isIOS || token.trim().isEmpty) {
       return;
     }
 
     final normalizedToken = token.trim();
-    if (_lastSyncedIosVoipPushToken == normalizedToken) {
+    if (!force && _lastSyncedIosVoipPushToken == normalizedToken) {
       return;
     }
 
