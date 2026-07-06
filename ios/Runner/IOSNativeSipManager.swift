@@ -164,13 +164,23 @@ struct VoIPIncomingPayload {
         let callerName = firstString(
             in: userInfo,
             nested: [dataDictionary, callDictionary, sipDictionary, alertDictionary],
-            keys: ["caller_name", "callerName", "display_name", "displayName", "from_name", "name", "title"]
+            keys: [
+                "lead_name",
+                "caller_name",
+                "callerName",
+                "display_name",
+                "displayName",
+                "from_name",
+                "name",
+                "title",
+            ]
         )
 
         let handle = firstString(
             in: userInfo,
             nested: [dataDictionary, callDictionary, sipDictionary],
             keys: [
+                "caller_number",
                 "handle",
                 "remote_identity",
                 "remoteIdentity",
@@ -189,13 +199,13 @@ struct VoIPIncomingPayload {
         let fromUri = firstString(
             in: userInfo,
             nested: [dataDictionary, callDictionary, sipDictionary],
-            keys: ["from_uri", "fromUri", "from"]
+            keys: ["from_uri", "fromUri", "from", "caller_number"]
         )
 
         let toUri = firstString(
             in: userInfo,
             nested: [dataDictionary, callDictionary, sipDictionary],
-            keys: ["to_uri", "toUri", "to"]
+            keys: ["to_uri", "toUri", "to", "destination_number"]
         )
 
         let sipUri = firstString(
@@ -1760,6 +1770,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "call_uuid": payload.uuid.uuidString,
             "call_id": payload.callId ?? "",
             "remote_identity": payload.handle,
+            "caller_name": payload.callerName ?? "",
         ])
         persistSnapshot()
         emitCallEvent(
