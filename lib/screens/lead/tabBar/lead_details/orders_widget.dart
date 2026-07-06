@@ -294,10 +294,10 @@ class _OrdersWidgetState extends State<OrdersWidget> {
           },
           style: TextButton.styleFrom(
             foregroundColor: context.appColors.buttonPrimaryFg,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             backgroundColor: context.appColors.buttonPrimaryBg,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           child: Text(
@@ -305,7 +305,7 @@ class _OrdersWidgetState extends State<OrdersWidget> {
             style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: context.appColors.buttonPrimaryFg,
             ),
           ),

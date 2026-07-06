@@ -33,6 +33,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
   ManagerData? selectedManagerData;
   String? currentUserId;
   bool isInitialized = false;
+  bool isLoadingManagers = true;
 
   @override
   void initState() {
@@ -124,62 +125,77 @@ class _ManagerForLeadState extends State<ManagerForLead> {
   @override
   Widget build(BuildContext context) {
     //print('ManagerForLead: Building with selectedManager: ${widget.selectedManager}, selectedManagerData: ${selectedManagerData?.id}');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
-          builder: (context, state) {
-            //print('ManagerForLead: BlocBuilder state: $state');
-            if (state is GetAllManagerError) {
-              //print('ManagerForLead: Error loading managers: ${state.message}');
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context)!.translate(state.message),
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              });
-            }
+    return BlocListener<GetAllManagerBloc, GetAllManagerState>(
+      listener: (context, state) {
+        if (state is GetAllManagerLoading) {
+          if (!mounted) return;
+          setState(() {
+            isLoadingManagers = true;
+          });
+          return;
+        }
 
-            if (state is GetAllManagerSuccess && !isInitialized) {
-              managersList = state.dataManager.result ?? [];
-              //print('ManagerForLead: Loaded ${managersList.length} managers');
-              isInitialized = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _updateSelectedManagerData();
-              });
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.translate('manager'),
-                  style: context.appTextStyles.bodyMd.copyWith(
+        if (state is GetAllManagerError) {
+          if (!mounted) return;
+          setState(() {
+            isLoadingManagers = false;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.translate(state.message),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: context.appColors.textPrimary,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
-                CustomDropdown<ManagerData>.searchRequestPaginated(
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.red,
+                elevation: 3,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          });
+          return;
+        }
+
+        if (state is GetAllManagerSuccess) {
+          managersList = state.dataManager.result ?? [];
+          isInitialized = true;
+          if (!mounted) return;
+          setState(() {
+            isLoadingManagers = false;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _updateSelectedManagerData();
+          });
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.translate('manager'),
+            style: context.appTextStyles.bodyMd.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          CustomDropdown<ManagerData>.searchRequestPaginated(
                   paginatedRequest: _searchManagers,
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
@@ -253,7 +269,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
-                    if (state is GetAllManagerLoading) {
+                    if (isLoadingManagers) {
                       //print('ManagerForLead: Displaying loading state');
                       return Text(
                         AppLocalizations.of(context)!
@@ -292,19 +308,17 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                       });
                     }
                   },
-                ),
-                if (widget.hasError) ...[
-                  Text(
-                    ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 241, 50, 36)),
-                  ),
-                ],
-              ],
-            );
-          },
-        ),
-      ],
+          ),
+          if (widget.hasError) ...[
+            Text(
+              ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
+              style: const TextStyle(
+                color: Color.fromARGB(255, 241, 50, 36),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

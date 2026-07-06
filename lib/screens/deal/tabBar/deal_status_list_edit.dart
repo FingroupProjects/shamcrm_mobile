@@ -39,20 +39,6 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
 
   Set<int> _lastInitializedIds = {};
 
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
-  final TextStyle dropdownItemTextStyle = const TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -135,7 +121,12 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           SnackBar(
             content: Text(
               'Ошибка загрузки статусов',
-              style: statusTextStyle.copyWith(color: context.appColors.textInverse),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: context.appColors.textInverse,
+              ),
             ),
             backgroundColor: context.appColors.error,
           ),
@@ -244,6 +235,62 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     final bool showError = widget.hasError;
     final Color borderColor =
         showError ? context.appColors.error : context.appColors.borderSubtle;
+    final statusTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: context.appColors.textPrimary,
+    );
+    final dropdownItemTextStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: context.appColors.textPrimary,
+    );
+    final searchFieldDecoration = SearchFieldDecoration(
+      fillColor: context.appColors.fieldBg,
+      hintStyle: context.appTextStyles.bodyMd.copyWith(
+        fontWeight: FontWeight.w500,
+        color: context.appColors.fieldHint,
+      ),
+      textStyle: context.appTextStyles.bodyMd.copyWith(
+        fontWeight: FontWeight.w500,
+        color: context.appColors.textPrimary,
+      ),
+      prefixIcon: Icon(
+        Icons.search,
+        color: context.appColors.textSecondary,
+      ),
+      suffixIcon: (onClear) => IconButton(
+        onPressed: onClear,
+        icon: Icon(
+          Icons.close_rounded,
+          color: context.appColors.textSecondary,
+        ),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: context.appColors.fieldBorder,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: context.appColors.buttonPrimaryBg,
+          width: 1.2,
+        ),
+      ),
+    );
+    final listItemDecoration = ListItemDecoration(
+      splashColor: Colors.transparent,
+      highlightColor: context.appColors.surfaceElevated,
+      selectedColor: context.appColors.surfaceElevated,
+      selectedIconColor: context.appColors.buttonPrimaryFg,
+      selectedIconBorder: BorderSide(
+        color: context.appColors.buttonPrimaryBg,
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,8 +310,16 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
             ),
           ),
           child: isMultiSelectEnabled
-              ? _buildMultiSelectDropdown()
-              : _buildSingleSelectDropdown(),
+              ? _buildMultiSelectDropdown(
+                  dropdownItemTextStyle,
+                  searchFieldDecoration,
+                  listItemDecoration,
+                )
+              : _buildSingleSelectDropdown(
+                  dropdownItemTextStyle,
+                  searchFieldDecoration,
+                  listItemDecoration,
+                ),
         ),
         if (showError)
           Padding(
@@ -283,7 +338,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     );
   }
 
-  Widget _buildSingleSelectDropdown() {
+  Widget _buildSingleSelectDropdown(
+    TextStyle dropdownItemTextStyle,
+    SearchFieldDecoration searchFieldDecoration,
+    ListItemDecoration listItemDecoration,
+  ) {
     return CustomDropdown<DealStatus>.search(
       closeDropDownOnClearFilterSearch: true,
       items: statusList,
@@ -291,12 +350,12 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       overlayHeight: 400,
       enabled: !isLoadingStatuses,
       decoration: CustomDropdownDecoration(
-        closedFillColor: const Color(0xffF4F7FD),
+        closedFillColor: context.appColors.fieldBg,
         expandedFillColor: context.appColors.surfacePrimary,
         closedBorder: Border.all(
           color: widget.hasError
               ? context.appColors.error
-              : context.appColors.borderSubtle,
+              : Colors.transparent,
           width: 1,
         ),
         closedBorderRadius: BorderRadius.circular(12),
@@ -307,6 +366,13 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
           width: 1,
         ),
         expandedBorderRadius: BorderRadius.circular(12),
+        hintStyle: dropdownItemTextStyle.copyWith(
+          color: context.appColors.fieldHint,
+        ),
+        headerStyle: dropdownItemTextStyle,
+        listItemStyle: dropdownItemTextStyle,
+        searchFieldDecoration: searchFieldDecoration,
+        listItemDecoration: listItemDecoration,
       ),
       listItemBuilder: (context, item, isSelected, onItemSelect) {
         return Text(
@@ -349,7 +415,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         }
         return Text(
           AppLocalizations.of(context)!.translate('select_status'),
-          style: dropdownItemTextStyle,
+          style: dropdownItemTextStyle.copyWith(
+            color: context.appColors.fieldHint,
+          ),
         );
       },
       noResultFoundBuilder: (context, text) {
@@ -395,7 +463,11 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
     );
   }
 
-  Widget _buildMultiSelectDropdown() {
+  Widget _buildMultiSelectDropdown(
+    TextStyle dropdownItemTextStyle,
+    SearchFieldDecoration searchFieldDecoration,
+    ListItemDecoration listItemDecoration,
+  ) {
     //print('📋 Рендер мультивыбора');
     //print('   - statusList: ${statusList.length} элементов');
     //print('   - selectedStatusesList: ${selectedStatusesList.length} элементов');
@@ -409,7 +481,7 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
       overlayHeight: 400,
       enabled: !isLoadingStatuses,
       decoration: CustomDropdownDecoration(
-        closedFillColor: const Color(0xffF4F7FD),
+        closedFillColor: context.appColors.fieldBg,
         expandedFillColor: context.appColors.surfacePrimary,
         closedBorder: Border.all(
           color: Colors.transparent,
@@ -417,10 +489,17 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         ),
         closedBorderRadius: BorderRadius.circular(12),
         expandedBorder: Border.all(
-          color: const Color(0xFFE5E7EB),
+          color: context.appColors.borderSubtle,
           width: 1,
         ),
         expandedBorderRadius: BorderRadius.circular(12),
+        hintStyle: dropdownItemTextStyle.copyWith(
+          color: context.appColors.fieldHint,
+        ),
+        headerStyle: dropdownItemTextStyle,
+        listItemStyle: dropdownItemTextStyle,
+        searchFieldDecoration: searchFieldDecoration,
+        listItemDecoration: listItemDecoration,
       ),
       listItemBuilder: (context, item, isSelected, onItemSelect) {
         if (statusList.indexOf(item) == 0) {
@@ -467,12 +546,22 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
                   ),
                 ),
               ),
-              Divider(height: 20, color: const Color(0xFFE5E7EB)),
-              _buildListItem(item, isSelected, onItemSelect),
+              Divider(height: 20, color: context.appColors.borderSubtle),
+              _buildListItem(
+                item,
+                isSelected,
+                onItemSelect,
+                dropdownItemTextStyle,
+              ),
             ],
           );
         }
-        return _buildListItem(item, isSelected, onItemSelect);
+        return _buildListItem(
+          item,
+          isSelected,
+          onItemSelect,
+          dropdownItemTextStyle,
+        );
       },
       headerListBuilder: (context, selectedItems, enabled) {
         if (isLoadingStatuses) {
@@ -520,7 +609,9 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
         }
         return Text(
           AppLocalizations.of(context)!.translate('select_status'),
-          style: dropdownItemTextStyle,
+          style: dropdownItemTextStyle.copyWith(
+            color: context.appColors.fieldHint,
+          ),
         );
       },
       noResultFoundBuilder: (context, text) {
@@ -586,7 +677,10 @@ class _DealStatusEditWidgetState extends State<DealStatusEditWidget> {
   }
 
   Widget _buildListItem(
-      DealStatus item, bool isSelected, Function() onItemSelect) {
+      DealStatus item,
+      bool isSelected,
+      Function() onItemSelect,
+      TextStyle dropdownItemTextStyle) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(

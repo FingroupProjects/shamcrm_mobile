@@ -796,8 +796,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllSourceBloc()),
         BlocProvider(create: (context) => GetAllLeadChannelBloc()),
         BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
-        BlocProvider(
-            create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
+        BlocProvider(   create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -810,8 +809,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(widget.apiService)),
-        BlocProvider(
-            create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
+        BlocProvider(create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),

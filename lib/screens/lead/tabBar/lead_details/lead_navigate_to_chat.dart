@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_cha
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/integration_list_dialog.dart';
@@ -12,6 +13,302 @@ import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_cha
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+
+Future<void> openLeadChatDirect(
+  BuildContext context, {
+  required int leadId,
+  required String leadName,
+  List<Map<String, dynamic>>? chats,
+}) async {
+  final chatBloc = context.read<LeadToChatBloc>();
+  chatBloc.add(FetchLeadToChat(leadId));
+
+  final state = await chatBloc.stream.firstWhere(
+    (state) => state is LeadToChatLoaded || state is LeadToChatError,
+  );
+
+  if (!context.mounted) return;
+
+  if (state is LeadToChatError) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate(state.message),
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: context.appColors.buttonPrimaryFg,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: context.appColors.error,
+      ),
+    );
+    return;
+  }
+
+  final loadedState = state as LeadToChatLoaded;
+  final leadChats = loadedState.leadtochat;
+
+  if (leadChats.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate('no_chat_in_list'),
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: context.appColors.buttonPrimaryFg,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: context.appColors.error,
+      ),
+    );
+    return;
+  }
+
+  final channels = leadChats.map((chat) => chat.channel.name).toSet().toList();
+  if (channels.length == 1) {
+    final channelName = channels.first;
+    final chatsForChannel =
+        leadChats.where((chat) => chat.channel.name == channelName).toList();
+
+    if (chatsForChannel.length == 1) {
+      _navigateToLeadChatScreen(
+        leadName: leadName,
+        chatId: chatsForChannel.first.id,
+        canSendMessage: chatsForChannel.first.canSendMessage,
+        initialChannelName: chatsForChannel.first.channel.name,
+      );
+      return;
+    }
+
+    final integrations = _buildLeadIntegrations(chatsForChannel, chats);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return IntegrationListDialog(
+          integrations: integrations,
+          leadId: leadId,
+          leadName: leadName,
+          canSendMessage: chatsForChannel.first.canSendMessage,
+          initialChannelName: channelName,
+        );
+      },
+    );
+    return;
+  }
+
+  showDialog(
+    context: context,
+    builder: (dialogContext) {
+      final Map<String, String> sourceIcons = {
+        'telegram_account': 'assets/icons/leads/telegram.png',
+        'telegram_bot': 'assets/icons/leads/telegram.png',
+        'mini_app': 'assets/icons/leads/telegram.png',
+        'whatsapp': 'assets/icons/leads/whatsapp.png',
+        'green_api': 'assets/icons/leads/whatsapp.png',
+        'facebook': 'assets/icons/leads/messenger.png',
+        'instagram': 'assets/icons/leads/instagram.png',
+        'site': '',
+      };
+      final Map<String, String> customChannelNames = {
+        'telegram_account': 'Telegram',
+        'telegram_bot': 'Telegram бот',
+        'mini_app': 'Mini App',
+        'whatsapp': 'WhatsApp',
+        'green_api': 'WhatsApp',
+        'facebook': 'Facebook',
+        'instagram': 'Instagram',
+        'site': 'Интернет магазин',
+      };
+
+      return Dialog(
+        backgroundColor: dialogContext.appColors.surfacePrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: dialogContext.appColors.borderSubtle),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                AppLocalizations.of(dialogContext)!.translate('list_chat'),
+                style: TextStyle(
+                  color: dialogContext.appColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Gilroy',
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 300,
+              child: ListView.builder(
+                itemCount: channels.length,
+                itemBuilder: (context, index) {
+                  final channelName = channels[index];
+                  final iconPath = sourceIcons[channelName] ??
+                      'assets/icons/leads/default.png';
+                  final displayName =
+                      channelName.toLowerCase() == 'support'
+                          ? AppLocalizations.of(dialogContext)!
+                              .translate('support_chat_name')
+                          : customChannelNames[channelName] ??
+                              (channelName.isNotEmpty
+                                  ? channelName
+                                  : AppLocalizations.of(dialogContext)!
+                                      .translate('no_name_chat'));
+                  final chatsForChannel = leadChats
+                      .where((chat) => chat.channel.name == channelName)
+                      .toList();
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: Material(
+                      color: dialogContext.appColors.surfacePrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(
+                          color: dialogContext.appColors.borderSubtle,
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: channelName == 'site'
+                            ? Icon(
+                                Icons.language,
+                                size: 30,
+                                color: dialogContext.appColors.buttonPrimaryBg,
+                              )
+                            : Image.asset(
+                                iconPath,
+                                width: 30,
+                                height: 30,
+                              ),
+                        title: Text(
+                          displayName,
+                          style: TextStyle(
+                            color: dialogContext.appColors.textPrimary,
+                            fontSize: 18,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(dialogContext);
+                          if (chatsForChannel.length == 1) {
+                            _navigateToLeadChatScreen(
+                              leadName: leadName,
+                              chatId: chatsForChannel.first.id,
+                              canSendMessage:
+                                  chatsForChannel.first.canSendMessage,
+                              initialChannelName:
+                                  chatsForChannel.first.channel.name,
+                            );
+                            return;
+                          }
+
+                          final integrations =
+                              _buildLeadIntegrations(chatsForChannel, chats);
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return IntegrationListDialog(
+                                integrations: integrations,
+                                leadId: leadId,
+                                leadName: leadName,
+                                canSendMessage:
+                                    chatsForChannel.first.canSendMessage,
+                                initialChannelName: channelName,
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+List<Map<String, dynamic>> _buildLeadIntegrations(
+  List<LeadNavigateChat> chatsForChannel,
+  List<Map<String, dynamic>>? chats,
+) {
+  return chatsForChannel.map((chat) {
+    final Map<String, dynamic> chatData = chats?.firstWhere(
+          (c) => c['id'] == chat.id,
+          orElse: () => <String, dynamic>{},
+        ) ??
+        <String, dynamic>{};
+    final username = chatData['integration'] != null
+        ? chatData['integration']['username'] ?? ''
+        : '';
+    return {
+      'id': chat.id,
+      'username': username,
+      'channel_name': chat.channel.name,
+    };
+  }).toList();
+}
+
+void _navigateToLeadChatScreen({
+  required String leadName,
+  required int chatId,
+  required bool canSendMessage,
+  required String initialChannelName,
+}) {
+  navigatorKey.currentState?.push(
+    MaterialPageRoute(
+      builder: (context) => BlocProvider(
+        create: (context) => MessagingCubit(ApiService()),
+        child: ChatSmsScreen(
+          chatItem: Chats(
+            id: chatId,
+            image: '',
+            name: leadName,
+            taskFrom: "",
+            taskTo: "",
+            description: "",
+            channel: "",
+            lastMessage: "",
+            messageType: "",
+            createDate: "",
+            unreadCount: 0,
+            canSendMessage: canSendMessage,
+            chatUsers: [],
+          ).toChatItem(),
+          chatId: chatId,
+          endPointInTab: 'lead',
+          canSendMessage: canSendMessage,
+          initialChannelName: initialChannelName,
+        ),
+      ),
+    ),
+  );
+}
 
 class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
@@ -248,49 +545,54 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                             : AppLocalizations.of(context)!
                                                 .translate('no_name_chat'));
                             //print('LeadNavigateToChat: Building chat item $index - Channel: $channelName, DisplayName: $displayName');
-                            return Container(
-                              margin: const EdgeInsets.symmetric(
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                                 vertical: 6,
                               ),
-                              decoration: _sectionDecoration(context),
-                              child: ListTile(
-                                leading: channelName == 'site'
-                                    ? Icon(
-                                        Icons.language,
-                                        size: 30,
-                                        color:
-                                            context.appColors.buttonPrimaryBg,
-                                      )
-                                    : Image.asset(
-                                        iconPath,
-                                        width: 30,
-                                        height: 30,
-                                      ),
-                                title: Text(
-                                  displayName,
-                                  style: TextStyle(
-                                    color: context.appColors.textPrimary,
-                                    fontSize: 18,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
+                              child: Material(
+                                color: context.appColors.surfacePrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  side: BorderSide(
+                                    color: context.appColors.borderSubtle,
                                   ),
                                 ),
-                                onTap: () {
-                                  //print('LeadNavigateToChat: Channel tapped - Channel: $channelName');
-                                  // Собираем чаты для выбранного канала
-                                  final chatsForChannel = leadtochat
-                                      .where((chat) =>
-                                          chat.channel.name == channelName)
-                                      .toList();
-                                  //print('LeadNavigateToChat: Found ${chatsForChannel.length} chats for $channelName: $chatsForChannel');
+                                child: ListTile(
+                                  leading: channelName == 'site'
+                                      ? Icon(
+                                          Icons.language,
+                                          size: 30,
+                                          color:
+                                              context.appColors.buttonPrimaryBg,
+                                        )
+                                      : Image.asset(
+                                          iconPath,
+                                          width: 30,
+                                          height: 30,
+                                        ),
+                                  title: Text(
+                                    displayName,
+                                    style: TextStyle(
+                                      color: context.appColors.textPrimary,
+                                      fontSize: 18,
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    final chatsForChannel = leadtochat
+                                        .where((chat) =>
+                                            chat.channel.name == channelName)
+                                        .toList();
 
-                                  _handleChannelTap(
-                                    context,
-                                    channelName,
-                                    chatsForChannel,
-                                  );
-                                },
+                                    _handleChannelTap(
+                                      context,
+                                      channelName,
+                                      chatsForChannel,
+                                    );
+                                  },
+                                ),
                               ),
                             );
                           },

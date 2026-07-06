@@ -286,17 +286,16 @@ class _HistoryDialogState extends State<HistoryDialog> {
                         color: _primary(context)),
                   ),
                 ),
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 150),
+                Flexible(
                   child: Text(
-                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
+                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')}\n${_formatDate(item.date)}',
                     style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         color: _secondary(context)),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+                    maxLines: 3,
+                    softWrap: true,
                     textAlign: TextAlign.end,
                   ),
                 ),
@@ -401,18 +400,17 @@ class _HistoryDialogState extends State<HistoryDialog> {
                     ),
                   ),
                 ),
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 150),
+                Flexible(
                   child: Text(
-                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
+                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')}\n${_formatDate(item.date)}',
                     style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
                       color: _secondary(context),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+                    maxLines: 3,
+                    softWrap: true,
                     textAlign: TextAlign.end,
                   ),
                 ),
@@ -517,18 +515,17 @@ class _HistoryDialogState extends State<HistoryDialog> {
                     ),
                   ),
                 ),
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 150),
+                Flexible(
                   child: Text(
-                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')} ${_formatDate(item.date)}',
+                    '${item.user?.fullName ?? AppLocalizations.of(context)!.translate('system_text')}\n${_formatDate(item.date)}',
                     style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
                       color: _secondary(context),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
+                    maxLines: 3,
+                    softWrap: true,
                     textAlign: TextAlign.end,
                   ),
                 ),

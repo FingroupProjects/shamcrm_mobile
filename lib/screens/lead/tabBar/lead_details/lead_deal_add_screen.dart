@@ -9,6 +9,10 @@ import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/main_field/main_field_bloc.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -78,6 +82,52 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   // Конфигурация полей с сервера
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textPrimary;
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textSecondary;
+  Color _screenHintText(BuildContext context) => context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) => context.appColors.borderSubtle;
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.fieldBg;
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary;
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated;
+  Color _screenFooterBackground(BuildContext context) =>
+      context.appColors.surfacePrimary;
+
+  void _showScreenSnackBar(
+    String message, {
+    bool isSuccess = false,
+  }) {
+    if (!mounted || message.isEmpty) return;
+
+    final colors = context.appColors;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: colors.textInverse,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: isSuccess ? colors.success : colors.error,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -151,28 +201,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         print('LeadDealAddScreen: Error saving field positions: $e');
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ошибка сохранения настроек полей',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 3,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            duration: Duration(seconds: 3),
-          ),
-        );
+        _showScreenSnackBar('Ошибка сохранения настроек полей');
       }
     }
   }
@@ -408,42 +437,10 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             FetchFieldConfiguration('deals'),
           );
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Справочник успешно добавлен',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          _showScreenSnackBar('Справочник успешно добавлен', isSuccess: true);
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ошибка добавления справочника: $e',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showScreenSnackBar('Ошибка добавления справочника: $e');
       }
       return;
     }
@@ -472,20 +469,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ошибка добавления поля: $e',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showScreenSnackBar('Ошибка добавления поля: $e');
     }
   }
 
@@ -496,6 +480,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
 
+    final colors = context.appColors;
     final menuItems = [
       PopupMenuItem(
         value: 'manual',
@@ -505,7 +490,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -517,7 +502,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -538,7 +523,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       elevation: 4,
-      color: Colors.white,
+      color: colors.surfacePrimary,
       items: menuItems,
     ).then((value) {
       if (value == 'manual') {
@@ -593,18 +578,23 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 
   Future<bool> _showExitSettingsDialog() async {
+    final colors = context.appColors;
     return await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: colors.borderPrimary),
+          ),
           title: Text(
             AppLocalizations.of(context)!.translate('warning'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           content: Text(
@@ -613,7 +603,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+              color: colors.textSecondary,
             ),
           ),
           actions: [
@@ -624,8 +614,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   child: CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('cancel'),
                     onPressed: () => Navigator.of(context).pop(false),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonSecondaryBg,
+                    textColor: colors.buttonSecondaryFg,
                   ),
                 ),
                 SizedBox(width: 8),
@@ -633,8 +623,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   child: CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('dont_save'),
                     onPressed: () => Navigator.of(context).pop(true),
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
+                    buttonColor: colors.error,
+                    textColor: colors.buttonPrimaryFg,
                   ),
                 ),
               ],
@@ -646,6 +636,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 
   Widget _buildSettingsMode() {
+    final colors = context.appColors;
     final sortedFields = [...fieldConfigurations]..sort((a, b) => a.position.compareTo(b.position));
 
     return Column(
@@ -666,7 +657,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                     scale: scale,
                     child: Material(
                       elevation: elevation,
-                      shadowColor: Colors.black.withOpacity(0.3),
+                      shadowColor: colors.shadowColor.withOpacity(0.28),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.transparent,
                       child: child,
@@ -725,8 +716,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: CustomButton(
                     buttonText: AppLocalizations.of(context)!.translate('add_field'),
-                    buttonColor: Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonSecondaryBg,
+                    textColor: colors.buttonSecondaryFg,
                     onPressed: _showAddFieldMenu,
                   ),
                 );
@@ -741,15 +732,15 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfacePrimary.withOpacity(0.94),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Color(0xffE5E9F2),
+                    color: colors.borderPrimary,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: colors.shadowColor.withOpacity(0.12),
                       blurRadius: 4,
                       offset: Offset(0, 2),
                     ),
@@ -760,7 +751,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   children: [
                     Icon(
                       Icons.drag_handle,
-                      color: Color(0xff99A4BA),
+                      color: colors.textSecondary,
                       size: 24,
                     ),
                     const SizedBox(width: 16),
@@ -774,7 +765,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                               fontSize: 16,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -784,7 +775,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                               fontSize: 12,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           SizedBox(height: 12),
@@ -830,9 +821,13 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                       width: 24,
                                       height: 24,
                                       decoration: BoxDecoration(
-                                        color: config.isActive ? Color(0xff4759FF) : Colors.white,
+                                        color: config.isActive
+                                            ? colors.buttonPrimaryBg
+                                            : colors.fieldBackground,
                                         border: Border.all(
-                                          color: config.isActive ? Color(0xff4759FF) : Color(0xffCCD5E0),
+                                          color: config.isActive
+                                              ? colors.buttonPrimaryBg
+                                              : colors.borderPrimary,
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -843,7 +838,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                         child: Icon(
                                           Icons.check_rounded,
                                           size: 16,
-                                          color: Colors.white,
+                                          color: colors.buttonPrimaryFg,
                                         ),
                                       ),
                                     ),
@@ -854,7 +849,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                                         fontSize: 14,
                                         fontFamily: 'Gilroy',
                                         fontWeight: FontWeight.w500,
-                                        color: config.isActive ? Color(0xff1E2E52) : Color(0xff6B7A99),
+                                        color: config.isActive
+                                            ? colors.textPrimary
+                                            : colors.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -873,10 +870,11 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfaceElevated.withOpacity(0.96),
+            border: Border(top: BorderSide(color: colors.borderPrimary)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: colors.shadowColor.withOpacity(0.08),
                 blurRadius: 4,
                 offset: Offset(0, -2),
               ),
@@ -886,7 +884,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               ? Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Color(0xff4759FF).withOpacity(0.7),
+                    color: colors.buttonPrimaryBg.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -898,14 +896,16 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.buttonPrimaryFg,
+                            ),
                           ),
                         ),
                         SizedBox(width: 12),
                         Text(
                           AppLocalizations.of(context)!.translate('saving'),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                             fontSize: 16,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
@@ -917,8 +917,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                 )
               : CustomButton(
                   buttonText: AppLocalizations.of(context)!.translate('save'),
-                  buttonColor: Color(0xff4759FF),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                   onPressed: () async {
                     setState(() {
                       isSavingFieldOrder = true;
@@ -933,27 +933,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           isSettingsMode = false;
                         });
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Настройки полей сохранены',
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: Colors.green,
-                            elevation: 3,
-                            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            duration: Duration(seconds: 2),
-                          ),
+                        _showScreenSnackBar(
+                          'Настройки полей сохранены',
+                          isSuccess: true,
                         );
                       }
                     } catch (e) {
@@ -1046,6 +1028,14 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
   }
 
   Widget _buildFileSelection() {
+    final fileTextColor = _screenPrimaryText(context);
+    final fileBorderColor = _screenBorder(context);
+    final fileCardColor = _screenFieldBackground(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final addFileIconAsset = isDark
+        ? 'assets/icons/files/add_for_dark.png'
+        : 'assets/icons/files/add.png';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1055,7 +1045,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: fileTextColor,
           ),
         ),
         SizedBox(height: 16),
@@ -1072,9 +1062,15 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                     onTap: _pickFile,
                     child: Container(
                       width: 100,
+                      decoration: BoxDecoration(
+                        color: fileCardColor.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: fileBorderColor),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                       child: Column(
                         children: [
-                          Image.asset('assets/icons/files/add.png', width: 60, height: 60),
+                          Image.asset(addFileIconAsset, width: 60, height: 60),
                           SizedBox(height: 8),
                           Text(
                             AppLocalizations.of(context)!.translate('add_file'),
@@ -1082,7 +1078,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: fileTextColor,
                             ),
                           ),
                         ],
@@ -1101,6 +1097,12 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   children: [
                     Container(
                       width: 100,
+                      decoration: BoxDecoration(
+                        color: fileCardColor.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: fileBorderColor),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                       child: Column(
                         children: [
                           buildFileIcon(files, fileName, fileExtension),
@@ -1113,7 +1115,7 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: 'Gilroy',
-                              color: Color(0xff1E2E52),
+                              color: fileTextColor,
                             ),
                           ),
                         ],
@@ -1131,17 +1133,18 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: _screenSurfaceBackground(context),
                             shape: BoxShape.circle,
+                            border: Border.all(color: fileBorderColor),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: context.appColors.shadowColor.withOpacity(0.1),
                                 blurRadius: 4,
                                 offset: Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close, size: 16, color: Color(0xff1E2E52)),
+                          child: Icon(Icons.close, size: 16, color: fileTextColor),
                         ),
                       ),
                     ),
@@ -1157,46 +1160,88 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 0),
-          child: Transform.translate(
-            offset: const Offset(0, -2),
-            child: IconButton(
-              icon: Image.asset('assets/icons/arrow-left.png', width: 24, height: 24),
-              onPressed: () {
-                Navigator.pop(context, widget.leadId);
-                context.read<DealBloc>().add(FetchDealStatuses());
-              },
-            ),
-          ),
-        ),
-        leadingWidth: 40,
-        title: Transform.translate(
-          offset: const Offset(-10, 0),
-          child: Text(
-            AppLocalizations.of(context)!.translate('new_deal'),
-            style: TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: Icon(
-              isSettingsMode ? Icons.close : Icons.settings,
-              color: Color(0xff1E2E52),
-            ),
-            onPressed: () async {
+    final colors = context.appColors;
+    final primaryText = _screenPrimaryText(context);
+    final subtleBorder = _screenBorder(context);
+    final formSurface = _screenSurfaceBackground(context);
+    final footerSurface = _screenFooterBackground(context);
+
+    final screenTheme = Theme.of(context).copyWith(
+      scaffoldBackgroundColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: colors.buttonPrimaryBg,
+        selectionColor: colors.buttonPrimaryBg.withOpacity(0.22),
+        selectionHandleColor: colors.buttonPrimaryBg,
+      ),
+      cardColor: formSurface,
+      dialogTheme: DialogThemeData(backgroundColor: formSurface),
+    );
+
+    return Theme(
+      data: screenTheme,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          toolbarHeight: 96,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          scrolledUnderElevation: 0,
+          titleSpacing: 0,
+          title: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: AppBarShell(
+              leading: AppBarShell.capsule(
+                context,
+                width: AppBarShell.orbSize,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.center,
+                  splashRadius: 22,
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 22,
+                    color: primaryText,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context, widget.leadId);
+                    context.read<DealBloc>().add(FetchDealStatuses());
+                  },
+                ),
+              ),
+              center: AppBarShell.capsule(
+                context,
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('new_deal'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: primaryText,
+                    ),
+                  ),
+                ),
+              ),
+              trailing: AppBarShell.capsule(
+                context,
+                width: AppBarShell.orbSize,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.center,
+                  splashRadius: 22,
+                  icon: Icon(
+                    isSettingsMode ? Icons.close_rounded : Icons.settings_rounded,
+                    size: 24,
+                    color: primaryText,
+                  ),
+                  onPressed: () async {
               if (isSettingsMode) {
                 if (_hasFieldChanges()) {
                   final shouldExit = await _showExitSettingsDialog();
@@ -1269,14 +1314,22 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                   isSettingsMode = true;
                 });
               }
-            },
-            tooltip: isSettingsMode
-                ? AppLocalizations.of(context)!.translate('close')
-                : AppLocalizations.of(context)!.translate('appbar_settings'),
+                },
+                tooltip: isSettingsMode
+                    ? AppLocalizations.of(context)!.translate('close')
+                    : AppLocalizations.of(context)!.translate('appbar_settings'),
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
-      body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
+        ),
+        body: Stack(
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+            SafeArea(
+              child: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
         listener: (context, configState) {
           if (configState is FieldConfigurationLoaded) {
             if (kDebugMode) {
@@ -1290,27 +1343,14 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             if (kDebugMode) {
               print('LeadDealAddScreen: Configuration error: ${configState.message}');
             }
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Ошибка загрузки конфигурации: ${configState.message}',
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
+            _showScreenSnackBar('Ошибка загрузки конфигурации: ${configState.message}');
           }
         },
         builder: (context, configState) {
           if (configState is FieldConfigurationLoading) {
-            return const Center(
+            return Center(
               child: CircularProgressIndicator(
-                color: Color(0xff1E2E52),
+                color: colors.buttonPrimaryBg,
               ),
             );
           }
@@ -1319,12 +1359,15 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   CircularProgressIndicator(
-                    color: Color(0xff1E2E52),
+                    color: colors.buttonPrimaryBg,
                   ),
                   SizedBox(height: 16),
-                  Text('Загрузка конфигурации...'),
+                  Text(
+                    'Загрузка конфигурации...',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
                 ],
               ),
             );
@@ -1342,47 +1385,14 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
               listener: (context, state) {
                 if (state is DealError) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!.translate(state.message),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        backgroundColor: Colors.red,
-                        elevation: 3,
-                        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        duration: Duration(seconds: 3),
-                      ),
+                    _showScreenSnackBar(
+                      AppLocalizations.of(context)!.translate(state.message),
                     );
                   });
                 } else if (state is DealSuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context)!.translate('deal_created_successfully'),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      backgroundColor: Colors.green,
-                      elevation: 3,
-                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      duration: Duration(seconds: 3),
-                    ),
+                  _showScreenSnackBar(
+                    AppLocalizations.of(context)!.translate('deal_created_successfully'),
+                    isSuccess: true,
                   );
                   Navigator.pop(context, widget.leadId);
                   context.read<LeadDealsBloc>().add(FetchLeadDeals(widget.leadId));
@@ -1402,6 +1412,23 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: formSurface.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: subtleBorder),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.shadowColor.withOpacity(0.12),
+                                      blurRadius: 24,
+                                      offset: const Offset(0, 12),
+                                    ),
+                                  ],
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                               ..._buildConfiguredFieldWidgets(),
 
                               if (customFields.where((field) {
@@ -1458,6 +1485,9 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
                               const SizedBox(height: 16),
                               _buildFileSelection(),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 80),
                             ],
                           ),
@@ -1465,14 +1495,27 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      decoration: BoxDecoration(
+                        color: footerSurface.withOpacity(0.96),
+                        border: Border(top: BorderSide(color: subtleBorder)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.shadowColor.withOpacity(0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, -4),
+                          ),
+                        ],
+                      ),
                       child: Row(
                         children: [
                           Expanded(
                             child: CustomButton(
                               buttonText: AppLocalizations.of(context)!.translate('cancel'),
-                              buttonColor: Color(0xffF4F7FD),
-                              textColor: Colors.black,
+                              buttonColor: colors.buttonSecondaryBg,
+                              textColor: colors.buttonSecondaryFg,
+                              borderColor: colors.borderPrimary,
+                              borderWidth: 1,
                               onPressed: () {
                                 Navigator.pop(context, widget.leadId);
                                 context.read<DealBloc>().add(FetchDealStatuses());
@@ -1484,12 +1527,16 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
                             child: BlocBuilder<DealBloc, DealState>(
                               builder: (context, state) {
                                 if (state is DealLoading) {
-                                  return Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      color: colors.buttonPrimaryBg,
+                                    ),
+                                  );
                                 } else {
                                   return CustomButton(
                                     buttonText: AppLocalizations.of(context)!.translate('add'),
-                                    buttonColor: Color(0xff4759FF),
-                                    textColor: Colors.white,
+                                    buttonColor: colors.buttonPrimaryBg,
+                                    textColor: colors.buttonPrimaryFg,
                                     onPressed: _submitForm,
                                   );
                                 }
@@ -1506,6 +1553,10 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
           );
         },
       ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1519,25 +1570,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
     if (_formKey.currentState!.validate() && titleController.text.isNotEmpty && selectedManager != null && selectedDealStatusId != null) {
       _createLeadDeal();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('fill_required_fields'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: Colors.red,
-          elevation: 3,
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: Duration(seconds: 3),
-        ),
+      _showScreenSnackBar(
+        AppLocalizations.of(context)!.translate('fill_required_fields'),
       );
     }
   }
@@ -1557,19 +1591,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         isStartDateInvalid = true;
         isEndDateInvalid = true;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('enter_valid_date'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      _showScreenSnackBar(
+        AppLocalizations.of(context)!.translate('enter_valid_date'),
       );
       return;
     }
@@ -1579,19 +1602,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
         isStartDateInvalid = true;
         isEndDateInvalid = true;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('start_date_after_end_date'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      _showScreenSnackBar(
+        AppLocalizations.of(context)!.translate('start_date_after_end_date'),
       );
       return;
     }
@@ -1606,19 +1618,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
 
       if (fieldType == 'number' && fieldValue.isNotEmpty) {
         if (!RegExp(r'^\d+$').hasMatch(fieldValue)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_number'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
+          _showScreenSnackBar(
+            AppLocalizations.of(context)!.translate('enter_valid_number'),
           );
           return;
         }
@@ -1632,19 +1633,8 @@ class _LeadDealAddScreenState extends State<LeadDealAddScreen> {
             DateFormat('dd/MM/yyyy HH:mm').parse(fieldValue);
           }
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('enter_valid_${fieldType}'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
+          _showScreenSnackBar(
+            AppLocalizations.of(context)!.translate('enter_valid_${fieldType}'),
           );
           return;
         }

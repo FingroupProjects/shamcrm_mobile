@@ -221,16 +221,6 @@ class _LeadCardState extends State<LeadCard>
                       await _makeSystemPhoneCall(phoneNumber);
                     },
                   ),
-                  const SizedBox(height: 12),
-                  _buildPhoneActionTile(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    title: 'WhatsApp',
-                    subtitle: 'Открыть диалог в WhatsApp',
-                    onTap: () async {
-                      Navigator.pop(sheetContext);
-                      await _openWhatsApp(phoneNumber);
-                    },
-                  ),
                   if (widget.lead.chats != null && widget.lead.chats!.isNotEmpty)
                     ...[
                       const SizedBox(height: 12),
@@ -239,32 +229,13 @@ class _LeadCardState extends State<LeadCard>
                         title: 'Открыть чат',
                         subtitle: widget.lead.source?.name ??
                             'Источник лида',
-                        onTap: () {
+                        onTap: () async {
                           Navigator.pop(sheetContext);
-                          showDialog(
-                            context: context,
-                            builder: (dialogContext) {
-                              return Dialog(
-                                backgroundColor:
-                                    dialogContext.appColors.surfacePrimary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  side: BorderSide(
-                                    color:
-                                        dialogContext.appColors.borderSubtle,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: LeadNavigateToChat(
-                                    leadId: widget.lead.id,
-                                    leadName: widget.lead.name,
-                                    chats: widget.lead.chats,
-                                    autoOpen: true,
-                                  ),
-                                ),
-                              );
-                            },
+                          await openLeadChatDirect(
+                            context,
+                            leadId: widget.lead.id,
+                            leadName: widget.lead.name,
+                            chats: widget.lead.chats,
                           );
                         },
                       ),
@@ -556,29 +527,99 @@ class _LeadCardState extends State<LeadCard>
                 Column(
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        ClipOval(
-                          child: Image.asset(
-                            iconPath,
-                            width: 28,
-                            height: 28,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            widget.lead.source?.name ?? '',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: colors.textPrimary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                          child: Row(
+                            children: [
+                              ClipOval(
+                                child: Image.asset(
+                                  iconPath,
+                                  width: 28,
+                                  height: 28,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  widget.lead.source?.name ?? '',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                        if (_leadPhone != null) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () => _handlePhoneTap(_leadPhone!),
+                                onLongPress: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: _leadPhone!),
+                                  );
+                                  showCustomSnackBar(
+                                    context: context,
+                                    message: AppLocalizations.of(context)!
+                                        .translate('copied_to_clipboard'),
+                                    isSuccess: true,
+                                  );
+                                },
+                                child: Container(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 170),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.fieldBg,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: colors.borderSubtle,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.phone_outlined,
+                                        size: 14,
+                                        color: colors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          _leadPhone!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontFamily: 'Gilroy',
+                                            fontWeight: FontWeight.w600,
+                                            color: colors.textPrimary,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -635,93 +676,30 @@ class _LeadCardState extends State<LeadCard>
                           ],
                         ),
                         const SizedBox(width: 12),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_leadPhone != null) ...[
-                              GestureDetector(
-                                onTap: () => _handlePhoneTap(_leadPhone!),
-                                onLongPress: () {
-                                  Clipboard.setData(
-                                    ClipboardData(text: _leadPhone!),
-                                  );
-                                  showCustomSnackBar(
-                                    context: context,
-                                    message: AppLocalizations.of(context)!
-                                        .translate('copied_to_clipboard'),
-                                    isSuccess: true,
-                                  );
-                                },
-                                child: Container(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 170),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.fieldBg,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: colors.borderSubtle,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.phone_outlined,
-                                        size: 14,
-                                        color: colors.textSecondary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Flexible(
-                                        child: Text(
-                                          _leadPhone!,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w600,
-                                            color: colors.textPrimary,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                            ],
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 110),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceAccent
-                                      .withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  widget.lead.manager?.name ??
-                                      AppLocalizations.of(context)!
-                                          .translate('system_text'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w500,
-                                    color: colors.textSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 110),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color:
+                                  colors.surfaceAccent.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                          ],
+                            child: Text(
+                              widget.lead.manager?.name ??
+                                  AppLocalizations.of(context)!
+                                      .translate('system_text'),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: colors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ],
                     ),
