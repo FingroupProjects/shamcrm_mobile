@@ -290,7 +290,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       allDocuments.add(
         WarehouseDocument(
           keyName: 'order',
-          title: AppLocalizations.of(context)!.translate('orders') ?? 'Заказы',
+          title: AppLocalizations.of(context)!.translate('appbar_orders') ??
+              'Заказы',
           icon: Icons.receipt_long_outlined,
           color: docColor,
         ),
