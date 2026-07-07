@@ -2,12 +2,29 @@ import AVFAudio
 import CallKit
 import Flutter
 import PushKit
+import StoreKit
 import UIKit
 import linphone
 
 private enum CallKitBranding {
     static let appName = "shamCRM"
     static let incomingFallbackHandle = "Входящий звонок"
+}
+
+private enum NativeSipPushConfiguration {
+    static let appleTeamId = "D8D872QMNJ"
+
+    static var bundleIdentifier: String {
+        Bundle.main.bundleIdentifier ?? "com.softtech.crmTaskManager"
+    }
+
+    static var linphoneProvider: String {
+        #if DEBUG
+        return "apns.dev"
+        #else
+        return "apns"
+        #endif
+    }
 }
 
 private struct NativeSipSnapshot: Codable {
@@ -948,6 +965,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         linphone_account_params_set_expires(params, 300)
         linphone_account_params_set_push_notification_allowed(params, 1)
         linphone_account_params_set_remote_push_notification_allowed(params, 1)
+        applyPushNotificationConfig(to: params, reason: "registration")
         linphone_account_params_enable_outbound_proxy(params, 1)
 
         guard let createdAccount = linphone_core_create_account(core, params) else {
@@ -1003,6 +1021,100 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         linphone_address_unref(identityAddress)
         linphone_address_unref(serverAddress)
         linphone_account_params_unref(params)
+        return true
+    }
+
+    private func applyPushNotificationConfig(to params: OpaquePointer, reason: String) {
+        guard let pushConfig = linphone_push_notification_config_new() else {
+            appendDiagnosticLog("sip_push_config_missing", [
+                "reason": reason,
+                "stage": "create_config_failed",
+            ])
+            return
+        }
+
+        let provider = NativeSipPushConfiguration.linphoneProvider
+        let bundleIdentifier = NativeSipPushConfiguration.bundleIdentifier
+        let token = defaults.string(forKey: Constants.voipTokenKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        linphone_push_notification_config_set_provider(pushConfig, provider)
+        linphone_push_notification_config_set_team_id(pushConfig, NativeSipPushConfiguration.appleTeamId)
+        linphone_push_notification_config_set_bundle_identifier(pushConfig, bundleIdentifier)
+        linphone_push_notification_config_set_call_str(pushConfig, "IC_MSG")
+        linphone_push_notification_config_set_remote_push_interval(pushConfig, "5")
+
+        if !token.isEmpty {
+            linphone_push_notification_config_set_voip_token(pushConfig, token)
+        }
+
+        linphone_account_params_set_push_notification_config(params, pushConfig)
+        linphone_push_notification_config_unref(pushConfig)
+
+        appendDiagnosticLog("sip_push_config_applied", [
+            "reason": reason,
+            "provider": provider,
+            "bundle_id": bundleIdentifier,
+            "team_id": NativeSipPushConfiguration.appleTeamId,
+            "voip_token": token.isEmpty ? "missing" : "present",
+        ])
+    }
+
+    private func refreshAccountPushNotificationConfig(reason: String) -> Bool {
+        guard let existingAccount = account else { return false }
+        guard let clonedParams = linphone_account_params_clone(linphone_account_get_params(existingAccount)) else {
+            appendDiagnosticLog("sip_push_config_missing", [
+                "reason": reason,
+                "stage": "clone_params_failed",
+            ])
+            return false
+        }
+
+        linphone_account_params_set_push_notification_allowed(clonedParams, 1)
+        linphone_account_params_set_remote_push_notification_allowed(clonedParams, 1)
+        applyPushNotificationConfig(to: clonedParams, reason: reason)
+
+        let status = linphone_account_set_params(existingAccount, clonedParams)
+        linphone_account_params_unref(clonedParams)
+
+        guard status == 0 else {
+            appendDiagnosticLog("sip_push_config_failed", [
+                "reason": reason,
+                "status": "\(status)",
+            ])
+            return false
+        }
+
+        linphone_account_refresh_register(existingAccount)
+        appendDiagnosticLog("sip_push_config_refresh", [
+            "reason": reason,
+        ])
+        return true
+    }
+
+    private func refreshRegistrationIfPossible(reason: String, emitRegisteringEvent: Bool) -> Bool {
+        guard snapshot.persistentEnabled, loadPersistedRegistrationConfig() != nil else {
+            return false
+        }
+
+        guard let account else {
+            return false
+        }
+
+        if linphone_account_get_state(account) != LinphoneRegistrationOk {
+            return false
+        }
+
+        snapshot.registrationState = "registering"
+        snapshot.message = "Registration refreshing"
+        persistSnapshot()
+        appendDiagnosticLog("sip_register_refresh_requested", [
+            "reason": reason,
+        ])
+        if emitRegisteringEvent {
+            emitRegistrationEvent(state: "registering", message: snapshot.message)
+        }
+        linphone_account_refresh_register(account)
         return true
     }
 
@@ -1122,6 +1234,32 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         deferredAction = .end
         return false
+    }
+
+    private func startBridgeCallFromPushPayload(_ payload: VoIPIncomingPayload?, reason: String) -> Bool {
+        guard let rawSipUri = payload?.sipUri?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawSipUri.isEmpty else {
+            appendDiagnosticLog("callkit_answer_waiting_for_invite", [
+                "reason": reason,
+                "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
+                "call_id": payload?.callId ?? snapshot.callId ?? "",
+                "sip_uri": "missing",
+            ])
+            return false
+        }
+
+        let target = rawSipUri.lowercased().hasPrefix("sip:")
+            ? rawSipUri
+            : "sip:\(rawSipUri)"
+
+        appendDiagnosticLog("callkit_answer_bridge_call_start", [
+            "reason": reason,
+            "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
+            "call_id": payload?.callId ?? snapshot.callId ?? "",
+            "sip_uri": target,
+        ])
+
+        return makeCall(target: target, hasVideo: payload?.hasVideo ?? false)
     }
 
     private func sendDtmf(_ tone: String) -> Bool {
@@ -2278,6 +2416,7 @@ extension IOSNativeSipManager: IOSVoIPPushManagerDelegate {
     func voipPushManager(_ manager: IOSVoIPPushManager, didUpdate token: String) {
         defaults.set(token, forKey: Constants.voipTokenKey)
         emitPushTokenEvent(token: token)
+        _ = refreshAccountPushNotificationConfig(reason: "voip-token-updated")
     }
 
     func voipPushManagerDidInvalidateToken(_ manager: IOSVoIPPushManager) {
@@ -2295,7 +2434,8 @@ extension IOSNativeSipManager: IOSVoIPPushManagerDelegate {
         didReceiveIncoming payload: VoIPIncomingPayload,
         completion: @escaping () -> Void
     ) {
-        _ = restoreRegistrationIfNeeded(reason: "voip-push", emitRegisteringEvent: true)
+        _ = refreshRegistrationIfPossible(reason: "voip-push", emitRegisteringEvent: true) ||
+            restoreRegistrationIfNeeded(reason: "voip-push", emitRegisteringEvent: true)
         reportIncomingCall(payload: payload, completion: completion)
     }
 }
@@ -2314,7 +2454,13 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         persistSnapshot()
         emitCallActionEvent(action: "answer", callUUID: callUUID, payload: payload)
         if !acceptCall() {
-            deferredAction = .answer
+            _ = refreshRegistrationIfPossible(reason: "callkit-answer", emitRegisteringEvent: true) ||
+                restoreRegistrationIfNeeded(reason: "callkit-answer", emitRegisteringEvent: true)
+            if startBridgeCallFromPushPayload(payload, reason: "callkit-answer-no-invite") {
+                deferredAction = nil
+            } else {
+                deferredAction = .answer
+            }
         }
     }
 
