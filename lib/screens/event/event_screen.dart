@@ -827,7 +827,7 @@ class _EventScreenState extends State<EventScreen>
                       fontSize: 20,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   )
                 : _buildTitleWidget(

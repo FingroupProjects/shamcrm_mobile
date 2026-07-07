@@ -221,8 +221,16 @@ class _TemplatesPanelState extends State<TemplatesPanel> with SingleTickerProvid
                           child: BlocBuilder<TemplateBloc, TemplateState>(
                             builder: (context, state) {
                               if (state is TemplateLoading) {
-                                return const Center(
-                                    child: CircularProgressIndicator());
+                                return Center(
+                                  child: Text(
+                                    localizations.translate('loading'),
+                                    style: textStyles.bodyMd.copyWith(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: context.appColors.textSecondary,
+                                    ),
+                                  ),
+                                );
                               } else if (state is TemplateLoaded) {
                                 final isFiltering =
                                     _searchController.text.trim().isNotEmpty;

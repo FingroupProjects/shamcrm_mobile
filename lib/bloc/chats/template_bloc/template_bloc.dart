@@ -14,9 +14,17 @@ class TemplateBloc extends Bloc<TemplateEvent, TemplateState> {
   Future<void> _onFetchTemplates(FetchTemplates event, Emitter<TemplateState> emit) async {
     emit(TemplateLoading());
     try {
-      final response = await apiService.getTemplates();
+      final response = await apiService.getTemplates().timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => throw Exception('timeout'),
+      );
       emit(TemplateLoaded(templates: response.templates));
     } catch (e) {
+      final errorText = e.toString().toLowerCase();
+      if (errorText.contains('timeout')) {
+        emit(TemplateLoaded(templates: const []));
+        return;
+      }
       emit(TemplateError(e.toString()));
     }
   }

@@ -1,12 +1,19 @@
 import 'dart:async';
 
-import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Theme-aware текстовое поле с поддержкой HTML-форматирования:
 /// жирный, курсив, зачеркнутый, ссылки.
 /// Плавно расширяется до [maxVisibleLines] строк, затем скроллится.
+///
+/// ВАЖНО: глобальная тема (AppInputTheme) задаёт для InputDecorationTheme
+/// filled: true, fillColor, enabledBorder и focusedBorder с видимой рамкой.
+/// Если явно не погасить именно enabledBorder/focusedBorder/disabledBorder,
+/// Flutter возьмёт их из темы, даже если тут указан border: InputBorder.none —
+/// потому что border используется только как fallback, когда конкретное
+/// состояние (enabled/focused/...) не задано. Отсюда и "лишняя рамка + залитый
+/// фон" внутри уже оформленного контейнера. Ниже все состояния погашены явно.
 class RichTextField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -152,8 +159,6 @@ class _RichTextFieldState extends State<RichTextField>
     }
   }
 
-  // _buildFormattedTextSpan удалён — не используется.
-  // Форматирование текста реализовано на уровне _htmlContent в input_field.dart.
   void _handlePointerDown(PointerDownEvent event) {
     if (widget.onLongPress != null) {
       _longPressTimer?.cancel();
@@ -173,9 +178,6 @@ class _RichTextFieldState extends State<RichTextField>
 
   @override
   Widget build(BuildContext context) {
-    final isTransparent = widget.fillColor == null ||
-        widget.fillColor == context.appColors.overlay.withValues(alpha: 0.0);
-
     Widget textField = TextField(
       controller: widget.controller,
       focusNode: widget.focusNode,
@@ -184,16 +186,34 @@ class _RichTextFieldState extends State<RichTextField>
       maxLines: null,
       style: widget.style,
       textAlignVertical: TextAlignVertical.center,
+      cursorColor: widget.style?.color,
       inputFormatters: [
         TextInputFormatter.withFunction((oldValue, newValue) => newValue),
       ],
       decoration: InputDecoration(
         hintText: widget.hintText,
         hintStyle: widget.hintStyle,
-        border: InputBorder.none,
+        // isCollapsed: true полностью отключает встроенную логику
+        // InputDecorator по расчёту вертикальных отступов (она считается по
+        // метрикам шрифта, а не по contentPadding, из-за чего текст "плавает"
+        // и обычно оказывается чуть выше центра). При isCollapsed: true
+        // позиция текста зависит только от заданного contentPadding —
+        // именно так делают кастомные "пилюльные" поля ввода в мессенджерах.
+        isCollapsed: true,
         contentPadding: widget.contentPadding,
-        isDense: true,
-        isCollapsed: false,
+        // --- ключевой фикс ---
+        // Гасим заливку и рамку темы, чтобы поле было "прозрачным" и
+        // визуально сливалось с внешним Container, у которого уже есть
+        // свой фон/скругление/тень (как в Telegram: один "пилюльный" бар,
+        // а не рамка внутри рамки).
+        filled: false,
+        fillColor: Colors.transparent,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
       ),
       keyboardType: TextInputType.multiline,
       textInputAction: TextInputAction.newline,
@@ -213,14 +233,8 @@ class _RichTextFieldState extends State<RichTextField>
     // Wrap in animated height container
     return AnimatedBuilder(
       animation: _heightAnimation,
-      builder: (context, child) => Container(
+      builder: (context, child) => SizedBox(
         height: _heightAnimation.value,
-        decoration: !isTransparent
-            ? BoxDecoration(
-                color: widget.fillColor,
-                borderRadius: widget.borderRadius,
-              )
-            : null,
         child: child,
       ),
       child: textField,

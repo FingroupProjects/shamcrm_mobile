@@ -1144,6 +1144,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     return context.read<ListenSenderFileCubit>().state;
   }
 
+  void _dismissKeyboard() {
+    _focusNode.unfocus();
+    _searchFocusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   Future<void> _persistCurrentChatMessages() async {
     final currentState = _messagingCubit?.state;
     if (currentState is MessagesCollectionState) {
@@ -1706,12 +1712,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           username.contains('whatsapp') ||
           username.contains('wa')) {
         return 'whatsapp';
+      } else if (username.contains('email') || username.contains('mail')) {
+        return 'email';
       } else if (username.contains('instagram') || username.contains('ig')) {
         return 'instagram';
       } else if (username.contains('facebook') || username.contains('fb')) {
         return 'facebook';
       } else if (username.contains('web') || username.contains('site')) {
-        return 'website';
+        return 'site';
       }
     }
 
@@ -2271,47 +2279,51 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           backgroundColor: Colors.transparent,
           body: ChatAppearanceScope(
             appearance: _chatAppearance,
-            child: DecoratedBox(
-              decoration: _chatAppearance.buildFullScreenDecoration(context),
-              child: Stack(
-                children: [
-                  _chatAppearance.buildBackgroundLayer(context),
-                  ..._chatAppearance.buildBackgroundOrbs(context),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top +
-                          kToolbarHeight +
-                          22,
-                    ),
-                    child: Column(
-                      children: [
-                        Expanded(child: messageListUi()),
-                        if (widget.canSendMessage && _canCreateChat)
-                          inputWidget()
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 50),
-                            child: Center(
-                              child: Text(
-                                widget.canSendMessage
-                                    ? AppLocalizations.of(context)!
-                                        .translate('not_premission_to_send_sms')
-                                    : AppLocalizations.of(context)!
-                                        .translate('24_hour_leads'),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  color: context.appColors.textPrimary,
-                                  fontWeight: FontWeight.w600,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _dismissKeyboard,
+              child: DecoratedBox(
+                decoration: _chatAppearance.buildFullScreenDecoration(context),
+                child: Stack(
+                  children: [
+                    _chatAppearance.buildBackgroundLayer(context),
+                    ..._chatAppearance.buildBackgroundOrbs(context),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).padding.top +
+                            kToolbarHeight +
+                            22,
+                      ),
+                      child: Column(
+                        children: [
+                          Expanded(child: messageListUi()),
+                          if (widget.canSendMessage && _canCreateChat)
+                            inputWidget()
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 50),
+                              child: Center(
+                                child: Text(
+                                  widget.canSendMessage
+                                      ? AppLocalizations.of(context)!.translate(
+                                          'not_premission_to_send_sms')
+                                      : AppLocalizations.of(context)!
+                                          .translate('24_hour_leads'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    color: context.appColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2542,7 +2554,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             children: [
               GestureDetector(
                 onTap: () {
-                  FocusScope.of(context).unfocus();
+                  _dismissKeyboard();
                 },
                 child: Padding(
                   padding: EdgeInsets.only(
@@ -2553,82 +2565,95 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                         ? 80
                         : 0,
                   ),
-                  child: ScrollablePositionedList.builder(
-                    itemScrollController: _scrollControllerMessage,
-                    itemPositionsListener: _itemPositionsListener,
-                    itemCount: messages.length + (state.isLoadingMore ? 1 : 0),
-                    reverse: true,
-                    itemBuilder: (context, index) {
-                      if (index >= messages.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Center(
-                            child: SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                  child: NotificationListener<ScrollStartNotification>(
+                    onNotification: (notification) {
+                      if (notification.dragDetails != null) {
+                        _dismissKeyboard();
+                      }
+                      return false;
+                    },
+                    child: ScrollablePositionedList.builder(
+                      itemScrollController: _scrollControllerMessage,
+                      itemPositionsListener: _itemPositionsListener,
+                      itemCount:
+                          messages.length + (state.isLoadingMore ? 1 : 0),
+                      reverse: true,
+                      itemBuilder: (context, index) {
+                        if (index >= messages.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
                             ),
-                          ),
-                        );
-                      }
+                          );
+                        }
 
-                      final message = messages[index];
-                      final messageDate =
-                          DateTime.parse(message.createMessateTime).toLocal();
+                        final message = messages[index];
+                        final messageDate =
+                            DateTime.parse(message.createMessateTime).toLocal();
 
-                      bool shouldShowDate = false;
-                      if (index == messages.length - 1) {
-                        shouldShowDate = true;
-                      } else {
-                        final previousMessage = messages[index + 1];
-                        final previousMessageDate =
-                            DateTime.parse(previousMessage.createMessateTime)
-                                .toLocal();
-                        shouldShowDate =
-                            !isSameDay(messageDate, previousMessageDate);
-                      }
+                        bool shouldShowDate = false;
+                        if (index == messages.length - 1) {
+                          shouldShowDate = true;
+                        } else {
+                          final previousMessage = messages[index + 1];
+                          final previousMessageDate =
+                              DateTime.parse(previousMessage.createMessateTime)
+                                  .toLocal();
+                          shouldShowDate =
+                              !isSameDay(messageDate, previousMessageDate);
+                        }
 
-                      bool isFirstMessage = index == messages.length - 1;
+                        bool isFirstMessage = index == messages.length - 1;
 
-                      List<Widget> widgets = [];
+                        List<Widget> widgets = [];
 
-                      if (shouldShowDate) {
-                        final appearance = ChatAppearanceScope.of(context);
-                        widgets.add(
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8),
-                            child: GestureDetector(
-                              onTap: () => _showDatePicker(context, messages),
-                              child: Center(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: appearance.chromeBlurSigma(),
-                                      sigmaY: appearance.chromeBlurSigma(),
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 7,
+                        if (shouldShowDate) {
+                          final appearance = ChatAppearanceScope.of(context);
+                          widgets.add(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 16, bottom: 8),
+                              child: GestureDetector(
+                                onTap: () => _showDatePicker(context, messages),
+                                child: Center(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: appearance.chromeBlurSigma(),
+                                        sigmaY: appearance.chromeBlurSigma(),
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: appearance
-                                            .chromeSurfaceColor(context),
-                                        borderRadius:
-                                            BorderRadius.circular(999),
-                                        border: Border.all(
-                                          color: context.appColors.borderSubtle
-                                              .withValues(alpha: 0.28),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 7,
                                         ),
-                                      ),
-                                      child: Text(
-                                        formatDate(messageDate),
-                                        style: TextStyle(
-                                          fontSize: appearance.scaledFont(13),
-                                          fontFamily: "Gilroy",
-                                          fontWeight: FontWeight.w600,
-                                          color: context.appColors.textPrimary,
+                                        decoration: BoxDecoration(
+                                          color: appearance
+                                              .chromeSurfaceColor(context),
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                          border: Border.all(
+                                            color: context
+                                                .appColors.borderSubtle
+                                                .withValues(alpha: 0.28),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          formatDate(messageDate),
+                                          style: TextStyle(
+                                            fontSize: appearance.scaledFont(13),
+                                            fontFamily: "Gilroy",
+                                            fontWeight: FontWeight.w600,
+                                            color:
+                                                context.appColors.textPrimary,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -2636,93 +2661,93 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                                 ),
                               ),
                             ),
-                          ),
+                          );
+                        }
+                        final effectiveMessage =
+                            _messageWithLocalReactions(message);
+                        final mediaGroupMessages = _collectMediaGroupMessages(
+                          messages,
+                          index,
                         );
-                      }
-                      final effectiveMessage =
-                          _messageWithLocalReactions(message);
-                      final mediaGroupMessages = _collectMediaGroupMessages(
-                        messages,
-                        index,
-                      );
-                      final shouldSkipAsGroupedMedia =
-                          _shouldSkipGroupedMediaMessage(
-                        messages,
-                        index,
-                      );
+                        final shouldSkipAsGroupedMedia =
+                            _shouldSkipGroupedMediaMessage(
+                          messages,
+                          index,
+                        );
 
-                      if (!shouldSkipAsGroupedMedia) {
-                        widgets.add(
-                          MessageItemWidget(
-                            message: effectiveMessage,
-                            mediaGroupMessages: mediaGroupMessages,
-                            chatId: widget.chatId,
-                            endPointInTab: widget.endPointInTab,
-                            isInstagramCommentChannel:
-                                _isInstagramCommentChannel,
-                            onInstagramReplyTap: (type) {
-                              final resolvedType =
-                                  type ?? _instagramResponseType;
-                              if (resolvedType == null) {
-                                _showInstagramResponseTypePicker(message);
-                                return;
-                              }
-                              setState(() {
-                                _instagramResponseType = resolvedType;
-                              });
-                              _focusNode.requestFocus();
-                              context
-                                  .read<MessagingCubit>()
-                                  .setReplyMessage(message);
-                            },
-                            isPostExpanded:
-                                _expandedPostIds.contains(message.id),
-                            onTogglePost: () {
-                              setState(() {
-                                if (_expandedPostIds.contains(message.id)) {
-                                  _expandedPostIds.remove(message.id);
-                                } else {
-                                  _expandedPostIds.add(message.id);
+                        if (!shouldSkipAsGroupedMedia) {
+                          widgets.add(
+                            MessageItemWidget(
+                              message: effectiveMessage,
+                              mediaGroupMessages: mediaGroupMessages,
+                              chatId: widget.chatId,
+                              endPointInTab: widget.endPointInTab,
+                              isInstagramCommentChannel:
+                                  _isInstagramCommentChannel,
+                              onInstagramReplyTap: (type) {
+                                final resolvedType =
+                                    type ?? _instagramResponseType;
+                                if (resolvedType == null) {
+                                  _showInstagramResponseTypePicker(message);
+                                  return;
                                 }
-                              });
-                            },
-                            apiServiceDownload: widget.apiServiceDownload,
-                            baseUrl: baseUrl,
-                            onReplyTap: _scrollToMessageReply,
-                            highlightedMessageId: _highlightedMessageId,
-                            onMenuStateChanged: (isOpen) {
-                              setState(() {
-                                _isMenuOpen = isOpen;
-                              });
-                            },
-                            isMenuOpen: _isMenuOpen,
-                            focusNode: _focusNode,
-                            isRead: message.isRead,
-                            isFirstMessage: isFirstMessage,
-                            referralBody:
-                                state.hasReachedMax ? referralBody : null,
-                            onTargetReferralTap:
-                                isFirstMessage && _chatAdvertising != null
-                                    ? _openTargetMediaUrl
-                                    : null,
-                            isGroupChat: _isGroupChat,
-                            chatChannelName: channelName,
-                            companionName: _cachedCompanionName ??
-                                (widget.chatItem.name.isNotEmpty
-                                    ? widget.chatItem.name
-                                    : null),
-                            canSendMessageInChat: widget.canSendMessage,
-                            onReactionToggle: _canUseReactionsInCurrentChat
-                                ? _toggleMessageReaction
-                                : null,
-                          ),
+                                setState(() {
+                                  _instagramResponseType = resolvedType;
+                                });
+                                _focusNode.requestFocus();
+                                context
+                                    .read<MessagingCubit>()
+                                    .setReplyMessage(message);
+                              },
+                              isPostExpanded:
+                                  _expandedPostIds.contains(message.id),
+                              onTogglePost: () {
+                                setState(() {
+                                  if (_expandedPostIds.contains(message.id)) {
+                                    _expandedPostIds.remove(message.id);
+                                  } else {
+                                    _expandedPostIds.add(message.id);
+                                  }
+                                });
+                              },
+                              apiServiceDownload: widget.apiServiceDownload,
+                              baseUrl: baseUrl,
+                              onReplyTap: _scrollToMessageReply,
+                              highlightedMessageId: _highlightedMessageId,
+                              onMenuStateChanged: (isOpen) {
+                                setState(() {
+                                  _isMenuOpen = isOpen;
+                                });
+                              },
+                              isMenuOpen: _isMenuOpen,
+                              focusNode: _focusNode,
+                              isRead: message.isRead,
+                              isFirstMessage: isFirstMessage,
+                              referralBody:
+                                  state.hasReachedMax ? referralBody : null,
+                              onTargetReferralTap:
+                                  isFirstMessage && _chatAdvertising != null
+                                      ? _openTargetMediaUrl
+                                      : null,
+                              isGroupChat: _isGroupChat,
+                              chatChannelName: channelName,
+                              companionName: _cachedCompanionName ??
+                                  (widget.chatItem.name.isNotEmpty
+                                      ? widget.chatItem.name
+                                      : null),
+                              canSendMessageInChat: widget.canSendMessage,
+                              onReactionToggle: _canUseReactionsInCurrentChat
+                                  ? _toggleMessageReaction
+                                  : null,
+                            ),
+                          );
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: widgets,
                         );
-                      }
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: widgets,
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
               ),

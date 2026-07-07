@@ -23,12 +23,18 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     'instagram': 'assets/icons/leads/instagram.png',
     'instagram_comment': 'assets/icons/leads/instagram.png',
     'facebook': 'assets/icons/leads/messenger.png',
-    'email': 'assets/icons/leads/email.png',
     'site': '',
   };
 
-  String _getChannelIcon(String? channelType) {
+  String _getChannelIcon(BuildContext context, String? channelType) {
     final normalized = (channelType ?? '').replaceAll('channel-', '');
+    if (normalized == 'email') {
+      final isDarkSurface =
+          context.useLightForeground(context.appColors.surfacePrimary);
+      return isDarkSurface
+          ? 'assets/icons/leads/email_dark.png'
+          : 'assets/icons/leads/email.png';
+    }
     return channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
   }
 
@@ -71,7 +77,7 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                     color: context.appColors.textPrimary,
                   )
                 : Image.asset(
-                    _getChannelIcon(channelType),
+                    _getChannelIcon(context, channelType),
                     width: 28,
                     height: 28,
                     errorBuilder: (context, error, stackTrace) {

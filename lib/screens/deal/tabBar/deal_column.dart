@@ -369,6 +369,7 @@ class _DealColumnState extends State<DealColumn> {
         child: ListView.builder(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
           itemCount: deals.length + (showPaginationLoader ? 1 : 0),
           itemBuilder: (context, index) {
             if (index >= deals.length) {
@@ -415,6 +416,7 @@ class _DealColumnState extends State<DealColumn> {
       onRefresh: _onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
         children: [
           SizedBox(height: MediaQuery.of(context).size.height * 0.4),
           Center(

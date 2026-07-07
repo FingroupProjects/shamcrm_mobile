@@ -34,6 +34,15 @@ class _EventManagersMultiSelectWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final managerTextStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: context.appColors.textPrimary,
+    );
+    final hintStyle = managerTextStyle.copyWith(
+      color: context.appColors.textSecondary,
+    );
+    final borderColor = context.appColors.borderSubtle.withValues(alpha: 0.7);
+
     return Column(
       children: [
         BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
@@ -57,10 +66,7 @@ class _EventManagersMultiSelectWidgetState
                 children: [
                   Text(
                     AppLocalizations.of(context)!.translate('managers'),
-                    style: context.appTextStyles.bodyLg.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: context.appColors.textPrimary,
-                    ),
+                    style: managerTextStyle,
                   ),
                   const SizedBox(height: 4),
                   CustomDropdown<ManagerData>.multiSelectSearch(
@@ -73,15 +79,51 @@ class _EventManagersMultiSelectWidgetState
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: context.appColors.fieldBg,
+                        color: borderColor,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: context.appColors.fieldBg,
+                        color: borderColor,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: managerTextStyle,
+                      listItemStyle: managerTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.14),
+                        highlightColor: context.appColors.buttonPrimaryBg
+                            .withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: context.appColors.fieldBg,
+                        textStyle: managerTextStyle,
+                        hintStyle: hintStyle,
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: context.appColors.textMuted,
+                        ),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(
+                            Icons.close,
+                            color: context.appColors.textMuted,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       return ListTile(
@@ -117,10 +159,7 @@ class _EventManagersMultiSelectWidgetState
                               const SizedBox(width: 10),
                               Text(
                                 '${item.name} ${item.lastname}',
-                                style: context.appTextStyles.bodyLg.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: context.appColors.textPrimary,
-                                ),
+                                style: managerTextStyle,
                               ),
                             ],
                           ),
@@ -139,19 +178,13 @@ class _EventManagersMultiSelectWidgetState
                             ? AppLocalizations.of(context)!
                                 .translate('select_manager')
                             : '${AppLocalizations.of(context)!.translate('select_manager')} $selectedManagersCount',
-                        style: context.appTextStyles.bodyLg.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: context.appColors.textPrimary,
-                        ),
+                        style: managerTextStyle,
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
                         AppLocalizations.of(context)!
                             .translate('select_manager'),
-                        style: context.appTextStyles.bodyMd.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: context.appColors.textPrimary,
-                        )),
+                        style: hintStyle),
                     onListChanged: (values) {
                       widget.onSelectManagers(values);
                       setState(() {

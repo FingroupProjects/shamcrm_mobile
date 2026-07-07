@@ -46,13 +46,14 @@ class InputField extends StatefulWidget {
 }
 
 class _InputFieldState extends State<InputField>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   OverlayEntry? _overlayEntry;
   OverlayEntry? _formattingOverlay;
   bool _showTemplates = false;
   bool _showFormattingPanel = false;
   String _currentQuery = '';
   late AnimationController _animationController;
+  late AnimationController _micPulseController;
   late Animation<double> _fadeAnimation;
 
   String _htmlContent = '';
@@ -69,6 +70,10 @@ class _InputFieldState extends State<InputField>
       vsync: this,
       duration: Duration(milliseconds: 200),
     );
+    _micPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -88,6 +93,7 @@ class _InputFieldState extends State<InputField>
     _removeOverlay();
     _removeFormattingOverlay();
     _animationController.dispose();
+    _micPulseController.dispose();
     _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
     widget.messageController.removeListener(_updateTextState);
@@ -879,7 +885,6 @@ class _InputFieldState extends State<InputField>
                   : Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // Основной контейнер с полями ввода
                         Container(
                           clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
@@ -894,7 +899,6 @@ class _InputFieldState extends State<InputField>
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // Кнопка меню
                               if (widget.isLeadChat)
                                 IconButton(
                                   icon: Image.asset(
@@ -913,8 +917,6 @@ class _InputFieldState extends State<InputField>
                                     _showTemplatesPanel(context);
                                   },
                                 ),
-
-                              // RichTextField вместо AnimatedTextField
                               Expanded(
                                 child: RichTextField(
                                   controller: widget.messageController,
@@ -946,8 +948,6 @@ class _InputFieldState extends State<InputField>
                                   lineHeight: 20.0,
                                 ),
                               ),
-
-                              // Кнопка файла
                               IconButton(
                                 icon: Image.asset(
                                   'assets/icons/chats/file.png',
@@ -963,8 +963,6 @@ class _InputFieldState extends State<InputField>
                                 ),
                                 onPressed: widget.onAttachFile,
                               ),
-
-                              // Динамическая кнопка (голос/отправить)
                               AnimatedSwitcher(
                                 duration: Duration(milliseconds: 250),
                                 transitionBuilder: (Widget child,
@@ -986,25 +984,19 @@ class _InputFieldState extends State<InputField>
                                         height: 36,
                                       ),
                               ),
-
                               SizedBox(width: 4),
                             ],
                           ),
                         ),
-
-                        // Голосовой рекордер поверх всего
                         if (!_hasText)
                           Positioned(
                             left: 0,
                             right: 0,
                             top: 0,
-                            bottom: 0,
                             child: Padding(
                               padding: const EdgeInsets.only(
                                 left: 4,
                                 right: 4,
-                                top: 6,
-                                bottom: 6,
                               ),
                               child: Align(
                                 alignment: Alignment.centerRight,
@@ -1100,8 +1092,8 @@ class _InputFieldState extends State<InputField>
     final recorder = (context.watch<ListenSenderVoiceCubit>().state)
         ? Container(
             key: const ValueKey('voice_loading'),
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: inputSurface.withValues(alpha: 0.96),
@@ -1120,10 +1112,14 @@ class _InputFieldState extends State<InputField>
         : SocialMediaRecorder(
             key: const ValueKey('voice_recorder'),
             maxRecordTimeInSecond: 180,
-            initRecordPackageWidth: 40,
-            fullRecordPackageHeight: 40,
-            startRecording: () {},
-            stopRecording: (time) {},
+            initRecordPackageWidth: 48,
+            fullRecordPackageHeight: 48,
+            startRecording: () {
+              _setVoicePressed(true);
+            },
+            stopRecording: (time) {
+              _setVoicePressed(false);
+            },
             sendRequestFunction: widget.sendRequestFunction,
             cancelText: AppLocalizations.of(context)!.translate('cancel'),
             cancelTextStyle: context.appTextStyles.bodyMd.copyWith(
@@ -1149,33 +1145,13 @@ class _InputFieldState extends State<InputField>
               fontWeight: FontWeight.w500,
               color: primaryText,
             ),
-            recordIcon: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: appearance.accentColor(context).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accent.withValues(alpha: 0.32)),
-              ),
-              child: Icon(
-                Icons.mic_rounded,
-                size: 20,
-                color: accent,
-              ),
+            recordIcon: _buildVoiceMicOrb(
+              accent: accent,
+              fill: appearance.accentColor(context).withValues(alpha: 0.16),
             ),
-            recordIconWhenLockedRecord: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: appearance.accentColor(context).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accent.withValues(alpha: 0.32)),
-              ),
-              child: Icon(
-                Icons.mic_rounded,
-                size: 20,
-                color: accent,
-              ),
+            recordIconWhenLockedRecord: _buildVoiceMicOrb(
+              accent: accent,
+              fill: appearance.accentColor(context).withValues(alpha: 0.16),
             ),
             lockButton: Container(
               width: 28,
@@ -1206,46 +1182,52 @@ class _InputFieldState extends State<InputField>
               ),
             ),
             encode: AudioEncoderType.AAC,
-            radius: BorderRadius.circular(20),
+            radius: BorderRadius.circular(999),
           );
 
-    return Listener(
-      onPointerDown: (_) => _setVoicePressed(true),
-      onPointerUp: (_) => _setVoicePressed(false),
-      onPointerCancel: (_) => _setVoicePressed(false),
-      child: Stack(
-        alignment: Alignment.centerRight,
-        clipBehavior: Clip.none,
-        children: [
-          AnimatedOpacity(
-            opacity: _voicePressed ? 1 : 0,
-            duration: const Duration(milliseconds: 160),
-            child: IgnorePointer(
-              child: Container(
-                margin: const EdgeInsets.only(right: 40),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    6,
-                    (index) => AnimatedScale(
-                      scale: _voicePressed
-                          ? 0.75 + ((index % 3) * 0.18)
-                          : 0.7,
-                      duration: Duration(milliseconds: 220 + index * 30),
-                      curve: Curves.easeOutCubic,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Container(
-                          width: 3,
-                          height: 14 + (index.isEven ? 10 : 4),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(999),
+    const voiceRecorderMaxWidth = 320.0;
+
+    return SizedBox(
+      width: voiceRecorderMaxWidth,
+      height: 58,
+      child: Listener(
+        onPointerDown: (_) => _setVoicePressed(true),
+        onPointerUp: (_) => _setVoicePressed(false),
+        onPointerCancel: (_) => _setVoicePressed(false),
+        child: Stack(
+          alignment: Alignment.centerRight,
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedOpacity(
+              opacity: _voicePressed ? 1 : 0,
+              duration: const Duration(milliseconds: 160),
+              child: IgnorePointer(
+                child: Container(
+                  margin: const EdgeInsets.only(right: 56),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(
+                      6,
+                      (index) => AnimatedScale(
+                        scale:
+                            _voicePressed ? 0.75 + ((index % 3) * 0.18) : 0.7,
+                        duration: Duration(milliseconds: 220 + index * 30),
+                        curve: Curves.easeOutCubic,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Container(
+                            width: 3,
+                            height: 14 + (index.isEven ? 10 : 4),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
                           ),
                         ),
                       ),
@@ -1254,17 +1236,87 @@ class _InputFieldState extends State<InputField>
                 ),
               ),
             ),
-          ),
-          AnimatedScale(
-            scale: _voicePressed ? 1.04 : 1.0,
-            duration: const Duration(milliseconds: 140),
-            curve: Curves.easeOut,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: recorder,
+            AnimatedScale(
+              scale: _voicePressed ? 1.04 : 1.0,
+              duration: const Duration(milliseconds: 140),
+              curve: Curves.easeOut,
+              child: OverflowBox(
+                minWidth: 0,
+                maxWidth: voiceRecorderMaxWidth,
+                minHeight: 0,
+                maxHeight: 58,
+                alignment: Alignment.centerRight,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: recorder,
+                ),
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoiceMicOrb({
+    required Color accent,
+    required Color fill,
+  }) {
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: AnimatedBuilder(
+        animation: _micPulseController,
+        builder: (context, _) {
+          final t = _micPulseController.value;
+          return Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              _pulseRing(accent: accent, progress: t),
+              _pulseRing(accent: accent, progress: (t + 0.5) % 1.0),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: fill,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: accent.withValues(alpha: 0.32)),
+                ),
+                child: Icon(
+                  Icons.mic_rounded,
+                  size: 20,
+                  color: accent,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _pulseRing({
+    required Color accent,
+    required double progress,
+  }) {
+    if (!_voicePressed) {
+      return const SizedBox.shrink();
+    }
+    final scale = 0.7 + progress * 0.7;
+    final opacity = (1 - progress) * 0.35;
+    return Transform.scale(
+      scale: scale,
+      child: Opacity(
+        opacity: opacity,
+        child: Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: accent,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1295,4 +1347,3 @@ class _InputFieldState extends State<InputField>
     );
   }
 }
- 

@@ -153,11 +153,16 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
     );
   }
 
-  Row _buildStatusRow(String status, String userAndDate) {
+  Widget _buildStatusRow(String status, String userAndDate) {
     final colors = context.appColors;
 
+    final userAndDateParts = userAndDate.trim().split(RegExp(r'\s+(?=\d{2}\.\d{2}\.\d{4})'));
+    final userName = userAndDateParts.isNotEmpty ? userAndDateParts.first : userAndDate;
+    final createdAt =
+        userAndDateParts.length > 1 ? userAndDateParts.sublist(1).join(' ') : '';
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
@@ -173,18 +178,35 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            userAndDate,
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: colors.textSecondary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.end,
+        Flexible(
+          fit: FlexFit.loose,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                userName,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w600,
+                  color: colors.textSecondary,
+                ),
+                textAlign: TextAlign.end,
+                softWrap: true,
+              ),
+              if (createdAt.isNotEmpty)
+                Text(
+                  createdAt,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: colors.textSecondary,
+                  ),
+                  textAlign: TextAlign.end,
+                  softWrap: true,
+                ),
+            ],
           ),
         ),
       ],

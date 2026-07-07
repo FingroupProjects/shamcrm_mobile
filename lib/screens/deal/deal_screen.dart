@@ -1637,6 +1637,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
         itemCount: deals.length,
         itemBuilder: (context, index) {
           final deal = deals[index];
@@ -1751,6 +1752,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
                 itemCount:
                     filteredDeals.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {

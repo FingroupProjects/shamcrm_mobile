@@ -1266,52 +1266,133 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   final currentStatusId = _tabTitles[_currentTabIndex]['id'];
                   if (_isSwitch) {
                     showModalBottomSheet(
-                      backgroundColor: context.appColors.surfaceElevated,
+                      backgroundColor: Colors.transparent,
                       context: context,
                       shape: RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(20)),
+                            BorderRadius.vertical(top: Radius.circular(28)),
                       ),
                       builder: (BuildContext context) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
+                        Widget buildActionTile({
+                          required String title,
+                          required IconData icon,
+                          required VoidCallback onTap,
+                        }) {
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: onTap,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Ink(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 18,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.appColors.fieldBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: context.appColors.borderSubtle,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.appColors.shadow
+                                          .withValues(alpha: 0.08),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: context.appColors.surfaceElevated,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: context.appColors.borderSubtle,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        icon,
+                                        color: context.appColors.buttonPrimaryBg,
+                                        size: 26,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Text(
+                                        title,
+                                        style: TextStyle(
+                                          color: context.appColors.textPrimary,
+                                          fontSize: 18,
+                                          fontFamily: "Gilroy",
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 18,
+                                      color: context.appColors.textSecondary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return SafeArea(
+                          child: Container(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                          decoration: BoxDecoration(
+                            color: context.appColors.surfaceElevated,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(28),
+                            ),
+                            border: Border.all(
+                              color: context.appColors.borderSubtle,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.appColors.shadow
+                                    .withValues(alpha: 0.18),
+                                blurRadius: 18,
+                                offset: const Offset(0, -6),
+                              ),
+                            ],
+                          ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Container(
+                                width: 44,
+                                height: 4,
+                                margin: const EdgeInsets.only(bottom: 18),
+                                decoration: BoxDecoration(
+                                  color: context.appColors.borderSubtle,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
                               Text(
                                 AppLocalizations.of(context)!
                                     .translate('add_for_current_status'),
                                 style: TextStyle(
                                   color: context.appColors.textPrimary,
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontFamily: "Gilroy",
                                   fontWeight: FontWeight.bold,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: 8),
-                              Divider(color: context.appColors.borderSubtle),
-                              ListTile(
-                                title: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('new_lead_in_switch'),
-                                      style: TextStyle(
-                                        color: context.appColors.textPrimary,
-                                        fontSize: 16,
-                                        fontFamily: "Gilroy",
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.add,
-                                      color: context.appColors.iconPrimary,
-                                      size: 25,
-                                    ),
-                                  ],
-                                ),
+                              const SizedBox(height: 18),
+                              buildActionTile(
+                                title: AppLocalizations.of(context)!
+                                    .translate('new_lead_in_switch'),
+                                icon: Icons.add_rounded,
                                 onTap: () {
                                   Navigator.pop(context);
                                   Navigator.push(
@@ -1341,28 +1422,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       ));
                                 },
                               ),
-                              ListTile(
-                                title: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!
-                                          .translate('import_contact'),
-                                      style: TextStyle(
-                                        color: context.appColors.textPrimary,
-                                        fontSize: 16,
-                                        fontFamily: "Gilroy",
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.contacts,
-                                      color: context.appColors.iconPrimary,
-                                      size: 25,
-                                    ),
-                                  ],
-                                ),
+                              const SizedBox(height: 12),
+                              buildActionTile(
+                                title: AppLocalizations.of(context)!
+                                    .translate('import_contact'),
+                                icon: Icons.contact_phone_rounded,
                                 onTap: () {
                                   Navigator.pop(context);
                                   Navigator.push(
@@ -1392,9 +1456,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       ));
                                 },
                               ),
-                              SizedBox(height: 10),
+                              const SizedBox(height: 6),
                             ],
                           ),
+                        ),
                         );
                       },
                     );

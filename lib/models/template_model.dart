@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class Template {
   final int id;
   final String title;
@@ -88,11 +86,27 @@ class TemplateResponse {
   });
 
   factory TemplateResponse.fromJson(Map<String, dynamic> json) {
+    final result = json['result'];
+    if (result is! Map<String, dynamic>) {
+      return TemplateResponse(
+        templates: const [],
+        pagination: Pagination.empty(),
+      );
+    }
+
+    final rawTemplates = result['data'];
+    final rawPagination = result['pagination'];
+
     return TemplateResponse(
-      templates: (json['result']['data'] as List<dynamic>)
-          .map((item) => Template.fromJson(item as Map<String, dynamic>))
-          .toList(),
-      pagination: Pagination.fromJson(json['result']['pagination'] as Map<String, dynamic>),
+      templates: rawTemplates is List<dynamic>
+          ? rawTemplates
+              .whereType<Map<String, dynamic>>()
+              .map(Template.fromJson)
+              .toList()
+          : const [],
+      pagination: rawPagination is Map<String, dynamic>
+          ? Pagination.fromJson(rawPagination)
+          : Pagination.empty(),
     );
   }
 }
@@ -114,11 +128,21 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'] as int,
-      count: json['count'] as int,
-      perPage: json['per_page'] as int,
-      currentPage: json['current_page'] as int,
-      totalPages: json['total_pages'] as int,
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      count: (json['count'] as num?)?.toInt() ?? 0,
+      perPage: (json['per_page'] as num?)?.toInt() ?? 0,
+      currentPage: (json['current_page'] as num?)?.toInt() ?? 1,
+      totalPages: (json['total_pages'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  factory Pagination.empty() {
+    return Pagination(
+      total: 0,
+      count: 0,
+      perPage: 0,
+      currentPage: 1,
+      totalPages: 0,
     );
   }
 }

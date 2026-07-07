@@ -38,6 +38,10 @@ class _EventStatusRadioGroupWidgetState
       fontWeight: FontWeight.w500,
       color: context.appColors.textPrimary,
     );
+    final hintStyle = statusTextStyle.copyWith(
+      color: context.appColors.textSecondary,
+    );
+    final borderColor = context.appColors.borderSubtle.withValues(alpha: 0.7);
 
     final localizations = AppLocalizations.of(context);
     final statusList = [
@@ -61,7 +65,7 @@ class _EventStatusRadioGroupWidgetState
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: context.appColors.fieldBg,
+              color: borderColor,
             ),
           ),
           child: CustomDropdown<dynamic>.search(
@@ -73,15 +77,51 @@ class _EventStatusRadioGroupWidgetState
               closedFillColor: context.appColors.fieldBg,
               expandedFillColor: context.appColors.surfacePrimary,
               closedBorder: Border.all(
-                color: context.appColors.fieldBg,
+                color: borderColor,
                 width: 1,
               ),
               closedBorderRadius: BorderRadius.circular(12),
               expandedBorder: Border.all(
-                color: context.appColors.fieldBg,
+                color: borderColor,
                 width: 1,
               ),
               expandedBorderRadius: BorderRadius.circular(12),
+              hintStyle: hintStyle,
+              headerStyle: statusTextStyle,
+              listItemStyle: statusTextStyle,
+              listItemDecoration: ListItemDecoration(
+                selectedColor:
+                    context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+                highlightColor:
+                    context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+                splashColor: Colors.transparent,
+              ),
+              searchFieldDecoration: SearchFieldDecoration(
+                fillColor: context.appColors.fieldBg,
+                textStyle: statusTextStyle,
+                hintStyle: hintStyle,
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: context.appColors.textMuted,
+                ),
+                suffixIcon: (onClear) => IconButton(
+                  onPressed: onClear,
+                  icon: Icon(
+                    Icons.close,
+                    color: context.appColors.textMuted,
+                  ),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: context.appColors.buttonPrimaryBg,
+                  ),
+                ),
+              ),
             ),
             listItemBuilder: (context, item, isSelected, onItemSelect) {
               return Text(
@@ -99,10 +139,7 @@ class _EventStatusRadioGroupWidgetState
             },
             hintBuilder: (context, hint, enabled) => Text(
               AppLocalizations.of(context)!.translate('select_status'),
-              style: context.appTextStyles.bodyMd.copyWith(
-                color: context.appColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
+              style: hintStyle,
             ),
             excludeSelected: false,
             initialItem: selectedStatusData != null

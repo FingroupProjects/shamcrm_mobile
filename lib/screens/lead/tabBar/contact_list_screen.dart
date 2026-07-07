@@ -1,5 +1,9 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
@@ -10,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class ContactsScreen extends StatefulWidget {
   final int statusId;
@@ -38,6 +41,32 @@ class _ContactsScreenState extends State<ContactsScreen> {
   String selectedManager = "";
   String? selectedSourceLead;
   String? currentUserId;
+
+  Color _screenPrimaryText(BuildContext context) =>
+      context.appColors.textPrimary;
+  Color _screenSecondaryText(BuildContext context) =>
+      context.appColors.textSecondary;
+  Color _screenHintText(BuildContext context) => context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) => context.appColors.borderSubtle;
+  Color _screenFieldBackground(BuildContext context) =>
+      context.appColors.fieldBg;
+  Color _screenSurfaceBackground(BuildContext context) =>
+      context.appColors.surfacePrimary;
+  Color _screenSurfaceElevated(BuildContext context) =>
+      context.appColors.surfaceElevated;
+
+  BoxDecoration _cardDecoration(BuildContext context) => BoxDecoration(
+        color: _screenSurfaceBackground(context).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _screenBorder(context)),
+        boxShadow: [
+          BoxShadow(
+            color: context.appColors.shadow.withValues(alpha: 0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      );
 
   @override
   void initState() {
@@ -78,7 +107,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
       _showSnackBar(
           AppLocalizations.of(context)!
               .translate('no_permession_to_access_contacts'),
-          Colors.red);
+          context.appColors.error);
     }
   }
 
@@ -104,15 +133,15 @@ class _ContactsScreenState extends State<ContactsScreen> {
   void _showContactDetails(Contact contact) {
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
+        return SafeArea(
+          child: Container(
           padding: EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            color: _screenSurfaceBackground(context),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: _screenBorder(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,13 +149,17 @@ class _ContactsScreenState extends State<ContactsScreen> {
             children: [
               Center(
                 child: CircleAvatar(
-                  backgroundColor: Colors.black,
+                  backgroundColor: _screenSurfaceElevated(context),
                   radius: 50,
                   backgroundImage: contact.photo != null
                       ? MemoryImage(contact.photo!)
                       : null,
                   child: contact.photo == null
-                      ? Icon(Icons.person, size: 50, color: Colors.white)
+                      ? Icon(
+                          Icons.person,
+                          size: 50,
+                          color: _screenPrimaryText(context),
+                        )
                       : null,
                 ),
               ),
@@ -138,11 +171,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: _screenPrimaryText(context),
                   ),
                 ),
               ),
-              Divider(color: Color(0xff1E2E52)),
+              Divider(color: _screenBorder(context)),
               SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context)!.translate('phones'),
@@ -150,7 +183,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: _screenPrimaryText(context),
                 ),
               ),
               ...contact.phones.map((phone) {
@@ -161,12 +194,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     children: [
                       Icon(
                         Icons.phone,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                       SizedBox(width: 8),
                       Text(
                         uniquePhone,
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(color: _screenSecondaryText(context)),
                       ),
                     ],
                   ),
@@ -179,7 +212,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: _screenPrimaryText(context),
                 ),
               ),
               ...contact.emails.map((email) {
@@ -189,12 +222,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     children: [
                       Icon(
                         Icons.email,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                       SizedBox(width: 8),
                       Text(
                         email.address,
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(color: _screenSecondaryText(context)),
                       ),
                     ],
                   ),
@@ -207,7 +240,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: _screenPrimaryText(context),
                 ),
               ),
               ...contact.addresses.map((address) {
@@ -217,13 +250,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     children: [
                       Icon(
                         Icons.location_on,
-                        color: Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           address.street,
-                          style: TextStyle(color: Colors.black54),
+                          style: TextStyle(color: _screenSecondaryText(context)),
                         ),
                       ),
                     ],
@@ -232,6 +265,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               }).toList(),
             ],
           ),
+        ),
         );
       },
     );
@@ -271,7 +305,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: context.appColors.textInverse,
           ),
         ),
         behavior: SnackBarBehavior.floating,
@@ -288,28 +322,28 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
 void _showFailedContactsDialog(
     List<Map<String, dynamic>> failedContacts, int totalContacts) {
-  // Calculate successfully added contacts
   int successfulContacts = totalContacts - failedContacts.length;
 
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: context.appColors.overlay.withValues(alpha: 0.45),
     builder: (BuildContext context) {
       return Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
         insetPadding: EdgeInsets.symmetric(horizontal: 20),
         child: Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          constraints:
+              BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            color: _screenSurfaceBackground(context),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _screenBorder(context)),
             boxShadow: [
               BoxShadow(
-                color: Color(0xff1E2E52).withOpacity(0.15),
-                spreadRadius: 3,
-                blurRadius: 10,
-                offset: Offset(0, 4),
+                color: context.appColors.shadow.withValues(alpha: 0.16),
+                blurRadius: 18,
+                offset: Offset(0, 8),
               ),
             ],
           ),
@@ -319,11 +353,7 @@ void _showFailedContactsDialog(
               Container(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: _screenSurfaceElevated(context),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
@@ -338,7 +368,7 @@ void _showFailedContactsDialog(
                       fontFamily: 'Gilroy',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: _screenPrimaryText(context),
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -356,11 +386,11 @@ void _showFailedContactsDialog(
                         margin: EdgeInsets.only(bottom: 20),
                         padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: _screenSurfaceElevated(context),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: context.appColors.shadow.withValues(alpha: 0.05),
                               spreadRadius: 1,
                               blurRadius: 5,
                               offset: Offset(0, 2),
@@ -373,23 +403,23 @@ void _showFailedContactsDialog(
                               context,
                               AppLocalizations.of(context)!.translate('total_contacts') ?? 'Total contacts',
                               totalContacts.toString(),
-                              Color(0xff1E2E52),
+                              _screenPrimaryText(context),
                               Icons.people_alt_rounded,
                             ),
-                            Divider(height: 20, thickness: 1, color: Color(0xffF4F7FD)),
+                            Divider(height: 20, thickness: 1, color: _screenBorder(context)),
                             _buildStatRow(
                               context,
                               AppLocalizations.of(context)!.translate('successfully_added') ?? 'Successfully added',
                               successfulContacts.toString(),
-                              Colors.green.shade700,
+                              context.appColors.success,
                               Icons.check_circle_rounded,
                             ),
-                            Divider(height: 20, thickness: 1, color: Color(0xffF4F7FD)),
+                            Divider(height: 20, thickness: 1, color: _screenBorder(context)),
                             _buildStatRow(
                               context,
                               AppLocalizations.of(context)!.translate('failed_to_add') ?? 'Failed to add',
                               failedContacts.length.toString(),
-                              Colors.red.shade700,
+                              context.appColors.error,
                               Icons.error_rounded,
                             ),
                           ],
@@ -404,7 +434,7 @@ void _showFailedContactsDialog(
                             children: [
                               Icon(
                                 Icons.warning_amber_rounded,
-                                color: Color(0xff1E2E52),
+                                color: context.appColors.warning,
                                 size: 20,
                               ),
                               SizedBox(width: 8),
@@ -414,7 +444,7 @@ void _showFailedContactsDialog(
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xff1E2E52),
+                                  color: _screenPrimaryText(context),
                                   fontSize: 16,
                                 ),
                               ),
@@ -436,8 +466,10 @@ void _showFailedContactsDialog(
                             return Container(
                               padding: EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Color(0xffF8F9FC),
-                                border: Border.all(color: Colors.red.shade100),
+                                color: _screenFieldBackground(context),
+                                border: Border.all(
+                                  color: context.appColors.error.withValues(alpha: 0.24),
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
@@ -449,7 +481,7 @@ void _showFailedContactsDialog(
                                         width: 28,
                                         height: 28,
                                         decoration: BoxDecoration(
-                                          color: Color(0xff1E2E52).withOpacity(0.1),
+                                          color: _screenSurfaceElevated(context),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(
@@ -458,7 +490,7 @@ void _showFailedContactsDialog(
                                             style: TextStyle(
                                               fontFamily: 'Gilroy',
                                               fontWeight: FontWeight.w700,
-                                              color: Color(0xff1E2E52),
+                                              color: _screenPrimaryText(context),
                                             ),
                                           ),
                                         ),
@@ -471,6 +503,7 @@ void _showFailedContactsDialog(
                                             fontFamily: 'Gilroy',
                                             fontWeight: FontWeight.w600,
                                             fontSize: 15,
+                                            color: _screenPrimaryText(context),
                                           ),
                                         ),
                                       ),
@@ -484,7 +517,7 @@ void _showFailedContactsDialog(
                                       children: [
                                         Icon(
                                           Icons.error_outline_rounded,
-                                          color: Colors.red.shade700,
+                                          color: context.appColors.error,
                                           size: 16,
                                         ),
                                         SizedBox(width: 8),
@@ -492,7 +525,7 @@ void _showFailedContactsDialog(
                                           child: Text(
                                             error.toString(),
                                             style: TextStyle(
-                                              color: Colors.red.shade700,
+                                              color: context.appColors.error,
                                               fontFamily: 'Gilroy',
                                               fontSize: 13,
                                             ),
@@ -516,14 +549,14 @@ void _showFailedContactsDialog(
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _screenSurfaceBackground(context),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: context.appColors.shadow.withValues(alpha: 0.05),
                       spreadRadius: 0,
                       blurRadius: 10,
                       offset: Offset(0, -4),
@@ -543,8 +576,8 @@ void _showFailedContactsDialog(
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xff1E2E52),
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.appColors.buttonPrimaryBg,
+                          foregroundColor: context.appColors.buttonPrimaryFg,
                           elevation: 0,
                           padding: EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -580,7 +613,7 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -598,7 +631,7 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
           style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 14,
-            color: Colors.black87,
+            color: context.appColors.textSecondary,
           ),
         ),
       ),
@@ -617,112 +650,181 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final primaryText = _screenPrimaryText(context);
+    final border = _screenBorder(context);
+
     if (_isLoading) {
-      // Показываем индикатор загрузки, пока currentUserId загружается
       return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xff1E2E52)),
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+            Center(
+              child: CircularProgressIndicator(
+                color: colors.buttonPrimaryBg,
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        forceMaterialTransparency: true,
+        toolbarHeight: 96,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        scrolledUnderElevation: 0,
         titleSpacing: 0,
-        title: isSearching
-            ? TextField(
-                controller: searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
+        title: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          child: AppBarShell(
+            leading: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                alignment: Alignment.center,
+                splashRadius: 22,
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 22,
+                  color: primaryText,
                 ),
-                onChanged: _filterContacts,
-              )
-            : Row(
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.translate('phone_contacts'),
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            center: AppBarShell.capsule(
+              context,
+              child: isSearching
+                  ? Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        cursorColor: colors.buttonPrimaryBg,
+                        style: TextStyle(
+                          color: primaryText,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 17,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)!
+                              .translate('search_appbar'),
+                          hintStyle: TextStyle(
+                            color: _screenHintText(context),
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 17,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                        ),
+                        onChanged: _filterContacts,
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('phone_contacts'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: primaryText,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                        ),
+                      ),
                     ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBarShell.capsule(
+                  context,
+                  width: AppBarShell.orbSize,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.center,
+                    splashRadius: 22,
+                    icon: Icon(
+                      isSearching ? Icons.close_rounded : Icons.search_rounded,
+                      color: primaryText,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (isSearching) {
+                          isSearching = false;
+                          searchController.clear();
+                          _filterContacts('');
+                        } else {
+                          isSearching = true;
+                        }
+                      });
+                    },
                   ),
-                ],
-              ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 0),
-            child: IconButton(
-              icon: Image.asset(
-                isSearching
-                    ? 'assets/icons/AppBar/close.png'
-                    : 'assets/icons/AppBar/search.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                setState(() {
-                  if (isSearching) {
-                    isSearching = false;
-                    searchController.clear();
-                    _filterContacts('');
-                  } else {
-                    isSearching = true;
-                  }
-                });
-              },
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              selectedContacts.length == contacts.length
-                  ? Icons.check_box
-                  : Icons.check_box_outline_blank,
-              color: selectedContacts.length == contacts.length
-                  ? Color(0xff1E2E52)
-                  : Colors.black,
-            ),
-            onPressed: () {
-              setState(() {
-                if (selectedContacts.length == contacts.length) {
-                  selectedContacts.clear();
-                } else {
-                  selectedContacts.clear();
-                  selectedContacts.addAll(contacts);
-                }
-              });
-            },
-          ),
-        ],
-        leading: Padding(
-          padding: const EdgeInsets.only(right: 0),
-          child: Transform.translate(
-            offset: const Offset(0, -2),
-            child: IconButton(
-              icon: Image.asset(
-                'assets/icons/arrow-left.png',
-                width: 24,
-                height: 24,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+                ),
+                const SizedBox(width: 10),
+                AppBarShell.capsule(
+                  context,
+                  width: AppBarShell.orbSize,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.center,
+                    splashRadius: 22,
+                    icon: Icon(
+                      selectedContacts.length == contacts.length &&
+                              contacts.isNotEmpty
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
+                      color: selectedContacts.length == contacts.length &&
+                              contacts.isNotEmpty
+                          ? colors.buttonPrimaryBg
+                          : primaryText,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (selectedContacts.length == contacts.length) {
+                          selectedContacts.clear();
+                        } else {
+                          selectedContacts.clear();
+                          selectedContacts.addAll(contacts);
+                        }
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        leadingWidth: 50,
       ),
-      body: Container(
-        color: Colors.white,
-        child: Column(
+      body: Stack(
+        children: [
+          const AppBackgroundOverlay(
+            preset: AppBackgroundPreset.aurora,
+          ),
+          SafeArea(
+            child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: InkWell(
                 onTap: () {
                   setState(() {
@@ -731,10 +833,7 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                 },
                 child: Container(
                   padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Color(0xffF4F7FD),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: _cardDecoration(context),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -745,7 +844,7 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: primaryText,
                           fontSize: 16,
                         ),
                       ),
@@ -753,7 +852,7 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                         isFiltersExpanded
                             ? Icons.expand_less
                             : Icons.expand_more,
-                        color: Color(0xff1E2E52),
+                        color: primaryText,
                       ),
                     ],
                   ),
@@ -766,10 +865,12 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
               child: isFiltersExpanded
                   ? Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
+                      child: Container(
+                        decoration: _cardDecoration(context),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 8),
                           RegionRadioGroupWidget(
                             selectedRegion: selectedRegion,
                             onSelectRegion: (RegionData selectedRegionData) {
@@ -803,62 +904,104 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                           const SizedBox(height: 8),
                         ],
                       ),
+                      ),
                     )
                   : SizedBox(),
             ),
             Expanded(
               child: contacts.isEmpty
                   ? Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xff1E2E52)))
+                      child: CircularProgressIndicator(
+                        color: colors.buttonPrimaryBg,
+                      ))
                   : filteredContacts.isEmpty
                       ? Center(
-                          child: Text(AppLocalizations.of(context)!
-                              .translate('no_result')))
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.all(24),
+                            decoration: _cardDecoration(context),
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('no_result'),
+                              style: context.appTextStyles.bodyMd.copyWith(
+                                color: _screenSecondaryText(context),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ))
                       : ListView.builder(
                           itemCount: filteredContacts.length,
                           itemBuilder: (context, index) {
                             Contact contact = filteredContacts[index];
                             return Container(
                               margin: EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffF4F7FD),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Colors.black,
-                                  backgroundImage: contact.photo != null
-                                      ? MemoryImage(contact.photo!)
-                                      : null,
-                                  child: contact.photo == null
-                                      ? Icon(Icons.person, color: Colors.white)
-                                      : null,
-                                ),
-                                title: Text(
-                                  contact.displayName,
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w600,
+                                  vertical: 6, horizontal: 16),
+                              decoration: _cardDecoration(context),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () => _showContactDetails(contact),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundColor:
+                                              _screenSurfaceElevated(context),
+                                          backgroundImage: contact.photo != null
+                                              ? MemoryImage(contact.photo!)
+                                              : null,
+                                          child: contact.photo == null
+                                              ? Icon(
+                                                  Icons.person,
+                                                  color: primaryText,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                contact.displayName,
+                                                style: TextStyle(
+                                                  color: primaryText,
+                                                  fontFamily: 'Gilroy',
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                contact.phones.isNotEmpty
+                                                    ? contact.phones.first.number
+                                                    : AppLocalizations.of(context)!
+                                                        .translate('no_number'),
+                                                style: TextStyle(
+                                                  color: _screenSecondaryText(
+                                                      context),
+                                                  fontFamily: 'Gilroy',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Checkbox(
+                                          activeColor: colors.buttonPrimaryBg,
+                                          checkColor: colors.buttonPrimaryFg,
+                                          side: BorderSide(color: border),
+                                          value:
+                                              selectedContacts.contains(contact),
+                                          onChanged: (bool? value) {
+                                            _toggleContactSelection(contact);
+                                          },
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                subtitle: Text(contact.phones.isNotEmpty
-                                    ? contact.phones.first.number
-                                    : AppLocalizations.of(context)!
-                                        .translate('no_number')),
-                                trailing: Transform.scale(
-                                  scale: 1.1,
-                                  child: Checkbox(
-                                    activeColor: Color(0xff1E2E52),
-                                    value: selectedContacts.contains(contact),
-                                    onChanged: (bool? value) {
-                                      _toggleContactSelection(contact);
-                                    },
-                                  ),
-                                ),
-                                onTap: () => _showContactDetails(contact),
                               ),
                             );
                           },
@@ -866,13 +1009,13 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
             ),
           ],
         ),
+          ),
+        ],
       ),
       floatingActionButton: selectedContacts.isNotEmpty
           ? FloatingActionButton(
-              // Replace the onPressed method of your FloatingActionButton with this:
               onPressed: () async {
                 try {
-                  // Создаем список контактов для отправки на сервер
                   List<Map<String, dynamic>> contactsToSend = [];
                   List<Contact> orderedContacts = selectedContacts.toList();
 
@@ -889,20 +1032,16 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                     }
                   }
 
-                  // Store the total number of contacts we're trying to add
                   int totalContacts = contactsToSend.length;
 
-                  // Call the API and get the response data
                   final responseData = await apiService.addLeadsFromContacts(
                       widget.statusId, contactsToSend);
 
-                  // Check if there are errors in the result array
                   if (responseData.containsKey('result') &&
                       responseData['result'] is List) {
                     List<dynamic> results = responseData['result'];
                     List<Map<String, dynamic>> failedContacts = [];
 
-                    // Filter contacts with errors
                     for (var item in results) {
                       if (item is Map<String, dynamic> &&
                           item.containsKey('errors') &&
@@ -913,45 +1052,38 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                     }
 
                     if (failedContacts.isNotEmpty) {
-                      // There are failed contacts, show the error dialog with summary
                       _showFailedContactsDialog(failedContacts, totalContacts);
                     } else {
-                      // All contacts were processed successfully
                       _showSnackBar(
                           AppLocalizations.of(context)!
                               .translate('contacts_sent'),
-                          Colors.green);
+                          colors.success);
 
-                      // Close the page after successful submission
                       Future.delayed(Duration(seconds: 1), () {
                         Navigator.of(context).pop();
                       });
                     }
                   } else {
-                    // If response structure is unexpected, just show success and close the page
                     _showSnackBar(
                         AppLocalizations.of(context)!
                             .translate('contacts_sent'),
-                        Colors.green);
+                        colors.success);
 
-                    // Close the page after successful submission
                     Future.delayed(Duration(seconds: 1), () {
                       Navigator.of(context).pop();
                     });
                   }
                 } catch (e) {
-                  // Handle exceptions
                   _showSnackBar(
                       AppLocalizations.of(context)!
                           .translate('error_contacts_sent'),
-                      Colors.red);
-                  //print('Error sending contacts: $e');
+                      colors.error);
                 }
               },
-              backgroundColor: Color(0xff1E2E52),
+              backgroundColor: colors.buttonPrimaryBg,
               child: Icon(
                 Icons.send,
-                color: Colors.white,
+                color: colors.buttonPrimaryFg,
                 size: 26,
               ),
             )
