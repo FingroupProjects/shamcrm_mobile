@@ -34,6 +34,7 @@ import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
@@ -258,6 +259,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Маппинг идентификаторов экранов на их типы
     int? targetIndexGroup1;
     int? targetIndexGroup2;
+
+    if (screenIdentifier == 'sip_journal' ||
+        screenIdentifier == 'sip' ||
+        screenIdentifier == 'sip_dial') {
+      debugPrint('HomeScreen: SIP screen identifier detected: $screenIdentifier');
+
+      if (Navigator.canPop(context)) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SipScreen(
+              initialTab: screenIdentifier == 'sip_journal'
+                  ? SipScreenInitialTab.journal
+                  : SipScreenInitialTab.dial,
+            ),
+          ),
+        );
+        debugPrint(
+          'HomeScreen: ✅ Navigated to SIP screen: $screenIdentifier',
+        );
+      });
+
+      return;
+    }
 
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [

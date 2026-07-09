@@ -1287,20 +1287,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func startBridgeCallFromPushPayload(_ payload: VoIPIncomingPayload?, reason: String) -> Bool {
-        guard let rawSipUri = payload?.sipUri?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !rawSipUri.isEmpty else {
+        guard let target = deriveBridgeTarget(from: payload) else {
             appendDiagnosticLog("callkit_answer_waiting_for_invite", [
                 "reason": reason,
                 "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
                 "call_id": payload?.callId ?? snapshot.callId ?? "",
                 "sip_uri": "missing",
+                "from_uri": payload?.fromUri ?? "",
+                "handle": payload?.handle ?? "",
             ])
             return false
         }
-
-        let target = rawSipUri.lowercased().hasPrefix("sip:")
-            ? rawSipUri
-            : "sip:\(rawSipUri)"
 
         appendDiagnosticLog("callkit_answer_bridge_call_start", [
             "reason": reason,
@@ -1310,6 +1307,68 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         ])
 
         return makeCall(target: target, hasVideo: payload?.hasVideo ?? false)
+    }
+
+    private func deriveBridgeTarget(from payload: VoIPIncomingPayload?) -> String? {
+        let candidates = [
+            payload?.sipUri,
+            payload?.fromUri,
+            payload?.handle,
+            snapshot.remoteIdentity,
+        ]
+
+        for candidate in candidates {
+            if let normalized = normalizeBridgeTarget(candidate), !normalized.isEmpty {
+                return normalized
+            }
+        }
+
+        return nil
+    }
+
+    private func normalizeBridgeTarget(_ rawValue: String?) -> String? {
+        guard var value = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+
+        if value.lowercased() == "unknown" {
+            return nil
+        }
+
+        if value.lowercased().hasPrefix("sip:") {
+            return value
+        }
+
+        if value.lowercased().hasPrefix("sips:") {
+            return value.replacingOccurrences(of: "sips:", with: "sip:", options: [.caseInsensitive])
+        }
+
+        if value.hasPrefix("<"), value.hasSuffix(">") {
+            value = String(value.dropFirst().dropLast())
+        }
+
+        if let config = loadPersistedRegistrationConfig() {
+            if value.contains("@") {
+                return "sip:\(value)"
+            }
+
+            let filtered = value.filter { character in
+                character.isNumber || character == "+" || character == "*" || character == "#"
+            }
+
+            let userPart = filtered.isEmpty ? value : filtered
+            let server = config.server.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !userPart.isEmpty && !server.isEmpty {
+                return "sip:\(userPart)@\(server)"
+            }
+        }
+
+        if value.contains("@") {
+            return "sip:\(value)"
+        }
+
+        return nil
     }
 
     private func sendDtmf(_ tone: String) -> Bool {
@@ -1861,14 +1920,24 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func reportIncomingCall(payload: VoIPIncomingPayload, completion: (() -> Void)? = nil) {
-        beginBackgroundTransitionTask(reason: "voip-push")
-        snapshot.appForeground = UIApplication.shared.applicationState == .active
+        let isActuallyForeground = UIApplication.shared.applicationState == .active
+        snapshot.appForeground = isActuallyForeground
 
-        if let core {
-            linphone_core_enter_background(core)
-            appendDiagnosticLog("linphone_enter_background", [
-                "reason": "voip-push",
-            ])
+        if isActuallyForeground {
+            if let core {
+                linphone_core_enter_foreground(core)
+                appendDiagnosticLog("linphone_enter_foreground", [
+                    "reason": "voip-push-while-foreground",
+                ])
+            }
+        } else {
+            beginBackgroundTransitionTask(reason: "voip-push")
+            if let core {
+                linphone_core_enter_background(core)
+                appendDiagnosticLog("linphone_enter_background", [
+                    "reason": "voip-push",
+                ])
+            }
         }
 
         if isDuplicateIncomingPayload(payload) {

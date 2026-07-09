@@ -42,8 +42,20 @@ part 'widgets/sip_journal_search_views.dart';
 part 'widgets/sip_main_views.dart';
 part 'widgets/sip_settings_sheet.dart';
 
+enum SipScreenInitialTab {
+  dial,
+  journal,
+  contacts,
+  search,
+}
+
 class SipScreen extends StatefulWidget {
-  const SipScreen({super.key});
+  const SipScreen({
+    super.key,
+    this.initialTab = SipScreenInitialTab.dial,
+  });
+
+  final SipScreenInitialTab initialTab;
 
   @override
   State<SipScreen> createState() => _SipScreenState();
@@ -183,6 +195,12 @@ class _SipScreenState extends State<SipScreen>
   @override
   void initState() {
     super.initState();
+    _bottomTabIndex = switch (widget.initialTab) {
+      SipScreenInitialTab.dial => 0,
+      SipScreenInitialTab.journal => 1,
+      SipScreenInitialTab.contacts => 2,
+      SipScreenInitialTab.search => 3,
+    };
     _sipService.setSipScreenVisible(true);
     _serverController.addListener(_handleDraftChanged);
     _loginController.addListener(_handleDraftChanged);

@@ -371,7 +371,9 @@ class FirebaseApi {
 
     await navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => const SipScreen(),
+        builder: (_) => const SipScreen(
+          initialTab: SipScreenInitialTab.journal,
+        ),
       ),
     );
   }
