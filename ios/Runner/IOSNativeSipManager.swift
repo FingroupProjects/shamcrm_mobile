@@ -1286,6 +1286,32 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         return false
     }
 
+    private func startBridgeCallFromPushPayload(_ payload: VoIPIncomingPayload?, reason: String) -> Bool {
+        guard let rawSipUri = payload?.sipUri?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawSipUri.isEmpty else {
+            appendDiagnosticLog("callkit_answer_waiting_for_invite", [
+                "reason": reason,
+                "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
+                "call_id": payload?.callId ?? snapshot.callId ?? "",
+                "sip_uri": "missing",
+            ])
+            return false
+        }
+
+        let target = rawSipUri.lowercased().hasPrefix("sip:")
+            ? rawSipUri
+            : "sip:\(rawSipUri)"
+
+        appendDiagnosticLog("callkit_answer_bridge_call_start", [
+            "reason": reason,
+            "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
+            "call_id": payload?.callId ?? snapshot.callId ?? "",
+            "sip_uri": target,
+        ])
+
+        return makeCall(target: target, hasVideo: payload?.hasVideo ?? false)
+    }
+
     private func sendDtmf(_ tone: String) -> Bool {
         guard let call = resolveCurrentCallForAction() else {
             return false
@@ -2490,7 +2516,11 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         if !acceptCall() {
             _ = refreshRegistrationIfPossible(reason: "callkit-answer", emitRegisteringEvent: true) ||
                 restoreRegistrationIfNeeded(reason: "callkit-answer", emitRegisteringEvent: true)
-            deferredAction = .answer
+            if startBridgeCallFromPushPayload(payload, reason: "callkit-answer-no-invite") {
+                deferredAction = nil
+            } else {
+                deferredAction = .answer
+            }
         }
     }
 
