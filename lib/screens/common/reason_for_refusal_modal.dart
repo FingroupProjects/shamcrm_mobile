@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_dropdown.dart';
 import 'package:flutter/material.dart';
 
@@ -68,6 +69,8 @@ class _ReasonForRefusalDialogState extends State<_ReasonForRefusalDialog> {
     final mediaQuery = MediaQuery.of(context);
     final keyboardInset = mediaQuery.viewInsets.bottom;
     final availableHeight = mediaQuery.size.height - keyboardInset - 24;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
 
     return SafeArea(
       child: AnimatedPadding(
@@ -81,26 +84,28 @@ class _ReasonForRefusalDialogState extends State<_ReasonForRefusalDialog> {
               maxHeight: availableHeight > 260 ? availableHeight : 260,
             ),
             child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              color: colors.surfacePrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: colors.borderSubtle),
+              ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Причина отказа',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
+                      style: textStyles.titleLg.copyWith(
                         fontSize: 22,
                         height: 1.2,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Divider(height: 1, color: Color(0xffD7DCE9)),
+                    Divider(height: 1, color: colors.borderSubtle),
                     const SizedBox(height: 10),
                     ReasonForRefusalDropdown(
                       type: widget.type,
@@ -113,13 +118,11 @@ class _ReasonForRefusalDialogState extends State<_ReasonForRefusalDialog> {
                       },
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'Комментарий',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
+                      style: textStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -127,34 +130,36 @@ class _ReasonForRefusalDialogState extends State<_ReasonForRefusalDialog> {
                       controller: _commentController,
                       minLines: 2,
                       maxLines: 3,
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 16,
+                      style: textStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Введите комментарий',
-                        hintStyle: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 16,
+                        hintStyle: textStyles.bodyLg.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                         filled: true,
-                        fillColor: const Color(0xffF4F7FD),
+                        fillColor: colors.fieldBg,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color: colors.borderSubtle.withValues(alpha: 0.7),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color: colors.borderSubtle.withValues(alpha: 0.7),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: Color(0xff1E2E52), width: 1),
+                          borderSide: BorderSide(
+                            color: colors.buttonPrimaryBg,
+                            width: 1,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
@@ -170,18 +175,21 @@ class _ReasonForRefusalDialogState extends State<_ReasonForRefusalDialog> {
                             onPressed: () => Navigator.of(context).pop(),
                             style: ElevatedButton.styleFrom(
                               elevation: 0,
-                              backgroundColor: const Color(0xffE7EBF3),
-                              foregroundColor: const Color(0xff4A5A74),
+                              backgroundColor:
+                                  colors.buttonSecondaryBg.withValues(alpha: 0.14),
+                              foregroundColor: colors.textPrimary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: colors.borderSubtle),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Отмена',
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: colors.textPrimary,
                               ),
                             ),
                           ),
@@ -193,18 +201,19 @@ class _ReasonForRefusalDialogState extends State<_ReasonForRefusalDialog> {
                             onPressed: _onConfirm,
                             style: ElevatedButton.styleFrom(
                               elevation: 0,
-                              backgroundColor: const Color(0xff4F40EC),
-                              foregroundColor: Colors.white,
+                              backgroundColor: colors.buttonPrimaryBg,
+                              foregroundColor: colors.buttonPrimaryFg,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Подтвердить',
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: colors.buttonPrimaryFg,
                               ),
                             ),
                           ),

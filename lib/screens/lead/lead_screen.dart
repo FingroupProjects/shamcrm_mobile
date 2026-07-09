@@ -1878,42 +1878,49 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         position.dy + renderBox.size.height * 2,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: context.appColors.borderSubtle),
       ),
       elevation: 4,
-      color: context.appColors.textInverse,
+      color: context.appColors.surfacePrimary,
       items: [
         if (_canUpdateLeadStatus)
           PopupMenuItem(
             value: 'edit',
-            child: ListTile(
-              leading: Icon(Icons.edit, color: context.appColors.textSecondary),
-              title: Text(
-                'Изменить',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: context.appColors.buttonPrimaryBg,
+            child: Row(
+              children: [
+                Icon(Icons.edit_rounded, color: context.appColors.iconSecondary),
+                const SizedBox(width: 10),
+                Text(
+                  'Изменить',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.textPrimary,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         if (_canDeleteLeadStatus)
           PopupMenuItem(
             value: 'delete',
-            child: ListTile(
-              leading:
-                  Icon(Icons.delete, color: context.appColors.textSecondary),
-              title: Text(
-                'Удалить',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: context.appColors.buttonPrimaryBg,
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline_rounded,
+                    color: context.appColors.error),
+                const SizedBox(width: 10),
+                Text(
+                  'Удалить',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: context.appColors.error,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
       ],

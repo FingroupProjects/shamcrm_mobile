@@ -78,8 +78,11 @@ class DeleteLeadStatusDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: context.appColors.buttonDangerBg,
-                  textColor: context.appColors.buttonDangerFg,
+                  buttonColor:
+                      context.appColors.buttonSecondaryBg.withValues(alpha: 0.14),
+                  textColor: context.appColors.textPrimary,
+                  borderColor: context.appColors.borderSubtle,
+                  borderWidth: 1,
                 ),
               ),
               SizedBox(width: 8),

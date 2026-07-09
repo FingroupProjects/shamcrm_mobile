@@ -2537,6 +2537,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           final messages = state.messages;
           debugPrint('messageListUi: Rendering ${messages.length} messages');
           final pinnedMessages = state.pinnedMessages;
+          final hasLeadPinnedHeader =
+              widget.endPointInTab == 'lead' && integrationUsername != null;
+          final topOverlayOffset =
+              hasLeadPinnedHeader ? 88.0 : 0.0;
 
           if (messages.isEmpty) {
             return Center(
@@ -2558,6 +2562,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                 },
                 child: Padding(
                   padding: EdgeInsets.only(
+                    top: topOverlayOffset,
                     left: 8,
                     right: 8,
                     bottom: (_isInstagramCommentChannel &&

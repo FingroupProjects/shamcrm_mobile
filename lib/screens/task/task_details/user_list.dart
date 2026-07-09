@@ -12,7 +12,7 @@ class UserMultiSelectWidget extends StatefulWidget {
   final String? customLabelText;
   final bool hasError;
   final bool isRequired;
-  final Color backgroundColor;
+  final Color? backgroundColor;
 
   const UserMultiSelectWidget({
     super.key,
@@ -21,7 +21,7 @@ class UserMultiSelectWidget extends StatefulWidget {
     this.customLabelText,
     this.hasError = false,
     this.isRequired = true,
-    this.backgroundColor = const Color(0xFFF4F7FD),
+    this.backgroundColor,
   });
 
   @override
@@ -215,6 +215,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final localizations = AppLocalizations.of(context)!;
+    final fieldBackground = widget.backgroundColor ?? colors.fieldBg;
+    final borderColor = colors.borderSubtle.withValues(alpha: 0.7);
+    final accentColor = colors.buttonPrimaryBg;
     final userTextStyle = TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.w500,
@@ -247,13 +250,13 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: widget.backgroundColor,
+                color: fieldBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  width: 1.5,
+                  width: 1,
                   color: (widget.hasError || field.hasError)
                       ? Colors.red
-                      : colors.borderSubtle,
+                      : borderColor,
                 ),
               ),
               child: isLoading
@@ -279,18 +282,58 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       searchHintText: localizations.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: widget.backgroundColor,
+                        closedFillColor: fieldBackground,
                         expandedFillColor: colors.surfacePrimary,
                         closedBorder: Border.all(
-                          color: Colors.transparent,
+                          color: borderColor,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: colors.borderSubtle,
+                          color: borderColor,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
+                        hintStyle: userTextStyle.copyWith(
+                          fontSize: 14,
+                          color: colors.textSecondary,
+                        ),
+                        headerStyle: userTextStyle,
+                        listItemStyle: userTextStyle,
+                        listItemDecoration: ListItemDecoration(
+                          selectedColor:
+                              accentColor.withValues(alpha: 0.14),
+                          highlightColor:
+                              accentColor.withValues(alpha: 0.08),
+                          splashColor: Colors.transparent,
+                        ),
+                        searchFieldDecoration: SearchFieldDecoration(
+                          fillColor: fieldBackground,
+                          textStyle: userTextStyle,
+                          hintStyle: userTextStyle.copyWith(
+                            fontSize: 14,
+                            color: colors.textSecondary,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: colors.textMuted,
+                          ),
+                          suffixIcon: (onClear) => IconButton(
+                            onPressed: onClear,
+                            icon: Icon(
+                              Icons.close,
+                              color: colors.textMuted,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: accentColor),
+                          ),
+                        ),
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
@@ -326,16 +369,20 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                   height: 18,
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: const Color(0xff1E2E52),
+                                      color: isSelectAll
+                                          ? accentColor
+                                          : (isSelected
+                                              ? accentColor
+                                              : colors.borderPrimary),
                                       width: 1,
                                     ),
                                     borderRadius: BorderRadius.circular(4),
                                     color: isSelectAll
                                         ? (allVisibleSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? accentColor
                                             : Colors.transparent)
                                         : (isSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? accentColor
                                             : Colors.transparent),
                                   ),
                                   child: (isSelectAll && allVisibleSelected) ||

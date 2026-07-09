@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
 import 'package:flutter/material.dart';
 
@@ -96,19 +97,26 @@ class _ReasonForRefusalDropdownState extends State<ReasonForRefusalDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor =
-        widget.showError ? const Color(0xffE45454) : const Color(0xffF4F7FD);
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+    final borderColor = widget.showError
+        ? colors.error
+        : colors.borderSubtle.withValues(alpha: 0.7);
+    final fieldBackground = colors.fieldBg;
+    final itemTextStyle = textStyles.bodyMd.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: colors.textPrimary,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Причина',
-          style: TextStyle(
-            fontSize: 16,
+          style: textStyles.bodyLg.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -119,8 +127,8 @@ class _ReasonForRefusalDropdownState extends State<ReasonForRefusalDropdown> {
           overlayHeight: 400,
           enabled: true,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
+            closedFillColor: fieldBackground,
+            expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
               color: borderColor,
               width: 1,
@@ -131,52 +139,58 @@ class _ReasonForRefusalDropdownState extends State<ReasonForRefusalDropdown> {
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
+            hintStyle: itemTextStyle.copyWith(color: colors.textSecondary),
+            headerStyle: itemTextStyle,
+            listItemStyle: itemTextStyle,
+            listItemDecoration: ListItemDecoration(
+              selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+              highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+              splashColor: Colors.transparent,
+            ),
+            searchFieldDecoration: SearchFieldDecoration(
+              fillColor: fieldBackground,
+              textStyle: itemTextStyle,
+              hintStyle: itemTextStyle.copyWith(color: colors.textSecondary),
+              prefixIcon: Icon(Icons.search, color: colors.textMuted),
+              suffixIcon: (onClear) => IconButton(
+                onPressed: onClear,
+                icon: Icon(Icons.close, color: colors.textMuted),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colors.buttonPrimaryBg),
+              ),
+            ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item.text,
-              style: const TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-              ),
+              style: itemTextStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             );
           },
           headerBuilder: (context, selectedItem, enabled) {
             if (_isLoading) {
-              return const Text(
+              return Text(
                 'Загрузка...',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
-                ),
+                style: itemTextStyle,
               );
             }
             return Text(
               selectedItem.text.isEmpty
                   ? 'Выберите причину'
                   : selectedItem.text,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
+              style: itemTextStyle,
             );
           },
-          hintBuilder: (context, hint, enabled) => const Text(
+          hintBuilder: (context, hint, enabled) => Text(
             'Выберите причину',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: Color(0xff1E2E52),
-            ),
+            style: itemTextStyle.copyWith(color: colors.textSecondary),
           ),
           excludeSelected: false,
           initialItem: _selected,
@@ -194,11 +208,11 @@ class _ReasonForRefusalDropdownState extends State<ReasonForRefusalDropdown> {
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               widget.errorText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Color(0xffE45454),
+                color: colors.error,
               ),
             ),
           ),

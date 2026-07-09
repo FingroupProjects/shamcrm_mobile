@@ -97,6 +97,8 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
             value: value,
             onChanged: onChanged,
             activeColor: context.appColors.buttonPrimaryBg,
+            checkColor: context.appColors.buttonPrimaryFg,
+            side: BorderSide(color: context.appColors.borderSubtle),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -178,8 +180,10 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
       },
       builder: (context, state) {
         return Dialog(
+          backgroundColor: context.appColors.surfacePrimary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: context.appColors.borderSubtle),
           ),
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
@@ -188,8 +192,8 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: context.appColors.textInverse,
-                borderRadius: BorderRadius.circular(12),
+                color: context.appColors.surfacePrimary,
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -204,7 +208,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                color: context.appColors.textPrimary,
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                       IconButton(
@@ -228,10 +232,11 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildTextFieldWithLabel(
+                        _buildTextFieldWithLabel(
                                   label: 'Название',
                                   controller: _titleController,
                                   isRequired: true,
+                                  hintText: 'Введите название',
                                 ),
                                 const SizedBox(height: 20),
                                 Row(
@@ -310,7 +315,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: context.appColors.backgroundPrimary,
+                            color: context.appColors.buttonPrimaryFg,
                           ),
                         ),
                       ),
@@ -340,6 +345,12 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           controller: controller,
           hintText: hintText ?? '',
           label: label,
+          backgroundColor: context.appColors.fieldBg,
+          textColor: context.appColors.textPrimary,
+          labelColor: context.appColors.textPrimary,
+          hintColor: context.appColors.textSecondary,
+          borderColor: context.appColors.borderSubtle,
+          focusedBorderColor: context.appColors.buttonPrimaryBg,
           validator: isRequired
               ? (value) => value!.isEmpty ? 'Поле обязательно' : null
               : null,

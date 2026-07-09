@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
@@ -38,23 +39,27 @@ class IntegrationListDialog extends StatelessWidget {
     }
 
     // Если интеграций больше одной, показываем модальное окно
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surfacePrimary,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: colors.borderSubtle),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: EdgeInsets.all(16),
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Text(
               AppLocalizations.of(context)!.translate('select_integration'),
-              style: TextStyle(
-                color: Color(0xff1E2E52),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Gilroy',
+              textAlign: TextAlign.center,
+              style: textStyles.titleLg.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -65,52 +70,94 @@ class IntegrationListDialog extends StatelessWidget {
                     child: Text(
                       AppLocalizations.of(context)!
                           .translate('no_integrations'),
-                      style: TextStyle(
-                        color: Color(0xff1E2E52),
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
+                      style: textStyles.bodyLg.copyWith(
+                        color: colors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   )
-                : ListView.builder(
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     itemCount: integrations.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final integration = integrations[index];
                       final username = integration['username'].isNotEmpty
                           ? integration['username']
                           : AppLocalizations.of(context)!
                               .translate('no_username');
-                      //print('IntegrationListDialog: Building integration item $index - ID: ${integration['id']}, Username: $username');
-                      return ListTile(
-                        title: Text(
-                          username,
-                          style: TextStyle(
-                            color: Color(0xff1E2E52),
-                            fontSize: 18,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
+                      return Material(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(18),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            navigateToChatScreen(
+                                context, integration['id'], canSendMessage);
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: colors.borderSubtle.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: colors.buttonPrimaryBg
+                                        .withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 20,
+                                    color: colors.buttonPrimaryBg,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    username,
+                                    style: textStyles.bodyLg.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: colors.iconSecondary,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        onTap: () {
-                          //print('IntegrationListDialog: Integration tapped - ID: ${integration['id']}, Username: $username');
-                          navigateToChatScreen(
-                              context, integration['id'], canSendMessage);
-                        },
                       );
                     },
                   ),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
             child: CustomButton(
               buttonText: AppLocalizations.of(context)!.translate('close'),
               onPressed: () {
-                //print('IntegrationListDialog: Closing dialog');
                 Navigator.pop(context);
               },
-              buttonColor: Color(0xff1E2E52),
-              textColor: Colors.white,
+              buttonColor: colors.buttonSecondaryBg.withValues(alpha: 0.14),
+              textColor: colors.textPrimary,
+              borderColor: colors.borderSubtle,
             ),
           ),
         ],
