@@ -851,7 +851,19 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             }
             result(makeCall(target: target, hasVideo: args["hasVideo"] as? Bool ?? false))
         case "acceptCall":
-            result(acceptCall())
+            if acceptCall() {
+                result(true)
+                return
+            }
+            _ = refreshRegistrationIfPossible(reason: "flutter-answer", emitRegisteringEvent: true) ||
+                restoreRegistrationIfNeeded(reason: "flutter-answer", emitRegisteringEvent: true)
+            if startBridgeCallFromPushPayload(pendingIncomingPayload, reason: "flutter-answer-no-invite") {
+                deferredAction = nil
+                result(true)
+            } else {
+                deferredAction = .answer
+                result(false)
+            }
         case "declineCall":
             result(declineCall())
         case "hangup":
@@ -1314,6 +1326,16 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func startBridgeCallFromPushPayload(_ payload: VoIPIncomingPayload?, reason: String) -> Bool {
+        if currentCall != nil || snapshot.callState == "calling" || snapshot.callState == "in_call" {
+            appendDiagnosticLog("bridge_call_skipped_active_call", [
+                "reason": reason,
+                "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
+                "call_id": payload?.callId ?? snapshot.callId ?? "",
+                "call_state": snapshot.callState,
+            ])
+            return false
+        }
+
         guard let target = deriveBridgeTarget(from: payload) else {
             appendDiagnosticLog("callkit_answer_waiting_for_invite", [
                 "reason": reason,
@@ -1338,7 +1360,18 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func deriveBridgeTarget(from payload: VoIPIncomingPayload?) -> String? {
-        normalizeBridgeTarget(payload?.bridgeUri)
+        let candidates = [
+            payload?.bridgeUri,
+            payload?.sipUri,
+        ]
+
+        for candidate in candidates {
+            if let normalized = normalizeBridgeTarget(candidate), !normalized.isEmpty {
+                return normalized
+            }
+        }
+
+        return nil
     }
 
     private func normalizeBridgeTarget(_ rawValue: String?) -> String? {
@@ -1978,8 +2011,20 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
 
         if isDuplicateIncomingPayload(payload) {
-            pendingIncomingPayload = payload
-            snapshot.callUUID = payload.uuid.uuidString
+            let canonicalUUID = snapshot.callUUID.flatMap(UUID.init(uuidString:)) ?? payload.uuid
+            let canonicalPayload = VoIPIncomingPayload(
+                uuid: canonicalUUID,
+                callId: payload.callId ?? snapshot.callId,
+                handle: payload.handle,
+                callerName: payload.callerName,
+                hasVideo: payload.hasVideo,
+                fromUri: payload.fromUri,
+                toUri: payload.toUri,
+                sipUri: payload.sipUri,
+                bridgeUri: payload.bridgeUri
+            )
+            pendingIncomingPayload = canonicalPayload
+            snapshot.callUUID = canonicalUUID.uuidString
             snapshot.callId = payload.callId ?? snapshot.callId
             snapshot.remoteIdentity = payload.handle
             snapshot.callState = snapshot.callState == "idle" ? "incoming" : snapshot.callState
@@ -1988,16 +2033,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             emitCallEvent(
                 state: snapshot.callState,
                 remoteIdentity: payload.handle,
-                callUUID: payload.uuid.uuidString,
+                callUUID: canonicalUUID.uuidString,
                 callId: payload.callId ?? snapshot.callId,
                 message: snapshot.message,
-                extra: payload.toFlutterDictionary()
+                extra: canonicalPayload.toFlutterDictionary()
             )
             appendDiagnosticLog("push_received_duplicate", [
-                "call_uuid": payload.uuid.uuidString,
+                "call_uuid": canonicalUUID.uuidString,
+                "duplicate_call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
             ])
-            scheduleIncomingInviteTimeout(for: payload)
+            scheduleIncomingInviteTimeout(for: canonicalPayload)
             completion?()
             return
         }
@@ -2007,13 +2053,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.callUUID = payload.uuid.uuidString
         snapshot.callId = payload.callId
         snapshot.remoteIdentity = payload.handle
-        if isActuallyForeground {
-            snapshot.callState = "idle"
-            snapshot.message = "Incoming VoIP push received, waiting for SIP INVITE"
-        } else {
-            snapshot.callState = "incoming"
-            snapshot.message = "Incoming VoIP push received"
-        }
+        snapshot.callState = "incoming"
+        snapshot.message = "Incoming VoIP push received"
         appendDiagnosticLog("push_received", [
             "call_uuid": payload.uuid.uuidString,
             "call_id": payload.callId ?? "",
@@ -2023,20 +2064,19 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         ])
         persistSnapshot()
         if isActuallyForeground {
-            appendDiagnosticLog("foreground_push_waiting_for_invite", [
+            appendDiagnosticLog("foreground_push_incoming_emitted", [
                 "call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
             ])
-        } else {
-            emitCallEvent(
-                state: "incoming",
-                remoteIdentity: payload.handle,
-                callUUID: payload.uuid.uuidString,
-                callId: payload.callId,
-                message: "Incoming VoIP push received",
-                extra: payload.toFlutterDictionary()
-            )
         }
+        emitCallEvent(
+            state: "incoming",
+            remoteIdentity: payload.handle,
+            callUUID: payload.uuid.uuidString,
+            callId: payload.callId,
+            message: "Incoming VoIP push received",
+            extra: payload.toFlutterDictionary()
+        )
         scheduleIncomingInviteTimeout(for: payload)
 
         reportIncomingCallToSystemIfNeeded(payload: payload, completion: completion)
