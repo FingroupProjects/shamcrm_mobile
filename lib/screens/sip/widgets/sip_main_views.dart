@@ -72,37 +72,37 @@ extension _SipMainViewsExtension on _SipScreenState {
             ],
           ),
           if (defaultTargetPlatform == TargetPlatform.iOS) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7E8),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFF5D8A8)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    CupertinoIcons.exclamationmark_triangle_fill,
-                    size: 16,
-                    color: Color(0xFFC27A00),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'На iPhone не закрывайте приложение свайпом из недавних. Для входящих держите его просто свернутым.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF8A5A00),
-                        height: 1.25,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // const SizedBox(height: 10),
+            // Container(
+            //   width: double.infinity,
+            //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            //   decoration: BoxDecoration(
+            //     color: const Color(0xFFFFF7E8),
+            //     borderRadius: BorderRadius.circular(14),
+            //     border: Border.all(color: const Color(0xFFF5D8A8)),
+            //   ),
+            //   child: const Row(
+            //     children: [
+            //       Icon(
+            //         CupertinoIcons.exclamationmark_triangle_fill,
+            //         size: 16,
+            //         color: Color(0xFFC27A00),
+            //       ),
+            //       // SizedBox(width: 8),
+            //       // Expanded(
+            //       //   child: Text(
+            //       //     'На iPhone не закрывайте приложение свайпом из недавних. Для входящих держите его просто свернутым.',
+            //       //     style: TextStyle(
+            //       //       fontSize: 12,
+            //       //       fontWeight: FontWeight.w600,
+            //       //       color: Color(0xFF8A5A00),
+            //       //       height: 1.25,
+            //       //     ),
+            //       //   ),
+            //       // ),
+            //     ],
+            //   ),
+            // ),
           ],
         ],
       ),

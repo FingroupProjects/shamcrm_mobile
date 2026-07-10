@@ -176,12 +176,13 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       true,
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _showSipSnackBar(
-        'На iPhone не закрывайте телефонию свайпом из недавних, иначе входящие могут не прийти.',
-      );
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (!mounted) return;
+    //   _showSipSnackBar(
+    //     'На iPhone не закрывайте телефонию свайпом из недавних, иначе входящие могут не прийти.',
+    //   );
+    // }
+    // );
   }
 
   (String, bool)? _resolveRegistrationNotice(

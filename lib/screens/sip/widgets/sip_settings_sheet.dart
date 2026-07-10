@@ -116,18 +116,20 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                       color: const Color(0xFF0A84FF),
                                       borderRadius: BorderRadius.circular(14),
                                       onPressed: state.registrationStatus ==
-                                              SipRegistrationUiStatus.registering
+                                              SipRegistrationUiStatus
+                                                  .registering
                                           ? null
                                           : () async {
-                                        await _saveDraft();
-                                        if (context.mounted) {
-                                          Navigator.of(context).pop();
-                                        }
-                                        WidgetsBinding.instance
-                                            .addPostFrameCallback((_) {
-                                          unawaited(_sipRuntime.connect());
-                                        });
-                                      },
+                                              await _saveDraft();
+                                              if (context.mounted) {
+                                                Navigator.of(context).pop();
+                                              }
+                                              WidgetsBinding.instance
+                                                  .addPostFrameCallback((_) {
+                                                unawaited(
+                                                    _sipRuntime.connect());
+                                              });
+                                            },
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -225,18 +227,20 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     final syncedAtMillis = backendSync['syncedAt'] as int?;
     final syncedAt = syncedAtMillis == null
         ? 'unknown'
-        : DateTime.fromMillisecondsSinceEpoch(syncedAtMillis).toLocal().toIso8601String();
+        : DateTime.fromMillisecondsSinceEpoch(syncedAtMillis)
+            .toLocal()
+            .toIso8601String();
     final backendText =
         'Backend sync: status=${backendSync['status']}, http=${backendSync['httpCode'] ?? 'n/a'}, pending=${backendSync['hasPendingToken']}, at=$syncedAt';
     final backendError = backendSync['error']?.toString();
 
-    final logLines = logs.isEmpty
+    final visibleLogs = logs.reversed.toList(growable: false);
+    final logLines = visibleLogs.isEmpty
         ? <String>['Native logs: empty']
-        : logs.take(40).map((entry) {
-            final timestamp =
-                DateTime.fromMillisecondsSinceEpoch(
-                  (((entry['timestamp'] as num?) ?? 0) * 1000).round(),
-                ).toLocal();
+        : visibleLogs.map((entry) {
+            final timestamp = DateTime.fromMillisecondsSinceEpoch(
+              (((entry['timestamp'] as num?) ?? 0) * 1000).round(),
+            ).toLocal();
             final event = entry['event']?.toString() ?? 'unknown';
             final details = (entry['details'] as Map?)
                     ?.map((key, value) => MapEntry('$key', '$value'))
@@ -255,6 +259,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
       backendText,
       if (backendError != null && backendError.trim().isNotEmpty)
         'Backend error: $backendError',
+      'Native logs: ${logs.length} stored, newest first',
       '',
       ...logLines,
     ].join('\n');
@@ -266,98 +271,109 @@ extension _SipSettingsSheetExtension on _SipScreenState {
       builder: (context) {
         return Material(
           color: Colors.transparent,
-          child: SafeArea(
-            top: false,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: 560,
-                  maxHeight: MediaQuery.of(context).size.height * 0.8,
-                ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF8F9FC),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD5DAE8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: SafeArea(
+              top: false,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {},
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: 560,
+                      maxHeight: MediaQuery.of(context).size.height * 0.8,
                     ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'iPhone SIP Диагностика',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF8F9FC),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(28)),
                     ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 5,
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE3E8F4)),
+                            color: const Color(0xFFD5DAE8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: SelectableText(
-                            report,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              height: 1.45,
-                              color: Color(0xFF1F2937),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'iPhone SIP Диагностика',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: const Color(0xFFE3E8F4),
+                                ),
+                              ),
+                              child: SelectableText(
+                                report,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  height: 1.45,
+                                  color: Color(0xFF1F2937),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CupertinoButton(
-                            color: const Color(0xFF0A84FF),
-                            borderRadius: BorderRadius.circular(14),
-                            onPressed: () async {
-                              await Clipboard.setData(
-                                ClipboardData(text: report),
-                              );
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                              _showSipSnackBar('Диагностика скопирована');
-                            },
-                            child: const Text('Копировать'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CupertinoButton(
-                            color: const Color(0xFFFF3B30),
-                            borderRadius: BorderRadius.circular(14),
-                            onPressed: () async {
-                              await _sipRuntime.clearNativeDiagnosticLogs();
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                              _showSipSnackBar('Диагностика очищена');
-                            },
-                            child: const Text('Очистить'),
-                          ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CupertinoButton(
+                                color: const Color(0xFF0A84FF),
+                                borderRadius: BorderRadius.circular(14),
+                                onPressed: () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(text: report),
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                  _showSipSnackBar('Диагностика скопирована');
+                                },
+                                child: const Text('Копировать'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: CupertinoButton(
+                                color: const Color(0xFFFF3B30),
+                                borderRadius: BorderRadius.circular(14),
+                                onPressed: () async {
+                                  await _sipRuntime.clearNativeDiagnosticLogs();
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                  _showSipSnackBar('Диагностика очищена');
+                                },
+                                child: const Text('Очистить'),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
