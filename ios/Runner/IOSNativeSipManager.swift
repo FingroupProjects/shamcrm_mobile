@@ -143,6 +143,7 @@ struct VoIPIncomingPayload {
     let fromUri: String?
     let toUri: String?
     let sipUri: String?
+    let bridgeUri: String?
 
     func toFlutterDictionary() -> [String: Any] {
         [
@@ -154,6 +155,7 @@ struct VoIPIncomingPayload {
             "fromUri": fromUri ?? NSNull(),
             "toUri": toUri ?? NSNull(),
             "sipUri": sipUri ?? NSNull(),
+            "bridgeUri": bridgeUri ?? NSNull(),
         ]
     }
 
@@ -230,6 +232,12 @@ struct VoIPIncomingPayload {
             keys: ["sip_uri", "sipUri", "invite_uri", "inviteUri", "uri"]
         )
 
+        let bridgeUri = firstString(
+            in: userInfo,
+            nested: [dataDictionary, callDictionary, sipDictionary],
+            keys: ["bridge_uri", "bridgeUri", "answer_uri", "answerUri", "callback_uri", "callbackUri"]
+        )
+
         let hasVideo = firstBool(
             in: userInfo,
             nested: [dataDictionary, callDictionary, sipDictionary],
@@ -244,7 +252,8 @@ struct VoIPIncomingPayload {
             hasVideo: hasVideo,
             fromUri: fromUri,
             toUri: toUri,
-            sipUri: sipUri
+            sipUri: sipUri,
+            bridgeUri: bridgeUri
         )
     }
 
@@ -648,7 +657,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         static let pendingCallActionsKey = "ios_native_sip_pending_call_actions_v1"
         static let registrationConfigKey = "ios_native_sip_registration_config_v1"
         static let diagnosticLogsKey = "ios_native_sip_diagnostic_logs_v1"
-        static let diagnosticLogsLimit = 400
+        static let diagnosticLogsLimit = 5000
     }
 
     private let defaults = UserDefaults.standard
@@ -814,7 +823,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 hasVideo: args["hasVideo"] as? Bool ?? false,
                 fromUri: args["fromUri"] as? String,
                 toUri: args["toUri"] as? String,
-                sipUri: args["sipUri"] as? String
+                sipUri: args["sipUri"] as? String,
+                bridgeUri: args["bridgeUri"] as? String
             )
             reportIncomingCall(payload: payload)
             result(true)
@@ -1254,17 +1264,34 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private func acceptCall() -> Bool {
         guard let call = resolveIncomingCallForAction() else {
+            appendDiagnosticLog("answer_requested_no_invite", [
+                "call_uuid": snapshot.callUUID ?? "",
+                "call_id": snapshot.callId ?? "",
+                "call_state": snapshot.callState,
+                "has_pending_payload": pendingIncomingPayload == nil ? "false" : "true",
+                "has_current_call": currentCall == nil ? "false" : "true",
+                "account_state": currentAccountRegistrationStateString(),
+            ])
             deferredAction = .answer
             return false
         }
 
         guard let params = core.flatMap({ linphone_core_create_call_params($0, call) }) else {
+            appendDiagnosticLog("answer_attached", [
+                "call_id": callId(from: call) ?? snapshot.callId ?? "",
+                "mode": "default_params",
+            ])
             return linphone_call_accept(call) == 0
         }
 
         linphone_call_params_enable_video(params, 0)
         let status = linphone_call_accept_with_params(call, params)
         linphone_call_params_unref(params)
+        appendDiagnosticLog("answer_attached", [
+            "call_id": callId(from: call) ?? snapshot.callId ?? "",
+            "status": "\(status)",
+            "mode": "custom_params",
+        ])
         return status == 0
     }
 
@@ -1292,7 +1319,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "reason": reason,
                 "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
                 "call_id": payload?.callId ?? snapshot.callId ?? "",
-                "sip_uri": "missing",
+                "bridge_uri": "missing",
+                "sip_uri": payload?.sipUri ?? "",
                 "from_uri": payload?.fromUri ?? "",
                 "handle": payload?.handle ?? "",
             ])
@@ -1303,27 +1331,14 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "reason": reason,
             "call_uuid": payload?.uuid.uuidString ?? snapshot.callUUID ?? "",
             "call_id": payload?.callId ?? snapshot.callId ?? "",
-            "sip_uri": target,
+            "bridge_uri": target,
         ])
 
         return makeCall(target: target, hasVideo: payload?.hasVideo ?? false)
     }
 
     private func deriveBridgeTarget(from payload: VoIPIncomingPayload?) -> String? {
-        let candidates = [
-            payload?.sipUri,
-            payload?.fromUri,
-            payload?.handle,
-            snapshot.remoteIdentity,
-        ]
-
-        for candidate in candidates {
-            if let normalized = normalizeBridgeTarget(candidate), !normalized.isEmpty {
-                return normalized
-            }
-        }
-
-        return nil
+        normalizeBridgeTarget(payload?.bridgeUri)
     }
 
     private func normalizeBridgeTarget(_ rawValue: String?) -> String? {
@@ -1683,6 +1698,27 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         return nil
     }
 
+    private func currentAccountRegistrationStateString() -> String {
+        guard let account else { return "missing_account" }
+
+        switch linphone_account_get_state(account) {
+        case LinphoneRegistrationNone:
+            return "none"
+        case LinphoneRegistrationProgress:
+            return "progress"
+        case LinphoneRegistrationOk:
+            return "ok"
+        case LinphoneRegistrationCleared:
+            return "cleared"
+        case LinphoneRegistrationFailed:
+            return "failed"
+        case LinphoneRegistrationRefreshing:
+            return "refreshing"
+        default:
+            return "unknown"
+        }
+    }
+
     fileprivate func handleLinphoneRegistrationStateChanged(
         account: OpaquePointer?,
         state: LinphoneRegistrationState,
@@ -1767,7 +1803,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 hasVideo: pendingIncomingPayload?.hasVideo ?? false,
                 fromUri: pendingIncomingPayload?.fromUri ?? remoteIdentity,
                 toUri: pendingIncomingPayload?.toUri,
-                sipUri: pendingIncomingPayload?.sipUri ?? remoteIdentity
+                sipUri: pendingIncomingPayload?.sipUri ?? remoteIdentity,
+                bridgeUri: pendingIncomingPayload?.bridgeUri
             )
             pendingIncomingPayload = invitePayload
             if snapshot.callUUID == nil {
@@ -1969,24 +2006,37 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         callKitReportedForCurrentIncoming = false
         snapshot.callUUID = payload.uuid.uuidString
         snapshot.callId = payload.callId
-        snapshot.callState = "incoming"
         snapshot.remoteIdentity = payload.handle
-        snapshot.message = "Incoming VoIP push received"
+        if isActuallyForeground {
+            snapshot.callState = "idle"
+            snapshot.message = "Incoming VoIP push received, waiting for SIP INVITE"
+        } else {
+            snapshot.callState = "incoming"
+            snapshot.message = "Incoming VoIP push received"
+        }
         appendDiagnosticLog("push_received", [
             "call_uuid": payload.uuid.uuidString,
             "call_id": payload.callId ?? "",
             "remote_identity": payload.handle,
             "caller_name": payload.callerName ?? "",
+            "foreground": isActuallyForeground ? "true" : "false",
         ])
         persistSnapshot()
-        emitCallEvent(
-            state: "incoming",
-            remoteIdentity: payload.handle,
-            callUUID: payload.uuid.uuidString,
-            callId: payload.callId,
-            message: "Incoming VoIP push received",
-            extra: payload.toFlutterDictionary()
-        )
+        if isActuallyForeground {
+            appendDiagnosticLog("foreground_push_waiting_for_invite", [
+                "call_uuid": payload.uuid.uuidString,
+                "call_id": payload.callId ?? "",
+            ])
+        } else {
+            emitCallEvent(
+                state: "incoming",
+                remoteIdentity: payload.handle,
+                callUUID: payload.uuid.uuidString,
+                callId: payload.callId,
+                message: "Incoming VoIP push received",
+                extra: payload.toFlutterDictionary()
+            )
+        }
         scheduleIncomingInviteTimeout(for: payload)
 
         reportIncomingCallToSystemIfNeeded(payload: payload, completion: completion)
@@ -2058,13 +2108,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         incomingInviteTimeoutTimer?.invalidate()
         incomingInviteTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: false) { [weak self] _ in
             guard let self else { return }
-            guard self.snapshot.callState == "incoming" else { return }
             guard self.snapshot.callUUID == payload.uuid.uuidString else { return }
             guard self.currentCall == nil else { return }
+            guard self.snapshot.callState == "incoming" ||
+                    self.snapshot.callState == "idle" ||
+                    self.snapshot.callState == "ringing" else { return }
 
             self.appendDiagnosticLog("incoming_invite_timeout", [
                 "call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
+                "foreground": self.snapshot.appForeground ? "true" : "false",
+                "call_state": self.snapshot.callState,
             ])
 
             if self.callKitReportedForCurrentIncoming {
@@ -2563,8 +2617,16 @@ extension IOSNativeSipManager: IOSVoIPPushManagerDelegate {
         didReceiveIncoming payload: VoIPIncomingPayload,
         completion: @escaping () -> Void
     ) {
-        _ = refreshRegistrationIfPossible(reason: "voip-push", emitRegisteringEvent: true) ||
-            restoreRegistrationIfNeeded(reason: "voip-push", emitRegisteringEvent: true)
+        let isActuallyForeground = UIApplication.shared.applicationState == .active
+        if isActuallyForeground, let account, linphone_account_get_state(account) == LinphoneRegistrationOk {
+            appendDiagnosticLog("sip_register_refresh_skipped", [
+                "reason": "voip-push-while-foreground",
+                "account_state": currentAccountRegistrationStateString(),
+            ])
+        } else {
+            _ = refreshRegistrationIfPossible(reason: "voip-push", emitRegisteringEvent: true) ||
+                restoreRegistrationIfNeeded(reason: "voip-push", emitRegisteringEvent: true)
+        }
         reportIncomingCall(payload: payload, completion: completion)
     }
 }
