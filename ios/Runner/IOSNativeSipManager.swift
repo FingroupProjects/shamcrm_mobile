@@ -684,6 +684,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var callKitReportedForCurrentIncoming = false
     private var incomingInviteTimeoutTimer: Timer?
     private var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
+    private var lastEmittedSipReadyKey: String?
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -857,13 +858,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             }
             _ = refreshRegistrationIfPossible(reason: "flutter-answer", emitRegisteringEvent: true) ||
                 restoreRegistrationIfNeeded(reason: "flutter-answer", emitRegisteringEvent: true)
-            if startBridgeCallFromPushPayload(pendingIncomingPayload, reason: "flutter-answer-no-invite") {
-                deferredAction = nil
-                result(true)
-            } else {
-                deferredAction = .answer
-                result(false)
-            }
+            deferredAction = .answer
+            result(true)
         case "declineCall":
             result(declineCall())
         case "hangup":
@@ -1275,6 +1271,14 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func acceptCall() -> Bool {
+        if snapshot.callState == "in_call" {
+            appendDiagnosticLog("answer_ignored_already_connected", [
+                "call_uuid": snapshot.callUUID ?? "",
+                "call_id": snapshot.callId ?? "",
+            ])
+            return true
+        }
+
         guard let call = resolveIncomingCallForAction() else {
             appendDiagnosticLog("answer_requested_no_invite", [
                 "call_uuid": snapshot.callUUID ?? "",
@@ -1716,7 +1720,86 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             currentCall = call
             return call
         }
+        if let call = findIncomingCallInCore() {
+            currentCall = call
+            return call
+        }
         return nil
+    }
+
+    private func findIncomingCallInCore() -> OpaquePointer? {
+        guard let core else { return nil }
+
+        let expectedCallIds = [
+            snapshot.callId,
+            pendingIncomingPayload?.callId,
+        ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        let expectedRemotes = [
+            snapshot.remoteIdentity,
+            pendingIncomingPayload?.handle,
+            pendingIncomingPayload?.fromUri,
+            pendingIncomingPayload?.sipUri,
+        ]
+            .compactMap(normalizedIdentityForMatching)
+            .filter { !$0.isEmpty }
+
+        var fallbackIncomingCall: OpaquePointer?
+        var item = linphone_core_get_calls(core)
+
+        while let currentItem = item {
+            let callPointer = bctbx_list_get_data(currentItem)
+            let call = callPointer.map { OpaquePointer($0) }
+
+            if let call, isIncomingCallState(linphone_call_get_state(call)) {
+                if fallbackIncomingCall == nil {
+                    fallbackIncomingCall = call
+                }
+
+                if let callId = callId(from: call),
+                   expectedCallIds.contains(where: { $0 == callId }) {
+                    return call
+                }
+
+                if let remote = normalizedIdentityForMatching(remoteIdentityString(from: call)),
+                   expectedRemotes.contains(remote) {
+                    return call
+                }
+            }
+
+            item = bctbx_list_next(currentItem).map { UnsafePointer($0) }
+        }
+
+        return fallbackIncomingCall
+    }
+
+    private func isIncomingCallState(_ state: LinphoneCallState) -> Bool {
+        state == LinphoneCallStateIncomingReceived || state == LinphoneCallStatePushIncomingReceived
+    }
+
+    private func normalizedIdentityForMatching(_ value: String?) -> String? {
+        guard var normalized = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !normalized.isEmpty else {
+            return nil
+        }
+
+        if normalized.lowercased().hasPrefix("sip:") {
+            normalized = String(normalized.dropFirst(4))
+        }
+        if let semicolonIndex = normalized.firstIndex(of: ";") {
+            normalized = String(normalized[..<semicolonIndex])
+        }
+        if let atIndex = normalized.firstIndex(of: "@") {
+            normalized = String(normalized[..<atIndex])
+        }
+
+        normalized = normalized
+            .replacingOccurrences(of: "+", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return normalized.isEmpty ? nil : normalized
     }
 
     private func resolveCurrentCallForAction() -> OpaquePointer? {
@@ -1779,6 +1862,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             ])
             endBackgroundTransitionTask(reason: "registration-ok")
             emitRegistrationEvent(state: "registered", message: snapshot.message)
+            emitSipReadyIfNeeded(reason: "registration-ok")
         case LinphoneRegistrationFailed:
             snapshot.registrationState = "failed"
             snapshot.message = message ?? "Registration failed"
@@ -2053,8 +2137,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.callUUID = payload.uuid.uuidString
         snapshot.callId = payload.callId
         snapshot.remoteIdentity = payload.handle
-        snapshot.callState = "incoming"
-        snapshot.message = "Incoming VoIP push received"
+        if isActuallyForeground {
+            snapshot.callState = "idle"
+            snapshot.message = "Incoming VoIP push received, waiting for SIP INVITE"
+        } else {
+            snapshot.callState = "incoming"
+            snapshot.message = "Incoming VoIP push received"
+        }
         appendDiagnosticLog("push_received", [
             "call_uuid": payload.uuid.uuidString,
             "call_id": payload.callId ?? "",
@@ -2064,22 +2153,61 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         ])
         persistSnapshot()
         if isActuallyForeground {
-            appendDiagnosticLog("foreground_push_incoming_emitted", [
+            appendDiagnosticLog("foreground_push_waiting_for_invite", [
                 "call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
             ])
+        } else {
+            emitCallEvent(
+                state: "incoming",
+                remoteIdentity: payload.handle,
+                callUUID: payload.uuid.uuidString,
+                callId: payload.callId,
+                message: "Incoming VoIP push received",
+                extra: payload.toFlutterDictionary()
+            )
         }
-        emitCallEvent(
-            state: "incoming",
-            remoteIdentity: payload.handle,
-            callUUID: payload.uuid.uuidString,
-            callId: payload.callId,
-            message: "Incoming VoIP push received",
-            extra: payload.toFlutterDictionary()
-        )
         scheduleIncomingInviteTimeout(for: payload)
 
         reportIncomingCallToSystemIfNeeded(payload: payload, completion: completion)
+    }
+
+    private func emitSipReadyIfNeeded(reason: String) {
+        guard let payload = pendingIncomingPayload else { return }
+        guard snapshot.registrationState == "registered" else { return }
+
+        let config = loadPersistedRegistrationConfig()
+        let sipExtension = config?.login.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let callUUID = snapshot.callUUID ?? payload.uuid.uuidString
+        let callId = snapshot.callId ?? payload.callId ?? ""
+        let dedupeKey = "\(callId)|\(callUUID)|\(sipExtension)"
+
+        guard !callId.isEmpty || !callUUID.isEmpty else { return }
+        guard lastEmittedSipReadyKey != dedupeKey else {
+            appendDiagnosticLog("sip_ready_skipped_duplicate", [
+                "reason": reason,
+                "call_uuid": callUUID,
+                "call_id": callId,
+                "extension": sipExtension,
+            ])
+            return
+        }
+
+        lastEmittedSipReadyKey = dedupeKey
+        appendDiagnosticLog("sip_ready_event_queued", [
+            "reason": reason,
+            "call_uuid": callUUID,
+            "call_id": callId,
+            "extension": sipExtension,
+        ])
+        emit([
+            "type": "sip_ready",
+            "reason": reason,
+            "callUUID": callUUID,
+            "callId": callId,
+            "extension": sipExtension,
+            "remoteIdentity": payload.handle,
+        ])
     }
 
     private func reportIncomingCallToSystemIfNeeded(
@@ -2677,6 +2805,15 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         didReceiveAnswerFor callUUID: UUID,
         payload: VoIPIncomingPayload?
     ) {
+        if snapshot.callState == "in_call" {
+            appendDiagnosticLog("callkit_answer_ignored_already_connected", [
+                "call_uuid": callUUID.uuidString,
+                "call_id": payload?.callId ?? snapshot.callId ?? "",
+            ])
+            callKitManager?.reportCallConnected(callUUID: callUUID)
+            return
+        }
+
         snapshot.callUUID = callUUID.uuidString
         snapshot.callId = payload?.callId ?? snapshot.callId
         snapshot.callState = "ringing"
@@ -2687,11 +2824,7 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         if !acceptCall() {
             _ = refreshRegistrationIfPossible(reason: "callkit-answer", emitRegisteringEvent: true) ||
                 restoreRegistrationIfNeeded(reason: "callkit-answer", emitRegisteringEvent: true)
-            if startBridgeCallFromPushPayload(payload, reason: "callkit-answer-no-invite") {
-                deferredAction = nil
-            } else {
-                deferredAction = .answer
-            }
+            deferredAction = .answer
         }
     }
 

@@ -121,6 +121,7 @@ class SipService extends ChangeNotifier
   String? _pendingStorageRecoveryMessage;
   String? _lastIncomingCallPushId;
   DateTime? _lastIncomingCallPushAt;
+  final Set<String> _sentSipReadyKeys = <String>{};
 
   Future<void> initialize() async {
     if (_disposed) return;
@@ -1661,6 +1662,11 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    if (type == 'sip_ready') {
+      _handleNativeSipReadyEvent(payload);
+      return;
+    }
+
     if (type == 'audio_session') {
       _handleNativeAudioSessionEvent(payload);
       return;
@@ -1686,6 +1692,58 @@ class SipService extends ChangeNotifier
     _lastSyncedIosVoipPushToken = null;
     unawaited(_storage.delete(key: _voipPushTokenKey));
     unawaited(_apiService.clearPendingVoipToken());
+  }
+
+  void _handleNativeSipReadyEvent(Map<String, dynamic> payload) {
+    if (!Platform.isIOS) {
+      return;
+    }
+
+    final callId = payload['callId']?.toString().trim() ?? '';
+    final callUUID = payload['callUUID']?.toString().trim() ?? '';
+    final extension =
+        payload['extension']?.toString().trim() ?? _state.login.trim();
+
+    if (callId.isEmpty && callUUID.isEmpty) {
+      debugPrint('SipService sip-ready ignored: missing call identifiers');
+      return;
+    }
+
+    final readyKey = '$callId|$callUUID|$extension';
+    if (_sentSipReadyKeys.contains(readyKey)) {
+      debugPrint('SipService sip-ready duplicate skipped -> $readyKey');
+      return;
+    }
+
+    _sentSipReadyKeys.add(readyKey);
+    unawaited(_sendSipReadyToBackend(
+      callId: callId,
+      callUUID: callUUID,
+      extension: extension,
+      readyKey: readyKey,
+    ));
+  }
+
+  Future<void> _sendSipReadyToBackend({
+    required String callId,
+    required String callUUID,
+    required String extension,
+    required String readyKey,
+  }) async {
+    try {
+      await _apiService.sendSipReady(
+        callId: callId,
+        callUUID: callUUID,
+        extension: extension,
+      );
+      debugPrint(
+        'SipService sip-ready sent -> callId=$callId, callUUID=$callUUID, extension=$extension',
+      );
+    } catch (error, stackTrace) {
+      _sentSipReadyKeys.remove(readyKey);
+      debugPrint('SipService sip-ready failed: $error');
+      debugPrint('SipService sip-ready stackTrace: $stackTrace');
+    }
   }
 
   Future<void> _syncIosVoipPushTokenWithBackend(

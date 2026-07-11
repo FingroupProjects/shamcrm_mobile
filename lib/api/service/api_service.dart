@@ -2239,6 +2239,46 @@ class ApiService {
     }
   }
 
+  Future<void> sendSipReady({
+    required String callId,
+    required String callUUID,
+    required String extension,
+  }) async {
+    await ensureInitialized();
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId =
+        prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+
+    if (userId.trim().isEmpty) {
+      throw Exception(
+        'ApiService.sendSipReady: userID not found in SharedPreferences',
+      );
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final body = <String, dynamic>{
+      'call_id': callId,
+      'call_uuid': callUUID,
+      'extension': extension,
+      'platform': 'ios',
+      'provider': 'apns_voip',
+      if (organizationId != null) 'organization_id': organizationId,
+      'user_id': userId.trim(),
+    };
+
+    final response = await _postRequest(
+      '/user/sip-ready/${userId.trim()}',
+      body,
+    );
+
+    if (kDebugMode) {
+      debugPrint(
+        'ApiService.sendSipReady: userId=$userId, callId=$callId, callUUID=$callUUID, extension=$extension, status=${response.statusCode}',
+      );
+    }
+  }
+
   // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)
   Future<void> ensureInitialized() async {
     if (baseUrl != null && baseUrl!.isNotEmpty) return;
@@ -13022,7 +13062,7 @@ class ApiService {
         request.fields['is_service'] = isService ? '1' : '0';
         request.fields['is_subscription'] = '0';
         request.fields['price'] = (discountPrice ?? 0).toString();
-        
+
         final organizationId = await getSelectedOrganization();
         final salesFunnelId = await getSelectedSalesFunnel();
         request.fields['organization_id'] = organizationId ?? '1';
