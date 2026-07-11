@@ -743,6 +743,8 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                                 buttonColor:
                                     _screenFieldBackground(context),
                                 textColor: primaryText,
+                                borderColor: subtleBorder,
+                                borderWidth: 1,
                                 onPressed: () => Navigator.pop(context),
                               ),
                             ),

@@ -282,6 +282,8 @@ class _CreateEventFromCalendareState extends State<CreateEventFromCalendare> {
                               buttonColor:
                                   colors.surfacePrimary.withValues(alpha: 0.72),
                               textColor: colors.textPrimary,
+                              borderColor: colors.borderSubtle,
+                              borderWidth: 1,
                               onPressed: () => Navigator.pop(context),
                             ),
                           ),

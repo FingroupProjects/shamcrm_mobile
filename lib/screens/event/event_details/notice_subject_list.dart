@@ -170,10 +170,17 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
                 ),
               ),
               IconButton(
-                icon: Transform.rotate(
-                  angle: 90 * 3.1415926535 / 180,
-                  child: Image.asset('assets/icons/arrow_down.png',
-                      width: 12, height: 12),
+                padding: const EdgeInsets.only(right: 10),
+                constraints: const BoxConstraints(
+                  minWidth: 36,
+                  minHeight: 36,
+                ),
+                icon: Icon(
+                  _isDropdownVisible
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: context.appColors.iconSecondary,
+                  size: 22,
                 ),
                 onPressed: () {
                   setState(() {

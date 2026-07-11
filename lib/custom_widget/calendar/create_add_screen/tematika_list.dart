@@ -67,6 +67,8 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final fieldBorder =
+        widget.hasError ? colors.error : colors.borderSubtle.withValues(alpha: 0.7);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,17 +142,88 @@ class _TematikaListWidgetState extends State<TematikaListWidget> {
                         colors.surfacePrimary.withValues(alpha: 0.72),
                     expandedFillColor: colors.surfacePrimary,
                     closedBorder: Border.all(
-                      color:
-                          widget.hasError ? colors.error : colors.borderSubtle,
-                      width: 1.5,
+                      color: fieldBorder,
+                      width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color:
-                          widget.hasError ? colors.error : colors.borderSubtle,
-                      width: 1.5,
+                      color: fieldBorder,
+                      width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    closedSuffixIcon: Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: colors.iconSecondary,
+                      ),
+                    ),
+                    expandedSuffixIcon: Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Icon(
+                        Icons.keyboard_arrow_up_rounded,
+                        color: colors.iconSecondary,
+                      ),
+                    ),
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: colors.textSecondary,
+                    ),
+                    headerStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: colors.textPrimary,
+                    ),
+                    listItemStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: colors.textPrimary,
+                    ),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: colors.surfacePrimary,
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: colors.textSecondary,
+                      ),
+                      textStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Gilroy',
+                        color: colors.textPrimary,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: colors.textSecondary,
+                      ),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: fieldBorder),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                      ),
+                    ),
+                    listItemDecoration: ListItemDecoration(
+                      selectedColor:
+                          colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                      highlightColor:
+                          colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                      splashColor: Colors.transparent,
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
