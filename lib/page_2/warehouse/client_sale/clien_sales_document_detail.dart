@@ -1,4 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/printing/accounting_print_service.dart';
+import 'package:crm_task_manager/core/printing/print_template_settings.dart';
+import 'package:crm_task_manager/core/printing/print_template_settings_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
@@ -6,8 +9,6 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart'
     as expDoc;
-import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/edit_client_sales_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/widgets/client_sale_delete_document.dart';
@@ -54,6 +55,7 @@ class _ClientSalesDocumentDetailsScreenState
   List<Map<String, dynamic>> details = [];
   bool _isLoading = false;
   bool _isButtonLoading = false;
+  bool _isPrinting = false;
   String? baseUrl;
   bool _documentUpdated = false;
   bool _goodMeasurementEnabled = true;
@@ -448,6 +450,84 @@ class _ClientSalesDocumentDetailsScreenState
     );
   }
 
+  Future<void> _printDocument() async {
+    if (_isPrinting || currentDocument == null) return;
+
+    setState(() {
+      _isPrinting = true;
+    });
+    try {
+      final settings = await PrintTemplateSettings.load(_printTemplateKey);
+      await AccountingPrintService.printExpenseDocument(
+        document: currentDocument!,
+        title: widget.isRmk ? 'Продажа РМК' : 'Продажа клиенту',
+        settings: settings,
+      );
+    } catch (e) {
+      _showSnackBar('Ошибка при подготовке печати: $e', false);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPrinting = false;
+        });
+      }
+    }
+  }
+
+  String get _printTemplateKey =>
+      widget.isRmk ? 'rmk_sale' : 'client_sale_document';
+
+  Future<void> _openPrintTemplateSettings() async {
+    final settings = await PrintTemplateSettings.load(_printTemplateKey);
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return PrintTemplateSettingsSheet(
+          templateKey: _printTemplateKey,
+          initialSettings: settings,
+          defaultTitle: widget.isRmk ? 'Продажа РМК' : 'Продажа клиенту',
+          onSaved: (message) {
+            if (mounted) {
+              _showSnackBar(message, true);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPrintButton() {
+    return StyledActionButton(
+      text: 'Печатать',
+      icon: Icons.print_outlined,
+      color: const Color(0xff1E2E52),
+      onPressed: _printDocument,
+    );
+  }
+
+  Widget _buildDocumentActions() {
+    final actionButton = _buildActionButton();
+    final hasActionButton = actionButton is! SizedBox;
+
+    if (!hasActionButton) {
+      return Center(child: _buildPrintButton());
+    }
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        actionButton,
+        _buildPrintButton(),
+      ],
+    );
+  }
+
   void _showFullTextDialog(String title, String content) {
     showDialog(
       context: context,
@@ -544,7 +624,7 @@ class _ClientSalesDocumentDetailsScreenState
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
-                          child: Center(child: _buildActionButton()),
+                          child: _buildDocumentActions(),
                         ),
                         _buildDetailsList(),
                         const SizedBox(height: 16),
@@ -563,8 +643,7 @@ class _ClientSalesDocumentDetailsScreenState
 
   AppBar _buildAppBar(BuildContext context) {
     // ИЗМЕНЕНО: showActions с правами
-    final showActions = currentDocument?.deletedAt == null &&
-        (widget.hasUpdatePermission || widget.hasDeletePermission);
+    final showActions = currentDocument != null;
     final titlePrefix = widget.isRmk
         ? 'Продажа РМК'
         : AppLocalizations.of(context)!.translate('client_sale');
@@ -606,8 +685,32 @@ class _ClientSalesDocumentDetailsScreenState
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    tooltip: 'Печатать',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(
+                      Icons.print_outlined,
+                      color: Color(0xff1E2E52),
+                    ),
+                    onPressed:
+                        _isLoading || _isPrinting ? null : _printDocument,
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    tooltip: 'Настройка печати',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(
+                      Icons.tune_rounded,
+                      color: Color(0xff1E2E52),
+                    ),
+                    onPressed: _isLoading ? null : _openPrintTemplateSettings,
+                  ),
+                  const SizedBox(width: 12),
                   // НОВОЕ: Edit только с update-правом
-                  if (widget.hasUpdatePermission)
+                  if (currentDocument?.deletedAt == null &&
+                      widget.hasUpdatePermission)
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -635,7 +738,8 @@ class _ClientSalesDocumentDetailsScreenState
                       },
                     ),
                   // НОВОЕ: Delete только с delete-правом
-                  if (widget.hasDeletePermission)
+                  if (currentDocument?.deletedAt == null &&
+                      widget.hasDeletePermission)
                     IconButton(
                       padding: const EdgeInsets.only(right: 8),
                       constraints: const BoxConstraints(),
