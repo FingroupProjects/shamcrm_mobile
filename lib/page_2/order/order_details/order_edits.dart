@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
@@ -16,7 +18,11 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_lead_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart'
+    show DeleteFileDialog;
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -84,6 +90,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   bool _isTotalEdited = false;
   bool _isLoadingInternetStores = false;
   List<OrderInternetStore> _internetStores = [];
+  List<FileHelper> files = [];
+  List<OrderFile> existingFiles = [];
 
   // Кастомные поля
   List<CustomField> customFields = [];
@@ -120,6 +128,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'imagePath': imagePath,
       };
     }).toList();
+    files = widget.order.files
+        .map(
+          (file) => FileHelper(
+            id: file.id,
+            name: file.name,
+            path: file.path,
+            size: file.size,
+          ),
+        )
+        .toList();
+    existingFiles = List.from(widget.order.files);
     _selectedLead = widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
         ? LeadData(
             id: widget.order.lead.id,
@@ -833,6 +852,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       case 'items':
       case 'sum':
         return _buildItemsSection();
+      case 'files':
+        return _buildFileSelection();
       case 'delivery_type':
       case 'delivery':
       case 'deliveryType':
@@ -2141,6 +2162,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             children: [
                               const SizedBox(height: 8),
                               ..._buildConfiguredFieldWidgets(),
+                              if (!fieldConfigurations
+                                  .any((field) => field.fieldName == 'files'))
+                                _buildFileSelection(),
                               const SizedBox(height: 16),
                             ],
                           ),
@@ -2233,6 +2257,206 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               : AppLocalizations.of(context)!.translate('appbar_settings'),
         ),
       ],
+    );
+  }
+
+  Widget _buildFileSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: files.isEmpty ? 1 : files.length + 1,
+            itemBuilder: (context, index) {
+              if (files.isEmpty || index == files.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _pickFile,
+                    child: SizedBox(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!
+                                .translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final fileName = files[index].name;
+              final fileExtension = fileName.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          buildFileIcon(files, fileName, fileExtension),
+                          const SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Gilroy',
+                              color: Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: () => showDeleteFileDialog(
+                          fileId: files[index].id,
+                          index: index,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickFile() async {
+    final totalSize = files.fold<double>(0.0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        final parsed = num.tryParse(file.size.toString());
+        return sum + (parsed != null ? parsed / 1024.0 : 0);
+      }
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
+
+    final pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50.0,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (final file in pickedFiles) {
+          files.add(
+            FileHelper(
+              id: 0,
+              name: file.name,
+              path: file.path,
+              size: file.sizeKB,
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  void showDeleteFileDialog({required int fileId, required int index}) {
+    bool isDeleting = false;
+
+    showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return DeleteFileDialog(
+          isDeleting: isDeleting,
+          fileId: fileId,
+          onCancel: () => Navigator.of(context).pop(false),
+          onDelete: (fileId) async {
+            if (files[index].id == 0) {
+              setState(() {
+                files.removeAt(index);
+              });
+              Navigator.of(context).pop(true);
+              return;
+            }
+
+            isDeleting = true;
+            setState(() {});
+
+            final response = await _apiService.deleteOrderFile(fileId);
+            if (response['result'] == 'Success') {
+              setState(() {
+                files.removeAt(index);
+              });
+            } else {
+              showCustomSnackBar(
+                context: context,
+                message:
+                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                isSuccess: false,
+              );
+            }
+            Navigator.of(context).pop(true);
+          },
+        );
+      },
     );
   }
 
@@ -2737,6 +2961,23 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                       });
                     }
                   }
+                  final newFilePaths = files
+                      .where((file) => file.id == 0)
+                      .map((file) => file.path)
+                      .toList();
+                  final keptExistingFiles =
+                      files.where((file) => file.id != 0).map((file) {
+                    return existingFiles.firstWhere(
+                      (existingFile) => existingFile.id == file.id,
+                      orElse: () => OrderFile(
+                        id: file.id,
+                        name: file.name,
+                        path: file.path,
+                        size: file.size,
+                      ),
+                    );
+                  }).toList();
+
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
                         phone: _fullPhoneNumber ?? widget.order.phone,
@@ -2769,6 +3010,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                         sum: currentTotal,
                         customFields: customFieldMap,
                         directoryValues: directoryValues,
+                        filePaths:
+                            newFilePaths.isNotEmpty ? newFilePaths : null,
+                        existingFiles: keptExistingFiles.isNotEmpty
+                            ? keptExistingFiles
+                            : null,
                       ));
                 } else {
                   showCustomSnackBar(

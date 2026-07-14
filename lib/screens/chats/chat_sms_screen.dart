@@ -89,6 +89,8 @@ class ChatSmsScreen extends StatefulWidget {
 
 class _ChatSmsScreenState extends State<ChatSmsScreen>
     with WidgetsBindingObserver {
+  static const int _maxMediaGroupSize = 20;
+
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
@@ -4051,7 +4053,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     for (int index = startIndex + 1; index < messages.length; index++) {
       final next = messages[index];
       if (!_canBeGroupedTogether(messages[index - 1], next) ||
-          group.length >= 10) {
+          group.length >= _maxMediaGroupSize) {
         break;
       }
       group.add(next);
@@ -4072,7 +4074,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
 
     final offsetInRun = index - runStart;
-    return offsetInRun % 10 != 0;
+    return offsetInRun % _maxMediaGroupSize != 0;
   }
 
   bool _isRenderableMediaMessage(Message message) {

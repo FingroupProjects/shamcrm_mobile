@@ -63,7 +63,7 @@ class _ChatMediaPickerSheet extends StatefulWidget {
 }
 
 class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
-  static const int _maxSelection = 10;
+  static const int _maxSelection = 20;
   static const double _maxTotalSizeMb = 100.0;
   static const double _gridHorizontalPadding = 12;
   static const double _gridTopPadding = 6;
@@ -208,7 +208,7 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
     if (shouldSelect == isSelected) return;
 
     if (shouldSelect && _selectedIds.length >= _maxSelection) {
-      _showBanner('Можно отправить не более 10 файлов.');
+      _showBanner('Можно отправить не более $_maxSelection файлов.');
       return;
     }
 

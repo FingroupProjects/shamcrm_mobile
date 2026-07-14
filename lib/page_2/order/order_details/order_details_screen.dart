@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_event.da
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -52,6 +53,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Order? _currentOrderDetails; // Текущие детали заказа для AppBar
   List<FieldConfiguration> _fieldConfiguration = [];
   bool _isConfigurationLoaded = false;
+  final Map<int, double> _downloadProgress = {};
+  bool _isDownloading = false;
 
   @override
   void initState() {
@@ -652,6 +655,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           children: [
             _buildDetailsList(),
             const SizedBox(height: 16),
+            if (state.orderDetails!.files.isNotEmpty) ...[
+              _buildFilesSection(state.orderDetails!.files),
+              const SizedBox(height: 16),
+            ],
             OrderHistoryWidget(orderId: widget.orderId),
             const SizedBox(height: 16),
             OrderGoodsScreen(
@@ -737,6 +744,92 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilesSection(List<OrderFile> files) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(AppLocalizations.of(context)!.translate('files_details')),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: files.length,
+            itemBuilder: (context, index) {
+              final file = files[index];
+              final fileExtension = file.name.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: () {
+                    if (!_isDownloading) {
+                      FileUtils.showFile(
+                        context: context,
+                        fileUrl: file.path,
+                        fileId: file.id,
+                        setState: setState,
+                        downloadProgress: _downloadProgress,
+                        isDownloading: _isDownloading,
+                        apiService: _apiService,
+                      );
+                    }
+                  },
+                  child: SizedBox(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/icons/files/$fileExtension.png',
+                              width: 60,
+                              height: 60,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/icons/files/file.png',
+                                  width: 60,
+                                  height: 60,
+                                );
+                              },
+                            ),
+                            if (_downloadProgress.containsKey(file.id))
+                              CircularProgressIndicator(
+                                value: _downloadProgress[file.id],
+                                strokeWidth: 3,
+                                backgroundColor: Colors.grey.withOpacity(0.3),
+                                valueColor:
+                                    const AlwaysStoppedAnimation<Color>(
+                                  Color(0xff1E2E52),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          file.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

@@ -2239,9 +2239,12 @@ class ApiService {
     }
   }
 
-  Future<void> sendSipReady({
+  Future<int?> sendSipReady({
     required String callId,
     required String callUUID,
+    // Test flow: optional SIP Call-ID is separate from Push/Linkedid call_id.
+    // Previous behavior for quick rollback: remove this parameter and omit sip_call_id from body.
+    String? sipCallId,
     required String extension,
   }) async {
     await ensureInitialized();
@@ -2260,6 +2263,9 @@ class ApiService {
     final body = <String, dynamic>{
       'call_id': callId,
       'call_uuid': callUUID,
+      // Test flow: keep call_id from Push; send SIP Call-ID only as nullable extra context.
+      if (sipCallId != null && sipCallId.trim().isNotEmpty)
+        'sip_call_id': sipCallId.trim(),
       'extension': extension,
       'platform': 'ios',
       'provider': 'apns_voip',
@@ -2274,9 +2280,10 @@ class ApiService {
 
     if (kDebugMode) {
       debugPrint(
-        'ApiService.sendSipReady: userId=$userId, callId=$callId, callUUID=$callUUID, extension=$extension, status=${response.statusCode}',
+        'ApiService.sendSipReady: userId=$userId, callId=$callId, callUUID=$callUUID, sipCallId=${sipCallId ?? ''}, extension=$extension, status=${response.statusCode}',
       );
     }
+    return response.statusCode;
   }
 
   // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)
@@ -7731,6 +7738,21 @@ class ApiService {
       return {'result': 'Success'};
     } else {
       throw Exception('Failed to delete task file!');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteOrderFile(int fileId) async {
+    final path = await _appendQueryParams('/order/deleteFile/$fileId');
+    if (kDebugMode) {
+      //debugPrint('ApiService: deleteOrderFile - Generated path: $path');
+    }
+
+    final response = await _deleteRequest(path);
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete order file!');
     }
   }
 
@@ -13612,6 +13634,7 @@ class ApiService {
     required double sum,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
+    List<FileHelper>? files,
   }) async {
     try {
       final token = await getToken();
@@ -13624,6 +13647,108 @@ class ApiService {
       }
 
       final uri = Uri.parse('$baseUrl$path');
+      if (files != null && files.isNotEmpty) {
+        final request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Device': 'mobile',
+        });
+
+        request.fields['phone'] = phone;
+        request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
+        request.fields['organization_id'] = organizationId.toString();
+        request.fields['status_id'] = statusId.toString();
+        request.fields['payment_type'] = 'cash';
+        request.fields['sum'] = sum.toString();
+        if (commentToCourier != null) {
+          request.fields['comment_to_courier'] = commentToCourier;
+        }
+        if (managerId != null) {
+          request.fields['manager_id'] = managerId.toString();
+        }
+        if (integration != null) {
+          request.fields['integration_id'] = integration.toString();
+        }
+        if (leadId != null) {
+          request.fields['lead_id'] = leadId.toString();
+        }
+        if (dealId != null) {
+          request.fields['deal_id'] = dealId.toString();
+        }
+        if (branchId != null) {
+          request.fields['branch_id'] = branchId.toString();
+        }
+        if (delivery && deliveryAddressId != null) {
+          request.fields['delivery_address_id'] = deliveryAddressId.toString();
+        }
+
+        for (int i = 0; i < goods.length; i++) {
+          final item = goods[i];
+          request.fields['goods[$i][variant_id]'] =
+              item['variant_id'].toString();
+          request.fields['goods[$i][quantity]'] =
+              (item['quantity'] ?? 1).toString();
+          request.fields['goods[$i][price]'] = item['price'].toString();
+        }
+
+        if (customFields != null && customFields.isNotEmpty) {
+          for (int i = 0; i < customFields.length; i++) {
+            final field = customFields[i];
+            request.fields['custom_fields[$i][key]'] =
+                field['key']?.toString() ?? '';
+            request.fields['custom_fields[$i][value]'] =
+                field['value']?.toString() ?? '';
+            request.fields['custom_fields[$i][type]'] =
+                field['type']?.toString() ?? 'string';
+          }
+        }
+
+        if (directoryValues != null && directoryValues.isNotEmpty) {
+          for (int i = 0; i < directoryValues.length; i++) {
+            final value = directoryValues[i];
+            request.fields['directory_values[$i][entry_id]'] =
+                value['entry_id'].toString();
+            request.fields['directory_values[$i][directory_id]'] =
+                value['directory_id'].toString();
+          }
+        }
+
+        final newFiles = files.where((f) => f.id == 0).toList();
+        for (final fileData in newFiles) {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        }
+
+        final response = await _multipartPostRequest('', request);
+        if (<int>[200, 201, 202, 203, 204, 300, 301]
+            .contains(response.statusCode)) {
+          final jsonResponse = response.body.isNotEmpty
+              ? jsonDecode(response.body)
+              : <String, dynamic>{};
+          if (jsonResponse['result'] == 'success' ||
+              jsonResponse['result'] is Map<String, dynamic> ||
+              response.statusCode == 204) {
+            return {
+              'success': true,
+              'statusId': statusId,
+              'order': jsonResponse['result'] is Map<String, dynamic>
+                  ? jsonResponse['result']
+                  : null,
+            };
+          }
+        }
+
+        final jsonResponse = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : <String, dynamic>{};
+        throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
+      }
+
       final body = {
         'phone': phone,
         'deliveryType': delivery ? 'delivery' : 'pickup',
@@ -13733,6 +13858,8 @@ class ApiService {
     required double sum,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
+    List<String>? filePaths,
+    List<OrderFile>? existingFiles,
   }) async {
     try {
       final token = await getToken();
@@ -13745,6 +13872,115 @@ class ApiService {
       }
 
       final uri = Uri.parse('$baseUrl$path');
+      if ((filePaths != null && filePaths.isNotEmpty) ||
+          existingFiles != null) {
+        final request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Device': 'mobile',
+        });
+
+        request.fields['_method'] = 'PATCH';
+        request.fields['phone'] = phone;
+        request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
+        request.fields['organization_id'] = organizationId.toString();
+        request.fields['payment_type'] = 'cash';
+        request.fields['sum'] = sum.toString();
+        if (commentToCourier != null) {
+          request.fields['comment_to_courier'] = commentToCourier;
+        }
+        if (managerId != null) {
+          request.fields['manager_id'] = managerId.toString();
+        }
+        if (integration != null) {
+          request.fields['integration_id'] = integration.toString();
+        }
+        if (leadId != null) {
+          request.fields['lead_id'] = leadId.toString();
+        }
+        if (dealId != null) {
+          request.fields['deal_id'] = dealId.toString();
+        }
+        if (branchId != null) {
+          request.fields['branch_id'] = branchId.toString();
+        }
+        if (delivery) {
+          if (deliveryAddress != null) {
+            request.fields['delivery_address'] = deliveryAddress;
+          }
+          if (deliveryAddressId != null) {
+            request.fields['delivery_address_id'] =
+                deliveryAddressId.toString();
+          }
+        }
+
+        for (int i = 0; i < goods.length; i++) {
+          final item = goods[i];
+          request.fields['goods[$i][variant_id]'] =
+              item['variant_id'].toString();
+          request.fields['goods[$i][quantity]'] =
+              (item['quantity'] ?? 1).toString();
+          request.fields['goods[$i][price]'] = item['price'].toString();
+        }
+
+        if (customFields != null && customFields.isNotEmpty) {
+          for (int i = 0; i < customFields.length; i++) {
+            final field = customFields[i];
+            request.fields['custom_fields[$i][key]'] =
+                field['key']?.toString() ?? '';
+            request.fields['custom_fields[$i][value]'] =
+                field['value']?.toString() ?? '';
+            request.fields['custom_fields[$i][type]'] =
+                field['type']?.toString() ?? 'string';
+          }
+        }
+
+        if (directoryValues != null && directoryValues.isNotEmpty) {
+          for (int i = 0; i < directoryValues.length; i++) {
+            final value = directoryValues[i];
+            request.fields['directory_values[$i][entry_id]'] =
+                value['entry_id'].toString();
+            request.fields['directory_values[$i][directory_id]'] =
+                value['directory_id'].toString();
+          }
+        }
+
+        if (existingFiles != null && existingFiles.isNotEmpty) {
+          for (int i = 0; i < existingFiles.length; i++) {
+            request.fields['existing_files[$i]'] =
+                existingFiles[i].id.toString();
+          }
+        }
+
+        if (filePaths != null && filePaths.isNotEmpty) {
+          for (final filePath in filePaths) {
+            final file = await http.MultipartFile.fromPath('files[]', filePath);
+            request.files.add(file);
+          }
+        }
+
+        final response = await _multipartPostRequest('', request);
+        if (<int>[200, 201, 202, 203, 204, 300, 301]
+            .contains(response.statusCode)) {
+          final jsonResponse = response.body.isNotEmpty
+              ? jsonDecode(response.body)
+              : <String, dynamic>{};
+          return {
+            'success': true,
+            'order': jsonResponse['result'] is Map<String, dynamic>
+                ? jsonResponse['result']
+                : null,
+          };
+        }
+
+        final jsonResponse = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : <String, dynamic>{};
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+      }
+
       final body = {
         'phone': phone,
         'deliveryType': delivery

@@ -1701,6 +1701,7 @@ class SipService extends ChangeNotifier
 
     final callId = payload['callId']?.toString().trim() ?? '';
     final callUUID = payload['callUUID']?.toString().trim() ?? '';
+    final sipCallId = payload['sipCallId']?.toString().trim();
     final extension =
         payload['extension']?.toString().trim() ?? _state.login.trim();
 
@@ -1719,6 +1720,7 @@ class SipService extends ChangeNotifier
     unawaited(_sendSipReadyToBackend(
       callId: callId,
       callUUID: callUUID,
+      sipCallId: sipCallId == null || sipCallId.isEmpty ? null : sipCallId,
       extension: extension,
       readyKey: readyKey,
     ));
@@ -1727,22 +1729,61 @@ class SipService extends ChangeNotifier
   Future<void> _sendSipReadyToBackend({
     required String callId,
     required String callUUID,
+    String? sipCallId,
     required String extension,
     required String readyKey,
   }) async {
     try {
-      await _apiService.sendSipReady(
+      await _appendNativeDiagnosticLog('[VOIP] SIP_READY_REQUEST', {
+        'call_id': callId,
+        'call_uuid': callUUID,
+        'sip_call_id': sipCallId ?? '',
+        'extension': extension,
+      });
+      final statusCode = await _apiService.sendSipReady(
         callId: callId,
         callUUID: callUUID,
+        sipCallId: sipCallId,
         extension: extension,
       );
+      await _appendNativeDiagnosticLog('[VOIP] SIP_READY_RESPONSE', {
+        'call_id': callId,
+        'call_uuid': callUUID,
+        'sip_call_id': sipCallId ?? '',
+        'extension': extension,
+        'status': statusCode ?? '',
+      });
       debugPrint(
-        'SipService sip-ready sent -> callId=$callId, callUUID=$callUUID, extension=$extension',
+        '[VOIP] SIP_READY_RESPONSE status=$statusCode call_id=$callId call_uuid=$callUUID sip_call_id=${sipCallId ?? ''} extension=$extension',
       );
     } catch (error, stackTrace) {
       _sentSipReadyKeys.remove(readyKey);
+      await _appendNativeDiagnosticLog('[VOIP] SIP_READY_RESPONSE', {
+        'call_id': callId,
+        'call_uuid': callUUID,
+        'sip_call_id': sipCallId ?? '',
+        'extension': extension,
+        'status': 'failed',
+        'error': error,
+      });
       debugPrint('SipService sip-ready failed: $error');
       debugPrint('SipService sip-ready stackTrace: $stackTrace');
+    }
+  }
+
+  Future<void> _appendNativeDiagnosticLog(
+    String event,
+    Map<String, Object?> details,
+  ) async {
+    if (!_isNativeSipPlatform()) return;
+
+    try {
+      await _nativeSipMethodChannel.invokeMethod<bool>('appendDiagnosticLog', {
+        'event': event,
+        'details': details.map((key, value) => MapEntry(key, '${value ?? ''}')),
+      });
+    } catch (error) {
+      debugPrint('SipService append native diagnostic failed: $error');
     }
   }
 

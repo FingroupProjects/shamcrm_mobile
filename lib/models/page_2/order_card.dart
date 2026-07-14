@@ -27,6 +27,7 @@ class Order {
       storageId; // Новое поле для storage_id (пока используется вместо branchId)
   final List<CustomFieldValue> customFieldValues;
   final List<DirectoryValue> directoryValues;
+  final List<OrderFile> files;
   final int? reasonForRefusalId;
   final String? reasonForRefusalComment;
   final String? refusalReasonText;
@@ -55,6 +56,7 @@ class Order {
     this.storageId,
     this.customFieldValues = const [],
     this.directoryValues = const [],
+    this.files = const [],
     this.reasonForRefusalId,
     this.reasonForRefusalComment,
     this.refusalReasonText,
@@ -122,6 +124,9 @@ class Order {
             .map(
                 (item) => DirectoryValue.fromJson(item as Map<String, dynamic>))
             .toList(),
+        files: (json['files'] as List<dynamic>? ?? [])
+            .map((item) => OrderFile.fromJson(item as Map<String, dynamic>))
+            .toList(),
       );
     } catch (e) {
       //print('Error parsing Order: $e');
@@ -158,6 +163,7 @@ class Order {
       'refusalReason': refusalReasonText,
       'customFieldValues': customFieldValues.map((e) => e.toJson()).toList(),
       'directory_values': directoryValues.map((e) => e.toJson()).toList(),
+      'files': files.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -182,6 +188,7 @@ class Order {
     int? storageId,
     List<CustomFieldValue>? customFieldValues,
     List<DirectoryValue>? directoryValues,
+    List<OrderFile>? files,
     int? reasonForRefusalId,
     String? reasonForRefusalComment,
     String? refusalReasonText,
@@ -211,7 +218,40 @@ class Order {
       refusalReasonText: refusalReasonText ?? this.refusalReasonText,
       customFieldValues: customFieldValues ?? this.customFieldValues,
       directoryValues: directoryValues ?? this.directoryValues,
+      files: files ?? this.files,
     );
+  }
+}
+
+class OrderFile {
+  final int id;
+  final String name;
+  final String path;
+  final String? size;
+
+  const OrderFile({
+    required this.id,
+    required this.name,
+    required this.path,
+    this.size,
+  });
+
+  factory OrderFile.fromJson(Map<String, dynamic> json) {
+    return OrderFile(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name: (json['name'] ?? json['file_name'] ?? '').toString(),
+      path: (json['path'] ?? json['url'] ?? json['file'] ?? '').toString(),
+      size: json['size']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'path': path,
+      'size': size,
+    };
   }
 }
 
