@@ -176,6 +176,8 @@ class CallLogItem extends StatelessWidget {
         return Icons.call_made;
       case CallType.missed:
         return Icons.call_missed;
+      case CallType.outgoingMissed:
+        return Icons.call_made;
     }
   }
 
@@ -187,6 +189,8 @@ class CallLogItem extends StatelessWidget {
         return Colors.blue;
       case CallType.missed:
         return Colors.red;
+      case CallType.outgoingMissed:
+        return const Color(0xFFF59E0B);
     }
   }
 

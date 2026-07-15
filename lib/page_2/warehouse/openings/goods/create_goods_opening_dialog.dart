@@ -146,6 +146,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                 child: AddGoodsOpeningScreen(
                   goodName: item.fullName ?? item.good?.name ?? 'Неизвестный товар',
                   goodVariantId: item.id ?? 0,
+                  selectedGood: item,
                 ),
               ),
             ),

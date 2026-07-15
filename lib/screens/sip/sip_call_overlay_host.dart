@@ -6,6 +6,7 @@ import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'sip_screen.dart';
 import 'sip_service.dart';
@@ -25,11 +26,18 @@ class SipCallOverlayHost extends StatefulWidget {
 
 class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     with SingleTickerProviderStateMixin {
+  static const String _sipPinRequiredAfterCallKey =
+      'sip_pin_required_after_call_v1';
+
   final SipService _sipService = SipService();
   final AudioPlayer _overlayPlayer = AudioPlayer();
 
+  static const String _operatorConnectingAsset = 'audio/operator_1.mp3';
+  static const String _connectingBeepAsset = 'audio/get.mp3';
+
   late final AnimationController _pulseController;
   Timer? _durationTimer;
+  StreamSubscription<void>? _feedbackCompletionSub;
   SipCallUiStatus? _lastObservedStatus;
   String? _activeFeedbackAsset;
   DateTime? _connectedAt;
@@ -38,6 +46,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   Offset _miniCallOffset = Offset.zero;
   bool _isMiniCallDragging = false;
   bool _isMiniCallDockedAway = false;
+  bool _hadVisibleCallOverlay = false;
+  bool _pinRedirectInProgress = false;
 
   @override
   void initState() {
@@ -53,6 +63,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   @override
   void dispose() {
     _durationTimer?.cancel();
+    _feedbackCompletionSub?.cancel();
     _pulseController.dispose();
     unawaited(_overlayPlayer.stop());
     _overlayPlayer.dispose();
@@ -81,8 +92,14 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       _lastObservedStatus = null;
       _stopDurationTicker(reset: true);
       unawaited(_stopFeedbackLoop());
+      if (_hadVisibleCallOverlay) {
+        _hadVisibleCallOverlay = false;
+        unawaited(_redirectToPinIfDeferredBySipCall());
+      }
       return;
     }
+
+    _hadVisibleCallOverlay = true;
 
     if (_lastObservedStatus == state.callStatus) {
       return;
@@ -92,12 +109,12 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     switch (state.callStatus) {
       case SipCallUiStatus.incoming:
         _stopDurationTicker();
-        unawaited(_playFeedbackLoop('audio/get.mp3'));
+        unawaited(_playFeedbackLoop(_connectingBeepAsset));
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopDurationTicker();
-        unawaited(_stopFeedbackLoop());
+        unawaited(_playOperatorThenBeep());
         break;
       case SipCallUiStatus.inCall:
         _startDurationTicker();
@@ -112,11 +129,31 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     }
   }
 
+  Future<void> _playOperatorThenBeep() async {
+    if (_activeFeedbackAsset == _operatorConnectingAsset) return;
+    _activeFeedbackAsset = _operatorConnectingAsset;
+
+    try {
+      await _feedbackCompletionSub?.cancel();
+      _feedbackCompletionSub = _overlayPlayer.onPlayerComplete.listen((_) {
+        if (_activeFeedbackAsset != _operatorConnectingAsset) return;
+        unawaited(_playFeedbackLoop(_connectingBeepAsset));
+      });
+
+      await _overlayPlayer.stop();
+      await _overlayPlayer.setReleaseMode(ReleaseMode.stop);
+      await _overlayPlayer.play(AssetSource(_operatorConnectingAsset));
+    } catch (_) {}
+  }
+
   Future<void> _playFeedbackLoop(String assetPath) async {
     if (_activeFeedbackAsset == assetPath) return;
     _activeFeedbackAsset = assetPath;
     try {
+      await _feedbackCompletionSub?.cancel();
+      _feedbackCompletionSub = null;
       await _overlayPlayer.stop();
+      await _overlayPlayer.setReleaseMode(ReleaseMode.loop);
       await _overlayPlayer.play(AssetSource(assetPath));
     } catch (_) {}
   }
@@ -124,6 +161,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   Future<void> _stopFeedbackLoop() async {
     _activeFeedbackAsset = null;
     try {
+      await _feedbackCompletionSub?.cancel();
+      _feedbackCompletionSub = null;
       await _overlayPlayer.stop();
     } catch (_) {}
   }
@@ -169,9 +208,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       case SipCallUiStatus.incoming:
         return 'Входящий звонок';
       case SipCallUiStatus.calling:
-        return 'Исходящий звонок';
+        return 'Соединяем звонок';
       case SipCallUiStatus.ringing:
-        return 'Ждём ответ';
+        return 'Подключаем вас к клиенту';
       case SipCallUiStatus.inCall:
         return 'Разговор';
       case SipCallUiStatus.ended:
@@ -215,12 +254,54 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   Future<void> _openSipScreen() async {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
+
+    if (_isProtectedSipCallActive()) {
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute<void>(
+          builder: (_) => const SipScreen(),
+          fullscreenDialog: true,
+          settings: const RouteSettings(name: '/sip_call_only'),
+        ),
+        (route) => false,
+      );
+      return;
+    }
+
     await navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => const SipScreen(),
         fullscreenDialog: true,
       ),
     );
+  }
+
+  bool _isProtectedSipCallActive() {
+    final status = _sipService.state.callStatus;
+    return status == SipCallUiStatus.incoming ||
+        status == SipCallUiStatus.calling ||
+        status == SipCallUiStatus.ringing ||
+        status == SipCallUiStatus.inCall;
+  }
+
+  Future<void> _redirectToPinIfDeferredBySipCall() async {
+    if (_pinRedirectInProgress) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final shouldRequirePin =
+          prefs.getBool(_sipPinRequiredAfterCallKey) ?? false;
+      if (!shouldRequirePin) return;
+
+      _pinRedirectInProgress = true;
+      await prefs.remove(_sipPinRequiredAfterCallKey);
+
+      final navigator = navigatorKey.currentState;
+      if (navigator == null || !mounted) return;
+
+      navigator.pushNamedAndRemoveUntil('/pin_screen', (route) => false);
+    } finally {
+      _pinRedirectInProgress = false;
+    }
   }
 
   @override

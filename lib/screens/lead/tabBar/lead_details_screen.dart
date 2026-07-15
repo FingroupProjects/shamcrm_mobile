@@ -61,6 +61,8 @@ class LeadDetailsScreen extends StatefulWidget {
   final String leadName;
   final String leadStatus;
   final int statusId;
+  final int? initialCurrencyId;
+  final String? initialCurrencyName;
   final String? region;
   final int? regionId;
   final String? sourse;
@@ -79,6 +81,8 @@ class LeadDetailsScreen extends StatefulWidget {
     required this.leadName,
     required this.leadStatus,
     required this.statusId,
+    this.initialCurrencyId,
+    this.initialCurrencyName,
     this.region,
     this.regionId,
     this.sourse,
@@ -989,6 +993,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       });
     }
 
+    final resolvedCurrencyName =
+        lead.currency?.name ?? widget.initialCurrencyName ?? '';
+    details.add({
+      'label': '${AppLocalizations.of(context)!.translate('currency_label') ?? 'Валюта'}:',
+      'value': resolvedCurrencyName,
+      'fieldName': 'currency',
+    });
+
     final refusalReason = (lead.refusalReasonText ?? '').trim();
     final refusalComment = (lead.reasonForRefusalComment ?? '').trim();
     if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
@@ -1356,6 +1368,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             // verificationCode: currentLead!.verification_code,
                             priceTypeId: currentLead!.priceType?.id.toString(),
                             priceTypeName: currentLead!.priceType?.name,
+                            currencyId:
+                                currentLead!.currencyId ?? widget.initialCurrencyId,
+                            currencyName: currentLead!.currency?.name ??
+                                widget.initialCurrencyName,
                           ),
                         ),
                       );

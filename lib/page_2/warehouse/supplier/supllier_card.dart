@@ -45,7 +45,7 @@ class _SupplierCardState extends State<SupplierCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localization = AppLocalizations.of(context);
+    final localization = AppLocalizations.of(context)!;
 
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
@@ -91,7 +91,7 @@ class _SupplierCardState extends State<SupplierCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Поставщик'} ${widget.supplier.name ?? 'N/A'}',
+                    widget.supplier.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
@@ -260,9 +261,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     int? targetIndexGroup1;
     int? targetIndexGroup2;
 
-    if (screenIdentifier == 'sip_journal' ||
-        screenIdentifier == 'sip' ||
-        screenIdentifier == 'sip_dial') {
+    if (kShowSip &&
+        (screenIdentifier == 'sip_journal' ||
+            screenIdentifier == 'sip' ||
+            screenIdentifier == 'sip_dial')) {
       debugPrint('HomeScreen: SIP screen identifier detected: $screenIdentifier');
 
       if (Navigator.canPop(context)) {

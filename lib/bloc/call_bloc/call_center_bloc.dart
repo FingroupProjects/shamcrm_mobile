@@ -356,6 +356,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         response = await apiService.getIncomingCalls(page: page, perPage: perPage, searchQuery: searchQuery, filters: filters);
         break;
       case CallType.outgoing:
+      case CallType.outgoingMissed:
         response = await apiService.getOutgoingCalls(page: page, perPage: perPage, searchQuery: searchQuery, filters: filters);
         break;
       case CallType.missed:

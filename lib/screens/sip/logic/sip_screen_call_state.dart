@@ -83,12 +83,12 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     switch (status) {
       case SipCallUiStatus.incoming:
         _stopCallDurationTicker();
-        unawaited(_playFeedbackLoop('audio/get.mp3'));
+        unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopCallDurationTicker();
-        unawaited(_stopFeedbackLoop());
+        unawaited(_playOperatorThenBeep());
         break;
       case SipCallUiStatus.inCall:
         _startCallDurationTicker();
@@ -257,11 +257,35 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     return null;
   }
 
+  Future<void> _playOperatorThenBeep() async {
+    if (_activeFeedbackAsset == _SipScreenState._operatorConnectingAsset) {
+      return;
+    }
+    _activeFeedbackAsset = _SipScreenState._operatorConnectingAsset;
+
+    try {
+      await _feedbackCompletionSub?.cancel();
+      _feedbackCompletionSub = _callFeedbackPlayer.onPlayerComplete.listen((_) {
+        if (_activeFeedbackAsset != _SipScreenState._operatorConnectingAsset) {
+          return;
+        }
+        unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
+      });
+
+      await _callFeedbackPlayer.stop();
+      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.stop);
+      await _callFeedbackPlayer
+          .play(AssetSource(_SipScreenState._operatorConnectingAsset));
+    } catch (_) {}
+  }
+
   Future<void> _playFeedbackLoop(String assetPath) async {
     if (_activeFeedbackAsset == assetPath) return;
     _activeFeedbackAsset = assetPath;
 
     try {
+      await _feedbackCompletionSub?.cancel();
+      _feedbackCompletionSub = null;
       await _callFeedbackPlayer.stop();
       await _callFeedbackPlayer.setReleaseMode(ReleaseMode.loop);
       await _callFeedbackPlayer.play(AssetSource(assetPath));
@@ -271,6 +295,8 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   Future<void> _stopFeedbackLoop() async {
     _activeFeedbackAsset = null;
     try {
+      await _feedbackCompletionSub?.cancel();
+      _feedbackCompletionSub = null;
       await _callFeedbackPlayer.stop();
     } catch (_) {}
   }
@@ -305,9 +331,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       case SipCallUiStatus.incoming:
         return l10n.translate('sip_call_incoming');
       case SipCallUiStatus.calling:
-        return l10n.translate('sip_call_calling');
+        return 'Соединяем звонок';
       case SipCallUiStatus.ringing:
-        return l10n.translate('sip_call_ringing');
+        return 'Подключаем вас к клиенту';
       case SipCallUiStatus.inCall:
         return l10n.translate('sip_call_in_call');
       case SipCallUiStatus.ended:

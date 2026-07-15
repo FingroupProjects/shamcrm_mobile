@@ -135,6 +135,7 @@ class CreateLead extends LeadEvent {
   final bool isSystemManager;
   final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
+  final int? currencyId;
 
   CreateLead({
     required this.name,
@@ -157,6 +158,7 @@ class CreateLead extends LeadEvent {
     this.isSystemManager = false,
     required this.localizations,
     this.priceTypeId, // Новое поле
+    this.currencyId,
   });
 }
 
@@ -195,6 +197,7 @@ class UpdateLead extends LeadEvent {
   final String? duplicate; // Новое поле
   final int? reasonForRefusalId;
   final String? reasonForRefusal;
+  final int? currencyId;
 
   UpdateLead({
     required this.leadId,
@@ -222,6 +225,7 @@ class UpdateLead extends LeadEvent {
     this.duplicate, // Новое поле]
     this.reasonForRefusalId,
     this.reasonForRefusal,
+    this.currencyId,
   });
 }
 

@@ -1305,7 +1305,18 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "account_state": currentAccountRegistrationStateString(),
             ])
             deferredAction = .answer
-            return false
+            snapshot.callState = "ringing"
+            snapshot.message = "Waiting for SIP INVITE"
+            persistSnapshot()
+            emitCallEvent(
+                state: "ringing",
+                remoteIdentity: snapshot.remoteIdentity,
+                callUUID: snapshot.callUUID,
+                callId: snapshot.callId,
+                message: snapshot.message,
+                extra: pendingIncomingPayload?.toFlutterDictionary() ?? [:]
+            )
+            return true
         }
 
         guard let params = core.flatMap({ linphone_core_create_call_params($0, call) }) else {
@@ -1517,6 +1528,43 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         return true
     }
 
+    private func selectPreferredNonSpeakerAudioDevice(reason: String) {
+        guard !snapshot.speakerOn,
+              let call = resolveCurrentCallForAction(),
+              let core else {
+            return
+        }
+
+        let devices = linphone_core_get_audio_devices(core)
+        var item = devices
+        var selected: OpaquePointer?
+
+        while let currentItem = item {
+            let devicePointer = bctbx_list_get_data(currentItem)
+            let device = devicePointer.map { OpaquePointer($0) }
+            if let device {
+                selected = preferredNonSpeakerDevice(
+                    candidate: device,
+                    currentSelected: selected
+                )
+            }
+            item = bctbx_list_next(currentItem)
+        }
+
+        guard let selected else {
+            return
+        }
+
+        linphone_call_set_output_audio_device(call, selected)
+        appendDiagnosticLog("audio_device_selected", [
+            "reason": reason,
+            "device_type": audioDeviceTypeDescription(
+                linphone_audio_device_get_type(selected)
+            ),
+            "route": audioRouteDescription(AVAudioSession.sharedInstance().currentRoute),
+        ])
+    }
+
     private func preferredNonSpeakerDevice(
         candidate: OpaquePointer,
         currentSelected: OpaquePointer?
@@ -1548,6 +1596,25 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return 1
         default:
             return 0
+        }
+    }
+
+    private func audioDeviceTypeDescription(_ type: LinphoneAudioDeviceType) -> String {
+        switch type {
+        case LinphoneAudioDeviceTypeBluetooth:
+            return "bluetooth"
+        case LinphoneAudioDeviceTypeHeadset:
+            return "headset"
+        case LinphoneAudioDeviceTypeHeadphones:
+            return "headphones"
+        case LinphoneAudioDeviceTypeEarpiece:
+            return "earpiece"
+        case LinphoneAudioDeviceTypeSpeaker:
+            return "speaker"
+        case LinphoneAudioDeviceTypeMicrophone:
+            return "microphone"
+        default:
+            return "unknown"
         }
     }
 
@@ -1589,6 +1656,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             emitAudioSessionEvent(state: "interruption_began")
         case .ended:
             configureAudioSessionForCallIfNeeded()
+            selectPreferredNonSpeakerAudioDevice(reason: "interruption_ended")
             syncAudioRouteState(reason: "interruption_ended")
             emitAudioSessionEvent(state: "interruption_ended")
         @unknown default:
@@ -1607,6 +1675,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             reasonDescription = "unknown"
         }
 
+        configureAudioSessionForCallIfNeeded()
+        selectPreferredNonSpeakerAudioDevice(reason: reasonDescription)
         syncAudioRouteState(reason: reasonDescription)
     }
 
@@ -1631,6 +1701,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 try session.overrideOutputAudioPort(.speaker)
             } else {
                 try session.overrideOutputAudioPort(.none)
+                selectPreferredNonSpeakerAudioDevice(reason: "audio_session_configured")
             }
         } catch {
             emitAudioSessionEvent(state: "configuration_failed", reason: error.localizedDescription)
@@ -2014,6 +2085,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             pendingIncomingPayload = nil
             snapshot.callState = "in_call"
             snapshot.message = message ?? "Call connected"
+            configureAudioSessionForCallIfNeeded()
+            selectPreferredNonSpeakerAudioDevice(reason: "call_connected")
+            syncAudioRouteState(reason: "call_connected")
             appendDiagnosticLog("media_connected", [
                 "call_id": snapshot.callId ?? "",
                 "remote_identity": remoteIdentity ?? "",

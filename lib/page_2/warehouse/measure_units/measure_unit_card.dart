@@ -44,7 +44,7 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localization = AppLocalizations.of(context);
+    final localization = AppLocalizations.of(context)!;
 
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
@@ -92,7 +92,7 @@ class _MeasureUnitCardState extends State<MeasureUnitCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Единица измерения'} ${widget.supplier.name ?? 'N/A'}',
+                    widget.supplier.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

@@ -53,7 +53,11 @@ class CallById {
   });
 
  factory CallById.fromJson(Map<String, dynamic> json) {
-  DateTime? _parseCustomDate(String? dateStr) {
+  bool parseBool(dynamic value) {
+    return value == true || value == 1 || value == '1';
+  }
+
+  DateTime? parseCustomDate(String? dateStr) {
     if (dateStr == null) return null;
     try {
       // Проверяем формат ISO 8601
@@ -107,16 +111,16 @@ class CallById {
             ? json['call_ringing_duration']
             : int.tryParse(json['call_ringing_duration'].toString())
         : null,
-    incoming: json['incoming'] as bool? ?? false,
-    missed: json['missed'] as bool? ?? false,
-    answered: json['answered'] as bool? ?? false,
+    incoming: parseBool(json['incoming']),
+    missed: parseBool(json['missed']),
+    answered: parseBool(json['answered']),
     callStatus: json['call_status']?.toString() ?? '',
-    callStartedAt: _parseCustomDate(json['call_started_at']?.toString()) ??
+    callStartedAt: parseCustomDate(json['call_started_at']?.toString()) ??
         DateTime.utc(1970, 1, 1, 0, 0),
     callAnsweredAt: json['call_answered_at'] != null
-        ? _parseCustomDate(json['call_answered_at']?.toString())
+        ? parseCustomDate(json['call_answered_at']?.toString())
         : null,
-    callEndedAt: _parseCustomDate(json['call_ended_at']?.toString()) ??
+    callEndedAt: parseCustomDate(json['call_ended_at']?.toString()) ??
         DateTime.utc(1970, 1, 1, 0, 0),
     additionalData: json['additional_data'] != null
         ? AdditionalData.fromJson(json['additional_data'] as Map<String, dynamic>)

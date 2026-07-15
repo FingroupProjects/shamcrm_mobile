@@ -1636,12 +1636,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                           );
                           break;
                         case 'sip':
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SipScreen(),
-                            ),
-                          );
+                          if (kShowSip) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SipScreen(),
+                              ),
+                            );
+                          }
                           break;
                         case 'filter_dashboard':
                           widget.onDashboardFilterPressed?.call();

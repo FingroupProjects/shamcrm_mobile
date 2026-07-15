@@ -1256,31 +1256,35 @@ class _ChatsScreenState extends State<ChatsScreen>
                             ),
                           ),
                         if (_hasActiveFilters) SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ValueListenableBuilder<ChatUnreadCounts>(
-                            valueListenable:
-                                ChatUnreadCounterService.instance.counts,
-                            builder: (context, chatCounts, _) {
-                              debugPrint(
-                                'ChatsScreen.tabs builder: total=${chatCounts.total}, lead=${chatCounts.lead}, task=${chatCounts.task}, support=${chatCounts.support}, initialized=${chatCounts.isInitialized}, loading=${chatCounts.isLoading}',
-                              );
-                              return Row(
-                                children:
-                                    List.generate(_tabTitles.length, (index) {
-                                  if ((index == 0 && !_showLeadChat) ||
-                                      (index == 1 && !_showTaskChat) ||
-                                      (index == 2 && !_showCorporateChat)) {
-                                    return Container();
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: _buildTabButton(index, chatCounts),
-                                  );
-                                }),
-                              );
-                            },
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ValueListenableBuilder<ChatUnreadCounts>(
+                              valueListenable:
+                                  ChatUnreadCounterService.instance.counts,
+                              builder: (context, chatCounts, _) {
+                                debugPrint(
+                                  'ChatsScreen.tabs builder: total=${chatCounts.total}, lead=${chatCounts.lead}, task=${chatCounts.task}, support=${chatCounts.support}, initialized=${chatCounts.isInitialized}, loading=${chatCounts.isLoading}',
+                                );
+                                return Row(
+                                  children:
+                                      List.generate(_tabTitles.length, (index) {
+                                    if ((index == 0 && !_showLeadChat) ||
+                                        (index == 1 && !_showTaskChat) ||
+                                        (index == 2 && !_showCorporateChat)) {
+                                      return Container();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: _buildTabButton(index, chatCounts),
+                                    );
+                                  }),
+                                );
+                              },
+                            ),
                           ),
                         ),
                         SizedBox(height: 12),

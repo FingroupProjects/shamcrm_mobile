@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
@@ -20,6 +21,7 @@ import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
@@ -32,6 +34,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_li
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
@@ -46,12 +49,14 @@ class LeadAddScreen extends StatefulWidget {
   final int statusId;
   final String? initialPhone;
   final Country? initialCountry;
+  final bool isWarehouseReferenceClient;
 
   const LeadAddScreen({
     super.key,
     required this.statusId,
     this.initialPhone,
     this.initialCountry,
+    this.isWarehouseReferenceClient = false,
   });
 
   @override
@@ -83,6 +88,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   String selectedDialCodeWhatsapp = '';
   int? _selectedStatuses;
   String? selectedSalesFunnel;
+  List<SupplierCurrency> _currencies = [];
+  bool _isCurrenciesLoading = false;
+  SupplierCurrency? _selectedCurrency;
 
   // Кастомные поля
   List<CustomField> customFields = [];
@@ -117,11 +125,44 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     context.read<SourceLeadBloc>().add(FetchSourceLead());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     context.read<GetAllRegionBloc>().add(GetAllRegionEv());
+    if (widget.isWarehouseReferenceClient) {
+      _loadCurrencies();
+    }
 
     // ВАЖНО: Добавляем небольшую задержку чтобы context был готов
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
+  }
+
+  Future<void> _loadCurrencies() async {
+    setState(() => _isCurrenciesLoading = true);
+    try {
+      final currencies = await _apiService.getCurrencies();
+      final localizationCurrencyId = await LocalizationService.getCurrencyId();
+      if (!mounted) return;
+
+      SupplierCurrency? autoSelectedCurrency;
+      if (_selectedCurrency == null && localizationCurrencyId != null) {
+        for (final currency in currencies) {
+          if (currency.id == localizationCurrencyId) {
+            autoSelectedCurrency = currency;
+            break;
+          }
+        }
+      }
+
+      setState(() {
+        _currencies = currencies;
+        _selectedCurrency ??= autoSelectedCurrency;
+      });
+    } catch (_) {
+      // optional field should not block lead creation
+    } finally {
+      if (mounted) {
+        setState(() => _isCurrenciesLoading = false);
+      }
+    }
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -365,6 +406,98 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
       default:
         return SizedBox.shrink();
     }
+  }
+
+  Widget _buildCurrencyField() {
+    final localizations = AppLocalizations.of(context)!;
+    SupplierCurrency? initialCurrency;
+    if (_selectedCurrency?.id != null) {
+      for (final currency in _currencies) {
+        if (currency.id == _selectedCurrency!.id) {
+          initialCurrency = currency;
+          break;
+        }
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localizations.translate('currency_label') ?? 'Валюта',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<SupplierCurrency>.search(
+          items: _currencies,
+          enabled: true,
+          searchHintText: localizations.translate('search') ?? 'Поиск',
+          overlayHeight: 300,
+          closeDropDownOnClearFilterSearch: true,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder:
+                Border.all(color: const Color(0xffF4F7FD), width: 1),
+            expandedBorderRadius: BorderRadius.circular(12),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
+            item.name ?? '-',
+            style: const TextStyle(
+              color: Color(0xff1E2E52),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+          headerBuilder: (context, selectedItem, enabled) => Text(
+            selectedItem?.name ??
+                (localizations.translate('select_currency') ??
+                    'Выберите валюту'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          hintBuilder: (context, hint, enabled) => Text(
+            localizations.translate('select_currency') ?? 'Выберите валюту',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          noResultFoundBuilder: (context, text) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                localizations.translate('no_results') ?? 'Нет результатов',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ),
+          initialItem: initialCurrency,
+          onChanged: (value) {
+            setState(() => _selectedCurrency = value);
+          },
+        ),
+      ],
+    );
   }
 
   // Метод для построения виджета на основе конфигурации поля
@@ -1579,7 +1712,6 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                   ),
                 );
                 Navigator.pop(context, widget.statusId);
-                context.read<LeadBloc>().add(FetchLeadStatuses());
               }
             },
             child: Form(
@@ -1670,6 +1802,21 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                 ],
                               );
                             }).toList(),
+
+                            if (widget.isWarehouseReferenceClient) ...[
+                              _isCurrenciesLoading
+                                  ? const Center(
+                                      child: Padding(
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 8),
+                                        child: CircularProgressIndicator(
+                                          color: Color(0xff1E2E52),
+                                        ),
+                                      ),
+                                    )
+                                  : _buildCurrencyField(),
+                              const SizedBox(height: 16),
+                            ],
 
                             // Файлы (всегда показываем)
                             _buildFileSelection(),
@@ -1920,6 +2067,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
             localizations: localizations,
             files: files,
             isSystemManager: isSystemManager,
+            currencyId: _selectedCurrency?.id,
           ));
     }
   }

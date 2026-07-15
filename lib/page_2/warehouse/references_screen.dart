@@ -319,7 +319,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     } else if (reference.keyName == 'clients') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => LeadScreen()),
+        MaterialPageRoute(
+          builder: (context) => LeadScreen(
+            isWarehouseReferenceClients: true,
+          ),
+        ),
       );
     } else if (reference.keyName == 'openings') {
       Navigator.push(

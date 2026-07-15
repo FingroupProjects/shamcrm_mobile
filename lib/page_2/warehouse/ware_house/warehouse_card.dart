@@ -44,8 +44,6 @@ class _WareHouseCardState extends State<WareHouseCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localization = AppLocalizations.of(context);
-
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
       onTap: widget.hasUpdatePermission
@@ -92,7 +90,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Склад'} ${widget.warehouse.name ?? 'N/A'}',
+                    widget.warehouse.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

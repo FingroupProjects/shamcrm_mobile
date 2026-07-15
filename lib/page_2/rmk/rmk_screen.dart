@@ -427,6 +427,9 @@ class _RmkScreenState extends State<RmkScreen> {
     );
     if (!mounted || payment == null) return;
 
+    String? snackMessage;
+    var snackSuccess = false;
+
     setState(() => _isSubmitting = true);
     try {
       final result = await _repository.submitSale(
@@ -436,20 +439,30 @@ class _RmkScreenState extends State<RmkScreen> {
         paymentMethod: payment.method?.value,
         paidAmount: payment.paidAmount,
         debtAmount: payment.debtAmount,
+        cashRegisterId: payment.cashRegisterId,
         leadId: payment.leadId,
+        currencyId: payment.currencyId,
+        exchangeRate: payment.exchangeRate,
       );
       if (!mounted) return;
 
-      showCustomSnackBar(
-        context: context,
-        message: result.sentToServer
-            ? 'Продажа успешно создана'
-            : (result.error ?? 'Ошибка при создании продажи'),
-        isSuccess: result.sentToServer,
-      );
+      snackMessage = result.sentToServer
+          ? 'Продажа успешно создана'
+          : (result.error ?? 'Ошибка при создании продажи');
+      snackSuccess = result.sentToServer;
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
+        if (snackMessage != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            showCustomSnackBar(
+              context: context,
+              message: snackMessage!,
+              isSuccess: snackSuccess,
+            );
+          });
+        }
       }
     }
   }
@@ -549,6 +562,31 @@ class _RmkScreenState extends State<RmkScreen> {
                             ),
                           ),
                         ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await _repository.clearCart();
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xffFF4D4D),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          child: const Text(
+                            'Очистить',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,

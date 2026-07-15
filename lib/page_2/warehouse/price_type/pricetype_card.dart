@@ -44,8 +44,6 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localization = AppLocalizations.of(context);
-
     return GestureDetector(
       // ИЗМЕНЕНО: Открываем редактирование только если есть право
       onTap: widget.hasUpdatePermission
@@ -89,7 +87,7 @@ class _PriceTypeCardState extends State<PriceTypeCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Тип цены'} ${widget.priceType.name ?? 'N/A'}',
+                    widget.priceType.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

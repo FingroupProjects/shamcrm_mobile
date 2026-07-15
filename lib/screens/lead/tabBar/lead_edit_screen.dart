@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
@@ -18,6 +19,7 @@ import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
@@ -28,6 +30,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
@@ -35,8 +38,6 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import 'package:crm_task_manager/models/directory_model.dart'
-    as directory_model;
 import 'dart:io';
 
 import '../../../models/lead_model.dart';
@@ -71,6 +72,8 @@ class LeadEditScreen extends StatefulWidget {
   final String? priceTypeId;
   final String? priceTypeName;
   final String? salesFunnelId;
+  final int? currencyId;
+  final String? currencyName;
 
   LeadEditScreen({
     required this.leadId,
@@ -95,6 +98,8 @@ class LeadEditScreen extends StatefulWidget {
     this.priceTypeId,
     this.priceTypeName,
     this.salesFunnelId,
+    this.currencyId,
+    this.currencyName,
   });
 
   @override
@@ -143,6 +148,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final ApiService _apiService = ApiService();
   List<FileHelper> files = [];
   String? selectedSalesFunnel;
+  List<SupplierCurrency> _currencies = [];
+  bool _isCurrenciesLoading = false;
+  SupplierCurrency? _selectedCurrency;
   DuplicateOption? _duplicateOption;
   bool _showDuplicateOptions = false;
   bool _askReasonForRefusal = false;
@@ -164,7 +172,14 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     _selectedStatuses = widget.statusId;
     _selectedPriceType = widget.priceTypeId;
     selectedSalesFunnel = widget.salesFunnelId;
+    if (widget.currencyId != null || (widget.currencyName?.isNotEmpty ?? false)) {
+      _selectedCurrency = SupplierCurrency(
+        id: widget.currencyId,
+        name: widget.currencyName,
+      );
+    }
     _loadAskReasonForRefusal();
+    _loadCurrencies();
 
     if (selectedSalesFunnel != null &&
         selectedSalesFunnel != widget.salesFunnelId) {
@@ -278,6 +293,137 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           .read<FieldConfigurationBloc>()
           .add(FetchFieldConfiguration('leads'));
     }
+  }
+
+  Future<void> _loadCurrencies() async {
+    setState(() => _isCurrenciesLoading = true);
+    try {
+      final currencies = await _apiService.getCurrencies();
+      final localizationCurrencyId = await LocalizationService.getCurrencyId();
+      if (!mounted) return;
+
+      SupplierCurrency? resolvedSelectedCurrency = _selectedCurrency;
+      if (resolvedSelectedCurrency?.id != null) {
+        for (final currency in currencies) {
+          if (currency.id == resolvedSelectedCurrency!.id) {
+            resolvedSelectedCurrency = currency;
+            break;
+          }
+        }
+      } else if (localizationCurrencyId != null) {
+        for (final currency in currencies) {
+          if (currency.id == localizationCurrencyId) {
+            resolvedSelectedCurrency = currency;
+            break;
+          }
+        }
+      }
+
+      setState(() {
+        _currencies = currencies;
+        _selectedCurrency = resolvedSelectedCurrency;
+      });
+    } catch (_) {
+      // optional field should not block lead editing
+    } finally {
+      if (mounted) {
+        setState(() => _isCurrenciesLoading = false);
+      }
+    }
+  }
+
+  Widget _buildCurrencyField() {
+    final localizations = AppLocalizations.of(context)!;
+    SupplierCurrency? initialCurrency;
+    if (_selectedCurrency?.id != null) {
+      for (final currency in _currencies) {
+        if (currency.id == _selectedCurrency!.id) {
+          initialCurrency = currency;
+          break;
+        }
+      }
+    } else {
+      initialCurrency = _selectedCurrency;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localizations.translate('currency_label') ?? 'Валюта',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<SupplierCurrency>.search(
+          items: _currencies,
+          enabled: true,
+          searchHintText: localizations.translate('search') ?? 'Поиск',
+          overlayHeight: 300,
+          closeDropDownOnClearFilterSearch: true,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder:
+                Border.all(color: const Color(0xffF4F7FD), width: 1),
+            expandedBorderRadius: BorderRadius.circular(12),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
+            item.name ?? '-',
+            style: const TextStyle(
+              color: Color(0xff1E2E52),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+          headerBuilder: (context, selectedItem, enabled) => Text(
+            selectedItem?.name ??
+                (localizations.translate('select_currency') ??
+                    'Выберите валюту'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+          ),
+          hintBuilder: (context, hint, enabled) => Text(
+            localizations.translate('select_currency') ?? 'Выберите валюту',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: Color(0xff1E2E52),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          noResultFoundBuilder: (context, text) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                localizations.translate('no_results') ?? 'Нет результатов',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  color: Color(0xff1E2E52),
+                ),
+              ),
+            ),
+          ),
+          initialItem: initialCurrency,
+          onChanged: (value) {
+            setState(() => _selectedCurrency = value);
+          },
+        ),
+      ],
+    );
   }
 
   Future<void> _loadAskReasonForRefusal() async {
@@ -1991,6 +2137,19 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                 ],
                               );
                             }).toList(),
+
+                            _isCurrenciesLoading
+                                ? const Center(
+                                    child: Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 8),
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xff1E2E52),
+                                      ),
+                                    ),
+                                  )
+                                : _buildCurrencyField(),
+                            const SizedBox(height: 16),
                             // Файлы (всегда показываем)
                             _buildFileSelection(),
                             const SizedBox(height: 16),
@@ -2281,6 +2440,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                         reasonForRefusalId:
                                             refusalData?.reasonId,
                                         reasonForRefusal: refusalData?.comment,
+                                        currencyId: _selectedCurrency?.id,
                                       ));
                                       if (mounted) {
                                         setState(() {

@@ -83,11 +83,15 @@ class _SipScreenState extends State<SipScreen>
   final ScrollController _contactsListController = ScrollController();
   final ScrollController _journalListController = ScrollController();
 
+  static const String _operatorConnectingAsset = 'audio/operator_1.mp3';
+  static const String _connectingBeepAsset = 'audio/get.mp3';
+
   SipTransportUi _selectedTransport = SipTransportUi.ws;
 
   int _bottomTabIndex = 0;
   late final AnimationController _pulseController;
   Timer? _callDurationTimer;
+  StreamSubscription<void>? _feedbackCompletionSub;
   SipCallUiStatus? _lastObservedCallStatus;
   String? _lastShownSipNoticeKey;
   SipRegistrationUiStatus? _lastObservedRegistrationStatus;
@@ -264,6 +268,7 @@ class _SipScreenState extends State<SipScreen>
     _contactsLeadSearchDebounce?.cancel();
     _contactsIndexOverlayTimer?.cancel();
     _journalDateRailOverlayTimer?.cancel();
+    _feedbackCompletionSub?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
     _callFeedbackPlayer.dispose();

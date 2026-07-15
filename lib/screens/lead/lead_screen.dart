@@ -42,8 +42,13 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 
 class LeadScreen extends StatefulWidget {
   final int? initialStatusId;
+  final bool isWarehouseReferenceClients;
 
-  LeadScreen({this.initialStatusId});
+  LeadScreen({
+    super.key,
+    this.initialStatusId,
+    this.isWarehouseReferenceClients = false,
+  });
 
   @override
   _LeadScreenState createState() => _LeadScreenState();
@@ -173,6 +178,54 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   bool get _hasActiveCustomFieldFilters =>
       _selectedCustomFieldFilters.values.any((values) => values.isNotEmpty);
+
+  void _refreshAfterLeadCreated(int statusId) {
+    final leadBloc = context.read<LeadBloc>();
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
+    leadBloc.add(
+      FetchLeads(
+        statusId,
+        salesFunnelId: _selectedFunnel?.id,
+        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+        managerIds:
+            _selectedManagers.isNotEmpty ? _selectedManagers.map((e) => e.id).toList() : null,
+        regionsIds:
+            _selectedRegions.isNotEmpty ? _selectedRegions.map((e) => e.id).toList() : null,
+        regionId: _selectedState?.id,
+        cityIds:
+            _selectedCities.isNotEmpty ? _selectedCities.map((e) => e.id).toList() : null,
+        sourcesIds:
+            _selectedSources.isNotEmpty ? _selectedSources.map((e) => e.id).toList() : null,
+        channelIds:
+            _selectedChannels.isNotEmpty ? _selectedChannels.map((e) => e.id).toList() : null,
+        advertisingCampaignIds: _selectedAdvertisingCampaigns.isNotEmpty
+            ? _selectedAdvertisingCampaigns.map((e) => e.id).toList()
+            : null,
+        reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+            ? _selectedReasonForRefusalIds
+            : null,
+        statusIds: _selectedStatuses,
+        fromDate: _fromDate,
+        toDate: _toDate,
+        hasSuccessDeals: _hasSuccessDeals,
+        hasInProgressDeals: _hasInProgressDeals,
+        hasFailureDeals: _hasFailureDeals,
+        hasNotices: _hasNotices,
+        hasContact: _hasContact,
+        hasChat: _hasChat,
+        hasNoReplies: _hasNoReplies,
+        hasUnreadMessages: _hasUnreadMessages,
+        hasDeal: _hasDeal,
+        hasOrders: _hasOrders,
+        daysWithoutActivity: _daysWithoutActivity,
+        numberOfDaysDeal: _numberOfDaysDeal,
+        directoryValues: _directoryValues.isNotEmpty ? _directoryValues : null,
+        customFieldFilters:
+            _selectedCustomFieldFilters.isNotEmpty ? _selectedCustomFieldFilters : null,
+        ignoreCache: true,
+      ),
+    );
+  }
 
   // Метод для проверки наличия активных фильтров
   bool _hasActiveFilters() {
@@ -1277,27 +1330,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => LeadAddScreen(
-                                          statusId: currentStatusId),
+                                        statusId: currentStatusId,
+                                        isWarehouseReferenceClient:
+                                            widget.isWarehouseReferenceClients,
+                                      ),
                                     ),
-                                  ).then((_) => context.read<LeadBloc>().add(
-                                        FetchLeads(
-                                          currentStatusId,
-                                          salesFunnelId: _selectedFunnel?.id,
-                                          advertisingCampaignIds:
-                                              _selectedAdvertisingCampaigns
-                                                      .isNotEmpty
-                                                  ? _selectedAdvertisingCampaigns
-                                                      .map((campaign) =>
-                                                          campaign.id)
-                                                      .toList()
-                                                  : null,
-                                          reasonForRefusalIds:
-                                              _selectedReasonForRefusalIds
-                                                      .isNotEmpty
-                                                  ? _selectedReasonForRefusalIds
-                                                  : null,
-                                        ),
-                                      ));
+                                  ).then((result) {
+                                    if (result is int && mounted) {
+                                      _refreshAfterLeadCreated(result);
+                                    }
+                                  });
                                 },
                               ),
                               ListTile(
@@ -1362,24 +1404,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            LeadAddScreen(statusId: currentStatusId),
+                            LeadAddScreen(
+                          statusId: currentStatusId,
+                          isWarehouseReferenceClient:
+                              widget.isWarehouseReferenceClients,
+                        ),
                       ),
-                    ).then((_) => context.read<LeadBloc>().add(
-                          FetchLeads(
-                            currentStatusId,
-                            salesFunnelId: _selectedFunnel?.id,
-                            advertisingCampaignIds:
-                                _selectedAdvertisingCampaigns.isNotEmpty
-                                    ? _selectedAdvertisingCampaigns
-                                        .map((campaign) => campaign.id)
-                                        .toList()
-                                    : null,
-                            reasonForRefusalIds:
-                                _selectedReasonForRefusalIds.isNotEmpty
-                                    ? _selectedReasonForRefusalIds
-                                    : null,
-                          ),
-                        ));
+                    ).then((result) {
+                      if (result is int && mounted) {
+                        _refreshAfterLeadCreated(result);
+                      }
+                    });
                   }
                 },
                 backgroundColor: context.appColors.buttonPrimaryBg,
@@ -1480,6 +1515,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               lead: lead,
               title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
+              isWarehouseReferenceClient:
+                  widget.isWarehouseReferenceClients,
               onStatusUpdated: () {},
               onStatusId: (StatusLeadId) {
                 final index = _tabTitles
@@ -1583,6 +1620,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       lead: lead,
                       title: lead.leadStatus?.title ?? "",
                       statusId: lead.statusId,
+                      isWarehouseReferenceClient:
+                          widget.isWarehouseReferenceClients,
                       onStatusUpdated: () {},
                       onStatusId: (StatusLeadId) {
                         final index = _tabTitles.indexWhere(

@@ -50,10 +50,16 @@ class _GoodUnitsDropdownState extends State<GoodUnitsDropdown> {
     }
 
     // Получаем единицы из выбранного товара
-    if (widget.selectedGood?.good?.units != null) {
-      unitsList = widget.selectedGood!.good!.units!;
+    final goodData = widget.selectedGood?.good;
+    if (goodData?.units != null && goodData!.units!.isNotEmpty) {
+      unitsList = goodData.units!;
       if (kDebugMode) {
         //print('GoodUnitsDropdown: Found ${unitsList.length} units for this good');
+      }
+    } else if (goodData?.unit != null) {
+      unitsList = [goodData!.unit!];
+      if (kDebugMode) {
+        //print('GoodUnitsDropdown: Falling back to base unit for this good');
       }
     } else {
       unitsList = [];

@@ -513,6 +513,9 @@ class SipService extends ChangeNotifier
           perPage: perPage,
           searchQuery: searchQuery,
         );
+      case CallType.outgoingMissed:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -1401,6 +1404,12 @@ class SipService extends ChangeNotifier
       if (!granted) {
         return;
       }
+
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.ringing,
+        clearError: true,
+      );
+      _notifyListenersSafely();
 
       final success = await _invokeNativeSipMethod<bool>('acceptCall') ?? false;
       if (!success) {

@@ -231,7 +231,6 @@ void main() {
     await _recordFatalError(error, stackTrace, reason: 'zone');
   });
 }
-
 Future<void> _requestTrackingAuthorizationIfNeeded() async {
   if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
     return;

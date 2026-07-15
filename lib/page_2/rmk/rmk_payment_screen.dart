@@ -1,7 +1,9 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,14 +36,20 @@ class RmkPaymentResult {
     required this.method,
     required this.paidAmount,
     required this.debtAmount,
+    this.cashRegisterId,
     this.leadId,
+    this.currencyId,
+    this.exchangeRate,
   });
 
   final RmkPaymentMode mode;
   final RmkPaymentMethod? method;
   final double paidAmount;
   final double debtAmount;
+  final int? cashRegisterId;
   final int? leadId;
+  final int? currencyId;
+  final double? exchangeRate;
 }
 
 class RmkPaymentScreen extends StatefulWidget {
@@ -57,6 +65,7 @@ class RmkPaymentScreen extends StatefulWidget {
 }
 
 class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
+  final ApiService _apiService = ApiService();
   static const List<RmkPaymentMode> _paymentModes = [
     RmkPaymentMode.payment,
     RmkPaymentMode.debt,
@@ -64,21 +73,89 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
 
   late final TextEditingController _amountController;
   late final FocusNode _amountFocusNode;
+  late final TextEditingController _exchangeRateController;
   RmkPaymentMode _selectedMode = RmkPaymentMode.payment;
   RmkPaymentMethod? _selectedMethod;
   double _amount = 0;
   double _paidAmountValue = 0;
   double _debtAmountValue = 0;
   String _currencyTitle = 'TJS';
+  int? _organizationCurrencyId;
+  List<SupplierCurrency> _currencies = [];
+  SupplierCurrency? _selectedCurrency;
+  List<CashRegisterData> _cashRegisters = [];
+  CashRegisterData? _selectedCashRegister;
+  String? _exchangeRateErrorText;
   LeadData? _selectedLead;
   String? _leadErrorText;
 
   bool get _showsPaymentMethods => _selectedMode == RmkPaymentMode.payment;
+  bool get _showsCashRegisterField => _cashRegisters.length > 1;
   bool get _requiresLead => _debtAmount > 0;
+  bool get _hasCurrencyMismatch =>
+      _selectedLeadCurrencyId != null &&
+      _effectivePaymentCurrencyId != null &&
+      _selectedLeadCurrencyId != _effectivePaymentCurrencyId;
+
+  int? get _selectedLeadCurrencyId => _selectedLead?.currencyId ?? _selectedLead?.currency?.id;
+
+  int? get _effectivePaymentCurrencyId =>
+      _selectedCashRegister?.currencyId ??
+      _selectedCashRegister?.currency?.id ??
+      _selectedCurrency?.id ??
+      _organizationCurrencyId;
+
+  String get _effectivePaymentCurrencyTitle {
+    final cashRegisterCurrency = _selectedCashRegister?.currency;
+    final cashRegisterSymbol = cashRegisterCurrency?.symbolCode?.trim();
+    if (cashRegisterSymbol != null && cashRegisterSymbol.isNotEmpty) {
+      return cashRegisterSymbol;
+    }
+    final cashRegisterName = cashRegisterCurrency?.name?.trim();
+    if (cashRegisterName != null && cashRegisterName.isNotEmpty) {
+      return cashRegisterName;
+    }
+    return _selectedCurrencyTitle;
+  }
+
+  String get _selectedLeadCurrencyTitle {
+    final leadCurrency = _selectedLead?.currency;
+    final symbol = leadCurrency?.symbolCode?.trim();
+    if (symbol != null && symbol.isNotEmpty) return symbol;
+    final name = leadCurrency?.name?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'другую валюту';
+  }
 
   bool get _needsPaymentMethod {
     if (_selectedMode == RmkPaymentMode.payment) return true;
     return false;
+  }
+
+  bool get _isExchangeRateRequired {
+    final selectedCurrencyId = _selectedCurrency?.id;
+    if (_organizationCurrencyId == null || selectedCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != selectedCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _totalByCurrency {
+    final rate = _exchangeRateValue ?? 0;
+    return _amount * rate;
+  }
+
+  String get _selectedCurrencyTitle {
+    final selected = _selectedCurrency;
+    if (selected == null) return _currencyTitle;
+    final symbol = selected.symbolCode?.trim();
+    if (symbol != null && symbol.isNotEmpty) return symbol;
+    final name = selected.name?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return _currencyTitle;
   }
 
   double get _paidAmount => _paidAmountValue.clamp(0, widget.total).toDouble();
@@ -93,26 +170,64 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     _amount = _paidAmountValue;
     _amountController = TextEditingController(text: _formatMoney(widget.total));
     _amountFocusNode = FocusNode();
+    _exchangeRateController = TextEditingController();
     _loadCurrency();
+    _loadCashRegisters();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _amountFocusNode.dispose();
+    _exchangeRateController.dispose();
     super.dispose();
   }
 
   Future<void> _loadCurrency() async {
     final currency = await LocalizationService.getCurrency();
+    final organizationCurrencyId = await LocalizationService.getCurrencyId();
+    final currencies = await _apiService.getCurrencies();
+    SupplierCurrency? selectedCurrency;
+    if (organizationCurrencyId != null) {
+      for (final item in currencies) {
+        if (item.id == organizationCurrencyId) {
+          selectedCurrency = item;
+          break;
+        }
+      }
+    }
     if (!mounted) return;
     setState(() {
+      _organizationCurrencyId = organizationCurrencyId;
+      _currencies = currencies;
+      _selectedCurrency = selectedCurrency;
       _currencyTitle = currency?.symbolCode?.trim().isNotEmpty == true
           ? currency!.symbolCode!.trim()
           : (currency?.name?.trim().isNotEmpty == true
               ? currency!.name!.trim()
               : _currencyTitle);
     });
+  }
+
+  Future<void> _loadCashRegisters() async {
+    try {
+      final response = await _apiService.getAllCashRegisters();
+      final cashRegisters = response.result ?? <CashRegisterData>[];
+      if (!mounted) return;
+
+      setState(() {
+        _cashRegisters = cashRegisters;
+        if (cashRegisters.length == 1) {
+          _selectedCashRegister = cashRegisters.first;
+        } else if (cashRegisters.isEmpty) {
+          _selectedCashRegister = null;
+        }
+      });
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('RMK Payment: failed to load cash registers: $error');
+      }
+    }
   }
 
   void _selectMode(RmkPaymentMode mode) {
@@ -164,6 +279,30 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
       if (!_requiresLead) {
         _leadErrorText = null;
       }
+      if (_exchangeRateErrorText != null) {
+        _exchangeRateErrorText = null;
+      }
+    });
+  }
+
+  void _onExchangeRateChanged(String _) {
+    if (_exchangeRateErrorText == null) {
+      setState(() {});
+      return;
+    }
+    setState(() {
+      _exchangeRateErrorText = null;
+    });
+  }
+
+  void _selectCurrency(SupplierCurrency? currency) {
+    if (currency == null) return;
+    setState(() {
+      _selectedCurrency = currency;
+      if (!_isExchangeRateRequired) {
+        _exchangeRateController.clear();
+        _exchangeRateErrorText = null;
+      }
     });
   }
 
@@ -176,6 +315,15 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     if (_needsPaymentMethod && _selectedMethod == null) return;
     if (_selectedMode == RmkPaymentMode.payment && _amount <= 0) return;
     if (_selectedMode == RmkPaymentMode.debt && _amount <= 0) return;
+    if (_isExchangeRateRequired) {
+      final rate = _exchangeRateValue;
+      if (rate == null || rate <= 0) {
+        setState(() {
+          _exchangeRateErrorText = 'Заполните курс валюты';
+        });
+        return;
+      }
+    }
     if (_requiresLead && _selectedLead == null) {
       setState(() {
         _leadErrorText = 'Выберите клиента';
@@ -189,7 +337,10 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
         method: _needsPaymentMethod ? _selectedMethod : null,
         paidAmount: _paidAmount,
         debtAmount: _debtAmount,
+        cashRegisterId: _selectedCashRegister?.id,
         leadId: _selectedLead?.id,
+        currencyId: _selectedCurrency?.id ?? _organizationCurrencyId,
+        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
       ),
     );
   }
@@ -198,6 +349,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   Widget build(BuildContext context) {
     final hasValidAmount = _amount > 0;
     final canSubmit = hasValidAmount &&
+        (!_showsCashRegisterField || _selectedCashRegister != null) &&
         (!_needsPaymentMethod || _selectedMethod != null) &&
         (!_requiresLead || _selectedLead != null);
     return Scaffold(
@@ -255,11 +407,48 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                     _AmountField(
                       controller: _amountController,
                       focusNode: _amountFocusNode,
-                      currencyTitle: _currencyTitle,
+                      currencyTitle: _selectedCurrencyTitle,
+                      currencies: _currencies,
+                      selectedCurrency: _selectedCurrency,
                       isEnabled: true,
                       onChanged: _onAmountChanged,
                       onTap: _handleAmountTap,
+                      onCurrencyChanged: _selectCurrency,
                     ),
+                    if (_isExchangeRateRequired) ...[
+                      const SizedBox(height: 14),
+                      _RmkLabeledTextField(
+                        controller: _exchangeRateController,
+                        label: 'Курс валюты',
+                        hintText: 'Введите курс',
+                        errorText: _exchangeRateErrorText,
+                        onChanged: _onExchangeRateChanged,
+                      ),
+                      const SizedBox(height: 14),
+                      _RmkInfoField(
+                        label: 'Итого по валюте: $_currencyTitle',
+                        value: _formatMoney(_totalByCurrency),
+                      ),
+                    ],
+                    if (_showsCashRegisterField) ...[
+                      const SizedBox(height: 14),
+                      _RmkCashRegisterSelector(
+                        cashRegisters: _cashRegisters,
+                        selectedCashRegister: _selectedCashRegister,
+                        onChanged: (cashRegister) {
+                          setState(() {
+                            _selectedCashRegister = cashRegister;
+                          });
+                        },
+                      ),
+                    ],
+                    if (_hasCurrencyMismatch) ...[
+                      const SizedBox(height: 12),
+                      _RmkWarningBanner(
+                        text:
+                            'У клиента валюта $_selectedLeadCurrencyTitle, а для оплаты выбрана $_effectivePaymentCurrencyTitle. Проверьте кассу и валюту оплаты.',
+                      ),
+                    ],
                     if (_requiresLead) ...[
                       const SizedBox(height: 14),
                       _RmkFreshLeadSelector(
@@ -289,6 +478,16 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                     ],
                     if (_showsPaymentMethods) ...[
                       const SizedBox(height: 14),
+                      const Text(
+                        'Выберите способ оплаты',
+                        style: TextStyle(
+                          color: Color(0xff99A4BA),
+                          fontFamily: 'Gilroy',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           for (final method in RmkPaymentMethod.values) ...[
@@ -347,6 +546,136 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RmkWarningBanner extends StatelessWidget {
+  const _RmkWarningBanner({
+    required this.text,
+  });
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xffFFF7ED),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xffFDBA74)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(
+              Icons.info_outline_rounded,
+              color: Color(0xffC2410C),
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xff9A3412),
+                fontFamily: 'Gilroy',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RmkCashRegisterSelector extends StatelessWidget {
+  const _RmkCashRegisterSelector({
+    required this.cashRegisters,
+    required this.selectedCashRegister,
+    required this.onChanged,
+  });
+
+  final List<CashRegisterData> cashRegisters;
+  final CashRegisterData? selectedCashRegister;
+  final ValueChanged<CashRegisterData?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Касса',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        CustomDropdown<CashRegisterData>.search(
+          items: cashRegisters,
+          initialItem: cashRegisters.contains(selectedCashRegister)
+              ? selectedCashRegister
+              : null,
+          hintText: 'Выберите кассу',
+          searchHintText: 'Поиск кассы',
+          overlayHeight: 260,
+          excludeSelected: false,
+          decoration: CustomDropdownDecoration(
+            closedFillColor: const Color(0xffF4F7FD),
+            expandedFillColor: Colors.white,
+            closedBorder: Border.all(
+              color: const Color(0xffF4F7FD),
+              width: 1.5,
+            ),
+            closedBorderRadius: BorderRadius.circular(12),
+            expandedBorder: Border.all(
+              color: const Color(0xffF4F7FD),
+              width: 1.5,
+            ),
+            expandedBorderRadius: BorderRadius.circular(12),
+          ),
+          listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
+            item.name,
+            style: const TextStyle(
+              color: Color(0xff1E2E52),
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          headerBuilder: (context, selectedItem, enabled) => Text(
+            selectedItem.name,
+            style: const TextStyle(
+              color: Color(0xff1E2E52),
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          hintBuilder: (context, hint, enabled) => const Text(
+            'Выберите кассу',
+            style: TextStyle(
+              color: Color(0xff99A4BA),
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }
@@ -679,17 +1008,23 @@ class _AmountField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.currencyTitle,
+    required this.currencies,
+    required this.selectedCurrency,
     required this.isEnabled,
     required this.onChanged,
     required this.onTap,
+    required this.onCurrencyChanged,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String currencyTitle;
+  final List<SupplierCurrency> currencies;
+  final SupplierCurrency? selectedCurrency;
   final bool isEnabled;
   final ValueChanged<String> onChanged;
   final VoidCallback onTap;
+  final ValueChanged<SupplierCurrency?> onCurrencyChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -734,25 +1069,204 @@ class _AmountField extends StatelessWidget {
           Container(
             width: 108,
             height: double.infinity,
-            alignment: Alignment.center,
             decoration: const BoxDecoration(
               color: Color(0xffF4F7FD),
               borderRadius: BorderRadius.horizontal(right: Radius.circular(12)),
             ),
-            child: Text(
-              currencyTitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Color(0xff1E2E52),
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+            child: PopupMenuButton<int>(
+              enabled: currencies.isNotEmpty,
+              onSelected: (selectedId) {
+                SupplierCurrency? nextCurrency;
+                for (final item in currencies) {
+                  if (item.id == selectedId) {
+                    nextCurrency = item;
+                    break;
+                  }
+                }
+                onCurrencyChanged(nextCurrency);
+              },
+              itemBuilder: (context) {
+                return currencies
+                    .where((item) => item.id != null)
+                    .map(
+                      (item) => PopupMenuItem<int>(
+                        value: item.id!,
+                        child: Text(
+                          item.symbolCode?.trim().isNotEmpty == true
+                              ? item.symbolCode!.trim()
+                              : (item.name ?? 'N/A'),
+                          style: const TextStyle(
+                            color: Color(0xff1E2E52),
+                            fontFamily: 'Gilroy',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList();
+              },
+              offset: const Offset(0, 56),
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        currencyTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xff1E2E52),
+                          fontFamily: 'Gilroy',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (currencies.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xff1E2E52),
+                        size: 18,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RmkLabeledTextField extends StatelessWidget {
+  const _RmkLabeledTextField({
+    required this.controller,
+    required this.label,
+    required this.hintText,
+    required this.onChanged,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hintText;
+  final String? errorText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+          ],
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: const TextStyle(
+              color: Color(0xff99A4BA),
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+            ),
+            errorText: errorText,
+            filled: true,
+            fillColor: const Color(0xffF4F7FD),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xff1E2E52), width: 1),
+            ),
+          ),
+          style: const TextStyle(
+            color: Color(0xff1E2E52),
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RmkInfoField extends StatelessWidget {
+  const _RmkInfoField({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: Color(0xff1E2E52),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xff1E2E52),
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

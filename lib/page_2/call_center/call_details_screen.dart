@@ -438,6 +438,9 @@ String formatDate(DateTime? date) {
 
   String _getCallTypeText(bool incoming, bool missed) {
     if (missed) {
+      if (!incoming) {
+        return 'Исходящий звонок без ответа';
+      }
       return AppLocalizations.of(context)!.translate('missed_call');
     } else if (incoming) {
       return AppLocalizations.of(context)!.translate('incoming_call');
@@ -454,6 +457,8 @@ String formatDate(DateTime? date) {
         return AppLocalizations.of(context)!.translate('outgoing_call');
       case CallType.missed:
         return AppLocalizations.of(context)!.translate('missed_call');
+      case CallType.outgoingMissed:
+        return 'Исходящий звонок без ответа';
     }
   }
 
@@ -484,9 +489,18 @@ String formatDate(DateTime? date) {
     }
 
     if (label == 'call_details') {
-      bool isMissed = call.missed;
-      bool isIncoming = call.incoming;
-      Color statusColor = isMissed ? const Color(0xffFEE6E6) : const Color(0xffE6F4EA);
+      final isOutgoingMissed = call.missed && !call.incoming;
+      final isMissed = call.missed;
+      final statusAccentColor = isOutgoingMissed
+          ? const Color(0xFFF59E0B)
+          : isMissed
+              ? Colors.red
+              : Colors.green;
+      Color statusColor = isOutgoingMissed
+          ? const Color(0xFFFFF4D6)
+          : isMissed
+              ? const Color(0xffFEE6E6)
+              : const Color(0xffE6F4EA);
       String statusText = _getCallTypeText(call.incoming, call.missed);
 
       return Container(
@@ -589,7 +603,7 @@ String formatDate(DateTime? date) {
                 children: [
                   Icon(
                     Icons.info,
-                    color: isMissed ? Colors.red : Colors.green,
+                    color: statusAccentColor,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -599,24 +613,16 @@ String formatDate(DateTime? date) {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: isMissed ? Colors.red : Colors.green,
+                      color: statusAccentColor,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              AppLocalizations.of(context)!.translate('call_recording'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-            if (call.callDuration != null && call.callDuration! > 0 && !call.missed) ...[
-              const SizedBox(height: 0),
+            if (call.callDuration != null &&
+                call.callDuration! > 0 &&
+                !isMissed) ...[
+              const SizedBox(height: 12),
               _buildVoicePlayer(call.callRecordUrl, call.callDuration!),
             ],
           ],
@@ -699,9 +705,19 @@ String formatDate(DateTime? date) {
     }
 
     if (label == 'call_details') {
-      bool isMissed = call.callType == CallType.missed;
-      bool isIncoming = call.callType == CallType.incoming;
-      Color statusColor = isMissed ? const Color(0xffFEE6E6) : const Color(0xffE6F4EA);
+      final isMissed = call.callType == CallType.missed ||
+          call.callType == CallType.outgoingMissed;
+      final isOutgoingMissed = call.callType == CallType.outgoingMissed;
+      final statusAccentColor = isOutgoingMissed
+          ? const Color(0xFFF59E0B)
+          : isMissed
+              ? Colors.red
+              : Colors.green;
+      Color statusColor = isOutgoingMissed
+          ? const Color(0xFFFFF4D6)
+          : isMissed
+              ? const Color(0xffFEE6E6)
+              : const Color(0xffE6F4EA);
       String statusText = _getCallTypeTextFromEntry(call.callType);
 
       return Container(
@@ -804,7 +820,7 @@ String formatDate(DateTime? date) {
                 children: [
                   Icon(
                     Icons.info,
-                    color: isMissed ? Colors.red : Colors.green,
+                    color: statusAccentColor,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -814,24 +830,16 @@ String formatDate(DateTime? date) {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: isMissed ? Colors.red : Colors.green,
+                      color: statusAccentColor,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              AppLocalizations.of(context)!.translate('call_recording'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w400,
-                color: Color(0xff99A4BA),
-              ),
-            ),
-            if (call.duration != null && call.callType != CallType.missed) ...[
-              const SizedBox(height: 0),
+            if (call.duration != null &&
+                call.callType != CallType.missed &&
+                call.callType != CallType.outgoingMissed) ...[
+              const SizedBox(height: 12),
               _buildVoicePlayer('assets/audio/voice_operator.mp3', call.duration!.inSeconds),
             ],
           ],

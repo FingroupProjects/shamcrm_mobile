@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
@@ -346,6 +347,9 @@ class FirebaseApi {
     required String source,
     bool openSipScreen = false,
   }) async {
+    if (!kShowSip) {
+      return;
+    }
     final payload = Map<String, dynamic>.from(message.data);
     await _persistIncomingCallPushData(payload, source: source);
     await SipService().handleIncomingCallPushPayload(

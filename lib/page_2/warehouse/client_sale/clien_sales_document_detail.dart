@@ -514,17 +514,26 @@ class _ClientSalesDocumentDetailsScreenState
     final hasActionButton = actionButton is! SizedBox;
 
     if (!hasActionButton) {
-      return Center(child: _buildPrintButton());
+      // Временно скрыто для публикации.
+      // return Center(child: _buildPrintButton());
+      return const SizedBox.shrink();
     }
 
+    // Временно скрыто для публикации.
+    // return Wrap(
+    //   alignment: WrapAlignment.center,
+    //   spacing: 12,
+    //   runSpacing: 12,
+    //   children: [
+    //     actionButton,
+    //     _buildPrintButton(),
+    //   ],
+    // );
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 12,
       runSpacing: 12,
-      children: [
-        actionButton,
-        _buildPrintButton(),
-      ],
+      children: [actionButton],
     );
   }
 
@@ -685,29 +694,30 @@ class _ClientSalesDocumentDetailsScreenState
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    tooltip: 'Печатать',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(
-                      Icons.print_outlined,
-                      color: Color(0xff1E2E52),
-                    ),
-                    onPressed:
-                        _isLoading || _isPrinting ? null : _printDocument,
-                  ),
-                  const SizedBox(width: 12),
-                  IconButton(
-                    tooltip: 'Настройка печати',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(
-                      Icons.tune_rounded,
-                      color: Color(0xff1E2E52),
-                    ),
-                    onPressed: _isLoading ? null : _openPrintTemplateSettings,
-                  ),
-                  const SizedBox(width: 12),
+                  // Временно скрыто для публикации.
+                  // IconButton(
+                  //   tooltip: 'Печатать',
+                  //   padding: EdgeInsets.zero,
+                  //   constraints: const BoxConstraints(),
+                  //   icon: const Icon(
+                  //     Icons.print_outlined,
+                  //     color: Color(0xff1E2E52),
+                  //   ),
+                  //   onPressed:
+                  //       _isLoading || _isPrinting ? null : _printDocument,
+                  // ),
+                  // const SizedBox(width: 12),
+                  // IconButton(
+                  //   tooltip: 'Настройка печати',
+                  //   padding: EdgeInsets.zero,
+                  //   constraints: const BoxConstraints(),
+                  //   icon: const Icon(
+                  //     Icons.tune_rounded,
+                  //     color: Color(0xff1E2E52),
+                  //   ),
+                  //   onPressed: _isLoading ? null : _openPrintTemplateSettings,
+                  // ),
+                  // const SizedBox(width: 12),
                   // НОВОЕ: Edit только с update-правом
                   if (currentDocument?.deletedAt == null &&
                       widget.hasUpdatePermission)

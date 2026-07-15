@@ -675,6 +675,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       if (event.priceTypeId != null)
         requestData['price_type_id'] =
             event.priceTypeId; // Добавляем price_type_id
+      if (event.currencyId != null) {
+        requestData['currency_id'] = event.currencyId;
+      }
 
       if (!await _checkInternetConnection()) {
         if (event.files != null && event.files!.isNotEmpty) {
@@ -766,6 +769,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       if (event.reasonForRefusal != null &&
           event.reasonForRefusal!.trim().isNotEmpty)
         'reason_for_refusal': event.reasonForRefusal!.trim(),
+      if (event.currencyId != null) 'currency_id': event.currencyId,
       'lead_custom_fields': event.customFields ?? [],
       'directory_values': event.directoryValues ?? [],
       if (event.files != null) 'files': event.files

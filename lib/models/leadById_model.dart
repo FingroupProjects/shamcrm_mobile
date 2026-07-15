@@ -4,6 +4,7 @@ import 'package:crm_task_manager/models/price_type_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
+import 'package:crm_task_manager/models/lead_model.dart';
 
 class LeadById {
   final int id;
@@ -32,6 +33,8 @@ class LeadById {
   final String? phone_verified_at;
   final String? verification_code;
   final PriceType? priceType;
+  final int? currencyId;
+  final LeadCurrency? currency;
   final SalesFunnel? salesFunnel;
   final int? reasonForRefusalId;
   final String? reasonForRefusalComment;
@@ -65,6 +68,8 @@ class LeadById {
     this.phone_verified_at,
     this.verification_code,
     this.priceType,
+    this.currencyId,
+    this.currency,
     this.reasonForRefusalId,
     this.reasonForRefusalComment,
     this.refusalReasonText,
@@ -142,6 +147,13 @@ class LeadById {
       priceType:
           json['priceType'] != null && json['priceType'] is Map<String, dynamic>
               ? PriceType.fromJson(json['priceType'])
+              : null,
+      currencyId: json['currency_id'] is int
+          ? json['currency_id'] as int
+          : int.tryParse('${json['currency_id']}'),
+      currency:
+          json['currency'] != null && json['currency'] is Map<String, dynamic>
+              ? LeadCurrency.fromJson(json['currency'])
               : null,
       reasonForRefusalId: json['reason_for_refusal_id'] is int
           ? json['reason_for_refusal_id'] as int

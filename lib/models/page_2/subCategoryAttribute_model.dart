@@ -1,4 +1,6 @@
-class SubCategoryAttributesData {
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+
+class SubCategoryAttributesData with CustomDropdownListFilter {
   final int id;
   final String name;
   final String? image;
@@ -42,6 +44,20 @@ class SubCategoryAttributesData {
 
   @override
   int get hashCode => id.hashCode;
+
+  @override
+  bool filter(String query) {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return true;
+    }
+
+    return name.toLowerCase().contains(normalizedQuery) ||
+        (parent?.name.toLowerCase().contains(normalizedQuery) ?? false);
+  }
+
+  @override
+  String toString() => name;
 }
 class ParentCategory {
   final int id;

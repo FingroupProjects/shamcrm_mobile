@@ -284,18 +284,15 @@ class NativeSipManager(
             return true
         }
         return try {
-            val desired = sipCore.getAudioDevices().firstOrNull { device ->
-                val typeName = device.getType().toString()
-                if (enabled) {
-                    typeName.contains("Speaker", ignoreCase = true)
-                } else {
-                    typeName.contains("Earpiece", ignoreCase = true) ||
-                        typeName.contains("Microphone", ignoreCase = true)
-                }
-            }
+            val desired = preferredAudioDevice(sipCore, speakerEnabled = enabled)
 
             if (desired != null) {
                 sipCore.setOutputAudioDevice(desired)
+                emitAudioRouteState(
+                    state = "audio_device_selected",
+                    reason = if (enabled) "speaker_enabled" else "speaker_disabled",
+                    deviceType = audioDeviceTypeName(desired),
+                )
                 emitCallState(
                     state = mapCallState(currentCall?.getState()?.toString()),
                     remoteIdentity = remoteIdentityFor(currentCall),
@@ -472,21 +469,65 @@ class NativeSipManager(
 
     private fun tryApplySpeakerPreference(sipCore: Core) {
         try {
-            val desired = sipCore.getAudioDevices().firstOrNull { device ->
-                val typeName = device.getType().toString()
-                if (isSpeakerOn) {
-                    typeName.contains("Speaker", ignoreCase = true)
-                } else {
-                    typeName.contains("Earpiece", ignoreCase = true) ||
-                        typeName.contains("Microphone", ignoreCase = true)
-                }
-            }
+            val desired = preferredAudioDevice(sipCore, speakerEnabled = isSpeakerOn)
             if (desired != null) {
                 sipCore.setOutputAudioDevice(desired)
+                emitAudioRouteState(
+                    state = "audio_device_selected",
+                    reason = "call_state_$lastCallState",
+                    deviceType = audioDeviceTypeName(desired),
+                )
             }
         } catch (error: Throwable) {
             Log.e(TAG, "tryApplySpeakerPreference failed: ${error.message}", error)
         }
+    }
+
+    private fun preferredAudioDevice(
+        sipCore: Core,
+        speakerEnabled: Boolean,
+    ) = sipCore.getAudioDevices()
+        .map { device -> device to audioDevicePriority(device, speakerEnabled) }
+        .filter { (_, priority) -> priority > 0 }
+        .maxByOrNull { (_, priority) -> priority }
+        ?.first
+
+    private fun audioDevicePriority(device: org.linphone.core.AudioDevice, speakerEnabled: Boolean): Int {
+        val typeName = audioDeviceTypeName(device)
+        if (speakerEnabled) {
+            return if (typeName.contains("speaker", ignoreCase = true)) 100 else 0
+        }
+
+        return when {
+            typeName.contains("bluetooth", ignoreCase = true) -> 100
+            typeName.contains("headset", ignoreCase = true) -> 80
+            typeName.contains("headphone", ignoreCase = true) -> 70
+            typeName.contains("earpiece", ignoreCase = true) -> 60
+            typeName.contains("microphone", ignoreCase = true) -> 0
+            typeName.contains("speaker", ignoreCase = true) -> 0
+            else -> 10
+        }
+    }
+
+    private fun audioDeviceTypeName(device: org.linphone.core.AudioDevice): String {
+        return device.getType().toString()
+    }
+
+    private fun emitAudioRouteState(
+        state: String,
+        reason: String,
+        deviceType: String,
+    ) {
+        emit(
+            type = "audio_session",
+            payload = hashMapOf(
+                "state" to state,
+                "reason" to reason,
+                "output" to deviceType.lowercase(),
+                "speakerOn" to isSpeakerOn,
+                "callState" to lastCallState,
+            ),
+        )
     }
 
     private fun emitRegistration(state: String, message: String) {

@@ -4092,6 +4092,9 @@ class ApiService {
     if (data['wa_phone'] != null) {
       request.fields['wa_phone'] = data['wa_phone'].toString();
     }
+    if (data['currency_id'] != null) {
+      request.fields['currency_id'] = data['currency_id'].toString();
+    }
     if (data['price_type_id'] != null) {
       request.fields['price_type_id'] =
           data['price_type_id'].toString(); // Добавляем price_type_id
@@ -12793,9 +12796,15 @@ class ApiService {
     }
   }
 
-  Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
+  Future<List<SubCategoryAttributesData>> getSubCategoryAttributes({
+    String? search,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/category/get/subcategories');
+    final encodedSearch = search?.trim();
+    final basePath = encodedSearch != null && encodedSearch.isNotEmpty
+        ? '/category/get/subcategories?search=${Uri.encodeQueryComponent(encodedSearch)}'
+        : '/category/get/subcategories';
+    final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
       //debugPrint('ApiService: getSubCategoryAttributes - Generated path: $path');
     }
@@ -13561,7 +13570,7 @@ class ApiService {
         return Order.fromJson(decodedData);
       } else {
         throw Exception(
-            'Ошибка загрузки деталей заказа и нет кэшированных данных!');
+            'Ошибка загрузки деталей заказа и нет кэширвованных данных!');
       }
     }
   }
@@ -13881,7 +13890,6 @@ class ApiService {
           'Device': 'mobile',
         });
 
-        request.fields['_method'] = 'PATCH';
         request.fields['phone'] = phone;
         request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
         request.fields['organization_id'] = organizationId.toString();
@@ -14029,7 +14037,7 @@ class ApiService {
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
-      final response = await http.patch(
+      final response = await http.post(
         uri,
         headers: {
           'Authorization': 'Bearer $token',
@@ -14638,7 +14646,7 @@ class ApiService {
     String? searchQuery,
     Map<String, dynamic>? filters,
   }) async {
-    String path = '/calls?incoming=0&missed=0&page=$page&per_page=$perPage';
+    String path = '/calls?incoming=0&page=$page&per_page=$perPage';
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       path += '&search=${Uri.encodeQueryComponent(searchQuery)}';

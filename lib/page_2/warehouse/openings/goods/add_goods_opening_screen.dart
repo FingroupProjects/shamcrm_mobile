@@ -20,11 +20,13 @@ import 'goods_units_dropdown.dart';
 class AddGoodsOpeningScreen extends StatefulWidget {
   final String goodName;
   final int goodVariantId;
+  final GoodVariantItem? selectedGood;
 
   const AddGoodsOpeningScreen({
     Key? key,
     required this.goodName,
     required this.goodVariantId,
+    this.selectedGood,
   }) : super(key: key);
 
   @override
@@ -53,6 +55,7 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
     // Initialize controllers with empty values
     quantityController = TextEditingController();
     priceController = TextEditingController();
+    _selectedGood = widget.selectedGood;
 
     // Load required data
     context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
@@ -73,9 +76,11 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
 
   void _loadSelectedGood(List<GoodVariantItem> goodsList) {
     try {
-      _selectedGood = goodsList.firstWhere(
+      final matchedGood = goodsList.firstWhere(
         (good) => good.id == widget.goodVariantId,
       );
+      if (_selectedGood?.id == matchedGood.id) return;
+      _selectedGood = matchedGood;
       if (mounted) {
         setState(() {});
       }
