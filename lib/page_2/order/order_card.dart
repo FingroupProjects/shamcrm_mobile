@@ -166,13 +166,26 @@ class _OrderCardState extends State<OrderCard> {
   late String dropdownValue;
   late int statusId;
   int? currencyId;
+  bool _hideTojsokhtmontjOrderPaymentBadges = false;
 
   @override
   void initState() {
     super.initState();
     statusId = widget.order.orderStatus.id;
     dropdownValue = widget.order.orderStatus.name;
+    _loadTenantFlags();
     _loadCurrencyId();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final apiService = ApiService();
+    final shouldHideOrderPaymentBadges =
+        await apiService.isTojsokhtmontjTenant();
+
+    if (!mounted) return;
+    setState(() {
+      _hideTojsokhtmontjOrderPaymentBadges = shouldHideOrderPaymentBadges;
+    });
   }
 
   // ИСПРАВЛЕННЫЙ МЕТОД загрузки currencyId с дополнительной отладкой
@@ -385,12 +398,14 @@ class _OrderCardState extends State<OrderCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        width: 32,
-                        height: 18,
-                        child: getPaymentStatusStyle(widget.order.paymentStatus, context).content,
-                      ),
+                      if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
+                        const SizedBox(width: 4),
+                        SizedBox(
+                          width: 32,
+                          height: 18,
+                          child: getPaymentStatusStyle(widget.order.paymentStatus, context).content,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -481,25 +496,27 @@ class _OrderCardState extends State<OrderCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
-                  flex: 1,
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.42,
-                    ),
-                    child: IntrinsicWidth(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
-                          borderRadius: BorderRadius.circular(6),
+                if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
+                  Flexible(
+                    flex: 1,
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.42,
+                      ),
+                      child: IntrinsicWidth(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
                         ),
-                        child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
+                  const SizedBox(width: 16),
+                ],
                 Flexible(
                   flex: 1,
                   child: Container(

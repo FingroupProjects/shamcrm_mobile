@@ -265,7 +265,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         (screenIdentifier == 'sip_journal' ||
             screenIdentifier == 'sip' ||
             screenIdentifier == 'sip_dial')) {
-      debugPrint('HomeScreen: SIP screen identifier detected: $screenIdentifier');
+      debugPrint(
+          'HomeScreen: SIP screen identifier detected: $screenIdentifier');
 
       if (Navigator.canPop(context)) {
         Navigator.popUntil(context, (route) => route.isFirst);
@@ -1028,11 +1029,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
 
-    bool hasWarehouseAccess = false;
-    if (hasPermission('accounting_of_goods') ||
-        hasPermission('accounting_money')) {
-      hasWarehouseAccess = true;
-    }
+    final hasWarehouseDocumentAccess = hasPermission('accounting_of_goods') ||
+        hasPermission('accounting_money') ||
+        hasPermission('income_document.read') ||
+        hasPermission('movement_document.read') ||
+        hasPermission('manufacture.read') ||
+        hasPermission('manufacture_document.read') ||
+        hasPermission('write_off_document.read') ||
+        hasPermission('expense_document.read') ||
+        hasPermission('client_return_document.read') ||
+        hasPermission('supplier_return_document.read') ||
+        hasPermission('checking_account_pko.read') ||
+        hasPermission('checking_account_rko.read');
+    final hasWarehouseReferenceAccess = hasPermission('storage.read') ||
+        hasPermission('unit.read') ||
+        hasPermission('supplier.read') ||
+        hasPermission('product.read') ||
+        hasPermission('price_type.read') ||
+        hasPermission('category.read') ||
+        hasPermission('lead.read') ||
+        hasPermission('initial_balance.read') ||
+        hasPermission('cash_register.read') ||
+        hasPermission('rko_article.read') ||
+        hasPermission('pko_article.read');
+    final bool hasWarehouseAccess =
+        hasWarehouseDocumentAccess || hasWarehouseReferenceAccess;
 
     // Показываем раздел заказов, если есть любой order.* доступ
     bool hasOrderAccess = hasAnyPermissionWithPrefix('order.');

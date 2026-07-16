@@ -40,6 +40,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   bool _showAllMode = false;
   Timer? _searchDebounce;
   int? currencyId;
+  bool _isTojsokhtmontjTenant = false;
 
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
@@ -50,10 +51,19 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   void initState() {
     super.initState();
     _initializeBaseUrl();
+    _loadTenantFlags();
     _loadCurrencyId();
     _scrollController.addListener(_onScroll);
     _bloc = context.read<VariantBottomSheetBloc>();
     _loadSettings();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+    });
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -253,6 +263,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         _selectedVariants.remove(variantId);
         _selectedQuantities.remove(variantId);
       } else {
+        if (_isTojsokhtmontjTenant) {
+          for (final controller in _quantityControllers.values) {
+            controller.dispose();
+          }
+          _selectedVariants.clear();
+          _selectedQuantities.clear();
+          _quantityControllers.clear();
+        }
         _selectedVariants[variantId] = variant;
         _selectedQuantities[variantId] = 1;
       }
@@ -370,7 +388,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       'id': variant.id,
       'name': _getDisplayName(variant),
       'price': variant.price ?? 0.0,
-      'quantity': _getVariantQuantity(variant),
+      'quantity': _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
       'imagePath': variant.good?.files.isNotEmpty == true
           ? variant.good!.files[0].path
           : null,
@@ -1051,7 +1069,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 ],
               ),
             ),
-            if (isSelected) ...[
+            if (isSelected && !_isTojsokhtmontjTenant) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -1145,6 +1163,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
     final remainder = variant.remainder;
     final hasStock = remainder != null && remainder > 0;
+    if (_isTojsokhtmontjTenant && !hasStock) {
+      return const SizedBox.shrink();
+    }
     final quantityText = localizations.translate('quantity');
     final outOfStockText = localizations.translate('out_of_stock');
 

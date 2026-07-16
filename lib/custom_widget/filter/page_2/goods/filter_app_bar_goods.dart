@@ -1,13 +1,11 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/labels_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/status.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
-import 'package:crm_task_manager/page_2/goods/goods_details/label_multiselect_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,7 +34,8 @@ class GoodsFilterScreen extends StatefulWidget {
 }
 
 class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
-  final TextEditingController discountPercentController = TextEditingController();
+  final TextEditingController discountPercentController =
+      TextEditingController();
   List<SubCategoryAttributesData> selectedCategories = [];
   List<String> selectedLabels = []; // Храним label_id как строки
   bool isCategoryValid = true;
@@ -66,14 +65,16 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     if (widget.initialLabels != null) {
       selectedLabels = List.from(widget.initialLabels!);
       if (kDebugMode) {
-        debugPrint('GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
+        debugPrint(
+            'GoodsFilterScreen: Установлены начальные label_id: $selectedLabels');
       }
     }
 
     if (widget.initialIsActive != null) {
       isActive = widget.initialIsActive;
       if (kDebugMode) {
-        debugPrint('GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
+        debugPrint(
+            'GoodsFilterScreen: Установлено начальное значение is_active: $isActive');
       }
     }
 
@@ -162,7 +163,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                         .map((category) => category.id.toString())
                         .toList()
                     : [],
-                'label_id': selectedLabels.isNotEmpty ? selectedLabels : [], // Изменено на label_id
+                'label_id': selectedLabels.isNotEmpty
+                    ? selectedLabels
+                    : [], // Изменено на label_id
               };
 
               if (isActive != null) {
@@ -240,7 +243,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               });
             } else {
               if (kDebugMode) {
-                debugPrint('GoodsFilterScreen: Список подкатегорий пуст в listener');
+                debugPrint(
+                    'GoodsFilterScreen: Список подкатегорий пуст в listener');
               }
             }
           }
@@ -331,7 +335,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                             padding: const EdgeInsets.all(8),
                             child: LabelsMultiSelectWidget(
                               selectedLabels: selectedLabels,
-                              onSelectLabels: (labelIds) { // Изменено на labelIds
+                              onSelectLabels: (labelIds) {
+                                // Изменено на labelIds
                                 setState(() {
                                   selectedLabels = labelIds;
                                   if (kDebugMode) {
@@ -406,7 +411,8 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                StatusSelector(onStatusChanged: _handleStatusChanged),
+                                StatusSelector(
+                                    onStatusChanged: _handleStatusChanged),
                               ],
                             ),
                           ),

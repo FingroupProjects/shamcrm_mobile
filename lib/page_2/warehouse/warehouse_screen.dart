@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class WarehouseAccountingScreen extends StatefulWidget {
   const WarehouseAccountingScreen({super.key});
 
@@ -105,6 +104,12 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       final hasStorage = await _apiService.hasPermission('storage.read');
       final hasUnit = await _apiService.hasPermission('unit.read');
       final hasSupplier = await _apiService.hasPermission('supplier.read');
+      final hasProduct = await _apiService.hasPermission('product.read');
+      final hasPriceType = await _apiService.hasPermission('price_type.read');
+      final hasCategory = await _apiService.hasPermission('category.read');
+      final hasLead = await _apiService.hasPermission('lead.read');
+      final hasOpenings =
+          await _apiService.hasPermission('initial_balance.read');
       final hasCashRegister =
           await _apiService.hasPermission('cash_register.read');
       final hasRkoArticle = await _apiService.hasPermission('rko_article.read');
@@ -124,6 +129,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           hasStorage ||
           hasUnit ||
           hasSupplier ||
+          hasProduct ||
+          hasPriceType ||
+          hasCategory ||
+          hasLead ||
+          hasOpenings ||
           hasCashRegister ||
           hasRkoArticle ||
           hasPkoArticle;
@@ -609,7 +619,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                     duration: Duration(milliseconds: 1000),
                   ),
                 )
-              : _documents.isEmpty
+              : _documents.isEmpty && !_showReferences
                   ? _buildNoPermissionsWidget()
                   : Container(
                       color: const Color(0xffF8F9FB),

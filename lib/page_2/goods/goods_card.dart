@@ -15,6 +15,10 @@ class GoodsCard extends StatefulWidget {
   final List<GoodsFile> goodsFiles;
   final bool? isActive;
   final Label? label;
+  final bool isTojsokhtmontjTenant;
+  final String? availabilityStatus;
+  final String? characteristicsSummary;
+  final List<String> characteristics;
 
   const GoodsCard({
     Key? key,
@@ -26,6 +30,10 @@ class GoodsCard extends StatefulWidget {
     required this.goodsFiles,
     this.isActive,
     this.label,
+    this.isTojsokhtmontjTenant = false,
+    this.availabilityStatus,
+    this.characteristicsSummary,
+    this.characteristics = const [],
   }) : super(key: key);
 
   @override
@@ -41,13 +49,13 @@ class _GoodsCardState extends State<GoodsCard> {
     super.initState();
     //print('🔵 [GoodsCard] initState для товара: ${widget.goodsName} (ID: ${widget.goodsId})');
     //print('🔵 [GoodsCard] Количество файлов: ${widget.goodsFiles.length}');
-    
+
     // Выводим все файлы которые пришли от сервера
     for (int i = 0; i < widget.goodsFiles.length; i++) {
       final file = widget.goodsFiles[i];
       //print('🔵 [GoodsCard] Файл $i: path="${file.path}", isMain=${file.isMain}');
     }
-    
+
     _initializeBaseUrl();
   }
 
@@ -83,12 +91,12 @@ class _GoodsCardState extends State<GoodsCard> {
       //print('⚠️ [GoodsCard] Нет файлов для товара ${widget.goodsName}');
       return null;
     }
-    
+
     final mainImage = widget.goodsFiles.firstWhere(
       (file) => file.isMain,
       orElse: () => widget.goodsFiles.first,
     );
-    
+
     //print('🖼️ [GoodsCard] Выбрано главное изображение: path="${mainImage.path}", isMain=${mainImage.isMain}');
     return mainImage;
   }
@@ -98,14 +106,14 @@ class _GoodsCardState extends State<GoodsCard> {
     //print('🔧 [GoodsCard] Строим URL изображения...');
     //print('🔧 [GoodsCard] baseUrl: "$baseUrl"');
     //print('🔧 [GoodsCard] file.path: "${file.path}"');
-    
+
     final imageUrl = baseUrl != null ? '${file.path}' : null;
-    
+
     //print('🌐 [GoodsCard] Финальный imageUrl: "$imageUrl"');
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: imageUrl != null 
+      child: imageUrl != null
           ? Image.network(
               imageUrl,
               width: 100,
@@ -118,7 +126,8 @@ class _GoodsCardState extends State<GoodsCard> {
                   width: 100,
                   height: 100,
                   color: Colors.white,
-                  child: const Icon(Icons.broken_image, size: 40, color: Color(0xff99A4BA)),
+                  child: const Icon(Icons.broken_image,
+                      size: 40, color: Color(0xff99A4BA)),
                 );
               },
               loadingBuilder: (context, child, loadingProgress) {
@@ -126,7 +135,7 @@ class _GoodsCardState extends State<GoodsCard> {
                   //print('✅ [GoodsCard] Изображение успешно загружено: "$imageUrl"');
                   return child;
                 }
-                final progress = loadingProgress.cumulativeBytesLoaded / 
+                final progress = loadingProgress.cumulativeBytesLoaded /
                     (loadingProgress.expectedTotalBytes ?? 1);
                 //print('⏳ [GoodsCard] Загрузка изображения: ${(progress * 100).toStringAsFixed(0)}%');
                 return Container(
@@ -170,7 +179,8 @@ class _GoodsCardState extends State<GoodsCard> {
         Container(
           height: labelHeight,
           margin: const EdgeInsets.only(right: 8, bottom: 4),
-          padding: const EdgeInsets.symmetric(horizontal: labelPadding, vertical: 2),
+          padding:
+              const EdgeInsets.symmetric(horizontal: labelPadding, vertical: 2),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [labelColor, labelColor.withOpacity(0.7)],
@@ -211,9 +221,34 @@ class _GoodsCardState extends State<GoodsCard> {
   }
 
   Widget _buildStatusLabel() {
+    if (widget.isTojsokhtmontjTenant) {
+      final statusText = widget.availabilityStatus?.trim() ?? '';
+      if (statusText.isEmpty) return const SizedBox.shrink();
+
+      final colors = _tojsokhtmontjStatusColors(statusText);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: colors.$1,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          statusText,
+          style: TextStyle(
+            color: colors.$2,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Gilroy',
+          ),
+        ),
+      );
+    }
+
     final localizations = AppLocalizations.of(context)!;
     final isActive = widget.isActive ?? false;
-    final statusText = isActive ? localizations.translate('active') : localizations.translate('inactive');
+    final statusText = isActive
+        ? localizations.translate('active')
+        : localizations.translate('inactive');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -233,6 +268,64 @@ class _GoodsCardState extends State<GoodsCard> {
     );
   }
 
+  (Color, Color) _tojsokhtmontjStatusColors(String status) {
+    final normalized = status.trim().toLowerCase().replaceAll('ё', 'е');
+    if (normalized.contains('свобод')) {
+      return (const Color(0xFFE0F6E9), const Color(0xFF11B95C));
+    }
+    if (normalized.contains('брон')) {
+      return (const Color(0xFFFFF4DD), const Color(0xFFE18A00));
+    }
+    if (normalized.contains('прод')) {
+      return (const Color(0xFFFFE3E3), const Color(0xFFFF3B30));
+    }
+    if (normalized.contains('резерв')) {
+      return (const Color(0xFFE4EFFF), const Color(0xFF1D7CFF));
+    }
+    return (const Color(0xFFF1F4FA), const Color(0xFF61708A));
+  }
+
+  Widget _buildCharacteristics() {
+    final values = widget.characteristics
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    if (values.isEmpty) {
+      final summary = widget.characteristicsSummary?.trim();
+      if (summary == null || summary.isEmpty) return const SizedBox.shrink();
+      values.addAll(summary
+          .split(RegExp(r'\s*/\s*|,\s*'))
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty));
+    }
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: values.map((value) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xffE1E7F0)),
+          ),
+          child: Text(
+            value,
+            style: TaskCardStyles.priorityStyle.copyWith(
+              fontSize: 11,
+              color: const Color(0xff61708A),
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mainImage = _getMainImage();
@@ -243,7 +336,8 @@ class _GoodsCardState extends State<GoodsCard> {
         child: Container(
           decoration: TaskCardStyles.taskCardDecoration,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -277,10 +371,14 @@ class _GoodsCardState extends State<GoodsCard> {
                                   color: const Color(0xff1E2E52),
                                 ),
                                 children: const <TextSpan>[
-                                  TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
+                                  TextSpan(
+                                      text: '\n\u200B',
+                                      style: TaskCardStyles.priorityStyle),
                                 ],
                               )
-                            : const TextSpan(text: '\n\u200B', style: TaskCardStyles.priorityStyle),
+                            : const TextSpan(
+                                text: '\n\u200B',
+                                style: TaskCardStyles.priorityStyle),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -293,6 +391,15 @@ class _GoodsCardState extends State<GoodsCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (widget.isTojsokhtmontjTenant &&
+                          (widget.characteristics.isNotEmpty ||
+                              (widget.characteristicsSummary
+                                      ?.trim()
+                                      .isNotEmpty ??
+                                  false))) ...[
+                        const SizedBox(height: 4),
+                        _buildCharacteristics(),
+                      ],
                       const SizedBox(height: 4),
                       _buildStatusLabel(),
                     ],

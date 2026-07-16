@@ -208,6 +208,8 @@ class Goods {
   final String? productionType;
   final List<MaterialGood>? materialGoods;
   final List<RelatedGood>? relatedGoods;
+  final String? availabilityStatus;
+  final int? sortOrder;
 
   Goods({
     required this.id,
@@ -240,6 +242,8 @@ class Goods {
     this.productionType,
     this.materialGoods,
     this.relatedGoods,
+    this.availabilityStatus,
+    this.sortOrder,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -353,6 +357,40 @@ class Goods {
             .toList();
       }
 
+      String? parseStatus(dynamic value) {
+        if (value == null) return null;
+        if (value is String || value is num || value is bool) {
+          final text = value.toString().trim();
+          return text.isEmpty ? null : text;
+        }
+        if (value is Map<String, dynamic>) {
+          for (final key in ['name', 'title', 'value', 'label', 'status']) {
+            final nested = parseStatus(value[key]);
+            if (nested != null) return nested;
+          }
+        }
+        return null;
+      }
+
+      int? parseSortOrder(dynamic value) {
+        if (value == null) return null;
+        if (value is int) return value;
+        if (value is num) return value.toInt();
+        if (value is String) return int.tryParse(value.trim());
+        return null;
+      }
+
+      final availabilityStatus = parseStatus(data['status']) ??
+          parseStatus(json['status']) ??
+          parseStatus(data['status_name']) ??
+          parseStatus(json['status_name']) ??
+          parseStatus(data['availability_status']) ??
+          parseStatus(json['availability_status']) ??
+          parseStatus(data['availability']) ??
+          parseStatus(json['availability']) ??
+          parseStatus(data['apartment_status']) ??
+          parseStatus(json['apartment_status']);
+
       // Парсим файлы: проверяем несколько возможных мест
       List<GoodsFile> files = [];
       if (json['files'] != null && json['files'] is List) {
@@ -418,6 +456,13 @@ class Goods {
         productionType: data['production_type'] as String?,
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
+        availabilityStatus: availabilityStatus,
+        sortOrder: parseSortOrder(data['sort']) ??
+            parseSortOrder(json['sort']) ??
+            parseSortOrder(data['sort_order']) ??
+            parseSortOrder(json['sort_order']) ??
+            parseSortOrder(data['order']) ??
+            parseSortOrder(json['order']),
       );
     } catch (e, stackTrace) {
       //print('GoodsModel: Ошибка парсинга товара: $e');
@@ -447,6 +492,23 @@ class Goods {
       //print('Ошибка получения главного изображения: $e');
       return null;
     }
+  }
+
+  String get characteristicsSummary {
+    return characteristicLabels.join(' / ');
+  }
+
+  List<String> get characteristicLabels {
+    return attributes
+        .where((attribute) => attribute.value.trim().isNotEmpty)
+        .map((attribute) {
+      final name = attribute.name.trim();
+      final value = attribute.value.trim();
+      if (name.isEmpty || name == 'Неизвестная характеристика') {
+        return value;
+      }
+      return '$name: $value';
+    }).toList();
   }
 }
 

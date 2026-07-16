@@ -99,6 +99,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   // Конфигурация полей с сервера
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
+  bool _isTojsokhtmontjTenant = false;
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -139,12 +140,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         )
         .toList();
     existingFiles = List.from(widget.order.files);
-    _selectedLead = widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
-        ? LeadData(
-            id: widget.order.lead.id,
-            name: widget.order.lead.name,
-          )
-        : null;
+    _selectedLead =
+        widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
+            ? LeadData(
+                id: widget.order.lead.id,
+                name: widget.order.lead.name,
+              )
+            : null;
     selectedManager = widget.order.manager?.id.toString();
     _selectedIntegrationId = widget.order.integrationId;
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
@@ -201,14 +203,22 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       _initializeBaseUrl();
       _loadCurrencyId(); // Загружаем currencyId
       _loadFieldConfiguration();
+      _loadTenantFlags();
       _loadInternetStores();
       _branchBloc.add(FetchBranches());
-      _deliveryAddressBloc
-          .add(FetchDeliveryAddresses(
+      _deliveryAddressBloc.add(FetchDeliveryAddresses(
         leadId: widget.order.deal == null ? widget.order.lead.id : null,
         dealId: widget.order.deal?.id,
       ));
       context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    });
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
     });
   }
 
@@ -356,7 +366,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     final apiService = ApiService();
     try {
-      final variantResponse = await apiService.getVariants(search: barcode, perPage: 1);
+      final variantResponse =
+          await apiService.getVariants(search: barcode, perPage: 1);
       final variants = variantResponse.data;
 
       if (variants.isEmpty) {
@@ -372,11 +383,14 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       final variantId = variant.id;
       final price = (variant.price as num?)?.toDouble() ?? 0.0;
 
-      final existingIndex = _items.indexWhere((item) => item['id'] == variantId);
+      final existingIndex =
+          _items.indexWhere((item) => item['id'] == variantId);
 
       if (existingIndex != -1) {
         setState(() {
-          final currentQty = (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0).toInt();
+          final currentQty =
+              (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0)
+                  .toInt();
           _items[existingIndex]['quantity'] = currentQty + 1;
 
           if (_isTotalEdited) {
@@ -386,7 +400,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         });
         showCustomSnackBar(
           context: context,
-          message: 'Количество увеличено: ${variant.fullName ?? variant.good?.name ?? ''}',
+          message:
+              'Количество увеличено: ${variant.fullName ?? variant.good?.name ?? ''}',
           isSuccess: true,
         );
       } else {
@@ -406,7 +421,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         });
         showCustomSnackBar(
           context: context,
-          message: 'Товар добавлен: ${variant.fullName ?? variant.good?.name ?? ''}',
+          message:
+              'Товар добавлен: ${variant.fullName ?? variant.good?.name ?? ''}',
           isSuccess: true,
         );
       }
@@ -480,7 +496,15 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         },
       );
       setState(() {
-        _items.addAll(addedItems);
+        if (_isTojsokhtmontjTenant) {
+          for (final controller in _quantityControllers.values) {
+            controller.dispose();
+          }
+          _quantityControllers.clear();
+          _items = addedItems.take(1).toList();
+        } else {
+          _items.addAll(addedItems);
+        }
         if (_isTotalEdited && addedTotal != 0) {
           final currentTotal = _getCurrentTotal();
           final adjustedTotal = currentTotal + addedTotal;
@@ -681,6 +705,190 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           config.originalRequired &&
           names.contains(config.fieldName),
     );
+  }
+
+  bool _isInnFieldName(String fieldName) {
+    final normalized = fieldName.trim().toLowerCase();
+    return normalized == 'инн' || normalized == 'inn';
+  }
+
+  String _normalizeTojsokhtmontjFieldName(String value) {
+    return value.trim().toLowerCase().replaceAll('ё', 'е');
+  }
+
+  bool _isTojsokhtmontjDealTypeField(String fieldName) {
+    final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
+    return normalized == 'тип сделки';
+  }
+
+  bool _isTojsokhtmontjInstallmentField(String fieldName) {
+    final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
+    return <String>{
+      'первоначальный взнос',
+      'срок рассрочки',
+      'сумма рассрочки',
+      'ежемесячная оплата',
+    }.contains(normalized);
+  }
+
+  bool _isTojsokhtmontjPricePerSquareField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'цена за квадрат';
+  }
+
+  bool _isTojsokhtmontjAreaField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'общая площадь кв';
+  }
+
+  bool _isTojsokhtmontjTotalField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'итого';
+  }
+
+  bool _isTojsokhtmontjInitialPaymentField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) ==
+        'первоначальный взнос';
+  }
+
+  bool _isTojsokhtmontjInstallmentTermField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'срок рассрочки';
+  }
+
+  bool _isTojsokhtmontjInstallmentAmountField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'сумма рассрочки';
+  }
+
+  bool _isTojsokhtmontjMonthlyPaymentField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'ежемесячная оплата';
+  }
+
+  bool _isTojsokhtmontjEditableCalculationSource(String fieldName) {
+    return _isTojsokhtmontjPricePerSquareField(fieldName) ||
+        _isTojsokhtmontjAreaField(fieldName) ||
+        _isTojsokhtmontjInitialPaymentField(fieldName) ||
+        _isTojsokhtmontjInstallmentTermField(fieldName);
+  }
+
+  bool _isTojsokhtmontjReadOnlyCalculatedField(String fieldName) {
+    return _isTojsokhtmontjTotalField(fieldName) ||
+        _isTojsokhtmontjInstallmentAmountField(fieldName) ||
+        _isTojsokhtmontjMonthlyPaymentField(fieldName);
+  }
+
+  bool _hasTojsokhtmontjConfiguredTotalField() {
+    return fieldConfigurations.any(
+      (config) =>
+          (config.isActive || _isAlwaysVisible(config)) &&
+          _isTojsokhtmontjTotalField(config.fieldName),
+    );
+  }
+
+  CustomField _getOrCreateTojsokhtmontjField(String fieldName) {
+    final existingField = customFields.firstWhere(
+      (field) =>
+          _normalizeTojsokhtmontjFieldName(field.fieldName) ==
+          _normalizeTojsokhtmontjFieldName(fieldName),
+      orElse: () {
+        final newField = CustomField(
+          fieldName: fieldName,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+          type: 'number',
+          isCustomField: true,
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  double _parseTojsokhtmontjNumber(String value) {
+    final normalized = value
+        .replaceAll(RegExp(r'[\s\u00A0]'), '')
+        .replaceAll(',', '.')
+        .replaceAll(RegExp(r'[^0-9.\-]'), '');
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  String _formatTojsokhtmontjNumber(double value) {
+    if (!value.isFinite) return '';
+    final normalized = value.abs() < 0.005 ? 0 : value;
+    if ((normalized - normalized.roundToDouble()).abs() < 0.005) {
+      return normalized.round().toString();
+    }
+    return normalized.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
+  void _setTojsokhtmontjCalculatedValue(String fieldName, double value) {
+    final field = _getOrCreateTojsokhtmontjField(fieldName);
+    final nextValue = _formatTojsokhtmontjNumber(value);
+    if (field.controller.text != nextValue) {
+      field.controller.text = nextValue;
+    }
+  }
+
+  void _recalculateTojsokhtmontjApartmentFields() {
+    if (!_isTojsokhtmontjTenant) return;
+
+    final pricePerSquare = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Цена за квадрат').controller.text,
+    );
+    final area = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Общая площадь кв').controller.text,
+    );
+    final initialPayment = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Первоначальный взнос').controller.text,
+    );
+    final installmentTerm = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Срок рассрочки').controller.text,
+    );
+
+    final total = pricePerSquare * area;
+    final installmentAmount =
+        (total - initialPayment).clamp(0, double.infinity).toDouble();
+    final monthlyPayment =
+        installmentTerm > 0 ? installmentAmount / installmentTerm : 0.0;
+
+    _setTojsokhtmontjCalculatedValue('Итого', total);
+    _setTojsokhtmontjCalculatedValue('Сумма рассрочки', installmentAmount);
+    _setTojsokhtmontjCalculatedValue('Ежемесячная оплата', monthlyPayment);
+  }
+
+  Widget _buildTojsokhtmontjTotalField() {
+    _recalculateTojsokhtmontjApartmentFields();
+    final totalField = _getOrCreateTojsokhtmontjField('Итого');
+    return CustomFieldWidget(
+      fieldName: 'Итого',
+      valueController: totalField.controller,
+      type: 'number',
+      isDirectory: false,
+      readOnlyOverride: true,
+    );
+  }
+
+  bool _shouldHideTojsokhtmontjInstallmentFields() {
+    if (!_isTojsokhtmontjTenant) return false;
+
+    for (final field in customFields) {
+      if (_isTojsokhtmontjDealTypeField(field.fieldName)) {
+        return _normalizeTojsokhtmontjFieldName(field.controller.text) ==
+            'наличными';
+      }
+    }
+    return false;
+  }
+
+  String? _validateTojsokhtmontjInn(String? value) {
+    if (!_isTojsokhtmontjTenant) return null;
+
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return AppLocalizations.of(context)!.translate('field_required');
+    }
+    if (!RegExp(r'^\d{9}$').hasMatch(trimmed)) {
+      return 'ИНН должен содержать ровно 9 цифр';
+    }
+    return null;
   }
 
   String _normalizeOrderErrorMessage(String message) {
@@ -984,13 +1192,64 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget? _buildFieldWidget(FieldConfiguration config) {
+    if (config.fieldName == 'integration_id') {
+      return null;
+    }
+
+    if (_shouldHideTojsokhtmontjInstallmentFields() &&
+        _isTojsokhtmontjInstallmentField(config.fieldName)) {
+      return null;
+    }
+
     if (config.isCustomField) {
       final customField = _getOrCreateCustomField(config);
+      final isTojsokhtmontjInnField =
+          _isTojsokhtmontjTenant && _isInnFieldName(config.fieldName);
+      final isTojsokhtmontjEditableCalculationSource = _isTojsokhtmontjTenant &&
+          _isTojsokhtmontjEditableCalculationSource(config.fieldName);
+      final isTojsokhtmontjReadOnlyCalculatedField = _isTojsokhtmontjTenant &&
+          _isTojsokhtmontjReadOnlyCalculatedField(config.fieldName);
+      if (isTojsokhtmontjReadOnlyCalculatedField) {
+        _recalculateTojsokhtmontjApartmentFields();
+      }
       return CustomFieldWidget(
         fieldName: config.fieldName,
         valueController: customField.controller,
-        type: config.type,
+        type: (isTojsokhtmontjInnField ||
+                isTojsokhtmontjEditableCalculationSource ||
+                isTojsokhtmontjReadOnlyCalculatedField)
+            ? 'number'
+            : config.type,
         isDirectory: false,
+        keyboardTypeOverride: (isTojsokhtmontjInnField ||
+                isTojsokhtmontjEditableCalculationSource)
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : null,
+        inputFormattersOverride: isTojsokhtmontjInnField
+            ? [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(9),
+              ]
+            : isTojsokhtmontjEditableCalculationSource
+                ? [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'[0-9,.]'),
+                    ),
+                  ]
+                : null,
+        maxLength: isTojsokhtmontjInnField ? 9 : null,
+        validator: isTojsokhtmontjInnField ? _validateTojsokhtmontjInn : null,
+        showBorder: isTojsokhtmontjInnField,
+        autovalidateMode:
+            isTojsokhtmontjInnField ? AutovalidateMode.onUserInteraction : null,
+        readOnlyOverride: isTojsokhtmontjReadOnlyCalculatedField,
+        onChanged: isTojsokhtmontjEditableCalculationSource
+            ? (_) {
+                setState(() {
+                  _recalculateTojsokhtmontjApartmentFields();
+                });
+              }
+            : null,
       );
     }
 
@@ -1063,6 +1322,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       final fieldWidget = _buildFieldWidget(config);
       if (fieldWidget != null) {
         widgets.add(fieldWidget);
+        if (_isTojsokhtmontjTenant &&
+            !_hasTojsokhtmontjConfiguredTotalField() &&
+            _isTojsokhtmontjAreaField(config.fieldName)) {
+          widgets.add(_buildTojsokhtmontjTotalField());
+        }
       }
     }
     return _withVerticalSpacing(widgets, spacing: 8);
@@ -2296,8 +2560,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            AppLocalizations.of(context)!
-                                .translate('add_file'),
+                            AppLocalizations.of(context)!.translate('add_file'),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 12,
@@ -2448,8 +2711,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             } else {
               showCustomSnackBar(
                 context: context,
-                message:
-                    AppLocalizations.of(context)!.translate('error_delete_file'),
+                message: AppLocalizations.of(context)!
+                    .translate('error_delete_file'),
                 isSuccess: false,
               );
             }
@@ -2482,24 +2745,28 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   fontWeight: FontWeight.w500,
                   color: Color(0xff1E2E52)),
             ),
-            GestureDetector(
-              onTap: _scanBarcode,
-              child: Row(
-                children: [
-                  const Icon(Icons.qr_code_scanner, color: Color(0xff1E2E52), size: 20),
-                  const SizedBox(width: 4),
-                  Text(
-                    AppLocalizations.of(context)!.translate('barcode') ?? 'Штрихкод',
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff1E2E52)),
-                  ),
-                ],
+            if (!_isTojsokhtmontjTenant) ...[
+              GestureDetector(
+                onTap: _scanBarcode,
+                child: Row(
+                  children: [
+                    const Icon(Icons.qr_code_scanner,
+                        color: Color(0xff1E2E52), size: 20),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppLocalizations.of(context)!.translate('barcode') ??
+                          'Штрихкод',
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xff1E2E52)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
+              const SizedBox(width: 16),
+            ],
             GestureDetector(
               onTap: _navigateToAddProduct,
               child: Row(
@@ -2687,128 +2954,133 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('price'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Text(
-                        _formatPrice(item['price']),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!.translate('total_amount'),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                        ),
-                      ),
-                      Text(
-                        _formatPrice(item['price'] * (item['quantity'] ?? 1)),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xffF4F7FD),
-                    ),
-                    child: Row(
+              if (!_isTojsokhtmontjTenant)
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        GestureDetector(
-                          onTap: () => _updateQuantity(
-                              index, (item['quantity'] ?? 1) - 1),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.remove,
-                              size: 20,
-                              color: Color(0xff1E2E52),
-                            ),
+                        Text(
+                          AppLocalizations.of(context)!.translate('price'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
                           ),
                         ),
-                        SizedBox(
-                          width: 36,
-                          child: TextField(
-                            controller: _getQuantityController(index),
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52),
-                            ),
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 8),
-                              border: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (value) =>
-                                _handleQuantityInput(index, value),
-                            onEditingComplete: () =>
-                                _handleQuantityEditingComplete(index),
-                            onSubmitted: (value) =>
-                                _handleQuantityInput(index, value),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _updateQuantity(
-                              index, (item['quantity'] ?? 1) + 1),
-                          behavior: HitTestBehavior.opaque,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.add,
-                              size: 20,
-                              color: Color(0xff1E2E52),
-                            ),
+                        Text(
+                          _formatPrice(item['price']),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!
+                              .translate('total_amount'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                          ),
+                        ),
+                        Text(
+                          _formatPrice(item['price'] * (item['quantity'] ?? 1)),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  if (!_isTojsokhtmontjTenant) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xffF4F7FD),
+                      ),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) - 1),
+                            behavior: HitTestBehavior.opaque,
+                            child: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.remove,
+                                size: 20,
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 36,
+                            child: TextField(
+                              controller: _getQuantityController(index),
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52),
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding:
+                                    EdgeInsets.symmetric(vertical: 8),
+                                border: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              onChanged: (value) =>
+                                  _handleQuantityInput(index, value),
+                              onEditingComplete: () =>
+                                  _handleQuantityEditingComplete(index),
+                              onSubmitted: (value) =>
+                                  _handleQuantityInput(index, value),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _updateQuantity(
+                                index, (item['quantity'] ?? 1) + 1),
+                            behavior: HitTestBehavior.opaque,
+                            child: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.add,
+                                size: 20,
+                                color: Color(0xff1E2E52),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   IconButton(
                     icon: const Icon(Icons.delete,
                         color: Color(0xff99A4BA), size: 20),
@@ -2933,10 +3205,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   final List<Map<String, dynamic>> customFieldMap = [];
                   final List<Map<String, int>> directoryValues = [];
 
+                  _recalculateTojsokhtmontjApartmentFields();
+
                   for (var field in customFields) {
                     final fieldName = field.fieldName.trim();
                     final fieldValue = field.controller.text.trim();
                     String? fieldType = field.type;
+
+                    if (_shouldHideTojsokhtmontjInstallmentFields() &&
+                        _isTojsokhtmontjInstallmentField(fieldName)) {
+                      continue;
+                    }
 
                     if (fieldType == 'text') {
                       fieldType = 'string';
@@ -2981,8 +3260,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                   context.read<OrderBloc>().add(UpdateOrder(
                         orderId: widget.order.id,
                         phone: _fullPhoneNumber ?? widget.order.phone,
-                        leadId:
-                            widget.order.deal == null ? _selectedLead?.id : null,
+                        leadId: widget.order.deal == null
+                            ? _selectedLead?.id
+                            : null,
                         dealId: widget.order.deal?.id,
                         delivery: !isPickup,
                         deliveryAddress:

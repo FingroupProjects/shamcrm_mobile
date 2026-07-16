@@ -9,8 +9,15 @@ class CustomFieldWidget extends StatelessWidget {
   final VoidCallback? onRemove;
   final bool isDirectory;
   final String? type;
-    final bool isCustomField; // Новый флаг
-
+  final bool isCustomField; // Новый флаг
+  final String? Function(String?)? validator;
+  final TextInputType? keyboardTypeOverride;
+  final List<TextInputFormatter>? inputFormattersOverride;
+  final int? maxLength;
+  final bool showBorder;
+  final AutovalidateMode? autovalidateMode;
+  final bool? readOnlyOverride;
+  final ValueChanged<String>? onChanged;
 
   const CustomFieldWidget({
     Key? key,
@@ -19,22 +26,32 @@ class CustomFieldWidget extends StatelessWidget {
     this.onRemove,
     this.isDirectory = false,
     this.type,
-        this.isCustomField = false, // По умолчанию false
-
+    this.isCustomField = false, // По умолчанию false
+    this.validator,
+    this.keyboardTypeOverride,
+    this.inputFormattersOverride,
+    this.maxLength,
+    this.showBorder = false,
+    this.autovalidateMode,
+    this.readOnlyOverride,
+    this.onChanged,
   }) : super(key: key);
 
-  Future<void> _selectDate(BuildContext context, {bool withTime = false}) async {
+  Future<void> _selectDate(BuildContext context,
+      {bool withTime = false}) async {
     // Пытаемся получить дату из контроллера, если она уже выбрана
     DateTime initialDate = DateTime.now();
     TimeOfDay initialTime = TimeOfDay.now();
-    
+
     if (valueController.text.isNotEmpty) {
       try {
         if (withTime) {
           // Парсим дату и время в формате dd/MM/yyyy HH:mm
-          final parsedDateTime = DateFormat('dd/MM/yyyy HH:mm').parse(valueController.text);
+          final parsedDateTime =
+              DateFormat('dd/MM/yyyy HH:mm').parse(valueController.text);
           initialDate = parsedDateTime;
-          initialTime = TimeOfDay(hour: parsedDateTime.hour, minute: parsedDateTime.minute);
+          initialTime = TimeOfDay(
+              hour: parsedDateTime.hour, minute: parsedDateTime.minute);
         } else {
           // Парсим только дату в формате dd/MM/yyyy
           initialDate = DateFormat('dd/MM/yyyy').parse(valueController.text);
@@ -44,7 +61,7 @@ class CustomFieldWidget extends StatelessWidget {
         debugPrint('Ошибка парсинга даты: $e');
       }
     }
-    
+
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -129,7 +146,8 @@ class CustomFieldWidget extends StatelessWidget {
       default: // string
         keyboardType = TextInputType.text;
         inputFormatters = null;
-        hintText = AppLocalizations.of(context)!.translate('enter_textfield_text');
+        hintText =
+            AppLocalizations.of(context)!.translate('enter_textfield_text');
         break;
     }
 
@@ -150,12 +168,16 @@ class CustomFieldWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (!isDirectory)
-                TextField(
+                TextFormField(
                   controller: valueController,
-                  keyboardType: keyboardType,
-                  inputFormatters: inputFormatters,
-                  readOnly: readOnly,
-                  onTap: readOnly
+                  keyboardType: keyboardTypeOverride ?? keyboardType,
+                  inputFormatters: inputFormattersOverride ?? inputFormatters,
+                  maxLength: maxLength,
+                  validator: validator,
+                  autovalidateMode: autovalidateMode,
+                  readOnly: readOnlyOverride ?? readOnly,
+                  onChanged: onChanged,
+                  onTap: (readOnlyOverride ?? readOnly)
                       ? () => _selectDate(context, withTime: type == 'datetime')
                       : null,
                   decoration: InputDecoration(
@@ -166,13 +188,46 @@ class CustomFieldWidget extends StatelessWidget {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderSide: showBorder
+                          ? const BorderSide(
+                              color: Color(0xff1E2E52), width: 0.2)
+                          : BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: showBorder
+                          ? const BorderSide(
+                              color: Color(0xff1E2E52), width: 0.2)
+                          : BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: showBorder
+                          ? const BorderSide(color: Color(0xff4759FF), width: 1)
+                          : BorderSide.none,
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: Colors.red, width: 1.5),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: Colors.red, width: 1.5),
                     ),
                     filled: true,
                     fillColor: const Color(0xffF4F7FD),
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 10,
                       horizontal: 12,
+                    ),
+                    counterText: '',
+                    errorMaxLines: 2,
+                    errorStyle: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 )
@@ -197,13 +252,13 @@ class CustomFieldWidget extends StatelessWidget {
           ),
         ),
         if (onRemove != null)
-        IconButton(
-          icon: const Icon(
-            Icons.remove_circle,
-            color: Color.fromARGB(255, 236, 64, 16),
+          IconButton(
+            icon: const Icon(
+              Icons.remove_circle,
+              color: Color.fromARGB(255, 236, 64, 16),
+            ),
+            onPressed: onRemove,
           ),
-          onPressed: onRemove,
-        ),
       ],
     );
   }

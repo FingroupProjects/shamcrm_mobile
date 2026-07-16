@@ -225,6 +225,10 @@ class ApiService {
     'sham-back',
     'khnodiraaaicloudcom-back',
   };
+  static const Set<String> _tojsokhtmontjSubdomains = {
+    'tojsokhtmontj',
+    'tojsokhtmontj-back',
+  };
 
   String? baseUrl;
   String? baseUrlSocket;
@@ -710,6 +714,11 @@ class ApiService {
   Future<bool> isWorkdayFeatureEnabled() async {
     final subdomain = await getCurrentTenantSubdomain();
     return subdomain != null && _workdayEnabledSubdomains.contains(subdomain);
+  }
+
+  Future<bool> isTojsokhtmontjTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null && _tojsokhtmontjSubdomains.contains(subdomain);
   }
 
   Future<WorkdayStatusResponse?> getWorkdayStatus() async {
