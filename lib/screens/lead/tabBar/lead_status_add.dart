@@ -2,10 +2,13 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateStatusDialog extends StatefulWidget {
   CreateStatusDialog({Key? key}) : super(key: key);
@@ -20,6 +23,26 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   bool _isSuccess = false; // Галочка "Успешно" выключена по умолчанию
   bool _isFailure = false;
   bool _isUnassembled = false;
+  bool _isMultiSelectEnabled = false;
+  List<UserData> _selectedUsers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMultiSelectSetting();
+  }
+
+  Future<void> _loadMultiSelectSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final managingVisibility =
+        prefs.getBool('managing_lead_status_visibility') ?? false;
+
+    if (mounted) {
+      setState(() {
+        _isMultiSelectEnabled = managingVisibility;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -91,7 +114,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
         insetPadding: const EdgeInsets.all(16),
         child: SizedBox(
           width: 400,
-          height: 320,
+          height: _isMultiSelectEnabled ? 430 : 320,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
@@ -137,6 +160,32 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                           errorText: _errorMessage,
                         ),
                         const SizedBox(height: 20),
+                        if (_isMultiSelectEnabled) ...[
+                          Text(
+                            AppLocalizations.of(context)!
+                                .translate('users_who_can_view_leads'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color.fromARGB(255, 0, 0, 0),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            maxLines: 2,
+                          ),
+                          UserMultiSelectWidget(
+                            selectedUsers: null,
+                            customLabelText: '',
+                            customHintText: AppLocalizations.of(context)!
+                                .translate('select_users'),
+                            onSelectUsers: (List<UserData> users) {
+                              setState(() {
+                                _selectedUsers = users;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                         Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
@@ -206,6 +255,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             _errorMessage = null;
                           });
                           final localizations = AppLocalizations.of(context)!;
+                          final userIds =
+                              _selectedUsers.map((user) => user.id).toList();
 
                           context.read<LeadBloc>().add(
                                 CreateLeadStatus(
@@ -214,6 +265,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                   isSuccess: _isSuccess,
                                   isFailure: _isFailure,
                                   isUnassembled: _isUnassembled,
+                                  userIds:
+                                      _isMultiSelectEnabled ? userIds : null,
                                   localizations: localizations,
                                 ),
                               );

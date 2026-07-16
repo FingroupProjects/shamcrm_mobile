@@ -184,7 +184,7 @@ void main() {
 
       final apiService = ApiService();
       final authService = AuthService();
-
+        
       await _requestTrackingAuthorizationIfNeeded();
       await _safeInitializeOfflineRuntime();
       await _safeInitializeFirebase();

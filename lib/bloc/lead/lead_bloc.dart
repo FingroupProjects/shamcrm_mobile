@@ -838,6 +838,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         event.isFailure,
         event.isSuccess,
         event.isUnassembled,
+        event.userIds,
       );
 
       if (result['success']) {
@@ -899,6 +900,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         event.isSuccess,
         event.isFailure,
         event.isUnassembled,
+        event.userIds,
       );
 
       if (response['result'] == 'Success') {

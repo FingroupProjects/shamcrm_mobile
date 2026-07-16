@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
@@ -35,11 +34,6 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   List<UserData> _selectedUsers = []; // ✅ НОВОЕ: выбранные пользователи
   List<UserData> _selectedChangeStatusUsers =
       []; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ статус
-  bool _isExpandedViewUsers =
-      false; // ✅ НОВОЕ: для expandable текста первого поля
-  bool _isExpandedChangeUsers =
-      false; // ✅ НОВОЕ: для expandable текста второго поля
-
   @override
   void initState() {
     super.initState();
@@ -51,23 +45,17 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     final prefs = await SharedPreferences.getInstance();
     final managingVisibility =
         prefs.getBool('managing_deal_status_visibility') ?? false;
-    final changeMultiple =
-        prefs.getBool('change_deal_to_multiple_statuses') ?? false;
-
-    // Если хотя бы один флаг true, включаем мультивыбор
-    final value = managingVisibility || changeMultiple;
 
     if (mounted) {
       setState(() {
-        _isMultiSelectEnabled = value;
+        _isMultiSelectEnabled = managingVisibility;
       });
     }
 
     debugPrint(
         'CreateStatusDialog: managing_deal_status_visibility = $managingVisibility');
     debugPrint(
-        'CreateStatusDialog: change_deal_to_multiple_statuses = $changeMultiple');
-    debugPrint('CreateStatusDialog: _isMultiSelectEnabled = $value');
+        'CreateStatusDialog: _isMultiSelectEnabled = $managingVisibility');
   }
 
   Widget _buildTextFieldWithLabel({
@@ -239,33 +227,17 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                         // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
                         // ✅ НОВОЕ: Поле выбора пользователей (только если включен мультивыбор)
                         if (_isMultiSelectEnabled) ...[
-                          // 1️⃣ ПЕРВОЕ ПОЛЕ: Пользователи, которые могут ВИДЕТЬ сделки
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isExpandedViewUsers = !_isExpandedViewUsers;
-                              });
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  localizations
-                                      .translate('users_who_can_view_deals'),
-                                  style: _textStyle(),
-                                  overflow: _isExpandedViewUsers
-                                      ? TextOverflow.visible
-                                      : TextOverflow.ellipsis,
-                                  maxLines: _isExpandedViewUsers ? null : 1,
-                                ),
-                              ],
-                            ),
+                          Text(
+                            localizations.translate('users_who_can_view_deals'),
+                            style: _textStyle(),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
-                          // const SizedBox(height: 8),
                           UserMultiSelectWidget(
                             selectedUsers: null,
-                            customLabelText:
-                                '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+                            customLabelText: '',
+                            customHintText:
+                                localizations.translate('select_users'),
                             onSelectUsers: (List<UserData> users) {
                               setState(() {
                                 _selectedUsers = users;
@@ -275,35 +247,18 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             },
                           ),
                           const SizedBox(height: 20),
-
-                          // 2️⃣ ВТОРОЕ ПОЛЕ: Пользователи, которые могут ИЗМЕНЯТЬ статус
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isExpandedChangeUsers =
-                                    !_isExpandedChangeUsers;
-                              });
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  localizations
-                                      .translate('users_who_can_change_status'),
-                                  style: _textStyle(),
-                                  overflow: _isExpandedChangeUsers
-                                      ? TextOverflow.visible
-                                      : TextOverflow.ellipsis,
-                                  maxLines: _isExpandedChangeUsers ? null : 1,
-                                ),
-                              ],
-                            ),
+                          Text(
+                            localizations
+                                .translate('users_who_can_change_status'),
+                            style: _textStyle(),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
-                          // const SizedBox(height: 8),
                           UserMultiSelectWidget(
                             selectedUsers: null,
-                            customLabelText:
-                                '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+                            customLabelText: '',
+                            customHintText:
+                                localizations.translate('select_users'),
                             onSelectUsers: (List<UserData> users) {
                               setState(() {
                                 _selectedChangeStatusUsers = users;
@@ -558,13 +513,12 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                       isSuccess: _isSuccess,
                                       isFailure: _isFailure,
                                       isUnassembled: _isUnassembled,
-                                      userIds: userIds.isNotEmpty
+                                      userIds: _isMultiSelectEnabled
                                           ? userIds
                                           : null, // ✅ НОВОЕ
-                                      changeStatusUserIds:
-                                          changeStatusUserIds.isNotEmpty
-                                              ? changeStatusUserIds
-                                              : null, // ✅ НОВОЕ
+                                      changeStatusUserIds: _isMultiSelectEnabled
+                                          ? changeStatusUserIds
+                                          : null, // ✅ НОВОЕ
 
                                       localizations: localizations,
                                     ),

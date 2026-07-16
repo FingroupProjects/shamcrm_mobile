@@ -41,13 +41,12 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
   List<UserData> _selectedUsers = [];
   List<UserData> _selectedChangeStatusUsers =
       []; // ✅ НОВОЕ: пользователи, которые могут ИЗМЕНЯТЬ
+  bool _viewUsersTouched = false;
+  bool _changeUsersTouched = false;
 
   List<String>? _initialUserIds; // Для хранения начальных ID пользователей
   List<String>?
       _initialChangeStatusUserIds; // ✅ НОВОЕ: для хранения ID (изменение статуса)
-
-  bool _isExpandedViewUsers = false; // ✅ НОВОЕ: expandable для первого поля
-  bool _isExpandedChangeUsers = false; // ✅ НОВОЕ: expandable для второго поля
 
   @override
   void initState() {
@@ -65,23 +64,17 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
     final prefs = await SharedPreferences.getInstance();
     final managingVisibility =
         prefs.getBool('managing_deal_status_visibility') ?? false;
-    final changeMultiple =
-        prefs.getBool('change_deal_to_multiple_statuses') ?? false;
-
-    // Если хотя бы один флаг true, включаем мультивыбор
-    final value = managingVisibility || changeMultiple;
 
     if (mounted) {
       setState(() {
-        _isMultiSelectEnabled = value;
+        _isMultiSelectEnabled = managingVisibility;
       });
     }
 
     debugPrint(
         'EditDealStatusScreen: managing_deal_status_visibility = $managingVisibility');
     debugPrint(
-        'EditDealStatusScreen: change_deal_to_multiple_statuses = $changeMultiple');
-    debugPrint('EditDealStatusScreen: _isMultiSelectEnabled = $value');
+        'EditDealStatusScreen: _isMultiSelectEnabled = $managingVisibility');
   }
 
   void _loadDealStatus() {
@@ -101,9 +94,18 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
       // ✅ НОВОЕ: Получаем оба списка ID пользователей
-      final userIds = _selectedUsers.map((user) => user.id).toList();
-      final changeStatusUserIds =
-          _selectedChangeStatusUsers.map((user) => user.id).toList();
+      final userIds = _viewUsersTouched
+          ? _selectedUsers.map((user) => user.id).toList()
+          : _initialUserIds
+              ?.map((id) => int.tryParse(id))
+              .whereType<int>()
+              .toList();
+      final changeStatusUserIds = _changeUsersTouched
+          ? _selectedChangeStatusUsers.map((user) => user.id).toList()
+          : _initialChangeStatusUserIds
+              ?.map((id) => int.tryParse(id))
+              .whereType<int>()
+              .toList();
 
       debugPrint(
           'EditDealStatusScreen: Сохранение пользователей (просмотр): $userIds');
@@ -123,9 +125,9 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
           _notificationMessageController.text,
           _showOnMainPage,
           localizations,
-          userIds.isNotEmpty ? userIds : null,
-          changeStatusUserIds.isNotEmpty
-              ? changeStatusUserIds
+          _isMultiSelectEnabled ? (userIds ?? <int>[]) : null,
+          _isMultiSelectEnabled
+              ? (changeStatusUserIds ?? <int>[])
               : null, // ✅ НОВОЕ
         ),
       );
@@ -335,81 +337,47 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
 
                                 // ✅ ОБНОВЛЕНО: Два поля для выбора пользователей
                                 if (_isMultiSelectEnabled) ...[
-                                  // 1️⃣ ПЕРВОЕ ПОЛЕ: Пользователи, которые могут ВИДЕТЬ сделки
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _isExpandedViewUsers =
-                                            !_isExpandedViewUsers;
-                                      });
-                                    },
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context)!
-                                              .translate(
-                                                  'users_who_can_view_deals'),
-                                          style: _textStyle(),
-                                          overflow: _isExpandedViewUsers
-                                              ? TextOverflow.visible
-                                              : TextOverflow.ellipsis,
-                                          maxLines:
-                                              _isExpandedViewUsers ? null : 1,
-                                        ),
-                                      ],
-                                    ),
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('users_who_can_view_deals'),
+                                    style: _textStyle(),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
                                   ),
-                                  // const SizedBox(height: 8),
                                   UserMultiSelectWidget(
                                     selectedUsers: _initialUserIds,
-                                    customLabelText:
-                                        '', // ✅ Пустая строка, чтобы скрыть дефолтный заголовок
+                                    customLabelText: '',
+                                    customHintText:
+                                        AppLocalizations.of(context)!
+                                            .translate('select_users'),
                                     onSelectUsers: (List<UserData> users) {
                                       setState(() {
                                         _selectedUsers = users;
+                                        _viewUsersTouched = true;
                                       });
                                       debugPrint(
                                           'EditDealStatusScreen: Выбрано пользователей (просмотр): ${users.length}');
                                     },
                                   ),
                                   const SizedBox(height: 20),
-
-                                  // 2️⃣ ВТОРОЕ ПОЛЕ: Пользователи, которые могут ИЗМЕНЯТЬ статус
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _isExpandedChangeUsers =
-                                            !_isExpandedChangeUsers;
-                                      });
-                                    },
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context)!
-                                              .translate(
-                                                  'users_who_can_change_status'),
-                                          style: _textStyle(),
-                                          overflow: _isExpandedChangeUsers
-                                              ? TextOverflow.visible
-                                              : TextOverflow.ellipsis,
-                                          maxLines:
-                                              _isExpandedChangeUsers ? null : 1,
-                                        ),
-                                      ],
-                                    ),
+                                  Text(
+                                    AppLocalizations.of(context)!.translate(
+                                        'users_who_can_change_status'),
+                                    style: _textStyle(),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
                                   ),
-                                  // const SizedBox(height: 8),
                                   UserMultiSelectWidget(
                                     selectedUsers:
                                         _initialChangeStatusUserIds, // ✅ НОВОЕ: начальные данные
-                                    customLabelText: '', // ✅ Пустая строка
+                                    customLabelText: '',
+                                    customHintText:
+                                        AppLocalizations.of(context)!
+                                            .translate('select_users'),
                                     onSelectUsers: (List<UserData> users) {
                                       setState(() {
                                         _selectedChangeStatusUsers = users;
+                                        _changeUsersTouched = true;
                                       });
                                       debugPrint(
                                           'EditDealStatusScreen: Выбрано пользователей (изменение): ${users.length}');

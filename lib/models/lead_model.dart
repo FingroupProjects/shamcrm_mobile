@@ -263,6 +263,43 @@ class Source {
   }
 }
 
+class LeadStatusUser {
+  final int userId;
+  final String? name;
+  final String? lastname;
+
+  LeadStatusUser({
+    required this.userId,
+    this.name,
+    this.lastname,
+  });
+
+  factory LeadStatusUser.fromJson(dynamic json) {
+    if (json is int) {
+      return LeadStatusUser(userId: json);
+    }
+    if (json is String) {
+      return LeadStatusUser(userId: int.tryParse(json) ?? 0);
+    }
+    if (json is Map<String, dynamic>) {
+      return LeadStatusUser(
+        userId: json['user_id'] ?? json['id'] ?? 0,
+        name: json['name']?.toString(),
+        lastname: json['lastname']?.toString(),
+      );
+    }
+    return LeadStatusUser(userId: 0);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      if (name != null) 'name': name,
+      if (lastname != null) 'lastname': lastname,
+    };
+  }
+}
+
 class LeadStatus {
   final int id;
   final String title;
@@ -270,6 +307,7 @@ class LeadStatus {
   final String? lead_status_id;
   final int leadsCount;
   final List<Lead> leads; // Добавляем список лидов
+  final List<LeadStatusUser>? users;
   final bool isSuccess;
   final int position;
   final bool isFailure;
@@ -282,6 +320,7 @@ class LeadStatus {
     this.lead_status_id,
     required this.leadsCount,
     this.leads = const [], // По умолчанию пустой список
+    this.users,
     required this.isSuccess,
     required this.position,
     required this.isFailure,
@@ -301,6 +340,10 @@ class LeadStatus {
       isFailure: json['is_failure'] == true || json['is_failure'] == 1,
       isUnassembled:
           json['is_unassembled'] == true || json['is_unassembled'] == 1,
+      users: (json['users'] as List<dynamic>?)
+          ?.map(LeadStatusUser.fromJson)
+          .where((user) => user.userId > 0)
+          .toList(),
       leads: (json['leads'] as List<dynamic>?)
               ?.map((lead) => Lead.fromJson(lead, json['id']))
               .toList() ??
@@ -315,6 +358,7 @@ class LeadStatus {
       'color': color,
       'lead_status_id': lead_status_id,
       'leads': leads.map((lead) => lead.toJson()).toList(),
+      'users': users?.map((user) => user.toJson()).toList(),
       'is_success': isSuccess,
       'position': position,
       'is_failure': isFailure,

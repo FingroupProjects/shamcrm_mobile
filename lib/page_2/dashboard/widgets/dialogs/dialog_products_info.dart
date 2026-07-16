@@ -13,7 +13,7 @@ void showSimpleInfoDialog(BuildContext context) {
 
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (BuildContext dialogContext) {
       // Pass the BLoC instance to the dialog
       return BlocProvider.value(
@@ -119,7 +119,7 @@ class _InfoDialogState extends State<InfoDialog> {
             ),
           )
         else
-          ...items.map((item) => _buildProductCard(item)).toList(),
+          ...items.map((item) => _buildProductCard(item)),
       ],
     );
   }
@@ -137,7 +137,7 @@ class _InfoDialogState extends State<InfoDialog> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Color(0xff1E2E52).withOpacity(0.08),
+            color: Color(0xff1E2E52).withValues(alpha: 0.08),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -228,7 +228,7 @@ class _InfoDialogState extends State<InfoDialog> {
 
                 SizedBox(width: 12),
 
-                // Категория
+                // Сумма
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.all(12),
@@ -245,7 +245,7 @@ class _InfoDialogState extends State<InfoDialog> {
                       children: [
                         Builder(
                           builder: (context) => Text(
-                            '${AppLocalizations.of(context)!.translate('category')}:',
+                            'Сумма:',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 11,
@@ -257,7 +257,7 @@ class _InfoDialogState extends State<InfoDialog> {
                         SizedBox(height: 4),
                         FittedBox(
                           child: Text(
-                            item.category,
+                            item.totalSum,
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 14,
@@ -293,7 +293,7 @@ class _InfoDialogState extends State<InfoDialog> {
                 children: [
                   Builder(
                     builder: (context) => Text(
-                      '${AppLocalizations.of(context)!.translate('storages')}:',
+                      'Категория:',
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 11,
@@ -304,7 +304,7 @@ class _InfoDialogState extends State<InfoDialog> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    item.storages.map((s) => '${s.name} (${s.quantity})').join(', '),
+                    item.category,
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,
@@ -316,6 +316,55 @@ class _InfoDialogState extends State<InfoDialog> {
               ),
             ),
           ),
+          if (item.storages.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xffF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Color(0xffE2E8F0),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: item.storages
+                      .map(
+                        (storage) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  storage.name,
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xff1E2E52),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${storage.quantity} | ${storage.sum}',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff475569),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -339,7 +388,7 @@ class _InfoDialogState extends State<InfoDialog> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Color(0xff1E2E52).withOpacity(0.15),
+                  color: Color(0xff1E2E52).withValues(alpha: 0.15),
                   spreadRadius: 0,
                   blurRadius: 24,
                   offset: Offset(0, 8),
@@ -369,7 +418,7 @@ class _InfoDialogState extends State<InfoDialog> {
                       Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(

@@ -103,6 +103,7 @@ class CreateLeadStatus extends LeadEvent {
   final bool? isSuccess;
   final bool? isFailure;
   final bool isUnassembled;
+  final List<int>? userIds;
 
   CreateLeadStatus({
     required this.title,
@@ -111,6 +112,7 @@ class CreateLeadStatus extends LeadEvent {
     this.isSuccess,
     this.isFailure,
     this.isUnassembled = false,
+    this.userIds,
   });
 }
 
@@ -256,6 +258,7 @@ class UpdateLeadStatusEdit extends LeadEvent {
   final bool isFailure;
   final bool isUnassembled;
   final AppLocalizations localizations;
+  final List<int>? userIds;
 
   UpdateLeadStatusEdit(
     this.leadStatusId,
@@ -264,6 +267,7 @@ class UpdateLeadStatusEdit extends LeadEvent {
     this.isFailure,
     this.isUnassembled,
     this.localizations,
+    this.userIds,
   );
 }
 

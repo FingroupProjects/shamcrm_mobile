@@ -4,10 +4,13 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditLeadStatusScreen extends StatefulWidget {
   final int leadStatusId;
@@ -28,13 +31,30 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
   bool _isUnassembled = false;
   late LeadBloc _leadBloc;
   bool _dataLoaded = false;
+  bool _isMultiSelectEnabled = false;
+  bool _usersTouched = false;
+  List<String>? _initialUserIds;
+  List<UserData> _selectedUsers = [];
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController();
     _leadBloc = LeadBloc(ApiService());
+    _loadMultiSelectSetting();
     _loadLeadStatus();
+  }
+
+  Future<void> _loadMultiSelectSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final managingVisibility =
+        prefs.getBool('managing_lead_status_visibility') ?? false;
+
+    if (mounted) {
+      setState(() {
+        _isMultiSelectEnabled = managingVisibility;
+      });
+    }
   }
 
   void _loadLeadStatus() {
@@ -53,6 +73,13 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
     leadBloc.add(FetchLeadStatuses());
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
+      final userIds = _usersTouched
+          ? _selectedUsers.map((user) => user.id).toList()
+          : _initialUserIds
+              ?.map((id) => int.tryParse(id))
+              .whereType<int>()
+              .toList();
+
       _leadBloc.add(
         UpdateLeadStatusEdit(
           widget.leadStatusId,
@@ -61,6 +88,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           _isFailure,
           _isUnassembled,
           localizations,
+          _isMultiSelectEnabled ? (userIds ?? <int>[]) : null,
         ),
       );
     }
@@ -118,6 +146,9 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
             _isSuccess = state.leadStatus.isSuccess;
             _isFailure = state.leadStatus.isFailure;
             _isUnassembled = state.leadStatus.isUnassembled;
+            _initialUserIds = state.leadStatus.users
+                ?.map((user) => user.userId.toString())
+                .toList();
             _dataLoaded = true;
           });
         } else if (state is LeadStatusUpdatedEdit) {
@@ -184,7 +215,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: 360,
+            height: _isMultiSelectEnabled ? 470 : 360,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
@@ -204,12 +235,12 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                color: context.appColors.textPrimary,
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close,
-                          size: 24, color: context.appColors.textSecondary),
+                            size: 24, color: context.appColors.textSecondary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -234,6 +265,29 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                                   isRequired: true,
                                 ),
                                 const SizedBox(height: 20),
+                                if (_isMultiSelectEnabled) ...[
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('users_who_can_view_leads'),
+                                    style: _textStyle(context),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  ),
+                                  UserMultiSelectWidget(
+                                    selectedUsers: _initialUserIds,
+                                    customLabelText: '',
+                                    customHintText:
+                                        AppLocalizations.of(context)!
+                                            .translate('select_users'),
+                                    onSelectUsers: (List<UserData> users) {
+                                      setState(() {
+                                        _selectedUsers = users;
+                                        _usersTouched = true;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 20),
+                                ],
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [

@@ -3399,6 +3399,7 @@ class ApiService {
     bool? isFailure,
     bool? isSuccess,
     bool isUnassembled,
+    List<int>? userIds,
   ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status');
@@ -3406,12 +3407,18 @@ class ApiService {
       //debugPrint('ApiService: createLeadStatus - Generated path: $path');
     }
 
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
     final response = await _postRequest(path, {
       'title': title,
       'color': color,
       "is_success": isSuccess == true ? 1 : 0,
       "is_failure": isFailure == true ? 1 : 0,
       "is_unassembled": isUnassembled,
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      if (userIds != null) "users": userIds,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -4606,6 +4613,7 @@ class ApiService {
     bool isSuccess,
     bool isFailure,
     bool isUnassembled,
+    List<int>? userIds,
   ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
@@ -4613,12 +4621,17 @@ class ApiService {
       //debugPrint('ApiService: updateLeadStatusEdit - Generated path: $path');
     }
 
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
     final payload = {
       "title": title,
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
       "is_unassembled": isUnassembled,
-      "organization_id": await getSelectedOrganization(),
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      if (userIds != null) "users": userIds,
     };
 
     final response = await _patchRequest(
@@ -5631,8 +5644,8 @@ class ApiService {
       'is_unassembled': isUnassembled,
       'organization_id': organizationId?.toString() ?? '',
       if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
-      if (userIds != null && userIds.isNotEmpty) 'users': userIds,
-      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+      if (userIds != null) 'users': userIds,
+      if (changeStatusUserIds != null)
         'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
     };
 
@@ -6195,8 +6208,8 @@ class ApiService {
       "organization_id": organizationId?.toString() ?? '',
       if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
       // ✅ Добавляем оба массива пользователей
-      if (userIds != null && userIds.isNotEmpty) "users": userIds,
-      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+      if (userIds != null) "users": userIds,
+      if (changeStatusUserIds != null)
         "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
     };
 

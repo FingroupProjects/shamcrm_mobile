@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/utils/global_fun.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 
@@ -12,13 +11,13 @@ class GoodsCard extends StatelessWidget {
   final bool isSelected;
 
   const GoodsCard({
-    Key? key,
+    super.key,
     required this.goods,
     required this.onClick,
     required this.onLongPress,
     this.isSelectionMode = false,
     this.isSelected = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +41,7 @@ class GoodsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('goods_name_details') ?? 'Название'}: ${goods.name}',
+                    '${localizations.translate('goods_name_details')}: ${goods.name}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -52,7 +51,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('category_details') ?? 'Категория'}: ${goods.category}',
+                    '${localizations.translate('category_details')}: ${goods.category}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -62,7 +61,7 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('storages') ?? 'Склады'}: ${goods.storages.map((s) => '${s.name}(${s.quantity})').join(', ')}',
+                    '${localizations.translate('storages')}: ${goods.storages.map((s) => '${s.name}(${s.quantity})').join(', ')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',
@@ -72,11 +71,21 @@ class GoodsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${localizations.translate('quantity') ?? 'Количество'}: ${goods.totalQuantity}',
+                    '${localizations.translate('quantity')}: ${goods.totalQuantity}',
                     style: const TextStyle(
                       fontSize: 15,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
+                      color: Color(0xff1E2E52),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Сумма: ${goods.totalSum}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
                       color: Color(0xff1E2E52),
                     ),
                   ),

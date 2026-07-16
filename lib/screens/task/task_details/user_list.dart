@@ -210,7 +210,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
 
   String _selectedLabel(AppLocalizations localizations) {
     if (selectedUsersData.isEmpty) {
-      return widget.customHintText ?? localizations.translate('select_assignees_list');
+      return widget.customHintText ??
+          localizations.translate('select_assignees_list');
     }
 
     return selectedUsersData
@@ -236,15 +237,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.customLabelText ??
-                  localizations.translate('assignees_list'),
-              style: userTextStyle.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 16,
+            if (widget.customLabelText != '') ...[
+              Text(
+                widget.customLabelText ??
+                    localizations.translate('assignees_list'),
+                style: userTextStyle.copyWith(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
+            ],
             Container(
               decoration: BoxDecoration(
                 color: widget.backgroundColor,
@@ -376,7 +379,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        widget.customHintText ?? localizations.translate('select_assignees_list'),
+                        widget.customHintText ??
+                            localizations.translate('select_assignees_list'),
                         style: userTextStyle.copyWith(
                           fontSize: 14,
                           color: const Color(0xFF6B7280),
