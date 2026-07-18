@@ -15,7 +15,35 @@ class NativeSipActionReceiver : BroadcastReceiver() {
         NativeSipBridge.initialize(context.applicationContext)
 
         when (intent?.action) {
-            ACTION_ANSWER -> NativeSipBridge.acceptCall()
+            ACTION_ANSWER -> {
+                val accepted = NativeSipBridge.acceptCall()
+                NativeSipBridge.recordDiagnosticEvent(
+                    event = if (accepted) "incoming_answered" else "incoming_answer_failed",
+                    details = hashMapOf("source" to "notification-action"),
+                )
+                if (accepted) {
+                    try {
+                        context.startActivity(
+                            Intent(context, MainActivity::class.java).apply {
+                                addFlags(
+                                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                                )
+                                putExtra("open_sip_call", true)
+                            },
+                        )
+                    } catch (error: Throwable) {
+                        NativeSipBridge.recordDiagnosticEvent(
+                            event = "incoming_call_ui_open_failed",
+                            details = hashMapOf(
+                                "source" to "notification-action",
+                                "error" to (error.message ?: error.javaClass.simpleName),
+                            ),
+                        )
+                    }
+                }
+            }
             ACTION_DECLINE -> NativeSipBridge.declineCall()
             ACTION_HANGUP -> NativeSipBridge.hangup()
         }

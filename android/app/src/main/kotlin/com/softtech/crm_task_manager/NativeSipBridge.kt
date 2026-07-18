@@ -32,6 +32,8 @@ object NativeSipBridge {
     private const val KEY_TRANSPORT = "transport"
     private const val KEY_AUTH_USER = "auth_user"
     private const val KEY_ENABLED = "enabled"
+    private const val KEY_PENDING_CALL_UI_OPEN = "pending_call_ui_open"
+    private const val KEY_PENDING_CALL_UI_REQUEST_ID = "pending_call_ui_request_id"
     private const val DIAGNOSTIC_PREFS = "native_sip_diagnostics"
     private const val KEY_DIAGNOSTIC_LOGS = "logs"
     private const val MAX_DIAGNOSTIC_LOGS = 500
@@ -52,6 +54,8 @@ object NativeSipBridge {
     private var nativeSipManager: NativeSipManager? = null
     private var flutterEventSink: EventChannel.EventSink? = null
     private var appInForeground = false
+    @Volatile
+    private var incomingAnswerPending = false
     private var currentSnapshot = hashMapOf<String, Any?>(
         "registrationState" to "disconnected",
         "callState" to "idle",
@@ -112,7 +116,69 @@ object NativeSipBridge {
 
     fun setFlutterEventSink(eventSink: EventChannel.EventSink?) {
         flutterEventSink = eventSink
+        if (eventSink != null && hasPendingCallUiOpen()) {
+            dispatchBridgeEvent(buildCallUiRequestEvent("pending-native-intent"))
+        }
     }
+
+    fun requestFlutterCallUi(source: String) {
+        val context = appContext ?: return
+        val requestId = System.currentTimeMillis()
+        context.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_PENDING_CALL_UI_OPEN, true)
+            .putLong(KEY_PENDING_CALL_UI_REQUEST_ID, requestId)
+            .apply()
+
+        if (flutterEventSink != null) {
+            dispatchBridgeEvent(buildCallUiRequestEvent(source))
+        }
+    }
+
+    private fun buildCallUiRequestEvent(source: String): HashMap<String, Any?> {
+        return hashMapOf(
+            "type" to "call_ui_request",
+            "source" to source,
+            "requestId" to pendingCallUiRequestId(),
+            "registrationState" to currentSnapshot["registrationState"],
+            "callState" to currentSnapshot["callState"],
+            "remoteIdentity" to currentSnapshot["remoteIdentity"],
+            "message" to currentSnapshot["message"],
+            "muted" to currentSnapshot["muted"],
+            "speakerOn" to currentSnapshot["speakerOn"],
+            "persistentEnabled" to currentSnapshot["persistentEnabled"],
+        )
+    }
+
+    private fun hasPendingCallUiOpen(): Boolean {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return false
+        return flags.getBoolean(KEY_PENDING_CALL_UI_OPEN, false)
+    }
+
+    private fun pendingCallUiRequestId(): Long {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return 0L
+        return flags.getLong(KEY_PENDING_CALL_UI_REQUEST_ID, 0L)
+    }
+
+    fun consumePendingCallUiRequest(): HashMap<String, Any?>? {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return null
+        if (!flags.getBoolean(KEY_PENDING_CALL_UI_OPEN, false)) return null
+
+        val event = buildCallUiRequestEvent("flutter-method-consume")
+        flags.edit()
+            .remove(KEY_PENDING_CALL_UI_OPEN)
+            .remove(KEY_PENDING_CALL_UI_REQUEST_ID)
+            .apply()
+        return event
+    }
+
+    fun isIncomingAnswerPending(): Boolean = incomingAnswerPending
 
     fun addObserver(observer: (HashMap<String, Any?>) -> Unit) {
         bridgeObservers.add(observer)
@@ -237,8 +303,12 @@ object NativeSipBridge {
     }
 
     fun acceptCall(): Boolean {
-        startRuntimeServiceIfPossible("acceptCall")
-        return ensureManager().acceptCall()
+        val accepted = ensureManager().acceptCall()
+        if (accepted) {
+            incomingAnswerPending = true
+            startRuntimeServiceIfPossible("acceptCall")
+        }
+        return accepted
     }
 
     fun declineCall(): Boolean {
@@ -251,6 +321,10 @@ object NativeSipBridge {
 
     fun setMuted(muted: Boolean): Boolean {
         return ensureManager().setMuted(muted)
+    }
+
+    fun sendDtmf(tone: String): Boolean {
+        return ensureManager().sendDtmf(tone)
     }
 
     fun setSpeaker(enabled: Boolean): Boolean {
@@ -479,6 +553,14 @@ object NativeSipBridge {
             }
             "call" -> {
                 val callState = event["state"]?.toString() ?: "idle"
+                val previousCallState = currentSnapshot["callState"]?.toString()
+                if (callState == "incoming" && previousCallState != "incoming") {
+                    incomingAnswerPending = false
+                } else if (callState == "in_call" || callState == "ended" ||
+                    callState == "failed" || callState == "idle"
+                ) {
+                    incomingAnswerPending = false
+                }
                 currentSnapshot["callState"] = callState
                 currentSnapshot["message"] = event["message"]
                 currentSnapshot["remoteIdentity"] = if (

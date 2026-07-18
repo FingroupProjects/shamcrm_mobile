@@ -64,6 +64,9 @@ class SipService extends ChangeNotifier
 
   SipUiState _state = SipUiState.initial();
   SipUiState get state => _state;
+  int _callUiOpenRequestSerial = 0;
+  int get callUiOpenRequestSerial => _callUiOpenRequestSerial;
+  int _lastNativeCallUiRequestId = 0;
 
   bool _initialized = false;
   bool _disposed = false;
@@ -73,8 +76,8 @@ class SipService extends ChangeNotifier
   bool _renderersReady = false;
   bool get renderersReady => _renderersReady;
   bool get isConfigLoaded => _configLoaded;
-  bool _sipScreenVisible = false;
-  bool get isSipScreenVisible => _sipScreenVisible;
+  int _sipScreenVisibilityCount = 0;
+  bool get isSipScreenVisible => _sipScreenVisibilityCount > 0;
   bool _shouldStayConnected = false;
   bool _persistentSipEnabled = false;
   bool _networkAvailable = true;
@@ -188,24 +191,32 @@ class SipService extends ChangeNotifier
           ) ??
           'false';
 
-      if (Platform.isAndroid &&
-          (server.trim().isEmpty || login.trim().isEmpty || password.isEmpty)) {
+      if (Platform.isAndroid) {
         final nativeConfig =
             await _invokeNativeSipMethod<Map<dynamic, dynamic>>(
                 'getStoredConfig');
         if (nativeConfig != null) {
-          server = nativeConfig['server']?.toString() ?? server;
-          login = nativeConfig['login']?.toString() ?? login;
-          password = nativeConfig['password']?.toString() ?? password;
+          final nativeServer = nativeConfig['server']?.toString().trim() ?? '';
+          final nativeLogin = nativeConfig['login']?.toString().trim() ?? '';
+          final nativePassword = nativeConfig['password']?.toString() ?? '';
+          if (nativeServer.isNotEmpty &&
+              nativeLogin.isNotEmpty &&
+              nativePassword.isNotEmpty) {
+            server = nativeServer;
+            login = nativeLogin;
+            password = nativePassword;
+          }
           portRaw = nativeConfig['port']?.toString() ?? portRaw;
           transportRaw = nativeConfig['transport']?.toString() ?? transportRaw;
-          enabledRaw = nativeConfig['enabled'] == true ? 'true' : enabledRaw;
-          await _storage.write(key: _serverKey, value: server);
-          await _storage.write(key: _loginKey, value: login);
-          await _storage.write(key: _passwordKey, value: password);
-          await _storage.write(key: _portKey, value: portRaw);
-          await _storage.write(key: _transportKey, value: transportRaw);
-          await _storage.write(key: _enabledKey, value: enabledRaw);
+          enabledRaw = nativeConfig['enabled'] == true ? 'true' : 'false';
+          await _mirrorNativeConfigToFlutterStorage(
+            server: server,
+            login: login,
+            password: password,
+            port: portRaw,
+            transport: transportRaw,
+            enabled: enabledRaw,
+          );
         }
       }
       final parsedPort = int.tryParse(portRaw) ?? 5060;
@@ -285,6 +296,33 @@ class SipService extends ChangeNotifier
       debugPrint('SipService secure storage read failed for $key: $error');
       debugPrint('SipService secure storage read stackTrace: $stackTrace');
       return fallback;
+    }
+  }
+
+  Future<void> _mirrorNativeConfigToFlutterStorage({
+    required String server,
+    required String login,
+    required String password,
+    required String port,
+    required String transport,
+    required String enabled,
+  }) async {
+    final values = <String, String>{
+      _serverKey: server,
+      _loginKey: login,
+      _passwordKey: password,
+      _portKey: port,
+      _transportKey: transport,
+      _enabledKey: enabled,
+    };
+    for (final entry in values.entries) {
+      try {
+        await _storage.write(key: entry.key, value: entry.value);
+      } catch (error) {
+        debugPrint(
+          'SipService native config mirror failed for ${entry.key}: $error',
+        );
+      }
     }
   }
 
@@ -382,8 +420,14 @@ class SipService extends ChangeNotifier
   }
 
   void setSipScreenVisible(bool visible) {
-    if (_sipScreenVisible == visible) return;
-    _sipScreenVisible = visible;
+    final wasVisible = isSipScreenVisible;
+    if (visible) {
+      _sipScreenVisibilityCount += 1;
+    } else if (_sipScreenVisibilityCount > 0) {
+      _sipScreenVisibilityCount -= 1;
+    }
+    final nowVisible = isSipScreenVisible;
+    if (wasVisible == nowVisible) return;
     if (visible) {
       unawaited(refreshRecentCallLogs());
     }
@@ -637,6 +681,12 @@ class SipService extends ChangeNotifier
     }
 
     await _syncNativeSnapshot();
+    final pendingCallUiRequest = await _invokeNativeSipMethod<Object?>(
+      'consumePendingCallUiRequest',
+    );
+    if (pendingCallUiRequest is Map) {
+      _handleNativeSipEvent(Map<String, dynamic>.from(pendingCallUiRequest));
+    }
     await _consumePendingIosCallActions();
   }
 
@@ -1491,6 +1541,18 @@ class SipService extends ChangeNotifier
       final success = await _invokeNativeSipMethod<bool>('hangup') ?? false;
       if (!success) {
         _setError('Не удалось завершить SIP-звонок.');
+      } else {
+        _clearIncomingFingerprint();
+        _markTerminalNativeCallFingerprint();
+        _currentInviteUri = null;
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.ended,
+          clearRemoteIdentity: true,
+          clearError: true,
+          isMuted: false,
+          isSpeakerOn: false,
+        );
+        _notifyListenersSafely();
       }
       return;
     }
@@ -1592,9 +1654,14 @@ class SipService extends ChangeNotifier
     }
 
     if (_shouldUseNativeSip()) {
-      await _invokeNativeSipMethod<bool>('sendDtmf', {
-        'tone': normalized,
-      });
+      final sent = await _invokeNativeSipMethod<bool>(
+        'sendDtmf',
+        <String, dynamic>{'tone': normalized},
+        false,
+      );
+      if (sent == false) {
+        debugPrint('Native SIP DTMF was not sent: $normalized');
+      }
       return;
     }
 
@@ -1684,7 +1751,7 @@ class SipService extends ChangeNotifier
       unawaited(_nativeSipEventsSubscription?.cancel());
       _nativeSipEventsSubscription = null;
       final message =
-          'Native SIP bridge is not loaded in this build. Stop the app completely and rebuild it. Hot reload/hot restart does not load new native platform code. Details: $error';
+          'Телефония недоступна в этой версии приложения. Полностью закройте приложение и установите актуальную сборку.';
       debugPrint('SipService native SIP missing plugin [$method]: $message');
       _state = _state.copyWith(
         registrationStatus: SipRegistrationUiStatus.failed,
@@ -1747,6 +1814,34 @@ class SipService extends ChangeNotifier
 
     if (type == 'audio_session') {
       _handleNativeAudioSessionEvent(payload);
+      return;
+    }
+
+    if (type == 'call_ui_request') {
+      final requestId =
+          int.tryParse(payload['requestId']?.toString() ?? '') ?? 0;
+      if (requestId > 0 && requestId == _lastNativeCallUiRequestId) {
+        return;
+      }
+      if (requestId > 0) {
+        _lastNativeCallUiRequestId = requestId;
+      }
+      _applyNativeSnapshot(payload);
+      _callUiOpenRequestSerial += 1;
+      unawaited(recordUiDiagnostic(
+        'CALL_UI_EVENT_RECEIVED',
+        <String, Object?>{
+          'serial': _callUiOpenRequestSerial,
+          'source': payload['source'],
+          'request_id': requestId,
+          'call_state': payload['callState'],
+          'registration_state': payload['registrationState'],
+        },
+      ));
+      debugPrint(
+        'SipService native call UI requested -> serial=$_callUiOpenRequestSerial, source=${payload['source']}, callState=${payload['callState']}, registrationState=${payload['registrationState']}',
+      );
+      _notifyListenersSafely();
       return;
     }
   }
@@ -1866,6 +1961,13 @@ class SipService extends ChangeNotifier
     } catch (error) {
       debugPrint('SipService append native diagnostic failed: $error');
     }
+  }
+
+  Future<void> recordUiDiagnostic(
+    String event, [
+    Map<String, Object?> details = const <String, Object?>{},
+  ]) {
+    return _appendNativeDiagnosticLog(event, details);
   }
 
   Future<void> _syncIosVoipPushTokenWithBackend(

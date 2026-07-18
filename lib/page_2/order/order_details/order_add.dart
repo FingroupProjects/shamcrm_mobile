@@ -522,6 +522,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     final monthlyPayment =
         installmentTerm > 0 ? installmentAmount / installmentTerm : 0.0;
 
+    // Для tojsokhtmontj выбранный товар представляет площадь квартиры:
+    // цена товара = цена за м², количество = общая площадь. Поэтому его
+    // «Сумма» и общий итог автоматически равны pricePerSquare * area.
+    if (_items.isNotEmpty) {
+      final selectedItem = _items.first;
+      selectedItem['price'] = pricePerSquare;
+      selectedItem['quantity'] = area;
+      _totalController.text = _formatTojsokhtmontjNumber(total);
+      _isTotalEdited = false;
+    }
+
     _setTojsokhtmontjCalculatedValue('Итого', total);
     _setTojsokhtmontjCalculatedValue('Сумма рассрочки', installmentAmount);
     _setTojsokhtmontjCalculatedValue('Ежемесячная оплата', monthlyPayment);
@@ -2085,6 +2096,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           final currentTotal = _getCurrentTotal();
           final adjustedTotal = currentTotal + addedTotal;
           _totalController.text = adjustedTotal.toStringAsFixed(0);
+        }
+
+        if (_isTojsokhtmontjTenant) {
+          _recalculateTojsokhtmontjApartmentFields();
         }
       });
     }

@@ -11,6 +11,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 
 class IncomingCallActivity : Activity() {
 
@@ -84,9 +85,21 @@ class IncomingCallActivity : Activity() {
 
         findViewById<LinearLayout>(R.id.btnAnswer).setOnClickListener {
             Log.d(TAG, "User accepted call via Native UI")
-            NativeSipBridge.acceptCall()
-            openFlutterCallUi()
-            requestClose("user-accepted")
+            if (NativeSipBridge.acceptCall()) {
+                openFlutterCallUi()
+                requestClose("user-accepted")
+            } else {
+                Log.w(TAG, "Native acceptCall returned false, keeping incoming UI open")
+                NativeSipBridge.recordDiagnosticEvent(
+                    event = "incoming_answer_failed",
+                    details = hashMapOf("source" to "incoming-activity"),
+                )
+                Toast.makeText(
+                    this,
+                    "Подключение звонка ещё не готово. Попробуйте ещё раз.",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
         }
 
         findViewById<LinearLayout>(R.id.btnDecline).setOnClickListener {

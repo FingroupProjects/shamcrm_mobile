@@ -9,13 +9,19 @@ extension _SipMainViewsExtension on _SipScreenState {
         isRegistered && state.callStatus != SipCallUiStatus.incoming;
     final isReconnectInProgress = _isReconnectInProgress(state);
     final isNetworkUnavailable = _isNetworkUnavailableState(state);
-    final subtitle = isReconnectInProgress
-        ? 'Восстанавливаем SIP-соединение...'
-        : isNetworkUnavailable
-            ? 'Сеть потеряна. Ждём восстановление соединения'
-            : isRegistered
-                ? 'Линия готова к звонкам'
-                : 'Подключите линию для звонков в фоне';
+    final hasActiveCall = state.callStatus == SipCallUiStatus.incoming ||
+        state.callStatus == SipCallUiStatus.calling ||
+        state.callStatus == SipCallUiStatus.ringing ||
+        state.callStatus == SipCallUiStatus.inCall;
+    final subtitle = hasActiveCall
+        ? _resolvedCallLabel(context, state)
+        : isReconnectInProgress
+            ? 'Восстанавливаем SIP-соединение...'
+            : isNetworkUnavailable
+                ? 'Сеть потеряна. Ждём восстановление соединения'
+                : isRegistered
+                    ? 'Линия готова к звонкам'
+                    : 'Подключите линию для звонков в фоне';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
@@ -470,7 +476,11 @@ extension _SipMainViewsExtension on _SipScreenState {
         state.registrationStatus == SipRegistrationUiStatus.registering;
     final isReconnectInProgress = _isReconnectInProgress(state);
     final isNetworkUnavailable = _isNetworkUnavailableState(state);
-    if (isRegistered && state.callStatus != SipCallUiStatus.incoming) {
+    final hasActiveCall = state.callStatus == SipCallUiStatus.calling ||
+        state.callStatus == SipCallUiStatus.ringing ||
+        state.callStatus == SipCallUiStatus.inCall;
+    if (hasActiveCall ||
+        (isRegistered && state.callStatus != SipCallUiStatus.incoming)) {
       return const SizedBox.shrink();
     }
 

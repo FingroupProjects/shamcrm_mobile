@@ -167,6 +167,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         handleWidgetIntent(intent)
         updateIncomingCallWindowMode(intent)
+        handleSipCallIntent(intent, "activity-create")
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -327,8 +328,24 @@ class MainActivity : FlutterFragmentActivity() {
                     NativeSipBridge.clearDiagnosticLogs()
                     result.success(true)
                 }
+                "appendDiagnosticLog" -> {
+                    val event = call.argument<String>("event")?.trim().orEmpty()
+                    val rawDetails = call.argument<Map<String, Any?>>("details")
+                    if (event.isEmpty()) {
+                        result.error("INVALID_EVENT", "Diagnostic event is empty", null)
+                    } else {
+                        NativeSipBridge.recordDiagnosticEvent(
+                            event = event,
+                            details = HashMap(rawDetails ?: emptyMap()),
+                        )
+                        result.success(true)
+                    }
+                }
                 "restoreRegistrationIfNeeded" -> {
                     result.success(NativeSipBridge.restoreRegistrationIfNeeded())
+                }
+                "consumePendingCallUiRequest" -> {
+                    result.success(NativeSipBridge.consumePendingCallUiRequest())
                 }
                 "makeCall" -> {
                     val target = call.argument<String>("target")
@@ -344,6 +361,14 @@ class MainActivity : FlutterFragmentActivity() {
                 "setMuted" -> {
                     val muted = call.argument<Boolean>("muted") ?: false
                     result.success(NativeSipBridge.setMuted(muted))
+                }
+                "sendDtmf" -> {
+                    val tone = call.argument<String>("tone")
+                    if (tone.isNullOrBlank()) {
+                        result.error("INVALID_TONE", "DTMF tone is empty", null)
+                    } else {
+                        result.success(NativeSipBridge.sendDtmf(tone))
+                    }
                 }
                 "setSpeaker" -> {
                     val speakerOn = call.argument<Boolean>("speakerOn") ?: false
@@ -412,6 +437,7 @@ class MainActivity : FlutterFragmentActivity() {
         setIntent(intent)
         handleWidgetIntent(intent)
         updateIncomingCallWindowMode(intent)
+        handleSipCallIntent(intent, "activity-new-intent")
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -580,6 +606,21 @@ class MainActivity : FlutterFragmentActivity() {
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+    }
+
+    private fun handleSipCallIntent(intent: Intent?, source: String) {
+        if (intent?.getBooleanExtra("open_sip_call", false) != true) return
+        intent.removeExtra("open_sip_call")
+        val snapshot = NativeSipBridge.getStateSnapshot()
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "call_ui_intent_received",
+            details = hashMapOf(
+                "source" to source,
+                "callState" to snapshot["callState"],
+                "registrationState" to snapshot["registrationState"],
+            ),
+        )
+        NativeSipBridge.requestFlutterCallUi(source)
     }
 
     private fun checkHasAnyNetwork(): Boolean {

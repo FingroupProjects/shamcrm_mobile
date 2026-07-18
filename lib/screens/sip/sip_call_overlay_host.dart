@@ -48,6 +48,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   bool _isMiniCallDockedAway = false;
   bool _hadVisibleCallOverlay = false;
   bool _pinRedirectInProgress = false;
+  bool _fullCallUiOpenInProgress = false;
+  int _lastHandledCallUiRequestSerial = 0;
+  int _lastLoggedWaitingCallUiRequestSerial = 0;
 
   @override
   void initState() {
@@ -277,6 +280,82 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     );
   }
 
+  void _handleNativeCallUiRequest(SipUiState state) {
+    final serial = _sipService.callUiOpenRequestSerial;
+    if (serial == 0 || serial == _lastHandledCallUiRequestSerial) return;
+
+    final active = state.callStatus == SipCallUiStatus.incoming ||
+        state.callStatus == SipCallUiStatus.calling ||
+        state.callStatus == SipCallUiStatus.ringing ||
+        state.callStatus == SipCallUiStatus.inCall;
+    if (!active) {
+      if (_lastLoggedWaitingCallUiRequestSerial != serial) {
+        _lastLoggedWaitingCallUiRequestSerial = serial;
+        unawaited(_sipService.recordUiDiagnostic(
+          'CALL_UI_WAITING_ACTIVE_STATE',
+          <String, Object?>{
+            'serial': serial,
+            'call_state': state.callStatus.name,
+            'registration_state': state.registrationStatus.name,
+          },
+        ));
+      }
+      return;
+    }
+    _lastHandledCallUiRequestSerial = serial;
+    if (_fullCallUiOpenInProgress) {
+      unawaited(_sipService.recordUiDiagnostic(
+        'CALL_UI_ALREADY_VISIBLE',
+        <String, Object?>{
+          'serial': serial,
+          'sip_screen_visible': _sipService.isSipScreenVisible,
+          'open_in_progress': _fullCallUiOpenInProgress,
+        },
+      ));
+      return;
+    }
+
+    _fullCallUiOpenInProgress = true;
+    unawaited(_sipService.recordUiDiagnostic(
+      'CALL_UI_OPEN_SCHEDULED',
+      <String, Object?>{
+        'serial': serial,
+        'call_state': state.callStatus.name,
+        'replacing_visible_sip_screen': _sipService.isSipScreenVisible,
+      },
+    ));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted || !_isProtectedSipCallActive()) {
+          await _sipService.recordUiDiagnostic(
+            'CALL_UI_OPEN_ABORTED',
+            <String, Object?>{
+              'serial': serial,
+              'mounted': mounted,
+              'call_state': _sipService.state.callStatus.name,
+            },
+          );
+          return;
+        }
+        await _openSipScreen();
+        await _sipService.recordUiDiagnostic(
+          'CALL_UI_OPENED',
+          <String, Object?>{'serial': serial},
+        );
+      } catch (error) {
+        await _sipService.recordUiDiagnostic(
+          'CALL_UI_OPEN_FAILED',
+          <String, Object?>{
+            'serial': serial,
+            'error': error,
+          },
+        );
+      } finally {
+        _fullCallUiOpenInProgress = false;
+      }
+    });
+  }
+
   bool _isProtectedSipCallActive() {
     final status = _sipService.state.callStatus;
     return status == SipCallUiStatus.incoming ||
@@ -312,6 +391,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       animation: _sipService,
       builder: (context, _) {
         final state = _sipService.state;
+        _handleNativeCallUiRequest(state);
         final showOverlay = _shouldShowOverlay(state);
         _syncFeedback(state, showOverlay);
 

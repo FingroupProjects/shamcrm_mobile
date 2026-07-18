@@ -5,6 +5,14 @@ extension _SipSettingsSheetExtension on _SipScreenState {
   Future<void> _showSettingsSheet() async {
     final l10n = AppLocalizations.of(context)!;
     var passwordVisible = false;
+    final currentState = _sipRuntime.state;
+    _suspendDraftAutosave = true;
+    _serverController.text = currentState.server;
+    _loginController.text = currentState.login;
+    _passwordController.text = currentState.password;
+    _portController.text = currentState.port.toString();
+    _selectedTransport = currentState.transport;
+    _suspendDraftAutosave = false;
 
     await showCupertinoModalPopup<void>(
       context: context,

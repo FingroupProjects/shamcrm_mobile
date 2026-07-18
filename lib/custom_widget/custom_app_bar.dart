@@ -1850,18 +1850,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 ],
                               ),
                             ),
-                          if (_canReadSip)
-                            PopupMenuItem<String>(
-                              value: 'sip',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.phone_in_talk_outlined),
-                                  const SizedBox(width: 8),
-                                  Text(AppLocalizations.of(context)!
-                                      .translate('appbar_sip')),
-                                ],
-                              ),
-                            ),
+                          // if (_canReadSip)
+                          //   PopupMenuItem<String>(
+                          //     value: 'sip',
+                          //     child: Row(
+                          //       children: [
+                          //         const Icon(Icons.phone_in_talk_outlined),
+                          //         const SizedBox(width: 8),
+                          //         Text(AppLocalizations.of(context)!
+                          //             .translate('appbar_sip')),
+                          //       ],
+                          //     ),
+                          //   ),
                           // if (widget.showGps && _canReadGps) // Новый пункт для GPS
                           //             PopupMenuItem<String>(
                           //               value: 'gps',

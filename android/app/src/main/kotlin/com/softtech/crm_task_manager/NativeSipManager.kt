@@ -289,6 +289,26 @@ class NativeSipManager(
         }
     }
 
+    fun sendDtmf(tone: String): Boolean {
+        val normalized = tone.trim().uppercase()
+        if (normalized.length != 1 || normalized[0] !in "0123456789*#ABCD") {
+            Log.w(TAG, "sendDtmf ignored invalid tone=$tone")
+            return false
+        }
+
+        val call = currentCall ?: return false
+        if (lastCallState != "in_call") return false
+
+        return try {
+            val status = call.sendDtmf(normalized[0])
+            Log.d(TAG, "sendDtmf tone=$normalized status=$status")
+            status == 0
+        } catch (error: Throwable) {
+            Log.e(TAG, "sendDtmf failed: ${error.message}", error)
+            false
+        }
+    }
+
     fun setSpeaker(enabled: Boolean): Boolean {
         isSpeakerOn = enabled
         val sipCore = core

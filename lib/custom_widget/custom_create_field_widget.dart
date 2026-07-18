@@ -134,13 +134,17 @@ class CustomFieldWidget extends StatelessWidget {
         hintText = AppLocalizations.of(context)!.translate('enter_number');
         break;
       case 'date':
-        keyboardType = TextInputType.none;
-        readOnly = true;
+        keyboardType = TextInputType.datetime;
+        inputFormatters = [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
+        ];
         hintText = AppLocalizations.of(context)!.translate('enter_date');
         break;
       case 'datetime':
-        keyboardType = TextInputType.none;
-        readOnly = true;
+        keyboardType = TextInputType.datetime;
+        inputFormatters = [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9/: ]')),
+        ];
         hintText = AppLocalizations.of(context)!.translate('enter_datetime');
         break;
       default: // string
@@ -177,8 +181,11 @@ class CustomFieldWidget extends StatelessWidget {
                   autovalidateMode: autovalidateMode,
                   readOnly: readOnlyOverride ?? readOnly,
                   onChanged: onChanged,
-                  onTap: (readOnlyOverride ?? readOnly)
-                      ? () => _selectDate(context, withTime: type == 'datetime')
+                  onTap: type == 'date' || type == 'datetime'
+                      ? () => _selectDate(
+                            context,
+                            withTime: type == 'datetime',
+                          )
                       : null,
                   decoration: InputDecoration(
                     hintText: hintText, // Используем динамическую подсказку

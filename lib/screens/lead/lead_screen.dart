@@ -2284,29 +2284,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             }
 
             if (state is LeadLoaded) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Список статусов пуст',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<LeadBloc>().add(FetchLeadStatuses());
-                      },
-                      child: const Text('Обновить'),
-                    ),
-                  ],
-                ),
-              );
+              return const Center(child: Text('Список статусов пуст'));
             }
 
             return const Center(

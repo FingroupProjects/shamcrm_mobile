@@ -3362,21 +3362,26 @@ class ApiService {
       } else if (data is Map<String, dynamic>) {
         if (data['result'] is List) {
           statusList = data['result'] as List;
+        } else if (data['result'] is Map<String, dynamic>) {
+          final result = data['result'] as Map<String, dynamic>;
+          if (result['data'] is List) {
+            statusList = result['data'] as List;
+          } else if (result['statuses'] is List) {
+            statusList = result['statuses'] as List;
+          }
         } else if (data['data'] is List) {
           statusList = data['data'] as List;
         } else if (data['statuses'] is List) {
           statusList = data['statuses'] as List;
-        } else if (data['result'] is Map<String, dynamic> &&
-            (data['result'] as Map<String, dynamic>)['statuses'] is List) {
-          statusList =
-              (data['result'] as Map<String, dynamic>)['statuses'] as List;
         }
       }
 
-      if (statusList == null || statusList.isEmpty) {
-        throw Exception('Результат отсутствует в ответе или пустой');
+      if (statusList == null) {
+        throw Exception('Результат отсутствует в ответе');
       }
 
+      // Пустой список — валидный ответ сервера: пользователь может не иметь
+      // доступных статусов при включённом управлении видимостью.
       await prefs.setString(cacheKey, json.encode(statusList));
 
       final statuses = statusList
@@ -3395,6 +3400,12 @@ class ApiService {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ getLeadStatuses WITH FILTERS - Error: $e');
+      }
+
+      // При принудительном запросе нельзя подменять ответ сервера кэшем:
+      // вызывающий код должен получить настоящую причину ошибки.
+      if (bypassAnalyticsCache) {
+        rethrow;
       }
 
       final cachedStatuses = prefs.getString(cacheKey);
