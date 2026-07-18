@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:bloc/bloc.dart';
@@ -19,7 +20,7 @@ class GetAllCashRegisterBloc extends Bloc<GetAllCashRegisterEvent, GetAllCashReg
 
         emit(GetAllCashRegisterSuccess(dataCashRegisters: res));
       } catch (e) {
-        emit(GetAllCashRegisterError(message: e.toString()));
+        emit(GetAllCashRegisterError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllCashRegisterError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

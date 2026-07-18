@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/models/api_exception_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
@@ -53,10 +54,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(MoneyIncomeApproveMassSuccess("mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeApproveMassError(e.toString(),
+        emit(MoneyIncomeApproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeApproveMassError(e.toString()));
+        emit(MoneyIncomeApproveMassError(friendlyError(e)));
       }
       add(FetchMoneyIncome(forceRefresh: true));
     }
@@ -76,10 +77,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(MoneyIncomeDisapproveMassSuccess("mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeDisapproveMassError(e.toString(),
+        emit(MoneyIncomeDisapproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeDisapproveMassError(e.toString()));
+        emit(MoneyIncomeDisapproveMassError(friendlyError(e)));
       }
       add(FetchMoneyIncome(forceRefresh: true));
     }
@@ -100,9 +101,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(
-            MoneyIncomeDeleteMassError(e.toString(), statusCode: e.statusCode));
+            MoneyIncomeDeleteMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeDeleteMassError(e.toString()));
+        emit(MoneyIncomeDeleteMassError(friendlyError(e)));
       }
       add(FetchMoneyIncome(forceRefresh: true));
     }
@@ -122,10 +123,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(MoneyIncomeRestoreMassSuccess("mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeRestoreMassError(e.toString(),
+        emit(MoneyIncomeRestoreMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeRestoreMassError(e.toString()));
+        emit(MoneyIncomeRestoreMassError(friendlyError(e)));
       }
       add(FetchMoneyIncome(forceRefresh: true));
     }
@@ -141,10 +142,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
           MoneyIncomeToggleOneApproveSuccess("toggle_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeToggleOneApproveError(e.toString(),
+        emit(MoneyIncomeToggleOneApproveError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeToggleOneApproveError(e.toString()));
+        emit(MoneyIncomeToggleOneApproveError(friendlyError(e)));
       }
     }
   }
@@ -199,9 +200,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       ));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeError(e.toString(), statusCode: e.statusCode));
+        emit(MoneyIncomeError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeError(e.toString()));
+        emit(MoneyIncomeError(friendlyError(e)));
       }
     }
   }
@@ -228,9 +229,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(const MoneyIncomeCreateSuccess('document_created_successfully'));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeCreateError(e.toString(), statusCode: e.statusCode));
+        emit(MoneyIncomeCreateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeCreateError(e.toString()));
+        emit(MoneyIncomeCreateError(friendlyError(e)));
       }
     }
   }
@@ -257,9 +258,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(const MoneyIncomeUpdateSuccess('document_updated_successfully'));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(MoneyIncomeUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeUpdateError(e.toString()));
+        emit(MoneyIncomeUpdateError(friendlyError(e)));
       }
     }
   }
@@ -290,9 +291,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     } catch (e) {
       firstFailed = true;
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(MoneyIncomeUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeUpdateError(e.toString()));
+        emit(MoneyIncomeUpdateError(friendlyError(e)));
       }
     }
 
@@ -314,10 +315,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
           "document_updated_and_approve_toggled_successfully"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeToggleOneApproveError(e.toString(),
+        emit(MoneyIncomeToggleOneApproveError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeToggleOneApproveError(e.toString()));
+        emit(MoneyIncomeToggleOneApproveError(friendlyError(e)));
       }
     }
   }
@@ -342,9 +343,9 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
           reload: true));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeDeleteError(e.toString(), statusCode: e.statusCode));
+        emit(MoneyIncomeDeleteError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeDeleteError(e.toString()));
+        emit(MoneyIncomeDeleteError(friendlyError(e)));
       }
       failed = true;
     }
@@ -365,10 +366,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       emit(MoneyIncomeRestoreMassSuccess("mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MoneyIncomeRestoreMassError(e.toString(),
+        emit(MoneyIncomeRestoreMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(MoneyIncomeRestoreMassError(e.toString()));
+        emit(MoneyIncomeRestoreMassError(friendlyError(e)));
       }
       add(FetchMoneyIncome(forceRefresh: true));
     }

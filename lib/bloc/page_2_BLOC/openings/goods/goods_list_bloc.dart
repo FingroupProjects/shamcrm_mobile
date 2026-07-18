@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -95,7 +96,7 @@ class GetAllGoodsListBloc
       if (kDebugMode) {
         //print('GetAllGoodsListBloc: Error loading goods: $e');
       }
-      emit(GetAllGoodsListError(message: e.toString()));
+      emit(GetAllGoodsListError(message: friendlyError(e)));
     }
   }
 

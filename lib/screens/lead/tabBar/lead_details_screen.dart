@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -1610,7 +1611,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (!mounted) return;
       showCustomSnackBar(
         context: context,
-        message: e.toString().replaceFirst('Exception: ', ''),
+        message: friendlyError(e).replaceFirst('Exception: ', ''),
         isSuccess: false,
       );
     } finally {
@@ -1658,7 +1659,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (!mounted) return;
       final message = e is LeadStatusUpdateException
           ? e.message
-          : e.toString().replaceFirst('Exception: ', '');
+          : friendlyError(e);
       showCustomSnackBar(
         context: context,
         message: message,

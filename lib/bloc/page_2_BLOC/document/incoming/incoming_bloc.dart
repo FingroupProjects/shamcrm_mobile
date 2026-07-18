@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import '../../../../models/api_exception_model.dart';
@@ -43,9 +44,9 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingApproveMassSuccess("mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(IncomingApproveMassError(e.toString(), statusCode: e.statusCode));
+        emit(IncomingApproveMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(IncomingApproveMassError(e.toString()));
+        emit(IncomingApproveMassError(friendlyError(e)));
       }
       add(FetchIncoming(forceRefresh: true));
     }
@@ -67,10 +68,10 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingDisapproveMassSuccess("mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(IncomingDisapproveMassError(e.toString(),
+        emit(IncomingDisapproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(IncomingDisapproveMassError(e.toString()));
+        emit(IncomingDisapproveMassError(friendlyError(e)));
       }
       add(FetchIncoming(forceRefresh: true));
     }
@@ -95,9 +96,9 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingDeleteMassSuccess("mass_delete_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(IncomingDeleteMassError(e.toString(), statusCode: e.statusCode));
+        emit(IncomingDeleteMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(IncomingDeleteMassError(e.toString()));
+        emit(IncomingDeleteMassError(friendlyError(e)));
       }
     }
 
@@ -117,9 +118,9 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingRestoreMassSuccess("mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(IncomingRestoreMassError(e.toString(), statusCode: e.statusCode));
+        emit(IncomingRestoreMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(IncomingRestoreMassError(e.toString()));
+        emit(IncomingRestoreMassError(friendlyError(e)));
       }
       add(FetchIncoming(forceRefresh: true));
     }
@@ -241,9 +242,9 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       ));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(IncomingError(e.toString(), statusCode: e.statusCode));
+        emit(IncomingError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(IncomingError(e.toString()));
+        emit(IncomingError(friendlyError(e)));
       }
     }
   }
@@ -269,9 +270,9 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
           : 'Документ успешно создан'));
     } catch (e) {
       if (e is ApiException) {
-        emit(IncomingCreateError(e.toString(), statusCode: e.statusCode));
+        emit(IncomingCreateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(IncomingCreateError(e.toString()));
+        emit(IncomingCreateError(friendlyError(e)));
       }
     }
   }
@@ -296,9 +297,9 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       emit(IncomingUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       if (e is ApiException) {
-        emit(IncomingUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(IncomingUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(IncomingUpdateError(e.toString()));
+        emit(IncomingUpdateError(friendlyError(e)));
       }
     }
   }

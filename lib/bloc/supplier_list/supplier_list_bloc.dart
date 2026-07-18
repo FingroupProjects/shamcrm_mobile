@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:bloc/bloc.dart';
@@ -19,7 +20,7 @@ class GetAllSupplierBloc extends Bloc<GetAllSupplierEvent, GetAllSupplierState> 
 
         emit(GetAllSupplierSuccess(dataSuppliers: res));
       } catch (e) {
-        emit(GetAllSupplierError(message: e.toString()));
+        emit(GetAllSupplierError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllSupplierError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

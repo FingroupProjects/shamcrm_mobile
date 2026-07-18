@@ -116,9 +116,13 @@ class Order {
             : int.tryParse('${json['reason_for_refusal_id']}'),
         reasonForRefusalComment: json['reason_for_refusal']?.toString(),
         refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
-        customFieldValues: (json['customFieldValues'] as List<dynamic>? ?? [])
-            .map((item) =>
-                CustomFieldValue.fromJson(item as Map<String, dynamic>))
+        // The order API returns this relation as `custom_field_values`.
+        // Keep the camelCase fallback for locally cached/legacy payloads.
+        customFieldValues: ((json['custom_field_values'] ??
+                    json['customFieldValues']) as List<dynamic>? ??
+                [])
+            .whereType<Map<String, dynamic>>()
+            .map(CustomFieldValue.fromJson)
             .toList(),
         directoryValues: (json['directory_values'] as List<dynamic>? ?? [])
             .map(
@@ -452,7 +456,9 @@ class Good {
       variantGood: variantGoodItem,
       goodId: json['variant_id'] ?? json['good_id'] ?? goodItem.id,
       goodName: cachedGoodName ??
-          (goodItem.name.isNotEmpty ? goodItem.name : (variantGoodItem?.name ?? '')),
+          (goodItem.name.isNotEmpty
+              ? goodItem.name
+              : (variantGoodItem?.name ?? '')),
       quantity: json['quantity'] ?? 0,
       price: double.tryParse(
             json['price']?.toString() ??
@@ -461,7 +467,8 @@ class Good {
                         ?.toString()
                     : null) ??
                 (goodRaw is Map<String, dynamic>
-                    ? ((goodRaw['good_price'] as Map<String, dynamic>?)?['price'])
+                    ? ((goodRaw['good_price']
+                            as Map<String, dynamic>?)?['price'])
                         ?.toString()
                     : null) ??
                 '0',

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'calendar_event.dart';
 import 'calendar_state.dart';
@@ -24,7 +25,7 @@ class CalendarBloc extends Bloc<CalendarBlocEvent, CalendarBlocState> {
       );
       emit(CalendarLoaded(events, DateTime(event.year, event.month,)));
     } catch (e) {
-      emit(CalendarError(e.toString()));
+      emit(CalendarError(friendlyError(e)));
     }
   }
 }

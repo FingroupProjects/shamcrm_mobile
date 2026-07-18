@@ -64,7 +64,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _isSearching = false;
   bool _isManager = false;
   final TextEditingController _searchController = TextEditingController();
-  bool _canReadLeadStatus = false;
   bool _canCreateLeadStatus = false;
   bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
@@ -187,17 +186,22 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         statusId,
         salesFunnelId: _selectedFunnel?.id,
         query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
-        managerIds:
-            _selectedManagers.isNotEmpty ? _selectedManagers.map((e) => e.id).toList() : null,
-        regionsIds:
-            _selectedRegions.isNotEmpty ? _selectedRegions.map((e) => e.id).toList() : null,
+        managerIds: _selectedManagers.isNotEmpty
+            ? _selectedManagers.map((e) => e.id).toList()
+            : null,
+        regionsIds: _selectedRegions.isNotEmpty
+            ? _selectedRegions.map((e) => e.id).toList()
+            : null,
         regionId: _selectedState?.id,
-        cityIds:
-            _selectedCities.isNotEmpty ? _selectedCities.map((e) => e.id).toList() : null,
-        sourcesIds:
-            _selectedSources.isNotEmpty ? _selectedSources.map((e) => e.id).toList() : null,
-        channelIds:
-            _selectedChannels.isNotEmpty ? _selectedChannels.map((e) => e.id).toList() : null,
+        cityIds: _selectedCities.isNotEmpty
+            ? _selectedCities.map((e) => e.id).toList()
+            : null,
+        sourcesIds: _selectedSources.isNotEmpty
+            ? _selectedSources.map((e) => e.id).toList()
+            : null,
+        channelIds: _selectedChannels.isNotEmpty
+            ? _selectedChannels.map((e) => e.id).toList()
+            : null,
         advertisingCampaignIds: _selectedAdvertisingCampaigns.isNotEmpty
             ? _selectedAdvertisingCampaigns.map((e) => e.id).toList()
             : null,
@@ -220,8 +224,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         daysWithoutActivity: _daysWithoutActivity,
         numberOfDaysDeal: _numberOfDaysDeal,
         directoryValues: _directoryValues.isNotEmpty ? _directoryValues : null,
-        customFieldFilters:
-            _selectedCustomFieldFilters.isNotEmpty ? _selectedCustomFieldFilters : null,
+        customFieldFilters: _selectedCustomFieldFilters.isNotEmpty
+            ? _selectedCustomFieldFilters
+            : null,
         ignoreCache: true,
       ),
     );
@@ -581,14 +586,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('leadStatus.read');
     final canCreate = await _apiService.hasPermission('leadStatus.create');
     final canUpdate = await _apiService.hasPermission('leadStatus.update');
     final canDelete = await _apiService.hasPermission('leadStatus.delete');
     final canAddLead = await _apiService.hasPermission('lead.create');
     if (mounted) {
       setState(() {
-        _canReadLeadStatus = canRead;
         _canCreateLeadStatus = canCreate;
         _canUpdateLeadStatus = canUpdate;
         _canDeleteLeadStatus = canDelete;
@@ -597,14 +600,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       });
     }
 
-    if (mounted && canRead) {
+    // Статусы и их видимость определяет сервер. Не блокируем этот запрос
+    // локальной проверкой leadStatus.read.
+    if (mounted) {
       final leadState = context.read<LeadBloc>().state;
       if (leadState is LeadInitial ||
           (leadState is LeadLoaded && _tabTitles.isEmpty)) {
         context.read<LeadBloc>().add(FetchLeadStatuses());
       }
-    } else if (mounted && !canRead) {
-      _resetLeadLoaderFlags();
     }
 
     try {
@@ -1311,7 +1314,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       AppLocalizations.of(context)!
                                           .translate('new_lead_in_switch'),
                                       style: TextStyle(
-                                        color: context.appColors.buttonPrimaryBg,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
                                         fontSize: 16,
                                         fontFamily: "Gilroy",
                                         fontWeight: FontWeight.w500,
@@ -1351,7 +1355,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       AppLocalizations.of(context)!
                                           .translate('import_contact'),
                                       style: TextStyle(
-                                        color: context.appColors.buttonPrimaryBg,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
                                         fontSize: 16,
                                         fontFamily: "Gilroy",
                                         fontWeight: FontWeight.w500,
@@ -1403,8 +1408,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            LeadAddScreen(
+                        builder: (context) => LeadAddScreen(
                           statusId: currentStatusId,
                           isWarehouseReferenceClient:
                               widget.isWarehouseReferenceClients,
@@ -1515,8 +1519,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               lead: lead,
               title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
-              isWarehouseReferenceClient:
-                  widget.isWarehouseReferenceClients,
+              isWarehouseReferenceClient: widget.isWarehouseReferenceClients,
               onStatusUpdated: () {},
               onStatusId: (StatusLeadId) {
                 final index = _tabTitles
@@ -1662,20 +1665,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               );
             }
 
-            if (!_canReadLeadStatus) {
-              return Center(
-                child: Text(
-                  'Нет доступа к статусам лидов',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: context.appColors.textSecondary,
-                  ),
-                ),
-              );
-            }
-
             if (_tabTitles.isEmpty) {
               return Center(
                 child: Column(
@@ -1795,7 +1784,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           PopupMenuItem(
             value: 'delete',
             child: ListTile(
-              leading: Icon(Icons.delete, color: context.appColors.textSecondary),
+              leading:
+                  Icon(Icons.delete, color: context.appColors.textSecondary),
               title: Text(
                 'Удалить',
                 style: TextStyle(
@@ -1996,17 +1986,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         }
         if (state is LeadLoaded) {
           if (!_permissionsInitialized) {
-            return;
-          }
-
-          if (!_canReadLeadStatus) {
-            if (mounted) {
-              setState(() {
-                _tabTitles.clear();
-                _tabKeys.clear();
-                _currentTabIndex = 0;
-              });
-            }
             return;
           }
 
@@ -2285,20 +2264,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 child: PlayStoreImageLoading(
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),
-                ),
-              );
-            }
-
-            if (!_canReadLeadStatus) {
-              return Center(
-                child: Text(
-                  'Нет доступа к статусам лидов',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: context.appColors.textSecondary,
-                  ),
                 ),
               );
             }

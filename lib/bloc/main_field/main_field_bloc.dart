@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -25,7 +26,7 @@ class MainFieldBloc extends Bloc<MainFieldEvent, MainFieldState> {
       final mainFields = await ApiService().getMainFields(event.directoryId);
       emit(MainFieldSuccess(mainFields: mainFields));
     } catch (e) {
-      emit(MainFieldError(message: e.toString()));
+      emit(MainFieldError(message: friendlyError(e)));
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/data_1c/data_1c_event.dart';
@@ -28,7 +29,7 @@ class Data1CBloc extends Bloc<Data1CEvent, Data1CState> {
         final data1C = await apiService.getData1C();
         emit(Data1CLoaded(data1C));
       } catch (e) {
-        emit(Data1CError(e.toString()));
+        emit(Data1CError(friendlyError(e)));
       }
     } else {
       emit(Data1CError('Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

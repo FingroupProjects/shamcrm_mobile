@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'dart:io';
 
@@ -27,7 +28,7 @@ class GetTaskProjectBloc extends Bloc<GetTaskProjectEvent, GetTaskProjectState> 
           hasReachedMax: currentPage >= totalPages,
         ));
       } catch (e) {
-        emit(GetTaskProjectError(message: e.toString()));
+        emit(GetTaskProjectError(message: friendlyError(e)));
       }
     } else {
       emit(GetTaskProjectError(message: 'Нет подключения к интернету'));

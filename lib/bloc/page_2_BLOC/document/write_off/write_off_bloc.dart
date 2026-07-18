@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,9 +44,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
       emit(WriteOffApproveMassSuccess("mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(WriteOffApproveMassError(e.toString(), statusCode: e.statusCode));
+        emit(WriteOffApproveMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(WriteOffApproveMassError(e.toString()));
+        emit(WriteOffApproveMassError(friendlyError(e)));
       }
       add(FetchWriteOffs(forceRefresh: true));
     }
@@ -62,9 +63,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
       emit(WriteOffDisapproveMassSuccess("mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(WriteOffDisapproveMassError(e.toString(), statusCode: e.statusCode));
+        emit(WriteOffDisapproveMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(WriteOffDisapproveMassError(e.toString()));
+        emit(WriteOffDisapproveMassError(friendlyError(e)));
       }
       add(FetchWriteOffs(forceRefresh: true));
     }
@@ -85,9 +86,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
     emit(WriteOffDeleteMassSuccess("mass_delete_success_message"));
   } catch (e) {
     if (e is ApiException && e.statusCode == 409) {
-      emit(WriteOffDeleteMassError(e.toString(), statusCode: e.statusCode));
+      emit(WriteOffDeleteMassError(friendlyError(e), statusCode: e.statusCode));
     } else {
-      emit(WriteOffDeleteMassError(e.toString()));
+      emit(WriteOffDeleteMassError(friendlyError(e)));
     }
     add(FetchWriteOffs(forceRefresh: true));
   }
@@ -104,9 +105,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
       emit(WriteOffRestoreMassSuccess("mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(WriteOffRestoreMassError(e.toString(), statusCode: e.statusCode));
+        emit(WriteOffRestoreMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(WriteOffRestoreMassError(e.toString()));
+        emit(WriteOffRestoreMassError(friendlyError(e)));
       }
       add(FetchWriteOffs(forceRefresh: true));
     }
@@ -218,9 +219,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
       ));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(WriteOffError(e.toString(), statusCode: e.statusCode));
+        emit(WriteOffError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(WriteOffError(e.toString()));
+        emit(WriteOffError(friendlyError(e)));
       }
     }
   }
@@ -245,9 +246,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
       ));
     } catch (e) {
       if (e is ApiException) {
-        emit(WriteOffCreateError(e.toString(), statusCode: e.statusCode));
+        emit(WriteOffCreateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(WriteOffCreateError(e.toString()));
+        emit(WriteOffCreateError(friendlyError(e)));
       }
     }
   }
@@ -313,9 +314,9 @@ class WriteOffBloc extends Bloc<WriteOffEvent, WriteOffState> {
       emit(WriteOffUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       if (e is ApiException) {
-        emit(WriteOffUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(WriteOffUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(WriteOffUpdateError(e.toString()));
+        emit(WriteOffUpdateError(friendlyError(e)));
       }
     }
   }

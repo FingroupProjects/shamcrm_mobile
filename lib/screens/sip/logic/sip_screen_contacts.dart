@@ -7,20 +7,6 @@ extension _SipScreenContactsExtension on _SipScreenState {
   static const int _contactsChunkSize = 120;
   static const String _contactsCacheKey = 'sip_contacts_cache_v2';
 
-  Future<void> _refreshContactsTabState() async {
-    if (_isRefreshingContactsTabState) return;
-    _isRefreshingContactsTabState = true;
-    try {
-      await _loadContactsConfiguration();
-      await _loadSearchCapabilities();
-      if (_leadSearchEnabled) {
-        await _loadContactsLeadResults(reset: true);
-      }
-    } finally {
-      _isRefreshingContactsTabState = false;
-    }
-  }
-
   Future<void> _refreshContactsView() async {
     if (_isRefreshingContactsTabState) return;
 

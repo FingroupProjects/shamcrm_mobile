@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chat_messages_page.dart';
@@ -68,7 +69,7 @@ class MessagingCubit extends Cubit<MessagingState> {
         return;
       }
 
-      if (_isUrlError(e.toString())) {
+      if (_isUrlError(friendlyError(e))) {
         emit(
           const MessagesPartialErrorState(
             error:
@@ -77,7 +78,7 @@ class MessagingCubit extends Cubit<MessagingState> {
           ),
         );
       } else {
-        emit(MessagesErrorState(error: _getReadableError(e.toString())));
+        emit(MessagesErrorState(error: _getReadableError(friendlyError(e))));
       }
     }
   }
@@ -561,7 +562,7 @@ class MessagingCubit extends Cubit<MessagingState> {
     } catch (e) {
       debugPrint('MessagingCubit: page fetch failed: $e');
 
-      if (_isUrlError(e.toString())) {
+      if (_isUrlError(friendlyError(e))) {
         await apiService.initialize();
         return apiService.getMessagesPage(
           chatId,

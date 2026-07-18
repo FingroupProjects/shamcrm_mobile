@@ -126,7 +126,7 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        'Количество',
+                        'Кол-во',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 15,

@@ -15,6 +15,7 @@ import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -467,7 +468,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
       if (!mounted) return;
       showCustomSnackBar(
         context: context,
-        message: error.toString(),
+        message: friendlyError(error),
         isSuccess: false,
       );
     } finally {

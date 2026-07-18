@@ -48,6 +48,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   int? _currentStatusId;
   bool _statusChangedFromDetails = false;
   bool _canEditOrder = false;
+  bool _isTojsokhtmontjTenant = false;
   int? currencyId; // Поле для хранения currency_id
   Map<String, dynamic>? _editResult; // Сохраняем результат редактирования
   Order? _currentOrderDetails; // Текущие детали заказа для AppBar
@@ -62,6 +63,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     _initialStatusId = widget.order.orderStatus.id;
     _currentStatusId = widget.order.orderStatus.id;
     _checkPermissions();
+    _loadTenantFlags();
     _loadCurrencyId(); // Загружаем currencyId
     _loadFieldConfiguration();
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
@@ -74,6 +76,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       'statusId': _initialStatusId,
       'newStatusId': _currentStatusId ?? _initialStatusId,
     };
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+    });
   }
 
   void _refreshOrderView() {
@@ -167,7 +177,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   // Метод форматирования цены
   String _formatPrice(double? price) {
     if (price == null || price <= 0) {
-      return '0 UZS'; // По умолчанию 0 UZS
+      return _isTojsokhtmontjTenant ? '0' : '0 UZS';
+    }
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0', 'ru_RU').format(price);
     }
     String symbol = 'UZS'; // По умолчанию сум
 
@@ -802,8 +815,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                 value: _downloadProgress[file.id],
                                 strokeWidth: 3,
                                 backgroundColor: Colors.grey.withOpacity(0.3),
-                                valueColor:
-                                    const AlwaysStoppedAnimation<Color>(
+                                valueColor: const AlwaysStoppedAnimation<Color>(
                                   Color(0xff1E2E52),
                                 ),
                               ),

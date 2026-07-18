@@ -165,8 +165,7 @@ extension _SipScreenCallStateExtension on _SipScreenState {
 
     final prefs = await SharedPreferences.getInstance();
     final alreadyPrompted =
-        prefs.getBool(_SipScreenState._iosForceQuitWarningPromptedKey) ??
-            false;
+        prefs.getBool(_SipScreenState._iosForceQuitWarningPromptedKey) ?? false;
     if (alreadyPrompted) {
       return;
     }
@@ -302,13 +301,14 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   void _startCallDurationTicker() {
-    _connectedAt ??= DateTime.now();
+    _connectedAt =
+        _sipRuntime.currentCallStartedAt ?? _connectedAt ?? DateTime.now();
+    _connectedDuration = _sipRuntime.currentCallDuration;
     _callDurationTimer?.cancel();
     _callDurationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final connectedAt = _connectedAt;
-      if (!mounted || connectedAt == null) return;
+      if (!mounted) return;
       _updateView(() {
-        _connectedDuration = DateTime.now().difference(connectedAt);
+        _connectedDuration = _sipRuntime.currentCallDuration;
       });
     });
   }

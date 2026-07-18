@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
@@ -25,7 +26,7 @@ class CashRegisterDialogBloc extends Bloc<CashRegisterDialogEvent, CashRegisterD
       
       emit(CashRegisterDialogLoaded(cashRegisters: cashRegisters));
     } catch (e) {
-      emit(CashRegisterDialogError(message: e.toString()));
+      emit(CashRegisterDialogError(message: friendlyError(e)));
     }
   }
 
@@ -40,7 +41,7 @@ class CashRegisterDialogBloc extends Bloc<CashRegisterDialogEvent, CashRegisterD
       
       emit(CashRegisterDialogLoaded(cashRegisters: cashRegisters));
     } catch (e) {
-      emit(CashRegisterDialogError(message: e.toString()));
+      emit(CashRegisterDialogError(message: friendlyError(e)));
     }
   }
 }

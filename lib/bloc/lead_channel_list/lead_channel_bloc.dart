@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -26,7 +27,7 @@ class GetAllLeadChannelBloc
         final res = await ApiService().getLeadFilterChannels();
         emit(GetAllLeadChannelSuccess(dataChannels: res));
       } catch (e) {
-        emit(GetAllLeadChannelError(message: e.toString()));
+        emit(GetAllLeadChannelError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllLeadChannelError(message: 'Нет подключения к интернету'));

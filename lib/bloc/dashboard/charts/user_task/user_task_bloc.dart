@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_task_event.dart';
@@ -58,7 +59,7 @@ class TaskCompletionBloc extends Bloc<TaskCompletionEvent, TaskCompletionState> 
         }
       }
     } catch (e) {
-      emit(TaskCompletionError(message: e.toString()));
+      emit(TaskCompletionError(message: friendlyError(e)));
     }
   }
 

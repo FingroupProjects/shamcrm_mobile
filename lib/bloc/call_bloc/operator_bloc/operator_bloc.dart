@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'operator_event.dart';
 import 'operator_state.dart';
@@ -13,7 +14,7 @@ class OperatorBloc extends Bloc<OperatorEvent, OperatorState> {
         final operatorList = await apiService.getOperators();
         emit(OperatorLoaded(operatorList.result));
       } catch (e) {
-        emit(OperatorError(e.toString()));
+        emit(OperatorError(friendlyError(e)));
       }
     });
   }

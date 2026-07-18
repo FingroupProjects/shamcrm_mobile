@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../api/service/api_service.dart';
@@ -27,7 +28,7 @@ class SalesDashboardManufactureMaterialsBloc extends Bloc<
       } catch (e) {
         emit(
           SalesDashboardManufactureMaterialsError(
-            message: e.toString().replaceAll('Exception: ', ''),
+            message: friendlyError(e).replaceAll('Exception: ', ''),
           ),
         );
       }

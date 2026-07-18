@@ -168,12 +168,14 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   void _startDurationTicker() {
-    _connectedAt ??= DateTime.now();
+    _connectedAt =
+        _sipService.currentCallStartedAt ?? _connectedAt ?? DateTime.now();
+    _connectedDuration = _sipService.currentCallDuration;
     _durationTimer?.cancel();
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || _connectedAt == null) return;
+      if (!mounted) return;
       setState(() {
-        _connectedDuration = DateTime.now().difference(_connectedAt!);
+        _connectedDuration = _sipService.currentCallDuration;
       });
     });
   }

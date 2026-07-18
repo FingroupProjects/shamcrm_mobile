@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/advertising_campaign_model.dart';
@@ -25,7 +26,7 @@ class GetAllAdvertisingCampaignBloc extends Bloc<GetAllAdvertisingCampaignEvent,
         final res = await ApiService().getAllAdvertisingCampaigns();
         emit(GetAllAdvertisingCampaignSuccess(dataCampaigns: res));
       } catch (e) {
-        emit(GetAllAdvertisingCampaignError(message: e.toString()));
+        emit(GetAllAdvertisingCampaignError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllAdvertisingCampaignError(

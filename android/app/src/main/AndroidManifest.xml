@@ -90,7 +90,23 @@
             android:name=".NativeSipForegroundService"
             android:enabled="true"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="phoneCall|microphone" />
+
+        <!-- Replace FlutterFire's receiver with a compatible subclass that
+             wakes native SIP before the Dart background isolate starts. -->
+        <receiver
+            android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingReceiver"
+            tools:node="remove" />
+
+        <receiver
+            android:name=".ShamcrmFirebaseMessagingReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter android:priority="999">
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".NativeSipActionReceiver"

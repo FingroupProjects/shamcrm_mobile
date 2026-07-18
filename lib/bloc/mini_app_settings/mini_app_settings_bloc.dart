@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // lib/bloc/mini_app_settings/mini_app_settings_bloc.dart
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/mini_app_settiings.dart';
@@ -38,7 +39,7 @@ class MiniAppSettingsBloc extends Bloc<MiniAppSettingsEvent, MiniAppSettingsStat
       final settingsList = await apiService.getMiniAppSettings(event.organizationId.toString());
       emit(MiniAppSettingsLoaded(settingsList));
     } catch (e) {
-      emit(MiniAppSettingsError(e.toString()));
+      emit(MiniAppSettingsError(friendlyError(e)));
     }
   }
 }

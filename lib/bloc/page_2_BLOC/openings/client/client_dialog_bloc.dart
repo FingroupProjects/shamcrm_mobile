@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
@@ -25,7 +26,7 @@ class ClientDialogBloc extends Bloc<ClientDialogEvent, ClientDialogState> {
       
       emit(ClientDialogLoaded(leads: leads));
     } catch (e) {
-      emit(ClientDialogError(message: e.toString()));
+      emit(ClientDialogError(message: friendlyError(e)));
     }
   }
 
@@ -40,7 +41,7 @@ class ClientDialogBloc extends Bloc<ClientDialogEvent, ClientDialogState> {
       
       emit(ClientDialogLoaded(leads: leads));
     } catch (e) {
-      emit(ClientDialogError(message: e.toString()));
+      emit(ClientDialogError(message: friendlyError(e)));
     }
   }
 }

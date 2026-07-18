@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // Bloc
 import 'dart:io';
 
@@ -48,7 +49,7 @@ class UserBlocManager extends Bloc<UserEvent, UserState> {
         }
       }
     } catch (e) {
-      emit(UserError(message: e.toString()));
+      emit(UserError(message: friendlyError(e)));
     }
   }
 

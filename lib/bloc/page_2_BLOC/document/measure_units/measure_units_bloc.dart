@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
 import 'measure_units_event.dart';
@@ -66,7 +67,7 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
         emit(MeasureUnitsLoaded(units));
       }
     } catch (e) {
-      emit(MeasureUnitsError(e.toString()));
+      emit(MeasureUnitsError(friendlyError(e)));
     }
   }
 
@@ -79,7 +80,7 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
       await apiService.createMeasureUnit(event.measureUnitModel);
       await _fetchAndEmit(emit); // Refresh the list after adding
     } catch (e) {
-      emit(MeasureUnitsError(e.toString()));
+      emit(MeasureUnitsError(friendlyError(e)));
     }
   }
 
@@ -93,7 +94,7 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
           id: event.id, supplier: event.measureUnitModel);
       await _fetchAndEmit(emit); // Refresh the list after editing
     } catch (e) {
-      emit(MeasureUnitsError(e.toString()));
+      emit(MeasureUnitsError(friendlyError(e)));
     }
   }
 
@@ -107,7 +108,7 @@ class MeasureUnitsBloc extends Bloc<MeasureUnitsEvent, MeasureUnitsState> {
       // Используем сохраненный query при обновлении списка
       await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
-      emit(MeasureUnitsError(e.toString()));
+      emit(MeasureUnitsError(friendlyError(e)));
     }
   }
 }

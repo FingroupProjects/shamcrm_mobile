@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
@@ -1394,7 +1395,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint('StackTrace: $stackTrace');
 
       if (mounted) {
-        _showInitializationError(e.toString());
+        _showInitializationError(friendlyError(e));
 
         // ✅ Пытаемся загрузить сообщения даже при ошибке инициализации
         try {

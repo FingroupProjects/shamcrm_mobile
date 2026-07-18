@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import '../../../../models/api_exception_model.dart';
@@ -104,9 +105,9 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException) {
-          emit(ManufactureError(e.toString(), statusCode: e.statusCode));
+          emit(ManufactureError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(ManufactureError(e.toString()));
+          emit(ManufactureError(friendlyError(e)));
         }
       }
     }
@@ -142,9 +143,9 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException) {
-          emit(ManufactureCreateError(e.toString(), statusCode: e.statusCode));
+          emit(ManufactureCreateError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(ManufactureCreateError(e.toString()));
+          emit(ManufactureCreateError(friendlyError(e)));
         }
       }
     }
@@ -181,9 +182,9 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException) {
-          emit(ManufactureUpdateError(e.toString(), statusCode: e.statusCode));
+          emit(ManufactureUpdateError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(ManufactureUpdateError(e.toString()));
+          emit(ManufactureUpdateError(friendlyError(e)));
         }
       }
     }
@@ -288,10 +289,10 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(ManufactureApproveMassError(e.toString(),
+          emit(ManufactureApproveMassError(friendlyError(e),
               statusCode: e.statusCode));
         } else {
-          emit(ManufactureApproveMassError(e.toString()));
+          emit(ManufactureApproveMassError(friendlyError(e)));
         }
         add(FetchManufactures(
             forceRefresh: true, filters: _filters, search: _search));
@@ -323,10 +324,10 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(ManufactureDisapproveMassError(e.toString(),
+          emit(ManufactureDisapproveMassError(friendlyError(e),
               statusCode: e.statusCode));
         } else {
-          emit(ManufactureDisapproveMassError(e.toString()));
+          emit(ManufactureDisapproveMassError(friendlyError(e)));
         }
         add(FetchManufactures(
             forceRefresh: true, filters: _filters, search: _search));
@@ -361,10 +362,10 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(ManufactureDeleteMassError(e.toString(),
+          emit(ManufactureDeleteMassError(friendlyError(e),
               statusCode: e.statusCode));
         } else {
-          emit(ManufactureDeleteMassError(e.toString()));
+          emit(ManufactureDeleteMassError(friendlyError(e)));
         }
         add(FetchManufactures(
             forceRefresh: true, filters: _filters, search: _search));
@@ -397,10 +398,10 @@ class ManufactureBloc extends Bloc<ManufactureEvent, ManufactureState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(ManufactureRestoreMassError(e.toString(),
+          emit(ManufactureRestoreMassError(friendlyError(e),
               statusCode: e.statusCode));
         } else {
-          emit(ManufactureRestoreMassError(e.toString()));
+          emit(ManufactureRestoreMassError(friendlyError(e)));
         }
         add(FetchManufactures(
             forceRefresh: true, filters: _filters, search: _search));

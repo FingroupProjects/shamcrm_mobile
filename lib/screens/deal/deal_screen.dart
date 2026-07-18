@@ -58,7 +58,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _isManager = false;
 
   final TextEditingController _searchController = TextEditingController();
-  bool _canReadDealStatus = false;
   bool _canCreateDealStatus = false;
   bool _canUpdateDealStatus = false;
   bool _canDeleteDealStatus = false;
@@ -756,12 +755,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
     final canUpdate = await _apiService.hasPermission('dealStatus.update');
     final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
-      _canReadDealStatus = canRead;
       _canCreateDealStatus = canCreate;
       _canUpdateDealStatus = canUpdate;
       _canDeleteDealStatus = canDelete;
@@ -1694,7 +1691,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: filteredDeals.length + (showPaginationLoader ? 1 : 0),
+                itemCount:
+                    filteredDeals.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredDeals.length) {
                     return const Padding(
@@ -1865,8 +1863,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     return BlocBuilder<DealBloc, DealState>(
       builder: (context, state) {
         final blocCounts = context.read<DealBloc>().dealCountsSnapshot;
-        int dealCount =
-            blocCounts[statusId] ?? (_tabTitles[index]['deals_count'] as int?) ?? 0;
+        int dealCount = blocCounts[statusId] ??
+            (_tabTitles[index]['deals_count'] as int?) ??
+            0;
 
         if (state is DealLoaded) {
           dealCount = state.dealCounts[statusId] ??
@@ -2034,7 +2033,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             setState(() {
               // Обновляем табы с новыми данными
               _tabTitles = state.dealStatuses
-                  .where((status) => _canReadDealStatus)
                   .map((status) => {
                         'id': status.id,
                         'title': status.title,
@@ -2248,7 +2246,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     ));
                   });
                 }
-
               } else {
                 // Если табы пустые, создаем пустой контроллер
                 if (_tabController.length > 0) {

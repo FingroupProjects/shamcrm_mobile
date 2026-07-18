@@ -242,9 +242,28 @@ class NativeSipManager(
     }
 
     fun hangup(): Boolean {
-        val call = currentCall ?: return false
+        val call = currentCall
+        if (call == null) {
+            val hasVisibleCall = lastCallState == "incoming" ||
+                lastCallState == "calling" ||
+                lastCallState == "ringing" ||
+                lastCallState == "in_call"
+            if (!hasVisibleCall) return false
+
+            isSpeakerOn = false
+            lastCallState = "ended"
+            emitCallState("ended", null, "Call ended locally")
+            return true
+        }
+
         return try {
+            val remoteIdentity = remoteIdentityFor(call)
             call.terminate()
+            // Do not leave the UI waiting for the PBX to echo End/Released.
+            currentCall = null
+            isSpeakerOn = false
+            lastCallState = "ended"
+            emitCallState("ended", remoteIdentity, "Call ended locally")
             true
         } catch (error: Throwable) {
             Log.e(TAG, "hangup failed: ${error.message}", error)

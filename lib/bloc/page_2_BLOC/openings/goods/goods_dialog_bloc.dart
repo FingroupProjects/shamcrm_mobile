@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
@@ -136,7 +137,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       if (kDebugMode) {
         //print('GoodsDialogBloc: Error loading variants: $e');
       }
-      emit(GoodsDialogError(message: e.toString()));
+      emit(GoodsDialogError(message: friendlyError(e)));
     }
   }
 

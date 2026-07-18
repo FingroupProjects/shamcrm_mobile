@@ -1840,6 +1840,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   // Метод форматирования цены
   String _formatPrice(double? price) {
     if (price == null) price = 0;
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0', 'ru_RU').format(price);
+    }
     String symbol = 'UZS'; // По умолчанию сум
 
     if (kDebugMode) {
@@ -2744,9 +2747,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     if (!_isTotalEdited) {
       _totalController.text = autoTotal.toStringAsFixed(0);
     }
-    final String currencySymbol = _formatPrice(autoTotal).split(' ').isNotEmpty
-        ? _formatPrice(autoTotal).split(' ').last
-        : '';
+    final String currencySymbol = _isTojsokhtmontjTenant
+        ? ''
+        : _formatPrice(autoTotal).split(' ').isNotEmpty
+            ? _formatPrice(autoTotal).split(' ').last
+            : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

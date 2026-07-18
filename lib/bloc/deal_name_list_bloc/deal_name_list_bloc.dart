@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // BLoC
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_event.dart';
@@ -18,7 +19,7 @@ class GetAllDealNameBloc extends Bloc<GetAllDealNameEvent, GetAllDealNameState> 
       final res = await ApiService().getAllDealNames();
       emit(GetAllDealNameSuccess(dataDealName: res));
     } catch (e) {
-      emit(GetAllDealNameError(message: e.toString()));
+      emit(GetAllDealNameError(message: friendlyError(e)));
     }
   }
 }

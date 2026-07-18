@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -29,7 +30,7 @@ class GetAllManagerBloc extends Bloc<GetAllManagerEvent, GetAllManagerState> {
         var res = await ApiService().getAllManager();
         emit(GetAllManagerSuccess(dataManager: res));
       } catch (e) {
-        emit(GetAllManagerError(message: e.toString()));
+        emit(GetAllManagerError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllManagerError(message: 'Нет подключения к интернету'));

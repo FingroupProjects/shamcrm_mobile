@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -23,7 +24,7 @@ class GetAllSourceBloc extends Bloc<GetAllSourceEvent, GetAllSourceState> {
         var res = await ApiService().getAllSource();
         emit(GetAllSourceSuccess(dataSource: res));
       } catch (e) {
-        emit(GetAllSourceError(message: e.toString()));
+        emit(GetAllSourceError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllSourceError(message: 'Нет подключения к интернету'));

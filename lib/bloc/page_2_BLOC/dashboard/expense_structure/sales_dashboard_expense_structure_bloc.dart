@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -26,7 +27,7 @@ class SalesDashboardExpenseStructureBloc extends Bloc<SalesDashboardExpenseStruc
         emit(SalesDashboardExpenseStructureLoaded(data: response));
       // } catch (e) {
       //   emit(SalesDashboardExpenseStructureError(
-      //     message: e.toString().replaceAll('Exception: ', ''),
+      //     message: friendlyError(e).replaceAll('Exception: ', ''),
       //   ));
       // }
     });

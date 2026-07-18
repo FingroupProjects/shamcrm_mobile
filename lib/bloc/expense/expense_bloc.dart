@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // expense_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -50,7 +51,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     } catch (e) {
       emit(state.copyWith(
         status: ExpenseStatus.initialError,
-        errorMessage: e.toString(),
+        errorMessage: friendlyError(e),
       ));
     }
   }
@@ -80,7 +81,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     } catch (e) {
       emit(state.copyWith(
         status: ExpenseStatus.initialError,
-        errorMessage: e.toString(),
+        errorMessage: friendlyError(e),
       ));
     }
   }

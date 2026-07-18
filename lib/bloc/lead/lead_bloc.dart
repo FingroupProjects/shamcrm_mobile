@@ -453,20 +453,13 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           return;
         }
 
-        // Проверяем кэш
-        final cachedStatuses = await LeadCache.getLeadStatuses();
-        if (cachedStatuses.isNotEmpty) {
-          //print('LeadBloc: Using cached statuses');
-          response = cachedStatuses
-              .map((status) => LeadStatus.fromJson(status))
-              .toList();
-        } else {
-          //print('LeadBloc: No cache found, loading from API');
-          response = await apiService.getLeadStatuses(
-            reasonForRefusalIds: _currentReasonForRefusalIds,
-          );
-          await LeadCache.cacheLeadStatuses(response);
-        }
+        // Статусы и их видимость определяет сервер. Кэш используется внутри
+        // apiService только как fallback при ошибке запроса.
+        response = await apiService.getLeadStatuses(
+          reasonForRefusalIds: _currentReasonForRefusalIds,
+          bypassAnalyticsCache: true,
+        );
+        await LeadCache.cacheLeadStatuses(response);
 
         // Восстанавливаем или устанавливаем счетчики
         _leadCounts.clear();
@@ -1173,6 +1166,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         daysWithoutActivity: event.daysWithoutActivity,
         numberOfDaysDeal: event.numberOfDaysDeal,
         directoryValues: event.directoryValues,
+        bypassAnalyticsCache: true,
       );
 
       if (kDebugMode) {

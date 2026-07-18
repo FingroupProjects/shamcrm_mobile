@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_state.dart';
@@ -58,7 +59,7 @@ class DashboardChartBloc extends Bloc<DashboardChartEvent, DashboardChartState> 
         }
       }
     } catch (e) {
-      emit(DashboardChartError(message: e.toString()));
+      emit(DashboardChartError(message: friendlyError(e)));
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -26,7 +27,7 @@ class SalesDashboardOrderQuantityBloc extends Bloc<SalesDashboardOrderQuantityEv
         emit(SalesDashboardOrderQuantityLoaded(data: response));
       } catch (e) {
         emit(SalesDashboardOrderQuantityError(
-          message: e.toString().replaceAll('Exception: ', ''),
+          message: friendlyError(e).replaceAll('Exception: ', ''),
         ));
       }
     });

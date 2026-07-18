@@ -1,6 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
-import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
@@ -8,7 +6,6 @@ import 'package:crm_task_manager/page_2/order/order_details/payment_status_style
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,7 +41,8 @@ class PaymentTypeStyle {
   });
 }
 
-PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) {
+PaymentTypeStyle getPaymentTypeStyle(
+    String? paymentType, BuildContext context) {
   switch (paymentType?.toLowerCase()) {
     case 'cash':
       return PaymentTypeStyle(
@@ -193,15 +191,15 @@ class _OrderCardState extends State<OrderCard> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedCurrencyId = prefs.getInt('currency_id');
-      
+
       if (kDebugMode) {
         //print('OrderCard: Загружен currency_id из SharedPreferences: $savedCurrencyId');
       }
-      
+
       setState(() {
         currencyId = savedCurrencyId ?? 0;
       });
-      
+
       // Если значение не найдено или равно 0, попробовать загрузить из API
       if (currencyId == 0 || currencyId == null) {
         await _fetchCurrencyFromAPI();
@@ -222,16 +220,16 @@ class _OrderCardState extends State<OrderCard> {
       final apiService = ApiService();
       final organizationId = await apiService.getSelectedOrganization();
       final settingsList = await apiService.getMiniAppSettings(organizationId);
-      
+
       if (settingsList.isNotEmpty) {
         final settings = settingsList.first;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('currency_id', settings.currencyId);
-        
+
         setState(() {
           currencyId = settings.currencyId;
         });
-        
+
         if (kDebugMode) {
           //print('OrderCard: Загружен currency_id из API: ${settings.currencyId}');
         }
@@ -266,12 +264,17 @@ class _OrderCardState extends State<OrderCard> {
   // ИСПРАВЛЕННЫЙ МЕТОД _formatSum с дополнительной отладкой
   String _formatSum(double? sum) {
     if (sum == null) sum = 0;
+
+    if (_hideTojsokhtmontjOrderPaymentBadges) {
+      return NumberFormat('#,##0.00', 'ru_RU').format(sum);
+    }
+
     String symbol = '₽';
-    
+
     if (kDebugMode) {
       //print('OrderCard: _formatSum вызван с currency_id: $currencyId');
     }
-    
+
     switch (currencyId) {
       case 1:
         symbol = '\$';
@@ -291,11 +294,11 @@ class _OrderCardState extends State<OrderCard> {
           //print('OrderCard: Используется валюта по умолчанию (₽) для currency_id: $currencyId');
         }
     }
-    
+
     if (kDebugMode) {
       //print('OrderCard: Выбранный символ валюты: $symbol для суммы: $sum');
     }
-    
+
     return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
   }
 
@@ -305,17 +308,17 @@ class _OrderCardState extends State<OrderCard> {
     final clientName = widget.order.lead.name;
     final phone = widget.order.phone;
     final managerName = widget.order.manager?.name ?? 'Система';
-    
-    return orderNumber.length > 15 || 
-           clientName.length > 20 || 
-           phone.length > 15 || 
-           managerName.length > 15;
+
+    return orderNumber.length > 15 ||
+        clientName.length > 20 ||
+        phone.length > 15 ||
+        managerName.length > 15;
   }
 
   @override
   Widget build(BuildContext context) {
     final bool hasLongContent = _isContentLong();
-    
+
     return GestureDetector(
       onTap: () async {
         final result = await Navigator.push(
@@ -329,7 +332,7 @@ class _OrderCardState extends State<OrderCard> {
             ),
           ),
         );
-        
+
         // Обрабатываем результат редактирования заказа
         if (result != null &&
             result is Map<String, dynamic> &&
@@ -339,7 +342,6 @@ class _OrderCardState extends State<OrderCard> {
               result['statusId'] as int? ?? widget.order.orderStatus.id;
           final newStatusId = result['newStatusId'] as int? ?? oldStatusId;
 
-          context.read<OrderBloc>().add(FetchOrderStatuses(forceRefresh: true));
           widget.onStatusUpdated(oldStatusId, newStatusId);
         }
       },
@@ -403,7 +405,9 @@ class _OrderCardState extends State<OrderCard> {
                         SizedBox(
                           width: 32,
                           height: 18,
-                          child: getPaymentStatusStyle(widget.order.paymentStatus, context).content,
+                          child: getPaymentStatusStyle(
+                                  widget.order.paymentStatus, context)
+                              .content,
                         ),
                       ],
                     ],
@@ -412,7 +416,7 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
             SizedBox(height: hasLongContent ? 18 : 14),
-            
+
             // Статус и сумма
             Row(
               children: [
@@ -445,7 +449,8 @@ class _OrderCardState extends State<OrderCard> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -491,7 +496,7 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
             SizedBox(height: hasLongContent ? 20 : 16),
-            
+
             // Способ оплаты и менеджер
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -505,12 +510,17 @@ class _OrderCardState extends State<OrderCard> {
                       ),
                       child: IntrinsicWidth(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
+                            color: getPaymentTypeStyle(
+                                    widget.order.paymentMethod, context)
+                                .backgroundColor,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
+                          child: getPaymentTypeStyle(
+                                  widget.order.paymentMethod, context)
+                              .content,
                         ),
                       ),
                     ),
@@ -525,7 +535,8 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                     child: IntrinsicWidth(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE9EDF5),
                           borderRadius: BorderRadius.circular(6),
@@ -549,7 +560,7 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
             SizedBox(height: hasLongContent ? 20 : 16),
-            
+
             // Клиент и номер телефона
             Row(
               children: [

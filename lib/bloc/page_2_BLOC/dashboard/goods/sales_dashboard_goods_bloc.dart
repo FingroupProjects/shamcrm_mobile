@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../../../api/service/api_service.dart';
@@ -55,7 +56,7 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
         // If it's a pagination error (not initial load), emit pagination error
         if (event.page > 1 && currentState is SalesDashboardGoodsLoaded) {
           emit(SalesDashboardGoodsPaginationError(
-            message: e.toString().replaceAll('Exception: ', ''),
+            message: friendlyError(e).replaceAll('Exception: ', ''),
             goods: currentState.goods,
             pagination: currentState.pagination,
             hasReachedMax: currentState.hasReachedMax,
@@ -65,7 +66,7 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
         } else {
           // Initial load error
           emit(SalesDashboardGoodsError(
-            message: e.toString().replaceAll('Exception: ', ''),
+            message: friendlyError(e).replaceAll('Exception: ', ''),
           ));
         }
       }

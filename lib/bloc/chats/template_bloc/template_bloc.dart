@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'template_event.dart';
 import 'template_state.dart';
@@ -17,7 +18,7 @@ class TemplateBloc extends Bloc<TemplateEvent, TemplateState> {
       final response = await apiService.getTemplates();
       emit(TemplateLoaded(templates: response.templates));
     } catch (e) {
-      emit(TemplateError(e.toString()));
+      emit(TemplateError(friendlyError(e)));
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
@@ -53,7 +54,7 @@ class DealStatsBloc extends Bloc<DealStatsEvent, DealStatsState> {
         emit(DealStatsError(message: 'Нет подключения к интернету и данных в кеше.'));
       }
     } catch (e) {
-      emit(DealStatsError(message: e.toString()));
+      emit(DealStatsError(message: friendlyError(e)));
     }
   }
 }

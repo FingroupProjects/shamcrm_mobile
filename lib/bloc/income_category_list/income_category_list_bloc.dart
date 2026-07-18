@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -19,7 +20,7 @@ class GetAllIncomeCategoryBloc extends Bloc<GetAllIncomeCategoryEvent, GetAllInc
 
         emit(GetAllIncomeCategorySuccess(dataIncomeCategories: res));
       } catch (e) {
-        emit(GetAllIncomeCategoryError(message: e.toString()));
+        emit(GetAllIncomeCategoryError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllIncomeCategoryError(message: 'Ошибка подключения к интернету. Проверьте ваше соединение и попробуйте снова.'));

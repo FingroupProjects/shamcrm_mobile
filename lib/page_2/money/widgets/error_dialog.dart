@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 enum ErrorDialogEnum {
   goodsIncomingDelete,
@@ -10,7 +11,7 @@ enum ErrorDialogEnum {
   clientReturnDelete,
   clientReturnUnapprove,
   clientReturnRestore,
-  
+
   goodsMovementApprove,
   goodsMovementUnapprove,
   goodsMovementDelete,
@@ -43,12 +44,18 @@ class _ParsedInventoryError {
   });
 }
 
-void showSimpleErrorDialog(BuildContext context, String title, String errorMessage, {ErrorDialogEnum errorDialogEnum = ErrorDialogEnum.nothing}) {
+void showSimpleErrorDialog(
+    BuildContext context, String title, String errorMessage,
+    {ErrorDialogEnum errorDialogEnum = ErrorDialogEnum.nothing}) {
+  final safeErrorMessage = friendlyError(errorMessage);
   showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
       builder: (BuildContext context) {
-        return ErrorDialog(title: title, errorMessage: errorMessage, errorDialogEnum: errorDialogEnum);
+        return ErrorDialog(
+            title: title,
+            errorMessage: safeErrorMessage,
+            errorDialogEnum: errorDialogEnum);
       });
 }
 
@@ -57,12 +64,11 @@ class ErrorDialog extends StatelessWidget {
   final String errorMessage;
   final ErrorDialogEnum errorDialogEnum;
 
-  const ErrorDialog({
-    super.key,
-    required this.title,
-    required this.errorMessage,
-    this.errorDialogEnum = ErrorDialogEnum.nothing
-  });
+  const ErrorDialog(
+      {super.key,
+      required this.title,
+      required this.errorMessage,
+      this.errorDialogEnum = ErrorDialogEnum.nothing});
 
   // Простой и эффективный метод для красивого отображения ошибки
   Widget _buildFormattedError(String message) {
@@ -237,7 +243,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildGoodsIncomingDeleteError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp deletionRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = deletionRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -408,16 +415,18 @@ class ErrorDialog extends StatelessWidget {
     // Поддерживаем оба формата:
     // 1. "товара '...' станет отрицательным: -X"
     // 2. "не хватит товара '...' для покрытия существующих расходов (недостача: X)"
-    RegExp unapproveRegex1 = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
-    RegExp unapproveRegex2 = RegExp(r"не хватит товара '([^']+)' для покрытия существующих расходов \(недостача: (\d+)\)");
-    
+    RegExp unapproveRegex1 =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp unapproveRegex2 = RegExp(
+        r"не хватит товара '([^']+)' для покрытия существующих расходов \(недостача: (\d+)\)");
+
     Match? match1 = unapproveRegex1.firstMatch(message);
     Match? match2 = unapproveRegex2.firstMatch(message);
-    
+
     Match? match = match1 ?? match2;
     String productName = match?.group(1) ?? 'Неизвестный товар';
     String negativeAmount = match?.group(2) ?? '0';
-    
+
     // Если это формат с недостачей, делаем число отрицательным
     if (match2 != null) {
       int shortage = int.tryParse(negativeAmount) ?? 0;
@@ -587,7 +596,8 @@ class ErrorDialog extends StatelessWidget {
   Widget _buildGoodsIncomingApproveError(String message) {
     // Парсим название товара и недостающее количество
     // Expected message format: "Невозможно провести документ. Остаток товара '...' недостаточен: требуется X, доступно Y"
-    RegExp approveRegex = RegExp(r"товара '([^']+)'.*требуется (\d+), доступно (\d+)");
+    RegExp approveRegex =
+        RegExp(r"товара '([^']+)'.*требуется (\d+), доступно (\d+)");
     Match? match = approveRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -830,8 +840,8 @@ class ErrorDialog extends StatelessWidget {
     String reasonText = isDeleted
         ? 'Товар был удален из системы'
         : isChanged
-        ? 'Товар был изменен после удаления документа'
-        : 'Товар недоступен в системе';
+            ? 'Товар был изменен после удаления документа'
+            : 'Товар недоступен в системе';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1007,14 +1017,18 @@ class ErrorDialog extends StatelessWidget {
     // Парсим сообщение формата: Товар "123": попытка вернуть 132 шт., доступно для возврата 0 шт
     debugPrint("🔍 [ClientReturnApprove] Полученное сообщение: $message");
 
-    RegExp returnRegex = RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*возврата (\d+) шт');
+    RegExp returnRegex =
+        RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*возврата (\d+) шт');
     Match? match = returnRegex.firstMatch(message);
 
     debugPrint("🔍 [ClientReturnApprove] Match найден: ${match != null}");
     if (match != null) {
-      debugPrint("🔍 [ClientReturnApprove] Group 1 (название): ${match.group(1)}");
-      debugPrint("🔍 [ClientReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
-      debugPrint("🔍 [ClientReturnApprove] Group 3 (доступно): ${match.group(3)}");
+      debugPrint(
+          "🔍 [ClientReturnApprove] Group 1 (название): ${match.group(1)}");
+      debugPrint(
+          "🔍 [ClientReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
+      debugPrint(
+          "🔍 [ClientReturnApprove] Group 3 (доступно): ${match.group(3)}");
     }
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -1244,7 +1258,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildClientReturnDeleteError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp deletionRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = deletionRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -1395,7 +1410,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildClientReturnUnapproveError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp unapproveRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp unapproveRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = unapproveRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -1558,8 +1574,8 @@ class ErrorDialog extends StatelessWidget {
     String reasonText = isDeleted
         ? 'Товар был удален из системы'
         : isChanged
-        ? 'Товар был изменен после удаления документа'
-        : 'Товар недоступен в системе';
+            ? 'Товар был изменен после удаления документа'
+            : 'Товар недоступен в системе';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1689,10 +1705,12 @@ class ErrorDialog extends StatelessWidget {
     debugPrint("🔍 [GoodsMovementApprove] Полученное сообщение: $message");
 
     // Парсим все товары с помощью регулярного выражения
-    RegExp movementRegex = RegExp(r'- Товар: ([^\s]+) требуется (\d+), доступно (\d+)');
+    RegExp movementRegex =
+        RegExp(r'- Товар: ([^\s]+) требуется (\d+), доступно (\d+)');
     Iterable<Match> matches = movementRegex.allMatches(message);
 
-    debugPrint("🔍 [GoodsMovementApprove] Найдено совпадений: ${matches.length}");
+    debugPrint(
+        "🔍 [GoodsMovementApprove] Найдено совпадений: ${matches.length}");
 
     List<Widget> widgets = [];
 
@@ -1781,13 +1799,15 @@ class ErrorDialog extends StatelessWidget {
         String required = match.group(2) ?? '0';
         String available = match.group(3) ?? '0';
 
-        debugPrint("🔍 [GoodsMovementApprove] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+        debugPrint(
+            "🔍 [GoodsMovementApprove] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
 
         // Контейнер для товара
         widgets.add(
           Container(
             width: double.infinity,
-            margin: EdgeInsets.only(bottom: index < matches.length - 1 ? 16 : 0),
+            margin:
+                EdgeInsets.only(bottom: index < matches.length - 1 ? 16 : 0),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -2003,19 +2023,19 @@ class ErrorDialog extends StatelessWidget {
           ),
           child: Row(
             children: [
-            Expanded(
-              child: Text(
-                'Невозможно отменить проведение',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xffDC2626),
+              Expanded(
+                child: Text(
+                  'Невозможно отменить проведение',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
               ),
-            ),
             ],
           ),
         ),
@@ -2050,7 +2070,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildGoodsMovementDeleteError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp deletionRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = deletionRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -2213,8 +2234,8 @@ class ErrorDialog extends StatelessWidget {
     String reasonText = isDeleted
         ? 'Товар был удален из системы'
         : isChanged
-        ? 'Товар был изменен после удаления документа'
-        : 'Товар недоступен в системе';
+            ? 'Товар был изменен после удаления документа'
+            : 'Товар недоступен в системе';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2373,7 +2394,8 @@ class ErrorDialog extends StatelessWidget {
       );
     }
 
-    debugPrint("🔍 [GoodsMovementUpdate] Найдено совпадений: ${parsedItems.length}");
+    debugPrint(
+        "🔍 [GoodsMovementUpdate] Найдено совпадений: ${parsedItems.length}");
 
     List<Widget> widgets = [];
 
@@ -2453,7 +2475,8 @@ class ErrorDialog extends StatelessWidget {
       final required = item.required;
       final available = item.available;
 
-      debugPrint("🔍 [GoodsMovementUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+      debugPrint(
+          "🔍 [GoodsMovementUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
 
       // Контейнер для товара
       widgets.add(
@@ -2531,7 +2554,8 @@ class ErrorDialog extends StatelessWidget {
                         SizedBox(height: 6),
                         Container(
                           width: double.infinity,
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Color(0xffFEF2F2),
                             borderRadius: BorderRadius.circular(8),
@@ -2554,9 +2578,7 @@ class ErrorDialog extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   SizedBox(width: 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2573,7 +2595,8 @@ class ErrorDialog extends StatelessWidget {
                         SizedBox(height: 6),
                         Container(
                           width: double.infinity,
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Color(0xffF1F5F9),
                             borderRadius: BorderRadius.circular(8),
@@ -2615,7 +2638,8 @@ class ErrorDialog extends StatelessWidget {
     debugPrint("🔍 [WriteOffApprove] Полученное сообщение: $message");
 
     // Парсим все товары с помощью регулярного выражения (поддерживаем десятичные дроби)
-    RegExp writeOffRegex = RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
+    RegExp writeOffRegex =
+        RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
     Iterable<Match> matches = writeOffRegex.allMatches(message);
 
     debugPrint("🔍 [WriteOffApprove] Найдено совпадений: ${matches.length}");
@@ -2707,13 +2731,15 @@ class ErrorDialog extends StatelessWidget {
         String required = match.group(2) ?? '0';
         String available = match.group(3) ?? '0';
 
-        debugPrint("🔍 [WriteOffApprove] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+        debugPrint(
+            "🔍 [WriteOffApprove] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
 
         // Контейнер для товара
         widgets.add(
           Container(
             width: double.infinity,
-            margin: EdgeInsets.only(bottom: index < matches.length - 1 ? 16 : 0),
+            margin:
+                EdgeInsets.only(bottom: index < matches.length - 1 ? 16 : 0),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -2929,19 +2955,19 @@ class ErrorDialog extends StatelessWidget {
           ),
           child: Row(
             children: [
-            Expanded(
-              child: Text(
-                'Невозможно отменить проведение',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xffDC2626),
+              Expanded(
+                child: Text(
+                  'Невозможно отменить проведение',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xffDC2626),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
               ),
-            ),
             ],
           ),
         ),
@@ -2976,7 +3002,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildWriteOffDeleteError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp deletionRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = deletionRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -3139,8 +3166,8 @@ class ErrorDialog extends StatelessWidget {
     String reasonText = isDeleted
         ? 'Товар был удален из системы'
         : isChanged
-        ? 'Товар был изменен после удаления документа'
-        : 'Товар недоступен в системе';
+            ? 'Товар был изменен после удаления документа'
+            : 'Товар недоступен в системе';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3270,7 +3297,8 @@ class ErrorDialog extends StatelessWidget {
     debugPrint("🔍 [WriteOffUpdate] Полученное сообщение: $message");
 
     // Парсим все товары с помощью регулярного выражения (поддерживаем десятичные дроби)
-    RegExp writeOffRegex = RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
+    RegExp writeOffRegex =
+        RegExp(r'- Товар: ([^\s]+) требуется ([\d.]+), доступно ([\d.]+)');
     Iterable<Match> matches = writeOffRegex.allMatches(message);
 
     debugPrint("🔍 [WriteOffUpdate] Найдено совпадений: ${matches.length}");
@@ -3321,7 +3349,8 @@ class ErrorDialog extends StatelessWidget {
       String required = match.group(2) ?? '0';
       String available = match.group(3) ?? '0';
 
-      debugPrint("🔍 [WriteOffUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
+      debugPrint(
+          "🔍 [WriteOffUpdate] Товар #${index + 1}: $productName, требуется: $required, доступно: $available");
 
       // Контейнер для товара
       widgets.add(
@@ -3399,7 +3428,8 @@ class ErrorDialog extends StatelessWidget {
                         SizedBox(height: 6),
                         Container(
                           width: double.infinity,
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Color(0xffFEF2F2),
                             borderRadius: BorderRadius.circular(8),
@@ -3422,9 +3452,7 @@ class ErrorDialog extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   SizedBox(width: 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3441,7 +3469,8 @@ class ErrorDialog extends StatelessWidget {
                         SizedBox(height: 6),
                         Container(
                           width: double.infinity,
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Color(0xffF1F5F9),
                             borderRadius: BorderRadius.circular(8),
@@ -3483,14 +3512,18 @@ class ErrorDialog extends StatelessWidget {
     // Товар "иии": попытка вернуть 20000 шт., доступно для возврата от поставщика 1008 шт.
     debugPrint("🔍 [SupplierReturnApprove] Полученное сообщение: $message");
 
-    RegExp returnRegex = RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*от поставщика (\d+) шт');
+    RegExp returnRegex =
+        RegExp(r'Товар "([^"]+)".*вернуть (\d+) шт.*от поставщика (\d+) шт');
     Match? match = returnRegex.firstMatch(message);
 
     debugPrint("🔍 [SupplierReturnApprove] Match найден: ${match != null}");
     if (match != null) {
-      debugPrint("🔍 [SupplierReturnApprove] Group 1 (название): ${match.group(1)}");
-      debugPrint("🔍 [SupplierReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
-      debugPrint("🔍 [SupplierReturnApprove] Group 3 (доступно): ${match.group(3)}");
+      debugPrint(
+          "🔍 [SupplierReturnApprove] Group 1 (название): ${match.group(1)}");
+      debugPrint(
+          "🔍 [SupplierReturnApprove] Group 2 (попытка вернуть): ${match.group(2)}");
+      debugPrint(
+          "🔍 [SupplierReturnApprove] Group 3 (доступно): ${match.group(3)}");
     }
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -3720,7 +3753,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildSupplierReturnDeleteError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp deletionRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp deletionRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = deletionRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -3888,7 +3922,8 @@ class ErrorDialog extends StatelessWidget {
 
   Widget _buildSupplierReturnUnapproveError(String message) {
     // Парсим название товара и отрицательный остаток
-    RegExp unapproveRegex = RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
+    RegExp unapproveRegex =
+        RegExp(r"товара '([^']+)' станет отрицательным: (-?\d+)");
     Match? match = unapproveRegex.firstMatch(message);
 
     String productName = match?.group(1) ?? 'Неизвестный товар';
@@ -4068,8 +4103,8 @@ class ErrorDialog extends StatelessWidget {
     String reasonText = isDeleted
         ? 'Товар был удален из системы'
         : isChanged
-        ? 'Товар был изменен после удаления документа'
-        : 'Товар недоступен в системе';
+            ? 'Товар был изменен после удаления документа'
+            : 'Товар недоступен в системе';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4198,7 +4233,8 @@ class ErrorDialog extends StatelessWidget {
     List<Widget> widgets = [];
 
     // Парсим все товары с помощью регулярного выражения
-    RegExp productRegex = RegExp(r'- Товар ([^:]+): требуется (\d+), доступно (\d+)');
+    RegExp productRegex =
+        RegExp(r'- Товар ([^:]+): требуется (\d+), доступно (\d+)');
     Iterable<Match> matches = productRegex.allMatches(message);
 
     if (matches.isEmpty) return widgets;

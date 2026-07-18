@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
@@ -25,7 +26,7 @@ class SupplierDialogBloc extends Bloc<SupplierDialogEvent, SupplierDialogState> 
       
       emit(SupplierDialogLoaded(suppliers: suppliers.result ?? []));
     } catch (e) {
-      emit(SupplierDialogError(message: e.toString()));
+      emit(SupplierDialogError(message: friendlyError(e)));
     }
   }
 
@@ -40,7 +41,7 @@ class SupplierDialogBloc extends Bloc<SupplierDialogEvent, SupplierDialogState> 
       
       emit(SupplierDialogLoaded(suppliers: suppliers.result ?? []));
     } catch (e) {
-      emit(SupplierDialogError(message: e.toString()));
+      emit(SupplierDialogError(message: friendlyError(e)));
     }
   }
 }

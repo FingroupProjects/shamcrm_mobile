@@ -18,7 +18,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order? order;
 
-  const ProductSelectionSheetAdd({ this.order, super.key});
+  const ProductSelectionSheetAdd({this.order, super.key});
 
   @override
   State<ProductSelectionSheetAdd> createState() =>
@@ -163,6 +163,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   // Метод форматирования цены
   String _formatPrice(double? price) {
     if (price == null) price = 0;
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0.00', 'ru_RU').format(price);
+    }
     String symbol = '₽';
 
     if (kDebugMode) {
@@ -197,16 +200,20 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * _scrollThreshold) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * _scrollThreshold) {
       final state = _bloc.state;
 
       if (state.isLoadingMore) return;
 
-      if (state.isInSearchMode && _hasMorePages(state.searchVariantsPagination, state.currentPage)) {
+      if (state.isInSearchMode &&
+          _hasMorePages(state.searchVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreSearchResults(state.currentPage));
-      } else if (state.isInAllVariantsMode && _hasMorePages(state.allVariantsPagination, state.currentPage)) {
+      } else if (state.isInAllVariantsMode &&
+          _hasMorePages(state.allVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreVariants(state.currentPage));
-      } else if (state.isInCategoryMode && _hasMorePages(state.categoryVariantsPagination, state.currentPage)) {
+      } else if (state.isInCategoryMode &&
+          _hasMorePages(state.categoryVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreVariantsByCategory(
           categoryId: state.selectedCategoryId!,
           currentPage: state.currentPage,
@@ -385,14 +392,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   void _returnSelectedProducts() {
     final selectedProducts = _selectedVariants.values
         .map((variant) => {
-      'id': variant.id,
-      'name': _getDisplayName(variant),
-      'price': variant.price ?? 0.0,
-      'quantity': _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
-      'imagePath': variant.good?.files.isNotEmpty == true
-          ? variant.good!.files[0].path
-          : null,
-    })
+              'id': variant.id,
+              'name': _getDisplayName(variant),
+              'price': variant.price ?? 0.0,
+              'quantity':
+                  _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
+              'imagePath': variant.good?.files.isNotEmpty == true
+                  ? variant.good!.files[0].path
+                  : null,
+            })
         .toList();
 
     if (selectedProducts.isEmpty) {
@@ -426,9 +434,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   String _getDisplayName(Variant variant) {
     if (variant.attributeValues.isNotEmpty) {
-      return variant.attributeValues
-          .map((attr) => attr.value)
-          .join(', ');
+      return variant.attributeValues.map((attr) => attr.value).join(', ');
     }
     return variant.fullName?.isNotEmpty == true
         ? variant.fullName!
@@ -492,7 +498,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildHeader(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildHeader(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -518,10 +525,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                     color: Color(0xff1E2E52),
                   ),
                 ),
-                if (state.isInCategoryMode)
-                  _buildCategoryBreadcrumb(state),
-                if (state.isInSearchMode)
-                  _buildSearchBreadcrumb(state),
+                if (state.isInCategoryMode) _buildCategoryBreadcrumb(state),
+                if (state.isInSearchMode) _buildSearchBreadcrumb(state),
               ],
             ),
           ),
@@ -574,13 +579,16 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildSearchBreadcrumb(VariantBottomSheetState state) {
-    final totalResults = state.searchCategories.length + state.searchVariants.length;
+    final totalResults =
+        state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
-        localizations.translate('found_results').replaceAll('{count}', totalResults.toString()),
+        localizations
+            .translate('found_results')
+            .replaceAll('{count}', totalResults.toString()),
         style: const TextStyle(
           fontSize: 13,
           fontFamily: 'Gilroy',
@@ -591,7 +599,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildSearchField(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildSearchField(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -610,17 +619,17 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 prefixIcon: const Icon(Icons.search, color: Color(0xff4759FF)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
-                  onPressed: () {
-                    _searchController.clear();
-                    // Вместо SearchAll('') возвращаемся к предыдущему режиму
-                    if (_showAllMode) {
-                      _bloc.add(FetchVariants());
-                    } else {
-                      _bloc.add(FetchCategories());
-                    }
-                  },
-                )
+                        icon: const Icon(Icons.clear, color: Color(0xff99A4BA)),
+                        onPressed: () {
+                          _searchController.clear();
+                          // Вместо SearchAll('') возвращаемся к предыдущему режиму
+                          if (_showAllMode) {
+                            _bloc.add(FetchVariants());
+                          } else {
+                            _bloc.add(FetchCategories());
+                          }
+                        },
+                      )
                     : null,
                 filled: true,
                 fillColor: const Color(0xFFF4F7FD),
@@ -628,7 +637,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -657,13 +667,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildContent(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildContent(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     // Show loading only if there's no data yet
     if (state.isLoading && !state.hasData) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.error != null && !state.hasData) { // Only show error if no data
+    if (state.error != null && !state.hasData) {
+      // Only show error if no data
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -719,7 +731,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     return const Center(child: CircularProgressIndicator());
   }
 
-  Widget _buildSearchResults(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildSearchResults(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     if (state.isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -737,16 +750,18 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         if (state.searchCategories.isNotEmpty) ...[
-          _buildSectionHeader(localizations.translate('categories'), state.searchCategories.length),
+          _buildSectionHeader(localizations.translate('categories'),
+              state.searchCategories.length),
           ...state.searchCategories.map((cat) => _buildCategoryCard(cat)),
           const SizedBox(height: 24),
         ],
         if (state.searchVariants.isNotEmpty) ...[
-          _buildSectionHeader(localizations.translate('goods'), state.searchVariants.length),
-          ...state.searchVariants.map((v) => _buildVariantCard(v, localizations)),
+          _buildSectionHeader(
+              localizations.translate('goods'), state.searchVariants.length),
+          ...state.searchVariants
+              .map((v) => _buildVariantCard(v, localizations)),
         ],
-        if (state.isLoadingMore)
-          _buildLoadingIndicator(),
+        if (state.isLoadingMore) _buildLoadingIndicator(),
       ],
     );
   }
@@ -787,7 +802,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildCategories(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildCategories(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     if (state.isLoading && state.categories.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -824,12 +840,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     return GestureDetector(
       onTap: () => _onCategoryTap(category.id, category.name),
       child: Container(
-        margin: EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
+        margin:
+            EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: level > 0 ? const Color(0xFFE5E7EB).withValues(alpha: 0.7) : const Color(0xFFE5E7EB),
+            color: level > 0
+                ? const Color(0xFFE5E7EB).withValues(alpha: 0.7)
+                : const Color(0xFFE5E7EB),
             width: 1,
           ),
         ),
@@ -857,29 +876,34 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 ),
                 child: category.image != null && category.image!.isNotEmpty
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(
-                    imageUrl: 'https://shamcrm.com/storage/${category.image}',
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Icon(
-                      level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                      color: const Color(0xff4759FF),
-                      size: level > 0 ? 20 : 28,
-                    ),
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              'https://shamcrm.com/storage/${category.image}',
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Icon(
+                            level > 0
+                                ? Icons.subdirectory_arrow_right
+                                : Icons.category,
+                            color: const Color(0xff4759FF),
+                            size: level > 0 ? 20 : 28,
+                          ),
+                        ),
+                      )
                     : Icon(
-                  level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                  color: const Color(0xff4759FF),
-                  size: level > 0 ? 20 : 28,
-                ),
+                        level > 0
+                            ? Icons.subdirectory_arrow_right
+                            : Icons.category,
+                        color: const Color(0xff4759FF),
+                        size: level > 0 ? 20 : 28,
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -905,7 +929,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildAllVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildAllVariants(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return _buildVariantsList(
       variants: state.allVariants,
       emptyMessageKey: 'no_variants_found',
@@ -914,7 +939,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildCategoryVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildCategoryVariants(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     String emptyMessageKey = state.categoryVariants.isEmpty
         ? 'no_goods_in_category'
         : 'no_variants_found';
@@ -1126,14 +1152,17 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
-                            onChanged: (value) => _handleQuantityInput(variant, value),
+                            onChanged: (value) =>
+                                _handleQuantityInput(variant, value),
                             onEditingComplete: () {
-                              if ((_quantityControllers[variant.id]?.text ?? '').isEmpty) {
+                              if ((_quantityControllers[variant.id]?.text ?? '')
+                                  .isEmpty) {
                                 _syncQuantityController(variant.id);
                               }
                               FocusScope.of(context).unfocus();
                             },
-                            onSubmitted: (value) => _handleQuantityInput(variant, value),
+                            onSubmitted: (value) =>
+                                _handleQuantityInput(variant, value),
                           ),
                         ),
                         GestureDetector(
@@ -1190,29 +1219,29 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       ),
       child: imageUrl != null
           ? ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-          errorWidget: (context, url, error) => const Icon(
-            Icons.shopping_cart_outlined,
-            color: Color(0xff4759FF),
-            size: 24,
-          ),
-        ),
-      )
+              borderRadius: BorderRadius.circular(8),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.shopping_cart_outlined,
+                  color: Color(0xff4759FF),
+                  size: 24,
+                ),
+              ),
+            )
           : const Icon(
-        Icons.shopping_cart_outlined,
-        color: Color(0xff4759FF),
-        size: 24,
-      ),
+              Icons.shopping_cart_outlined,
+              color: Color(0xff4759FF),
+              size: 24,
+            ),
     );
   }
 
@@ -1241,7 +1270,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         onPressed: _returnSelectedProducts,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xff4759FF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
         child: Center(

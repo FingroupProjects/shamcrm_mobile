@@ -1,5 +1,6 @@
 package com.softtech.crm_task_manager
 
+import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -8,6 +9,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -315,6 +317,16 @@ class MainActivity : FlutterFragmentActivity() {
                 "getStateSnapshot" -> {
                     result.success(NativeSipBridge.getStateSnapshot())
                 }
+                "getStoredConfig" -> {
+                    result.success(NativeSipBridge.getStoredConfigForFlutter())
+                }
+                "getDiagnosticLogs" -> {
+                    result.success(NativeSipBridge.getDiagnosticLogs())
+                }
+                "clearDiagnosticLogs" -> {
+                    NativeSipBridge.clearDiagnosticLogs()
+                    result.success(true)
+                }
                 "restoreRegistrationIfNeeded" -> {
                     result.success(NativeSipBridge.restoreRegistrationIfNeeded())
                 }
@@ -337,8 +349,17 @@ class MainActivity : FlutterFragmentActivity() {
                     val speakerOn = call.argument<Boolean>("speakerOn") ?: false
                     result.success(NativeSipBridge.setSpeaker(speakerOn))
                 }
+                "canUseFullScreenIntent" -> {
+                    result.success(canUseFullScreenIntent())
+                }
+                "requestFullScreenIntentPermission" -> {
+                    result.success(requestFullScreenIntentPermission())
+                }
                 "requestBackgroundReliabilitySettings" -> {
                     result.success(requestBackgroundReliabilitySettings())
+                }
+                "openXiaomiSettings" -> {
+                    result.success(openXiaomiSettings())
                 }
                 "dispose" -> {
                     result.success(true)
@@ -465,6 +486,71 @@ class MainActivity : FlutterFragmentActivity() {
             )
             false
         }
+    }
+
+    private fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        return notificationManager.canUseFullScreenIntent()
+    }
+
+    private fun requestFullScreenIntentPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+            canUseFullScreenIntent()
+        ) {
+            return false
+        }
+
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+            true
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to open full-screen intent settings", error)
+            false
+        }
+    }
+
+    private fun openXiaomiSettings(): Boolean {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val brand = Build.BRAND.lowercase()
+        val isXiaomiDevice = listOf(manufacturer, brand).any {
+            it.contains("xiaomi") || it.contains("redmi") || it.contains("poco")
+        }
+        if (!isXiaomiDevice) {
+            return false
+        }
+
+        val intents = listOf(
+            Intent("miui.intent.action.OP_AUTO_START").apply {
+                component = ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity",
+                )
+            },
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+            },
+        )
+
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                return true
+            } catch (error: Throwable) {
+                Log.w("MainActivity", "Xiaomi settings intent unavailable", error)
+            }
+        }
+        return false
     }
 
     private fun updateIncomingCallWindowMode(intent: Intent?) {

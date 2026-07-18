@@ -43,6 +43,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   String _confirmPin = '';
   bool _isConfirming = false;
   bool _pinsDoNotMatch = false;
+  bool _isValidatingPins = false;
+  bool _isBiometricPromptInFlight = false;
   static const String _biometricPromptShownKey =
       'biometric_prompt_shown_after_first_login';
 
@@ -547,74 +549,86 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _validatePins() async {
+    if (_isValidatingPins) {
+      return;
+    }
+
+    _isValidatingPins = true;
     final apiService = context.read<ApiService>();
-    if (_pin == _confirmPin) {
-      debugPrint('════════════════════════════════════════════════════════');
-      debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
+    try {
+      if (_pin == _confirmPin) {
+        debugPrint('════════════════════════════════════════════════════════');
+        debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
 
-      final prefs = await SharedPreferences.getInstance();
-      final userId = int.tryParse(
-        prefs.getString('userID') ?? prefs.getString('user_id') ?? '',
-      );
+        final prefs = await SharedPreferences.getInstance();
+        final userId = int.tryParse(
+          prefs.getString('userID') ?? prefs.getString('user_id') ?? '',
+        );
 
-      if (userId != null) {
-        try {
-          final hasAccess = await apiService.checkUserAccess(userId);
-          if (!hasAccess) {
-            debugPrint('PinSetupScreen: ⛔ Аккаунт пользователя заблокирован');
-            if (!mounted) return;
-            _showBlockedAccountSnackBar();
-            _triggerErrorEffect();
-            return;
+        if (userId != null) {
+          try {
+            final hasAccess = await apiService.checkUserAccess(userId);
+            if (!hasAccess) {
+              debugPrint('PinSetupScreen: ⛔ Аккаунт пользователя заблокирован');
+              if (!mounted) return;
+              _showBlockedAccountSnackBar();
+              _triggerErrorEffect();
+              return;
+            }
+          } catch (e) {
+            debugPrint('PinSetupScreen: Ошибка проверки доступа: $e');
           }
+        } else {
+          debugPrint(
+              'PinSetupScreen: Не удалось определить user_id для проверки');
+        }
+
+        await prefs.setString('user_pin', _pin);
+
+        debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
+
+        // ✅ Проверка отложенных токенов (на всякий случай)
+        try {
+          debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
+          await apiService.ensureInitialized();
+          await apiService.sendPendingFCMTokenIfNeeded();
+          await apiService.sendPendingVoipTokenIfNeeded();
+          debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
         } catch (e) {
-          debugPrint('PinSetupScreen: Ошибка проверки доступа: $e');
+          debugPrint(
+              'PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');
+        }
+
+        if (isPermissionsLoaded) {
+          debugPrint('PinSetupScreen: 🏠 Переход на HomeScreen');
+          debugPrint(
+              '════════════════════════════════════════════════════════');
+
+          await _maybeShowBiometricPrompt();
+          final shouldOpenWorkdayProfile =
+              await _shouldOpenInitialWorkdayProfile(apiService);
+          if (!mounted) return;
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(
+                initialShowProfileScreen: shouldOpenWorkdayProfile,
+              ),
+            ),
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          debugPrint('PinSetupScreen: ⚠️ Permissions ещё не загружены');
+          debugPrint(
+              '════════════════════════════════════════════════════════');
         }
       } else {
-        debugPrint(
-            'PinSetupScreen: Не удалось определить user_id для проверки');
+        debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
+        _triggerErrorEffect();
       }
-
-      await prefs.setString('user_pin', _pin);
-
-      debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
-
-      // ✅ Проверка отложенных токенов (на всякий случай)
-      try {
-        debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
-        await apiService.ensureInitialized();
-        await apiService.sendPendingFCMTokenIfNeeded();
-        await apiService.sendPendingVoipTokenIfNeeded();
-        debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
-      } catch (e) {
-        debugPrint('PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');
-      }
-
-      if (isPermissionsLoaded) {
-        debugPrint('PinSetupScreen: 🏠 Переход на HomeScreen');
-        debugPrint('════════════════════════════════════════════════════════');
-
-        await _maybeShowBiometricPrompt();
-        final shouldOpenWorkdayProfile =
-            await _shouldOpenInitialWorkdayProfile(apiService);
-        if (!mounted) return;
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              initialShowProfileScreen: shouldOpenWorkdayProfile,
-            ),
-          ),
-          (Route<dynamic> route) => false,
-        );
-      } else {
-        debugPrint('PinSetupScreen: ⚠️ Permissions ещё не загружены');
-        debugPrint('════════════════════════════════════════════════════════');
-      }
-    } else {
-      debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
-      _triggerErrorEffect();
+    } finally {
+      _isValidatingPins = false;
     }
   }
 
@@ -740,6 +754,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _maybeShowBiometricPrompt() async {
+    if (_isBiometricPromptInFlight) {
+      return;
+    }
+
+    _isBiometricPromptInFlight = true;
     try {
       final prefs = await SharedPreferences.getInstance();
       final wasShown = prefs.getBool(_biometricPromptShownKey) ?? false;
@@ -754,8 +773,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      final shouldEnable = await _showBiometricPromptDialog(availability);
+      // Сохраняем флаг до await модалки: это блокирует повторный показ,
+      // если подтверждение PIN было вызвано несколько раз подряд.
       await prefs.setBool(_biometricPromptShownKey, true);
+      final shouldEnable = await _showBiometricPromptDialog(availability);
 
       if (shouldEnable != true || !mounted) {
         return;
@@ -795,6 +816,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       );
     } catch (e) {
       debugPrint('PinSetupScreen: Ошибка предложения биометрии: $e');
+    } finally {
+      _isBiometricPromptInFlight = false;
     }
   }
 

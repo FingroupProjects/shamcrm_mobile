@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -23,7 +24,7 @@ class GetAllCityBloc extends Bloc<GetAllCityEvent, GetAllCityState> {
         final res = await ApiService().getAllCity();
         emit(GetAllCitySuccess(dataCity: res.result ?? const []));
       } catch (e) {
-        emit(GetAllCityError(message: e.toString()));
+        emit(GetAllCityError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllCityError(message: 'Нет подключения к интернету'));

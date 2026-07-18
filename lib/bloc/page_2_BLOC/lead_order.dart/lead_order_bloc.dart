@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/lead_order.dart/lead_order_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/lead_order.dart/lead_order_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,7 +17,7 @@ class LeadOrderBloc extends Bloc<LeadOrderEvent, LeadOrderState> {
       final leadOrders = await apiService.getLeadOrders();
       emit(LeadOrderLoaded(leadOrders: leadOrders));
     } catch (e) {
-      emit(LeadOrderError(e.toString()));
+      emit(LeadOrderError(friendlyError(e)));
     }
   }
 }

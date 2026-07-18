@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_event.dart';
@@ -18,7 +19,7 @@ class GetDirectoryBloc extends Bloc<GetDirectoryEvent, GetDirectoryState> {
         var res = await ApiService().getDirectory();
         emit(GetDirectorySuccess(dataDirectory: res));
       } catch (e) {
-        emit(GetDirectoryError(message: e.toString()));
+        emit(GetDirectoryError(message: friendlyError(e)));
       }
     } else {
       emit(GetDirectoryError(message: 'Нет подключения к интернету'));

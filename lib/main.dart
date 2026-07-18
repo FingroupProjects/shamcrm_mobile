@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
@@ -181,7 +182,7 @@ void main() {
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
-
+      
       final apiService = ApiService();
       final authService = AuthService();
         
@@ -592,7 +593,7 @@ Future<SessionValidationResult> _validateApplicationSession(
 
     return SessionValidationResult(isValid: true);
   } catch (e) {
-    return SessionValidationResult(isValid: false, errorMessage: e.toString());
+    return SessionValidationResult(isValid: false, errorMessage: friendlyError(e));
   }
 }
 

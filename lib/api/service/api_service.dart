@@ -238,6 +238,7 @@ class ApiService {
       GlobalKey<ScaffoldMessengerState>();
   static DateTime? _lastWorkdayWarningAt;
   static bool _isWorkdayRedirectInProgress = false;
+  static bool _isForceLogoutInProgress = false;
   // Добавьте этот список эндпоинтов, которые не требуют проверки сессии
   static const List<String> _noSessionCheckEndpoints = [
     '/login',
@@ -459,6 +460,14 @@ class ApiService {
   // Также нужно обновить метод _initializeIfDomainExists
   // Обновленный метод инициализации с проверкой сессии
   Future<void> _initializeIfDomainExists() async {
+    // ApiService создаётся и на экране авторизации. При отсутствии токена
+    // это обычное состояние, поэтому нельзя запускать принудительную
+    // навигацию на AuthScreen из конструктора каждого экземпляра.
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
     // Сначала проверяем валидность сессии
     if (!await _isSessionValid()) {
       // debugPrint('ApiService: Session is invalid, redirecting to auth');
@@ -666,7 +675,6 @@ class ApiService {
 
   // Метод для перенаправления на окно входа
   void _redirectToLogin() {
-    final navigatorKey = GlobalKey<NavigatorState>();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/local_auth',
       (route) => false,
@@ -1929,6 +1937,20 @@ class ApiService {
 
   // Новый метод для принудительного сброса к начальному экрану
   Future<void> _forceLogoutAndRedirect() async {
+    if (_isForceLogoutInProgress) {
+      debugPrint(
+          'ApiService: Force logout уже выполняется, повторный переход пропущен');
+      return;
+    }
+
+    // После первого logout токен уже удалён. Не запускаем второй logout и
+    // второй переход, если параллельный запрос тоже получил 401.
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    _isForceLogoutInProgress = true;
     try {
       debugPrint('ApiService: Force logout and redirect to auth');
 
@@ -1950,6 +1972,8 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('ApiService: Error in force logout: $e');
+    } finally {
+      _isForceLogoutInProgress = false;
     }
   }
 
@@ -13016,13 +13040,15 @@ class ApiService {
           'data': responseBody,
         };
       } else {
-        String errorMessage = responseBody['message'] ?? 'Не удалось создать товар';
+        String errorMessage =
+            responseBody['message'] ?? 'Не удалось создать товар';
         // Локализуем ошибку штрих-кода
         final errors = responseBody['errors'] as Map<String, dynamic>?;
         final bool hasBarcodeError = errors != null &&
-            errors.keys.any((k) => k == 'barcode' || k.startsWith('variants.') && k.endsWith('.barcode'));
-        if (hasBarcodeError ||
-            errorMessage.contains('barcode')) {
+            errors.keys.any((k) =>
+                k == 'barcode' ||
+                k.startsWith('variants.') && k.endsWith('.barcode'));
+        if (hasBarcodeError || errorMessage.contains('barcode')) {
           errorMessage = 'Такое значение штрих кода уже существует';
         }
         return {
@@ -13226,10 +13252,13 @@ class ApiService {
           'data': responseBody,
         };
       } else {
-        String errorMessage = responseBody['message'] ?? 'Failed to update goods';
+        String errorMessage =
+            responseBody['message'] ?? 'Failed to update goods';
         final errors = responseBody['errors'] as Map<String, dynamic>?;
         final bool hasBarcodeError = errors != null &&
-            errors.keys.any((k) => k == 'barcode' || k.startsWith('variants.') && k.endsWith('.barcode'));
+            errors.keys.any((k) =>
+                k == 'barcode' ||
+                k.startsWith('variants.') && k.endsWith('.barcode'));
         if (hasBarcodeError || errorMessage.contains('barcode')) {
           errorMessage = 'Такое значение штрих кода уже существует';
         }
@@ -13240,7 +13269,7 @@ class ApiService {
         };
       }
     } catch (e, stackTrace) {
-      ////debugPrint('ApiService: Error in updateGoods: '); 
+      ////debugPrint('ApiService: Error in updateGoods: ');
       ////debugPrint('ApiService: Stack trace: $stackTrace');
       return {
         'success': false,
@@ -13726,11 +13755,11 @@ class ApiService {
         if (customFields != null && customFields.isNotEmpty) {
           for (int i = 0; i < customFields.length; i++) {
             final field = customFields[i];
-            request.fields['custom_fields[$i][key]'] =
+            request.fields['order_custom_fields[$i][key]'] =
                 field['key']?.toString() ?? '';
-            request.fields['custom_fields[$i][value]'] =
+            request.fields['order_custom_fields[$i][value]'] =
                 field['value']?.toString() ?? '';
-            request.fields['custom_fields[$i][type]'] =
+            request.fields['order_custom_fields[$i][type]'] =
                 field['type']?.toString() ?? 'string';
           }
         }
@@ -13816,7 +13845,7 @@ class ApiService {
       body['branch_id'] = branchId;
 
       if (customFields != null && customFields.isNotEmpty) {
-        body['custom_fields'] = customFields;
+        body['order_custom_fields'] = customFields;
       }
 
       if (directoryValues != null && directoryValues.isNotEmpty) {
@@ -13957,11 +13986,11 @@ class ApiService {
         if (customFields != null && customFields.isNotEmpty) {
           for (int i = 0; i < customFields.length; i++) {
             final field = customFields[i];
-            request.fields['custom_fields[$i][key]'] =
+            request.fields['order_custom_fields[$i][key]'] =
                 field['key']?.toString() ?? '';
-            request.fields['custom_fields[$i][value]'] =
+            request.fields['order_custom_fields[$i][value]'] =
                 field['value']?.toString() ?? '';
-            request.fields['custom_fields[$i][type]'] =
+            request.fields['order_custom_fields[$i][type]'] =
                 field['type']?.toString() ?? 'string';
           }
         }
@@ -14050,7 +14079,7 @@ class ApiService {
       body['branch_id'] = branchId;
 
       if (customFields != null && customFields.isNotEmpty) {
-        body['custom_fields'] = customFields;
+        body['order_custom_fields'] = customFields;
       }
 
       if (directoryValues != null && directoryValues.isNotEmpty) {

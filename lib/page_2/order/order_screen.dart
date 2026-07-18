@@ -231,6 +231,11 @@ class _OrderScreenState extends State<OrderScreen>
     }
 
     if (_statuses.isNotEmpty) {
+      // Сначала обновляем статусы и очищаем устаревший кэш. После этого
+      // загружаем список заказов, чтобы OrderLoaded не был затёрт пустым
+      // состоянием статусов.
+      _orderBloc.add(FetchOrderStatuses(forceRefresh: true));
+
       _orderBloc.add(FetchOrders(
         statusId: oldStatusId,
         page: 1,
@@ -251,7 +256,29 @@ class _OrderScreenState extends State<OrderScreen>
                 MapEntry(key.toString(), List<String>.from(value as List))),
       ));
 
-      _orderBloc.add(FetchOrderStatuses(forceRefresh: true));
+      if (newStatusId != oldStatusId) {
+        _orderBloc.add(FetchOrders(
+          statusId: newStatusId,
+          page: 1,
+          perPage: 20,
+          forceRefresh: true,
+          query: _isSearching ? _searchController.text : null,
+          managerIds: _currentFilters['managers'],
+          regionsIds: _currentFilters['regions'],
+          leadIds: _currentFilters['leads'],
+          fromDate: _currentFilters['fromDate'],
+          toDate: _currentFilters['toDate'],
+          status: _currentFilters['status'],
+          paymentMethod: _currentFilters['paymentMethod'],
+          deliveryType: _currentFilters['deliveryType'],
+          reasonForRefusalIds: _currentReasonForRefusalIds(),
+          customFieldFilters: (_currentFilters['custom_field_filters'] as Map?)
+              ?.map((key, value) => MapEntry(
+                    key.toString(),
+                    List<String>.from(value as List),
+                  )),
+        ));
+      }
     }
   }
 
