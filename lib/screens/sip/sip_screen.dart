@@ -10,6 +10,9 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
@@ -300,9 +303,13 @@ class _SipScreenState extends State<SipScreen>
       animation: _sipService,
       builder: (context, child) {
         if (!_sipService.isConfigLoaded) {
-          return const Scaffold(
-            backgroundColor: _G.lightBg,
-            body: Center(child: CircularProgressIndicator.adaptive()),
+          return Scaffold(
+            backgroundColor: context.appColors.backgroundPrimary,
+            body: _TelephonyBackground(
+              child: const Center(
+                child: CircularProgressIndicator.adaptive(),
+              ),
+            ),
           );
         }
 
@@ -320,15 +327,8 @@ class _SipScreenState extends State<SipScreen>
 
         return Scaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: _G.lightBg,
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFEFF4FF), Color(0xFFF8FAFF)],
-              ),
-            ),
+          backgroundColor: context.appColors.backgroundPrimary,
+          body: _TelephonyBackground(
             child: SafeArea(
               child: Center(
                 child: ConstrainedBox(

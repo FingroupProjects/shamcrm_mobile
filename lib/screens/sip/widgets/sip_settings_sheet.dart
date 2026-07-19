@@ -43,10 +43,15 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                       child: SingleChildScrollView(
                         padding: EdgeInsets.zero,
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF8F9FC),
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(28)),
+                          decoration: BoxDecoration(
+                            color: context.appColors.surfacePrimary
+                                .withValues(alpha: 0.92),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(28)),
+                            border: Border.all(
+                              color: context.appColors.borderSubtle
+                                  .withValues(alpha: 0.7),
+                            ),
                           ),
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                           child: Column(
@@ -56,16 +61,17 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 width: 46,
                                 height: 5,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFD5DAE8),
+                                  color: context.appColors.borderPrimary,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               const SizedBox(height: 14),
                               Text(
                                 l10n.translate('sip_settings'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
+                                  color: context.appColors.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -100,7 +106,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                           ? CupertinoIcons.eye_slash
                                           : CupertinoIcons.eye,
                                       size: 21,
-                                      color: const Color(0xFF7A8499),
+                                      color: context.appColors.iconSecondary,
                                     ),
                                   ),
                                 ),
@@ -124,15 +130,15 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                       horizontal: 14,
                                       vertical: 14,
                                     ),
-                                    color: const Color(0xFFE9F2FF),
+                                    color: context.appColors.surfaceAccent,
                                     borderRadius: BorderRadius.circular(14),
                                     onPressed: () async {
                                       await _showIosDiagnosticsSheet(context);
                                     },
-                                    child: const Text(
-                                      'SIP Диагностика',
+                                    child: Text(
+                                      'Диагностика телефонии',
                                       style: TextStyle(
-                                        color: Color(0xFF0A84FF),
+                                        color: _TelephonyVisualColors.blue,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -144,7 +150,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 children: [
                                   Expanded(
                                     child: CupertinoButton(
-                                      color: const Color(0xFF0A84FF),
+                                      color: _TelephonyVisualColors.blue,
                                       borderRadius: BorderRadius.circular(14),
                                       onPressed: state.registrationStatus ==
                                               SipRegistrationUiStatus
@@ -191,7 +197,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: CupertinoButton(
-                                      color: const Color(0xFFFF3B30),
+                                      color: context.appColors.buttonDangerBg,
                                       borderRadius: BorderRadius.circular(14),
                                       onPressed: () async {
                                         if (context.mounted) {
@@ -231,6 +237,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     TextInputType keyboardType = TextInputType.text,
     Widget? suffix,
   }) {
+    final colors = context.appColors;
     return CupertinoTextField(
       controller: controller,
       obscureText: obscureText,
@@ -239,10 +246,13 @@ extension _SipSettingsSheetExtension on _SipScreenState {
       suffixMode: OverlayVisibilityMode.always,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       placeholder: placeholder,
+      cursorColor: _TelephonyVisualColors.blue,
+      style: TextStyle(color: colors.textPrimary),
+      placeholderStyle: TextStyle(color: colors.fieldHint),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.fieldBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE3E8F4)),
+        border: Border.all(color: colors.fieldBorder),
       ),
     );
   }
@@ -289,7 +299,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
           }).toList(growable: false);
 
     final report = [
-      '${Platform.isAndroid ? 'Android' : 'iOS'} SIP Diagnostics',
+      'Диагностика телефонии ${Platform.isAndroid ? 'Android' : 'iOS'}',
       registrationText,
       callText,
       if (!isAndroid) tokenText,
@@ -323,10 +333,15 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                       maxWidth: 560,
                       maxHeight: MediaQuery.of(context).size.height * 0.8,
                     ),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8F9FC),
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfacePrimary
+                          .withValues(alpha: 0.94),
                       borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(28)),
+                          const BorderRadius.vertical(top: Radius.circular(28)),
+                      border: Border.all(
+                        color: context.appColors.borderSubtle
+                            .withValues(alpha: 0.72),
+                      ),
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     child: Column(
@@ -341,12 +356,35 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        const Text(
-                          'iPhone SIP Диагностика',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Диагностика телефонии ${isAndroid ? 'Android' : 'iPhone'}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.appColors.textPrimary,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ),
+                            Builder(
+                              builder: (shareButtonContext) => CupertinoButton(
+                                minimumSize: const Size(42, 42),
+                                padding: EdgeInsets.zero,
+                                onPressed: () => _shareIosDiagnosticsReport(
+                                  report,
+                                  shareButtonContext,
+                                ),
+                                child: Icon(
+                                  CupertinoIcons.share,
+                                  color: _TelephonyVisualColors.blue,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         Expanded(
@@ -355,7 +393,8 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: context.appColors.surfaceElevated
+                                    .withValues(alpha: 0.76),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: const Color(0xFFE3E8F4),
@@ -363,10 +402,11 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                               ),
                               child: SelectableText(
                                 report,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   height: 1.45,
-                                  color: Color(0xFF1F2937),
+                                  color: context.appColors.textPrimary,
+                                  letterSpacing: 0,
                                 ),
                               ),
                             ),
@@ -447,8 +487,8 @@ extension _SipSettingsSheetExtension on _SipScreenState {
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'text/markdown')],
-        subject: 'iOS SIP Diagnostics',
-        text: 'iOS SIP Diagnostics',
+        subject: 'Диагностика телефонии iOS',
+        text: 'Диагностика телефонии iOS',
         sharePositionOrigin: shareOrigin,
       );
     } catch (error) {
@@ -461,27 +501,36 @@ extension _SipSettingsSheetExtension on _SipScreenState {
 
   Widget _transportSelector(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.fieldBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE3E8F4)),
+        border: Border.all(color: colors.fieldBorder),
       ),
       child: CupertinoSlidingSegmentedControl<SipTransportUi>(
         groupValue: _selectedTransport,
+        backgroundColor: colors.fieldBg,
+        thumbColor: colors.surfaceElevated,
         children: <SipTransportUi, Widget>{
           SipTransportUi.ws: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Text(l10n.translate('sip_transport_ws')),
+            child: Text(
+              l10n.translate('sip_transport_ws'),
+              style: TextStyle(color: colors.textPrimary),
+            ),
           ),
-          SipTransportUi.udp: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Text('UDP'),
+          SipTransportUi.udp: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Text('UDP', style: TextStyle(color: colors.textPrimary)),
           ),
           SipTransportUi.tcp: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Text(l10n.translate('sip_transport_tcp')),
+            child: Text(
+              l10n.translate('sip_transport_tcp'),
+              style: TextStyle(color: colors.textPrimary),
+            ),
           ),
         },
         onValueChanged: (value) {

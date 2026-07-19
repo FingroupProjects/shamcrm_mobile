@@ -268,7 +268,7 @@ class SipService extends ChangeNotifier
       _configLoaded = true;
       _state = SipUiState.initial().copyWith(
         errorMessage:
-            'Не удалось открыть сохраненные SIP-настройки. Проверьте данные и попробуйте снова.',
+            'Не удалось открыть сохраненные настройки телефонии. Проверьте данные и попробуйте снова.',
       );
       _notifyListenersSafely();
       if (!completer.isCompleted) {
@@ -340,7 +340,7 @@ class SipService extends ChangeNotifier
     }
     _secureStorageRecoveryTriggered = true;
     _pendingStorageRecoveryMessage =
-        'Сохраненные SIP-настройки были повреждены и сброшены. Введите их заново.';
+        'Сохраненные настройки телефонии были повреждены и сброшены. Введите их заново.';
 
     for (final key in _sipSecureStorageKeys) {
       try {
@@ -941,7 +941,7 @@ class SipService extends ChangeNotifier
         _state.callStatus == SipCallUiStatus.failed) {
       _state = _state.copyWith(
         remoteIdentity: remoteIdentity,
-        errorMessage: 'Входящий вызов: пробуждаем SIP...',
+        errorMessage: 'Входящий вызов: восстанавливаем телефонную линию...',
       );
       _notifyListenersSafely();
     }
@@ -1195,7 +1195,7 @@ class SipService extends ChangeNotifier
 
   Future<void> connect() async {
     if (!_hasSipCredentials()) {
-      _setError('Заполните сервер, логин и пароль SIP.');
+      _setError('Заполните сервер, логин и пароль телефонии.');
       return;
     }
 
@@ -1206,7 +1206,7 @@ class SipService extends ChangeNotifier
     }
 
     if (!_networkAvailable) {
-      _setError('Нет интернета. Регистрация SIP приостановлена.');
+      _setError('Нет интернета. Подключение телефонии приостановлено.');
       return;
     }
 
@@ -1418,7 +1418,7 @@ class SipService extends ChangeNotifier
 
   Future<void> makeCallTo(String dialTarget) async {
     if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
-      _setError('SIP is not registered. Connect first.');
+      _setError('Телефония не подключена. Сначала подключите линию.');
       return;
     }
 
@@ -1540,7 +1540,7 @@ class SipService extends ChangeNotifier
     if (_shouldUseNativeSip()) {
       final success = await _invokeNativeSipMethod<bool>('hangup') ?? false;
       if (!success) {
-        _setError('Не удалось завершить SIP-звонок.');
+        _setError('Не удалось завершить звонок.');
       } else {
         _clearIncomingFingerprint();
         _markTerminalNativeCallFingerprint();
@@ -1681,7 +1681,7 @@ class SipService extends ChangeNotifier
   String? _validateSipConfiguration() {
     final server = _state.server.trim();
     if (server.isEmpty) {
-      return 'Сервер SIP не указан.';
+      return 'Сервер телефонии не указан.';
     }
 
     final isWsAddress =
@@ -2687,7 +2687,7 @@ class SipService extends ChangeNotifier
         }
         if (_isAuthorizationFailureMessage(message)) {
           _stopReconnectOnAuthorizationFailure(
-            'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
+            'Авторизация телефонии отклонена сервером. Проверьте логин, пароль и auth ID.',
           );
           return;
         }
@@ -3437,7 +3437,7 @@ class SipService extends ChangeNotifier
         }
         if (_isAuthorizationFailureMessage(state.cause?.toString())) {
           _stopReconnectOnAuthorizationFailure(
-            'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
+            'Авторизация телефонии отклонена сервером. Проверьте логин, пароль и auth ID.',
           );
           break;
         }

@@ -3,6 +3,7 @@ part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 
 extension _SipMainViewsExtension on _SipScreenState {
   Widget _buildTopBar(BuildContext context, SipUiState state) {
+    final colors = context.appColors;
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final showCompactStatus =
@@ -16,7 +17,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     final subtitle = hasActiveCall
         ? _resolvedCallLabel(context, state)
         : isReconnectInProgress
-            ? 'Восстанавливаем SIP-соединение...'
+            ? 'Восстанавливаем телефонную линию...'
             : isNetworkUnavailable
                 ? 'Сеть потеряна. Ждём восстановление соединения'
                 : isRegistered
@@ -38,13 +39,13 @@ extension _SipMainViewsExtension on _SipScreenState {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Телефония',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 23,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
-                        letterSpacing: -0.8,
+                        color: colors.textPrimary,
+                        letterSpacing: 0,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -55,10 +56,11 @@ extension _SipMainViewsExtension on _SipScreenState {
                             subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF9CA3AF),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: colors.textSecondary,
                               fontWeight: FontWeight.w500,
+                              height: 1.1,
                             ),
                           ),
                         ),
@@ -119,54 +121,50 @@ extension _SipMainViewsExtension on _SipScreenState {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onPressed,
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF111827).withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(
-            color: const Color(0xFFF0F0F0),
-          ),
+    final colors = context.appColors;
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: _GlassButton(
+        borderRadius: 16,
+        padding: EdgeInsets.zero,
+        onPressed: onPressed,
+        child: Center(
+          child: Icon(icon, size: 21, color: colors.iconPrimary),
         ),
-        child: Icon(icon, size: 21, color: const Color(0xFF374151)),
       ),
     );
   }
 
   Widget _buildRegisteredIndicator() {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EF),
+        color: _TelephonyVisualColors.green.withValues(
+          alpha: isDark ? 0.18 : 0.12,
+        ),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFCFE9D8)),
+        border: Border.all(
+          color: _TelephonyVisualColors.green.withValues(alpha: 0.38),
+        ),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             CupertinoIcons.check_mark_circled_solid,
             size: 12,
-            color: Color(0xFF22C55E),
+            color: _TelephonyVisualColors.green,
           ),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(
-            'В сети',
+            l10n.translate('telephony_online'),
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF22C55E),
+              color: _TelephonyVisualColors.green,
             ),
           ),
         ],
@@ -184,194 +182,204 @@ extension _SipMainViewsExtension on _SipScreenState {
             state.errorMessage!.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xffF4F7FD),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-              children: [
-                Row(
-                  children: [
-                    _buildTopIconButton(
-                      icon: CupertinoIcons.back,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Телефония',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xff1E2E52).withValues(alpha: 0.06),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: context.appColors.backgroundPrimary,
+      body: _TelephonyBackground(
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                children: [
+                  Row(
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: const Color(0xffEEF2FF),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          CupertinoIcons.phone_fill,
-                          color: Color(0xff4F40EC),
-                          size: 24,
-                        ),
+                      _buildTopIconButton(
+                        icon: CupertinoIcons.back,
+                        onPressed: () => Navigator.of(context).maybePop(),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.translate('sip_welcome_title'),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xff1E2E52),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              l10n.translate('sip_welcome_subtitle'),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Телефония',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.textPrimary,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xff1E2E52).withValues(alpha: 0.06),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.translate('sip_settings'),
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfacePrimary
+                          .withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xff1E2E52).withValues(alpha: 0.06),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _serverController,
-                        hintText: l10n.translate('sip_server'),
-                        label: l10n.translate('sip_server'),
-                      ),
-                      const SizedBox(height: 12),
-                      CustomTextField(
-                        controller: _loginController,
-                        hintText: l10n.translate('sip_login'),
-                        label: l10n.translate('sip_login'),
-                      ),
-                      const SizedBox(height: 12),
-                      CustomTextField(
-                        controller: _passwordController,
-                        hintText: l10n.translate('sip_password'),
-                        label: l10n.translate('sip_password'),
-                        isPassword: true,
-                      ),
-                      const SizedBox(height: 12),
-                      _projectTransportSelector(context),
-                      const SizedBox(height: 12),
-                      CustomTextField(
-                        controller: _portController,
-                        hintText: l10n.translate('sip_port'),
-                        label: l10n.translate('sip_port'),
-                        keyboardType: TextInputType.number,
-                      ),
-                      if (hasInlineStatusMessage) ...[
-                        const SizedBox(height: 12),
+                      ],
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
+                          width: 50,
+                          height: 50,
                           decoration: BoxDecoration(
-                            color: const Color(0xffFFF1F1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xffFFD4D4),
-                            ),
+                            color: const Color(0xffEEF2FF),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(
-                            state.errorMessage!,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xffE45454),
-                            ),
+                          child: const Icon(
+                            CupertinoIcons.phone_fill,
+                            color: Color(0xff4F40EC),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.translate('sip_welcome_title'),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.appColors.textPrimary,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                l10n.translate('sip_welcome_subtitle'),
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: context.appColors.textSecondary,
+                                  height: 1.35,
+                                  letterSpacing: 0,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      CustomButton(
-                        buttonText: isRegistering
-                            ? 'Подключение...'
-                            : 'Подключить телефонию',
-                        buttonColor: const Color(0xff4F40EC),
-                        textColor: Colors.white,
-                        isLoading: isRegistering,
-                        onPressed: isRegistering
-                            ? null
-                            : () async {
-                                await _saveDraft();
-                                await _sipRuntime.connect();
-                              },
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.appColors.surfacePrimary
+                          .withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xff1E2E52).withValues(alpha: 0.06),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.translate('sip_settings'),
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.textPrimary,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        CustomTextField(
+                          controller: _serverController,
+                          hintText: l10n.translate('sip_server'),
+                          label: l10n.translate('sip_server'),
+                        ),
+                        const SizedBox(height: 12),
+                        CustomTextField(
+                          controller: _loginController,
+                          hintText: l10n.translate('sip_login'),
+                          label: l10n.translate('sip_login'),
+                        ),
+                        const SizedBox(height: 12),
+                        CustomTextField(
+                          controller: _passwordController,
+                          hintText: l10n.translate('sip_password'),
+                          label: l10n.translate('sip_password'),
+                          isPassword: true,
+                        ),
+                        const SizedBox(height: 12),
+                        _projectTransportSelector(context),
+                        const SizedBox(height: 12),
+                        CustomTextField(
+                          controller: _portController,
+                          hintText: l10n.translate('sip_port'),
+                          label: l10n.translate('sip_port'),
+                          keyboardType: TextInputType.number,
+                        ),
+                        if (hasInlineStatusMessage) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xffFFF1F1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xffFFD4D4),
+                              ),
+                            ),
+                            child: Text(
+                              state.errorMessage!,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xffE45454),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        CustomButton(
+                          buttonText: isRegistering
+                              ? 'Подключение...'
+                              : 'Подключить телефонию',
+                          buttonColor: const Color(0xff4F40EC),
+                          textColor: Colors.white,
+                          isLoading: isRegistering,
+                          onPressed: isRegistering
+                              ? null
+                              : () async {
+                                  await _saveDraft();
+                                  await _sipRuntime.connect();
+                                },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -390,8 +398,8 @@ extension _SipMainViewsExtension on _SipScreenState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Транспорт',
+        Text(
+          l10n.translate('telephony_transport'),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -469,6 +477,8 @@ extension _SipMainViewsExtension on _SipScreenState {
 
   Widget _statusBanner(BuildContext context, SipUiState state) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
@@ -503,19 +513,20 @@ extension _SipMainViewsExtension on _SipScreenState {
                 ? 'Телефония подключена'
                 : 'Телефония не подключена';
     final subtitle = isReconnectInProgress
-        ? 'Сеть восстановлена. Переподключаем SIP-линию'
+        ? 'Сеть восстановлена. Переподключаем телефонную линию'
         : isNetworkUnavailable
-            ? 'Как только сеть вернётся, SIP подключится автоматически'
+            ? 'Как только сеть вернётся, телефония подключится автоматически'
             : '${l10n.translate('sip_call_state')}: ${_resolvedCallLabel(context, state)}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.70 : 0.88),
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colors.borderSubtle),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.05),
+            color: colors.shadow.withValues(alpha: isDark ? 0.18 : 0.06),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -547,17 +558,17 @@ extension _SipMainViewsExtension on _SipScreenState {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF9CA3AF),
+                    color: colors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -578,24 +589,26 @@ extension _SipMainViewsExtension on _SipScreenState {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C1E),
+                  color: _TelephonyVisualColors.blue,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isRegistering) ...[
-                      const SizedBox(
+                      SizedBox(
                         width: 14,
                         height: 14,
-                        child: CupertinoActivityIndicator(color: Colors.white),
+                        child: CupertinoActivityIndicator(
+                          color: colors.buttonPrimaryFg,
+                        ),
                       ),
                       const SizedBox(width: 8),
                     ],
                     Text(
                       isRegistering ? 'Подключение...' : 'Подключить',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.buttonPrimaryFg,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -691,6 +704,8 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   Widget _inlineDialSuggestion(BoxConstraints constraints) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final query = _sipIdController.text.trim();
     final isNarrow = constraints.maxWidth < 395;
     final isTight = constraints.maxWidth < 370;
@@ -706,13 +721,13 @@ extension _SipMainViewsExtension on _SipScreenState {
     final extraResults =
         hasSuggestion ? math.max(0, _dialSuggestionTotalCount - 1) : 0;
     final nameStyle = TextStyle(
-      color: const Color(0xFF6B7280),
+      color: colors.textSecondary,
       fontSize: isTight ? 12.0 : 13.0,
       fontWeight: FontWeight.w500,
       height: 1.1,
     );
     final phoneStyle = TextStyle(
-      color: const Color(0xFF111827),
+      color: colors.textPrimary,
       fontSize: isTight ? 13.0 : 14.0,
       fontWeight: FontWeight.w600,
       height: 1.1,
@@ -733,17 +748,21 @@ extension _SipMainViewsExtension on _SipScreenState {
               : Container(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.90),
+                    color: colors.surfacePrimary.withValues(
+                      alpha: isDark ? 0.72 : 0.90,
+                    ),
                     borderRadius: BorderRadius.circular(26),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF111827).withValues(alpha: 0.06),
+                        color: colors.shadow.withValues(
+                          alpha: isDark ? 0.18 : 0.06,
+                        ),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                     ],
                     border: Border.all(
-                      color: const Color(0xFFF0F0F0),
+                      color: colors.borderSubtle,
                     ),
                   ),
                   child: Column(
@@ -765,7 +784,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                                   .person_crop_circle_badge_plus
                                               : CupertinoIcons.phone_fill,
                                       size: iconSize,
-                                      color: const Color(0xFF374151),
+                                      color: colors.iconSecondary,
                                     ),
                                     SizedBox(width: gap),
                                     Expanded(
@@ -803,7 +822,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                                   .person_crop_circle_badge_plus
                                               : CupertinoIcons.phone_fill,
                                       size: iconSize,
-                                      color: const Color(0xFF374151),
+                                      color: colors.iconSecondary,
                                     ),
                                     SizedBox(width: gap),
                                     Expanded(
@@ -849,7 +868,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                 Icon(
                                   CupertinoIcons.search,
                                   size: iconSize,
-                                  color: const Color(0xFF111827),
+                                  color: colors.iconSecondary,
                                 ),
                                 SizedBox(width: gap),
                                 Expanded(
@@ -858,7 +877,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: const Color(0xFF6B7280),
+                                      color: colors.textSecondary,
                                       fontSize: isTight ? 12.0 : 13.0,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1013,9 +1032,9 @@ extension _SipMainViewsExtension on _SipScreenState {
   Widget _dialNumberHeader(BoxConstraints constraints) {
     final isNarrow = constraints.maxWidth < 395;
     final isTight = constraints.maxWidth < 370;
-    final fontSize = isTight ? 30.0 : (isNarrow ? 34.0 : 38.0);
-    final placeholderSize = isTight ? 21.0 : (isNarrow ? 24.0 : 27.0);
-    final cursorHeight = isTight ? 30.0 : (isNarrow ? 34.0 : 38.0);
+    final fontSize = isTight ? 36.0 : (isNarrow ? 40.0 : 44.0);
+    final placeholderSize = isTight ? 23.0 : (isNarrow ? 26.0 : 29.0);
+    final cursorHeight = isTight ? 36.0 : (isNarrow ? 40.0 : 44.0);
     return GestureDetector(
       onTap: _expandDialPanel,
       onLongPress: _showDialActions,
@@ -1024,21 +1043,23 @@ extension _SipMainViewsExtension on _SipScreenState {
         focusNode: _dialFocusNode,
         readOnly: true,
         showCursor: true,
-        cursorColor: const Color(0xFF111827),
+        cursorColor: context.appColors.textPrimary,
         cursorWidth: 2,
         cursorHeight: cursorHeight,
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w300,
-          color: const Color(0xFF111827),
-          letterSpacing: isTight ? 1.0 : 1.6,
+          color: context.appColors.textPrimary,
+          letterSpacing: 0,
         ),
-        placeholder: 'Введите номер',
+        placeholder:
+            AppLocalizations.of(context)!.translate('telephony_enter_number'),
         placeholderStyle: TextStyle(
           fontSize: placeholderSize,
           fontWeight: FontWeight.w300,
-          color: const Color(0xFFD1D5DB),
+          color: context.appColors.textMuted,
+          letterSpacing: 0,
         ),
         magnifierConfiguration: TextMagnifierConfiguration.disabled,
         padding: EdgeInsets.symmetric(
@@ -1057,6 +1078,8 @@ extension _SipMainViewsExtension on _SipScreenState {
     required VoidCallback onTap,
     VoidCallback? onLongPress,
   }) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final innerSize = (outerSize - 8).clamp(74.0, 88.0);
     final isTight = outerSize < 90;
     return GestureDetector(
@@ -1069,27 +1092,28 @@ extension _SipMainViewsExtension on _SipScreenState {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Container(
-              width: innerSize,
-              height: innerSize,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF111827).withValues(alpha: 0.07),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
+            ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  width: innerSize,
+                  height: innerSize,
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary
+                        .withValues(alpha: isDark ? 0.48 : 0.62),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.shadow.withValues(alpha: 0.12),
+                        blurRadius: 22,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: colors.borderSubtle.withValues(alpha: 0.72),
+                      width: 1,
+                    ),
                   ),
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
-                border: Border.all(
-                  color: const Color(0xFFF3F4F6),
-                  width: 1,
                 ),
               ),
             ),
@@ -1099,10 +1123,11 @@ extension _SipMainViewsExtension on _SipScreenState {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: isTight ? 30 : 34,
+                    fontSize: isTight ? 32 : 36,
                     height: 1.0,
                     fontWeight: FontWeight.w300,
-                    color: const Color(0xFF111827),
+                    color: colors.textPrimary,
+                    letterSpacing: 0,
                   ),
                 ),
                 if (letters.isNotEmpty)
@@ -1110,10 +1135,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                     letters,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: isTight ? 9 : 10,
-                      letterSpacing: isTight ? 0.8 : 1.2,
+                      fontSize: isTight ? 10 : 11,
+                      letterSpacing: 0,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF9CA3AF),
+                      color: colors.textSecondary,
                       height: 1.2,
                     ),
                   ),
@@ -1126,6 +1151,9 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   Widget _collapsedDialPanel(SipUiState state) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -1135,12 +1163,16 @@ extension _SipMainViewsExtension on _SipScreenState {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surfacePrimary.withValues(
+                  alpha: isDark ? 0.70 : 0.88,
+                ),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFF0F0F0)),
+                border: Border.all(color: colors.borderSubtle),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF111827).withValues(alpha: 0.04),
+                    color: colors.shadow.withValues(
+                      alpha: isDark ? 0.18 : 0.06,
+                    ),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -1152,13 +1184,13 @@ extension _SipMainViewsExtension on _SipScreenState {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
+                      color: colors.surfaceElevated,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       CupertinoIcons.circle_grid_3x3_fill,
                       size: 18,
-                      color: Color(0xFF374151),
+                      color: colors.iconPrimary,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1167,24 +1199,24 @@ extension _SipMainViewsExtension on _SipScreenState {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'Набор',
+                        Text(
+                          l10n.translate('sip_tab_keypad'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF111827),
+                            color: colors.textPrimary,
                           ),
                         ),
                         Text(
                           _sipIdController.text.trim().isEmpty
-                              ? 'Открыть клавиатуру'
+                              ? l10n.translate('telephony_open_keypad')
                               : _sipIdController.text.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF9CA3AF),
+                            color: colors.textSecondary,
                           ),
                         ),
                       ],
@@ -1236,6 +1268,8 @@ extension _SipMainViewsExtension on _SipScreenState {
   // Зеркальный стиль: таблетка с вкладками слева + кнопка поиска справа
   Widget _ios26LiquidNavBar(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final navItems = <({
       int index,
       String iconAsset,
@@ -1252,14 +1286,14 @@ extension _SipMainViewsExtension on _SipScreenState {
         index: 1,
         iconAsset: 'assets/icons/sip/recents_off.png',
         activeIconAsset: 'assets/icons/sip/recents_on.png',
-        label: 'Вызовы',
+        label: l10n.translate('telephony_calls'),
       ),
       if (_hasContactsTab)
         (
           index: 2,
           iconAsset: 'assets/icons/sip/contact_off.png',
           activeIconAsset: 'assets/icons/sip/contact_on.png',
-          label: 'Контакты',
+          label: l10n.translate('telephony_contacts'),
         ),
     ];
     final segmentCount = navItems.length;
@@ -1274,7 +1308,7 @@ extension _SipMainViewsExtension on _SipScreenState {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   const horizontalPadding = 5.0;
-                  const innerGap = 4.0;
+                  const innerGap = 2.0;
                   final maxIndex = segmentCount - 1;
                   final currentNavPosition = navItems
                       .indexWhere((item) => item.index == _bottomTabIndex);
@@ -1317,8 +1351,8 @@ extension _SipMainViewsExtension on _SipScreenState {
 
                   void snapToLocalPosition(double localDx) {
                     final safeDx = localDx.clamp(0.0, usableWidth);
-                    final nextPosition = (safeDx / (usableWidth / segmentCount))
-                        .floor()
+                    final nextPosition = (safeDx / (segmentWidth + innerGap))
+                        .round()
                         .clamp(0, maxIndex);
                     final nextIndex = navItems[nextPosition].index;
                     _updateView(() {
@@ -1342,7 +1376,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                       final safeDx =
                           (details.localPosition.dx - horizontalPadding)
                               .clamp(0.0, usableWidth);
-                      final dragIndex = safeDx / (usableWidth / segmentCount);
+                      final dragIndex = safeDx / (segmentWidth + innerGap);
                       _updateView(() {
                         _liquidNavDragIndex =
                             dragIndex.clamp(0.0, maxIndex.toDouble());
@@ -1399,74 +1433,33 @@ extension _SipMainViewsExtension on _SipScreenState {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.white.withValues(alpha: 0.82),
-                                Colors.white.withValues(alpha: 0.66),
-                                const Color(0xFFEAF2FF).withValues(alpha: 0.52),
+                                colors.surfacePrimary.withValues(
+                                  alpha: isDark ? 0.62 : 0.78,
+                                ),
+                                colors.surfaceElevated.withValues(
+                                  alpha: isDark ? 0.52 : 0.68,
+                                ),
+                                colors.surfaceAccent.withValues(alpha: 0.48),
                               ],
                               stops: const [0.0, 0.58, 1.0],
                             ),
                             borderRadius: BorderRadius.circular(42),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.86),
+                              color: colors.borderSubtle.withValues(alpha: 0.8),
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.80),
-                                blurRadius: 14,
-                                offset: const Offset(0, -2),
-                              ),
-                              BoxShadow(
-                                color: const Color(0xFF111827).withValues(
-                                  alpha: 0.10,
+                                color: colors.shadow.withValues(
+                                  alpha: isDark ? 0.26 : 0.12,
                                 ),
-                                blurRadius: 32,
-                                offset: const Offset(0, 14),
+                                blurRadius: 24,
+                                offset: const Offset(0, 10),
                               ),
                             ],
                           ),
                           child: Stack(
                             children: [
-                              Positioned(
-                                left: 18,
-                                right: 18,
-                                top: 5,
-                                height: 16,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(999),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.82),
-                                        Colors.white.withValues(alpha: 0.10),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                left: 8,
-                                right: 8,
-                                bottom: 4,
-                                height: 18,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(999),
-                                    gradient: RadialGradient(
-                                      center: Alignment.bottomCenter,
-                                      radius: 1.5,
-                                      colors: [
-                                        const Color(0xFF0A84FF)
-                                            .withValues(alpha: 0.08),
-                                        Colors.white.withValues(alpha: 0.05),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
                               AnimatedPositioned(
                                 duration: const Duration(milliseconds: 120),
                                 curve: Curves.easeOutCubic,
@@ -1492,7 +1485,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                 },
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             _liquidSearchButton(
               selected: _bottomTabIndex == 3,
               onTap: () => _updateView(() => _bottomTabIndex = 3),
@@ -1509,6 +1502,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     required String label,
     required bool selected,
   }) {
+    final colors = context.appColors;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
@@ -1531,17 +1525,29 @@ extension _SipMainViewsExtension on _SipScreenState {
               height: 22,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.medium,
+              color:
+                  selected ? _TelephonyVisualColors.blue : colors.iconSecondary,
+              colorBlendMode: BlendMode.srcIn,
             ),
           ),
           const SizedBox(height: 3),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? const Color(0xFF0A84FF) : Colors.black,
+          SizedBox(
+            height: 15,
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? _TelephonyVisualColors.blue
+                      : colors.textSecondary,
+                  letterSpacing: 0,
+                ),
+              ),
             ),
           ),
         ],
@@ -1550,149 +1556,40 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   Widget _liquidMirrorThumb({required bool isPressed}) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(34),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: isPressed ? 30 : 24,
-              sigmaY: isPressed ? 30 : 24,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: isPressed ? 0.98 : 0.94),
-                    const Color(0xFFF9FCFF).withValues(alpha: 0.90),
-                    const Color(0xFFE9F2FF).withValues(alpha: 0.72),
-                  ],
-                  stops: const [0.0, 0.56, 1.0],
-                ),
-                borderRadius: BorderRadius.circular(34),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: isPressed ? 1.0 : 0.90),
-                  width: isPressed ? 2.2 : 1.3,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        Colors.white.withValues(alpha: isPressed ? 1.0 : 0.86),
-                    blurRadius: isPressed ? 26 : 15,
-                    spreadRadius: isPressed ? 2.0 : 0.5,
-                    offset: const Offset(0, -2),
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withValues(
-                      alpha: isPressed ? 0.70 : 0.32,
-                    ),
-                    blurRadius: isPressed ? 24 : 12,
-                    spreadRadius: isPressed ? 1.8 : 0,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF000000).withValues(
-                      alpha: isPressed ? 0.09 : 0.07,
-                    ),
-                    blurRadius: isPressed ? 24 : 16,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: isPressed ? 28 : 22,
+          sigmaY: isPressed ? 28 : 22,
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(
+              _TelephonyVisualColors.blue.withValues(
+                alpha: isPressed ? 0.24 : (isDark ? 0.18 : 0.12),
               ),
+              colors.surfaceElevated.withValues(alpha: isDark ? 0.88 : 0.94),
             ),
+            borderRadius: BorderRadius.circular(34),
+            border: Border.all(
+              color: _TelephonyVisualColors.blue.withValues(
+                alpha: isPressed ? 0.58 : 0.36,
+              ),
+              width: isPressed ? 1.8 : 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _TelephonyVisualColors.blue.withValues(alpha: 0.12),
+                blurRadius: isPressed ? 20 : 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(34),
-                gradient: RadialGradient(
-                  center: const Alignment(-0.35, -0.65),
-                  radius: 1.25,
-                  colors: [
-                    Colors.white.withValues(alpha: isPressed ? 0.58 : 0.46),
-                    Colors.white.withValues(alpha: 0.16),
-                    Colors.white.withValues(alpha: 0.02),
-                  ],
-                  stops: const [0.0, 0.48, 1.0],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 12,
-            right: 12,
-            top: 5,
-            child: Container(
-              height: 14,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withValues(alpha: isPressed ? 0.98 : 0.92),
-                    Colors.white.withValues(alpha: 0.12),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 14,
-            right: 14,
-            top: 17,
-            child: Container(
-              height: 20,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: RadialGradient(
-                  center: Alignment.topCenter,
-                  radius: 1.6,
-                  colors: [
-                    Colors.white.withValues(alpha: isPressed ? 0.36 : 0.26),
-                    Colors.white.withValues(alpha: 0.08),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: isPressed ? 8 : 13,
-            right: isPressed ? 8 : 13,
-            bottom: isPressed ? 2 : 4,
-            height: isPressed ? 20 : 14,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: RadialGradient(
-                  center: Alignment.bottomCenter,
-                  radius: isPressed ? 1.65 : 1.4,
-                  colors: [
-                    Colors.white.withValues(alpha: isPressed ? 0.48 : 0.20),
-                    Colors.white.withValues(alpha: isPressed ? 0.16 : 0.04),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (isPressed)
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(34),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.42),
-                    width: 5,
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -1701,6 +1598,8 @@ extension _SipMainViewsExtension on _SipScreenState {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: onTap,
@@ -1711,69 +1610,48 @@ extension _SipMainViewsExtension on _SipScreenState {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
-            width: 68,
+            width: 64,
             height: 78,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: selected ? 0.94 : 0.82),
-                  Colors.white.withValues(alpha: selected ? 0.74 : 0.62),
-                  const Color(0xFFEAF2FF).withValues(alpha: 0.46),
+                  colors.surfaceElevated.withValues(
+                    alpha: isDark ? 0.70 : (selected ? 0.92 : 0.80),
+                  ),
+                  colors.surfacePrimary.withValues(alpha: 0.68),
+                  colors.surfaceAccent.withValues(alpha: 0.48),
                 ],
               ),
               borderRadius: BorderRadius.circular(34),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.88),
+                color: colors.borderSubtle.withValues(alpha: 0.82),
                 width: 1.2,
               ),
               boxShadow: [
                 if (selected)
                   BoxShadow(
-                    color: const Color(0xFF0A84FF).withValues(alpha: 0.12),
+                    color: _TelephonyVisualColors.blue.withValues(alpha: 0.16),
                     blurRadius: 18,
                     offset: const Offset(-4, 8),
                   ),
                 BoxShadow(
-                  color: const Color(0xFF111827).withValues(
-                    alpha: selected ? 0.11 : 0.08,
+                  color: colors.shadow.withValues(
+                    alpha: selected ? 0.14 : 0.10,
                   ),
                   blurRadius: 26,
                   offset: const Offset(0, 12),
                 ),
               ],
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned(
-                  top: 7,
-                  left: 15,
-                  right: 15,
-                  height: 10,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.88),
-                          Colors.white.withValues(alpha: 0.06),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Icon(
-                  selected
-                      ? CupertinoIcons.search_circle_fill
-                      : CupertinoIcons.search,
-                  color: selected ? const Color(0xFF0A84FF) : Colors.black,
-                  size: selected ? 28 : 24,
-                ),
-              ],
+            child: Icon(
+              selected
+                  ? CupertinoIcons.search_circle_fill
+                  : CupertinoIcons.search,
+              color:
+                  selected ? _TelephonyVisualColors.blue : colors.iconSecondary,
+              size: selected ? 28 : 24,
             ),
           ),
         ),

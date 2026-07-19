@@ -1,6 +1,13 @@
 // Этот файл отвечает за общие SIP-цвета и стеклянные UI-элементы экрана.
 part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 
+abstract class _TelephonyVisualColors {
+  static const blue = Color(0xFF38BDF8);
+  static const green = Color(0xFF34D399);
+  static const amber = Color(0xFFFBBF24);
+  static const red = Color(0xFFFB7185);
+}
+
 abstract class _G {
   static const activeBg = [
     Color(0xFF080C18),
@@ -18,9 +25,60 @@ abstract class _G {
   static const textSecondary = Color(0xAAFFFFFF);
   static const textTertiary = Color(0x66FFFFFF);
 
-  static const lightBg = Color(0xFFF2F6FF);
   static const lightText = Color(0xFF0F172A);
   static const lightSubtext = Color(0xFF64748B);
+}
+
+class _TelephonyBackground extends StatelessWidget {
+  const _TelephonyBackground({
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const readability = 0.08;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      color: colors.backgroundPrimary,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppBackgroundOverlay(
+            preset: AppBackgroundPreset.none,
+            blurSigma: 18,
+          ),
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colors.backgroundPrimary.withValues(
+                      alpha: isDark ? readability + 0.16 : readability,
+                    ),
+                    colors.surfacePrimary.withValues(
+                      alpha: isDark ? 0.12 : 0.04,
+                    ),
+                    colors.backgroundSecondary.withValues(
+                      alpha: isDark ? readability + 0.12 : readability + 0.03,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
 }
 
 class _GlassContainer extends StatelessWidget {
@@ -28,20 +86,25 @@ class _GlassContainer extends StatelessWidget {
     required this.child,
     this.padding,
     this.borderRadius = 24,
-    this.color = _G.glassFill,
-    this.borderColor = _G.glassBorder,
+    this.color,
+    this.borderColor,
   });
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final double borderRadius;
-  final Color color;
-  final Color borderColor;
+  final Color? color;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.appColors;
+    final resolvedColor =
+        color ?? colors.surfacePrimary.withValues(alpha: isDark ? 0.54 : 0.66);
+    final resolvedBorder = borderColor ??
+        colors.borderSubtle.withValues(alpha: isDark ? 0.52 : 0.72);
     return ClipRRect(
       borderRadius: radius,
       child: BackdropFilter(
@@ -51,12 +114,14 @@ class _GlassContainer extends StatelessWidget {
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: color,
+            color: resolvedColor,
             borderRadius: radius,
-            border: Border.all(color: borderColor, width: 0.8),
+            border: Border.all(color: resolvedBorder, width: 0.8),
             boxShadow: [
               BoxShadow(
-                color: Colors.white.withValues(alpha: isDark ? 0.04 : 0.18),
+                color: colors.surfaceElevated.withValues(
+                  alpha: isDark ? 0.07 : 0.16,
+                ),
                 blurRadius: 18,
                 offset: const Offset(0, -2),
               ),
@@ -79,10 +144,15 @@ class _GlassContainer extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withValues(alpha: isDark ? 0.10 : 0.24),
-                          Colors.white.withValues(alpha: isDark ? 0.03 : 0.08),
-                          const Color(0xFFBFD7FF)
-                              .withValues(alpha: isDark ? 0.04 : 0.10),
+                          colors.surfaceElevated.withValues(
+                            alpha: isDark ? 0.12 : 0.20,
+                          ),
+                          colors.surfaceElevated.withValues(
+                            alpha: isDark ? 0.04 : 0.07,
+                          ),
+                          colors.surfaceAccent.withValues(
+                            alpha: isDark ? 0.08 : 0.12,
+                          ),
                         ],
                         stops: const [0.0, 0.38, 1.0],
                       ),
@@ -105,8 +175,10 @@ class _GlassContainer extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.white.withValues(alpha: isDark ? 0.14 : 0.30),
-                          Colors.white.withValues(alpha: 0),
+                          colors.surfaceElevated.withValues(
+                            alpha: isDark ? 0.16 : 0.26,
+                          ),
+                          colors.surfaceElevated.withValues(alpha: 0),
                         ],
                       ),
                     ),
@@ -131,21 +203,26 @@ class _GlassButton extends StatelessWidget {
     required this.onPressed,
     this.borderRadius = 20,
     this.padding,
-    this.color = _G.glassFill,
-    this.borderColor = _G.glassBorder,
+    this.color,
+    this.borderColor,
   });
 
   final Widget child;
   final VoidCallback onPressed;
   final double borderRadius;
   final EdgeInsetsGeometry? padding;
-  final Color color;
-  final Color borderColor;
+  final Color? color;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.appColors;
+    final resolvedColor =
+        color ?? colors.surfacePrimary.withValues(alpha: isDark ? 0.50 : 0.64);
+    final resolvedBorder = borderColor ??
+        colors.borderSubtle.withValues(alpha: isDark ? 0.50 : 0.70);
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: onPressed,
@@ -158,9 +235,9 @@ class _GlassButton extends StatelessWidget {
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: color,
+              color: resolvedColor,
               borderRadius: radius,
-              border: Border.all(color: borderColor, width: 0.8),
+              border: Border.all(color: resolvedBorder, width: 0.8),
               boxShadow: [
                 BoxShadow(
                   color: Colors.white.withValues(alpha: isDark ? 0.03 : 0.14),

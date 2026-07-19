@@ -666,21 +666,33 @@ class _NavBarItem extends StatelessWidget {
             Positioned(
               top: -8,
               left: -2,
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: const BoxDecoration(
-                  color: Color(0xffF44336),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  data.unreadCount > 99 ? '99+' : '${data.unreadCount}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Golos',
+              child: SizedBox(
+                width: data.unreadCount > 99 ? 34 : 24,
+                height: 24,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: context.appColors.error,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.appColors.error.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      data.unreadCount > 99 ? '99+' : '${data.unreadCount}',
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Golos',
+                        height: 1,
+                      ),
+                    ),
                   ),
                 ),
               ),

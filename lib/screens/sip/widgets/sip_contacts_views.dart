@@ -7,17 +7,19 @@ extension _SipContactsViewsExtension on _SipScreenState {
     required VoidCallback onCallTap,
     bool compact = false,
   }) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 10 : 14,
         vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.54 : 0.68),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF111827).withValues(alpha: 0.04),
+            color: colors.shadow.withValues(alpha: 0.10),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -27,7 +29,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
         children: [
           CircleAvatar(
             radius: compact ? 18 : 20,
-            backgroundColor: const Color(0xFFF3F4F6),
+            backgroundColor: colors.surfaceElevated,
             backgroundImage: suggestion.photo != null
                 ? MemoryImage(suggestion.photo!)
                 : null,
@@ -36,8 +38,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     suggestion.name.isEmpty
                         ? '?'
                         : suggestion.name[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Color(0xFF374151),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   )
@@ -54,9 +56,9 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     suggestion.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
+                      color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -64,8 +66,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     suggestion.phone,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
                     ),
@@ -98,11 +100,13 @@ extension _SipContactsViewsExtension on _SipScreenState {
   }
 
   Widget _contactsView(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_contactsEnabled && !_contactsLoaded && !_isContactsLoading) {
       unawaited(_loadContacts());
     }
 
     final contacts = _displayContacts;
+    final colors = context.appColors;
 
     final query = _contactsViewQuery.trim().toLowerCase();
     final queryDigits = _digitsOnly(_contactsViewQuery);
@@ -117,8 +121,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
     final contactIndexLetters = _contactIndexLetters(filtered);
     final refreshTrigger = RefreshIndicator(
       onRefresh: _refreshContactsView,
-      color: const Color(0xff1E2E52),
-      backgroundColor: Colors.white,
+      color: _TelephonyVisualColors.blue,
+      backgroundColor: colors.surfaceElevated,
       child: activeTab == _SipContactsTabSource.leads
           ? NotificationListener<ScrollNotification>(
               onNotification: (notification) {
@@ -256,7 +260,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     if (_contactsEnabled)
                       Expanded(
                         child: _contactsStatusChip(
-                          label: 'Контакты',
+                          label: l10n.translate('telephony_contacts'),
                           count: _contactsTotalCount,
                           selected: activeTab == _SipContactsTabSource.contacts,
                           onTap: () => _selectContactsTabSource(
@@ -269,7 +273,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     if (_leadSearchEnabled)
                       Expanded(
                         child: _contactsStatusChip(
-                          label: 'Лиды',
+                          label: l10n.translate('telephony_leads'),
                           count: _leadTotalCount,
                           selected: activeTab == _SipContactsTabSource.leads,
                           loading: _isLeadCountLoading,
@@ -284,8 +288,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
               ],
               _cleanSearchField(
                 placeholder: activeTab == _SipContactsTabSource.contacts
-                    ? 'Поиск по контактам'
-                    : 'Поиск по лидам',
+                    ? l10n.translate('telephony_search_contacts')
+                    : l10n.translate('telephony_search_leads'),
                 onChanged: _handleContactsViewChanged,
               ),
             ],
@@ -300,6 +304,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
     required List<String> letters,
     required List<_SipContactSuggestion> contacts,
   }) {
+    final colors = context.appColors;
     double overlayTop = 0;
 
     void handlePosition(Offset localPosition, double maxHeight) {
@@ -348,9 +353,9 @@ extension _SipContactsViewsExtension on _SipScreenState {
                   child: Container(
                     width: 18,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: colors.surfaceElevated.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0xFFE3E8F1)),
+                      border: Border.all(color: colors.borderSubtle),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -365,7 +370,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                             decoration: BoxDecoration(
                               color: _contactsIndexOverlayLetter == letter
                                   ? const Color(0xFF22C55E)
-                                  : const Color(0xFF9DAABE),
+                                  : colors.iconSecondary,
                               borderRadius: BorderRadius.circular(999),
                             ),
                           ),
@@ -440,10 +445,13 @@ extension _SipContactsViewsExtension on _SipScreenState {
     required VoidCallback onTap,
     bool loading = false,
   }) {
-    final borderColor =
-        selected ? const Color(0xFF1E2E52) : const Color(0xFFDFE3EC);
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = selected
+        ? _TelephonyVisualColors.blue.withValues(alpha: 0.55)
+        : colors.borderSubtle;
     final labelColor =
-        selected ? const Color(0xFF1E2E52) : const Color(0xFF99A4BA);
+        selected ? _TelephonyVisualColors.blue : colors.textSecondary;
 
     return GestureDetector(
       onTap: onTap,
@@ -452,12 +460,16 @@ extension _SipContactsViewsExtension on _SipScreenState {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: selected
+              ? _TelephonyVisualColors.blue.withValues(
+                  alpha: isDark ? 0.20 : 0.10,
+                )
+              : colors.surfacePrimary.withValues(alpha: isDark ? 0.68 : 0.82),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1E2E52).withValues(alpha: 0.04),
+              color: colors.shadow.withValues(alpha: isDark ? 0.16 : 0.05),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -482,8 +494,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: selected
-                    ? const Color(0xFF1E2E52)
-                    : const Color(0xFFF4F7FD),
+                    ? _TelephonyVisualColors.blue
+                    : colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: borderColor),
               ),
@@ -495,15 +507,18 @@ extension _SipContactsViewsExtension on _SipScreenState {
                       child: CircularProgressIndicator(
                         strokeWidth: 1.8,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          selected ? Colors.white : const Color(0xFF99A4BA),
+                          selected
+                              ? colors.buttonPrimaryFg
+                              : colors.textSecondary,
                         ),
                       ),
                     )
                   : Text(
                       '$count',
                       style: TextStyle(
-                        color:
-                            selected ? Colors.white : const Color(0xFF99A4BA),
+                        color: selected
+                            ? colors.buttonPrimaryFg
+                            : colors.textSecondary,
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

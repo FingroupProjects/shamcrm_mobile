@@ -71,6 +71,9 @@ class _ChatsScreenState extends State<ChatsScreen>
   final GlobalKey keyChatLead = GlobalKey();
   final GlobalKey keyChatTask = GlobalKey();
   final GlobalKey keyChatCorporate = GlobalKey();
+  final Map<int, LayerLink> _tabBadgeLinks = <int, LayerLink>{};
+  final Map<int, OverlayPortalController> _tabBadgeControllers =
+      <int, OverlayPortalController>{};
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
   bool _isTaskScreenTutorialCompleted = false;
@@ -1368,7 +1371,17 @@ class _ChatsScreenState extends State<ChatsScreen>
       tabKey = keyChatCorporate;
     }
 
-    return GestureDetector(
+    final badgeLink = _tabBadgeLinks.putIfAbsent(index, LayerLink.new);
+    final badgeController = _tabBadgeControllers.putIfAbsent(
+      index,
+      OverlayPortalController.new,
+    );
+    if (unreadCount > 0 && !badgeController.isShowing) {
+      badgeController.show();
+    } else if (unreadCount == 0 && badgeController.isShowing) {
+      badgeController.hide();
+    }
+    final tabButton = GestureDetector(
       onTap: () {
         // //print(
         //     'ChatsScreen._buildTabButton: Switching to tab $index (endpoint: ${[
@@ -1397,58 +1410,74 @@ class _ChatsScreenState extends State<ChatsScreen>
               : null,
         ));
       },
-      child: Container(
-        key: tabKey,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              decoration: BoxDecoration(
+      child: CompositedTransformTarget(
+        link: badgeLink,
+        child: Container(
+          key: tabKey,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isActive
+                  ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.92)
+                  : context.appColors.surfacePrimary.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
                 color: isActive
-                    ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.92)
-                    : context.appColors.surfacePrimary.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isActive
-                      ? context.appColors.buttonPrimaryBg
-                      : context.appColors.borderSubtle.withValues(alpha: 0.7),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isActive
-                        ? context.appColors.buttonPrimaryBg.withValues(
-                            alpha: 0.22,
-                          )
-                        : context.appColors.shadow.withValues(alpha: 0.06),
-                    blurRadius: isActive ? 16 : 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                    ? context.appColors.buttonPrimaryBg
+                    : context.appColors.borderSubtle.withValues(alpha: 0.7),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-              child: Center(
-                child: Text(
-                  _tabTitles[index],
-                  style: context.appTextStyles.labelLg.copyWith(
-                    color: isActive
-                        ? context.appColors.buttonPrimaryFg
-                        : context.appColors.textPrimary.withValues(alpha: 0.76),
-                    fontFamily: 'Golos',
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    letterSpacing: -0.1,
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryBg.withValues(
+                          alpha: 0.22,
+                        )
+                      : context.appColors.shadow.withValues(alpha: 0.06),
+                  blurRadius: isActive ? 16 : 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            child: Center(
+              child: Text(
+                _tabTitles[index],
+                style: context.appTextStyles.labelLg.copyWith(
+                  color: isActive
+                      ? context.appColors.buttonPrimaryFg
+                      : context.appColors.textPrimary.withValues(alpha: 0.76),
+                  fontFamily: 'Golos',
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: -0.1,
                 ),
               ),
             ),
-            if (unreadCount > 0)
-              Positioned(
-                top: -12,
-                left: -10,
-                child: _buildUnreadBadge(unreadCount),
-              ),
-          ],
+          ),
         ),
       ),
+    );
+
+    return OverlayPortal(
+      controller: badgeController,
+      overlayChildBuilder: (context) {
+        if (unreadCount <= 0) {
+          return const SizedBox.shrink();
+        }
+        return Align(
+          alignment: Alignment.topLeft,
+          child: CompositedTransformFollower(
+            link: badgeLink,
+            showWhenUnlinked: false,
+            targetAnchor: Alignment.topLeft,
+            followerAnchor: Alignment.topLeft,
+            offset: const Offset(-10, -12),
+            child: UnconstrainedBox(
+              alignment: Alignment.topLeft,
+              child: _buildUnreadBadge(unreadCount),
+            ),
+          ),
+        );
+      },
+      child: tabButton,
     );
   }
 
@@ -1475,20 +1504,27 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _buildUnreadBadge(int count) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: context.appColors.error,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        count > 99 ? '99+' : '$count',
-        style: context.appTextStyles.bodySm.copyWith(
-          color: context.appColors.textInverse,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
+    final label = count > 99 ? '99+' : '$count';
+    final size = count > 99 ? 34.0 : 28.0;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.appColors.error,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            style: context.appTextStyles.bodySm.copyWith(
+              color: context.appColors.textInverse,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );

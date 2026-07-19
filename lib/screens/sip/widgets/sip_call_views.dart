@@ -21,7 +21,9 @@ extension _SipCallViewsExtension on _SipScreenState {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: _callGradient(isDark),
+          colors: _callGradient(isDark)
+              .map((color) => color.withValues(alpha: isDark ? 0.42 : 0.16))
+              .toList(growable: false),
         ),
       ),
       child: SafeArea(
@@ -362,56 +364,23 @@ extension _SipCallViewsExtension on _SipScreenState {
     BuildContext context, {
     required String target,
   }) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: [0, 0.35, 0.65, 1],
+          stops: const [0, 0.45, 1],
           colors: [
-            Color(0xFF6A676C),
-            Color(0xFF535D8F),
-            Color(0xFF3D6E82),
-            Color(0xFF2B7D88),
+            colors.backgroundPrimary.withValues(alpha: isDark ? 0.62 : 0.24),
+            colors.surfaceAccent.withValues(alpha: isDark ? 0.48 : 0.18),
+            colors.backgroundSecondary.withValues(alpha: isDark ? 0.66 : 0.28),
           ],
         ),
       ),
       child: Stack(
         children: [
-          Positioned(
-            top: -80,
-            left: -60,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [
-                    Color(0x223D8EFF),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 120,
-            right: -80,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  colors: [
-                    Color(0x1F2563EB),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),

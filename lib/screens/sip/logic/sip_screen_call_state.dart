@@ -213,13 +213,13 @@ extension _SipScreenCallStateExtension on _SipScreenState {
 
     if (_isRegistrationServerUnavailableMessage(message)) {
       return (
-        'SIP сервер не отвечает. Проверьте интернет, адрес сервера и порт',
+        'Сервер телефонии не отвечает. Проверьте интернет, адрес сервера и порт',
         true
       );
     }
 
     if (message == null || message.isEmpty) {
-      return ('Не удалось подключиться к SIP серверу', true);
+      return ('Не удалось подключиться к серверу телефонии', true);
     }
 
     return (message, true);
@@ -369,34 +369,37 @@ extension _SipScreenCallStateExtension on _SipScreenState {
 
   Color _callLogAccentColor(SipCallLogEntry entry) {
     if (entry.isMissed) {
-      return const Color(0xFFEF4444);
+      return _TelephonyVisualColors.red;
     }
     if (_isAnsweredElsewhereMessage(entry.endReason)) {
-      return const Color(0xFF2563EB);
+      return _TelephonyVisualColors.blue;
     }
     if (_isDeclinedElsewhereMessage(entry.endReason)) {
-      return const Color(0xFFF59E0B);
+      return _TelephonyVisualColors.amber;
     }
     if (entry.result == SipCallUiStatus.failed) {
-      return const Color(0xFFEF4444);
+      return _TelephonyVisualColors.red;
     }
-    return const Color(0xFF22C55E);
+    return _TelephonyVisualColors.green;
   }
 
   Color _callLogFillColor(SipCallLogEntry entry) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Color fill(Color color) =>
+        isDark ? color.withValues(alpha: 0.16) : color.withValues(alpha: 0.10);
     if (entry.isMissed) {
-      return const Color(0xFFFEF2F2);
+      return fill(_TelephonyVisualColors.red);
     }
     if (_isAnsweredElsewhereMessage(entry.endReason)) {
-      return const Color(0xFFEFF6FF);
+      return fill(_TelephonyVisualColors.blue);
     }
     if (_isDeclinedElsewhereMessage(entry.endReason)) {
-      return const Color(0xFFFFF7ED);
+      return fill(_TelephonyVisualColors.amber);
     }
     if (entry.result == SipCallUiStatus.failed) {
-      return const Color(0xFFFEF2F2);
+      return fill(_TelephonyVisualColors.red);
     }
-    return const Color(0xFFF0FDF4);
+    return fill(_TelephonyVisualColors.green);
   }
 
   IconData _callLogIcon(SipCallLogEntry entry) {
