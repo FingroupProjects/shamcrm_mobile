@@ -2,11 +2,15 @@ import 'dart:async';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -34,8 +38,9 @@ class PinScreen extends StatefulWidget {
   State<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen>
-    with TickerProviderStateMixin {
+class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
+  static const String _sipPinRequiredAfterCallKey =
+      'sip_pin_required_after_call_v1';
   String _pin = '';
   bool _isWrongPin = false;
   late AnimationController _animationController;
@@ -141,7 +146,6 @@ class _PinScreenState extends State<PinScreen>
 
       // ШАГ 4: Проверка PIN
       await _checkSavedPin();
-
     } catch (e) {
       if (mounted) {
         _showErrorDialog(
@@ -268,6 +272,28 @@ class _PinScreenState extends State<PinScreen>
     }
   }
 
+  Future<bool> _shouldBypassPinForActiveSipCall() async {
+    if (!kShowSip) return false;
+    try {
+      final sipService = SipService();
+      await sipService.initialize();
+      final status = sipService.state.callStatus;
+      return status == SipCallUiStatus.incoming ||
+          status == SipCallUiStatus.calling ||
+          status == SipCallUiStatus.ringing ||
+          status == SipCallUiStatus.inCall;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _markPinRequiredAfterSipCall() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_sipPinRequiredAfterCallKey, true);
+    } catch (_) {}
+  }
+
   Future<void> _loadBiometricSetting() async {
     try {
       final isEnabled = await _biometricService.isBiometricEnabled();
@@ -362,6 +388,22 @@ class _PinScreenState extends State<PinScreen>
           },
         );
       }
+    });
+  }
+
+  void _navigateToSipCallOnly() {
+    if (!kShowSip || !mounted) return;
+
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(
+          builder: (_) => const SipScreen(),
+          settings: const RouteSettings(name: '/sip_call_only'),
+        ),
+        (route) => false,
+      );
     });
   }
 

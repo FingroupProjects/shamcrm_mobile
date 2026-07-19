@@ -466,6 +466,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         sum: event.sum,
         customFields: event.customFields,
         directoryValues: event.directoryValues,
+        files: event.files,
       );
       //print('OrderBloc: Результат создания заказа: $result');
 
@@ -540,6 +541,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         sum: event.sum,
         customFields: event.customFields,
         directoryValues: event.directoryValues,
+        filePaths: event.filePaths,
+        existingFiles: event.existingFiles,
       );
       //print('OrderBloc: Ответ сервера на обновление заказа: $response');
 

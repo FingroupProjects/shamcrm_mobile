@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/localization_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
@@ -22,6 +23,7 @@ import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/leadById_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
@@ -72,6 +74,8 @@ class LeadEditScreen extends StatefulWidget {
   final String? priceTypeId;
   final String? priceTypeName;
   final String? salesFunnelId;
+  final int? currencyId;
+  final String? currencyName;
 
   LeadEditScreen({
     required this.leadId,
@@ -96,6 +100,8 @@ class LeadEditScreen extends StatefulWidget {
     this.priceTypeId,
     this.priceTypeName,
     this.salesFunnelId,
+    this.currencyId,
+    this.currencyName,
   });
 
   @override
@@ -163,6 +169,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   final ApiService _apiService = ApiService();
   List<FileHelper> files = [];
   String? selectedSalesFunnel;
+  List<SupplierCurrency> _currencies = [];
+  bool _isCurrenciesLoading = false;
+  SupplierCurrency? _selectedCurrency;
   DuplicateOption? _duplicateOption;
   bool _showDuplicateOptions = false;
   LeadStatus? _selectedLeadStatusData;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
@@ -138,7 +139,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
       if (kDebugMode) {
         //print('GetAllLeadBloc: Error loading leads: $e');
       }
-      emit(GetAllLeadError(message: e.toString()));
+      emit(GetAllLeadError(message: friendlyError(e)));
     }
   }
 

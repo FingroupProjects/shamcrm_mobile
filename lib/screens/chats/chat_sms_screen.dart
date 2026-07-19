@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
@@ -64,6 +65,7 @@ import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_context_menu.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ChatSmsScreen extends StatefulWidget {
@@ -1451,7 +1453,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint('StackTrace: $stackTrace');
 
       if (mounted) {
-        _showInitializationError(e.toString());
+        _showInitializationError(friendlyError(e));
 
         // ✅ Пытаемся загрузить сообщения даже при ошибке инициализации
         try {

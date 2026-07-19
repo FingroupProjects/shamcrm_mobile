@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // cash_desk_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -69,7 +70,7 @@ class CashDeskBloc extends Bloc<CashDeskEvent, CashDeskState> {
       }
       emit(state.copyWith(
         status: CashDeskStatus.initialError,
-        errorMessage: e.toString(),
+        errorMessage: friendlyError(e),
       ));
     }
   }
@@ -100,7 +101,7 @@ class CashDeskBloc extends Bloc<CashDeskEvent, CashDeskState> {
     } catch (e) {
       emit(state.copyWith(
         status: CashDeskStatus.loadMoreError,
-        errorMessage: e.toString(),
+        errorMessage: friendlyError(e),
       ));
     }
   }
@@ -124,7 +125,7 @@ class CashDeskBloc extends Bloc<CashDeskEvent, CashDeskState> {
     } catch (e) {
       emit(state.copyWith(
         status: CashDeskStatus.refreshError,
-        errorMessage: e.toString(),
+        errorMessage: friendlyError(e),
       ));
     }
   }
@@ -149,7 +150,7 @@ class CashDeskBloc extends Bloc<CashDeskEvent, CashDeskState> {
     } catch (e) {
       emit(state.copyWith(
         status: CashDeskStatus.searchError,
-        errorMessage: e.toString(),
+        errorMessage: friendlyError(e),
       ));
     }
   }

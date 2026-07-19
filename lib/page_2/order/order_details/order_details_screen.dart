@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
@@ -47,11 +48,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   int? _currentStatusId;
   bool _statusChangedFromDetails = false;
   bool _canEditOrder = false;
+  bool _isTojsokhtmontjTenant = false;
   int? currencyId; // Поле для хранения currency_id
   Map<String, dynamic>? _editResult; // Сохраняем результат редактирования
   Order? _currentOrderDetails; // Текущие детали заказа для AppBar
   List<FieldConfiguration> _fieldConfiguration = [];
   bool _isConfigurationLoaded = false;
+  final Map<int, double> _downloadProgress = {};
+  bool _isDownloading = false;
 
   @override
   void initState() {
@@ -59,6 +63,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     _initialStatusId = widget.order.orderStatus.id;
     _currentStatusId = widget.order.orderStatus.id;
     _checkPermissions();
+    _loadTenantFlags();
     _loadCurrencyId(); // Загружаем currencyId
     _loadFieldConfiguration();
     context.read<OrderBloc>().add(FetchOrderDetails(widget.orderId));
@@ -71,6 +76,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       'statusId': _initialStatusId,
       'newStatusId': _currentStatusId ?? _initialStatusId,
     };
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+    });
   }
 
   void _refreshOrderView() {
@@ -164,7 +177,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   // Метод форматирования цены
   String _formatPrice(double? price) {
     if (price == null || price <= 0) {
-      return '0 UZS'; // По умолчанию 0 UZS
+      return _isTojsokhtmontjTenant ? '0' : '0 UZS';
+    }
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0', 'ru_RU').format(price);
     }
     String symbol = 'UZS'; // По умолчанию сум
 
@@ -669,6 +685,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           children: [
             _buildDetailsList(),
             const SizedBox(height: 16),
+            if (state.orderDetails!.files.isNotEmpty) ...[
+              _buildFilesSection(state.orderDetails!.files),
+              const SizedBox(height: 16),
+            ],
             OrderHistoryWidget(orderId: widget.orderId),
             const SizedBox(height: 16),
             OrderGoodsScreen(
@@ -764,6 +784,91 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilesSection(List<OrderFile> files) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(AppLocalizations.of(context)!.translate('files_details')),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: files.length,
+            itemBuilder: (context, index) {
+              final file = files[index];
+              final fileExtension = file.name.split('.').last.toLowerCase();
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: () {
+                    if (!_isDownloading) {
+                      FileUtils.showFile(
+                        context: context,
+                        fileUrl: file.path,
+                        fileId: file.id,
+                        setState: setState,
+                        downloadProgress: _downloadProgress,
+                        isDownloading: _isDownloading,
+                        apiService: _apiService,
+                      );
+                    }
+                  },
+                  child: SizedBox(
+                    width: 100,
+                    child: Column(
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/icons/files/$fileExtension.png',
+                              width: 60,
+                              height: 60,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/icons/files/file.png',
+                                  width: 60,
+                                  height: 60,
+                                );
+                              },
+                            ),
+                            if (_downloadProgress.containsKey(file.id))
+                              CircularProgressIndicator(
+                                value: _downloadProgress[file.id],
+                                strokeWidth: 3,
+                                backgroundColor: Colors.grey.withOpacity(0.3),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xff1E2E52),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          file.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            color: Color(0xff1E2E52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

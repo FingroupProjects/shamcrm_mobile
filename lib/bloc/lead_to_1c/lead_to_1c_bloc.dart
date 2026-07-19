@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_event.dart';
 import 'package:crm_task_manager/bloc/lead_to_1c/lead_to_1c_state.dart';
@@ -27,7 +28,7 @@ Future<void> _onFetchLeadToC(FetchLeadToC event, Emitter<LeadToCState> emit) asy
       await apiService.postLeadToC(event.leadId);
       emit(LeadToCSuccess());
     } catch (e) {
-      emit(LeadToCError(e.toString()));
+      emit(LeadToCError(friendlyError(e)));
     }
   } else {
     emit(LeadToCError('Нет соединения с интернетом'));
@@ -42,7 +43,7 @@ Future<void> _onFetchLeadToC(FetchLeadToC event, Emitter<LeadToCState> emit) asy
   //       final leadData = await apiService.postLeadToC(event.leadId);
   //       emit(LeadToCLoaded(leadData));
   //     } catch (e) {
-  //       emit(LeadToCError(e.toString()));
+  //       emit(LeadToCError(friendlyError(e)));
   //     }
   //   } else {
   //     emit(LeadToCError('Нет соединения с интернетом'));

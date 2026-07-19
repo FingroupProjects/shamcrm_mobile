@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -48,7 +49,7 @@ class IncomingDocumentHistoryBloc
       final response = await apiService.getIncomingDocumentHistory(event.documentId);
       emit(IncomingDocumentHistoryLoaded(response.history ?? []));
     } catch (e) {
-      emit(IncomingDocumentHistoryError(e.toString()));
+      emit(IncomingDocumentHistoryError(friendlyError(e)));
     }
   }
 }

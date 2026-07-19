@@ -120,7 +120,10 @@ class RmkRepository {
     required String? paymentMethod,
     required double paidAmount,
     required double debtAmount,
+    int? cashRegisterId,
     int? leadId,
+    int? currencyId,
+    double? exchangeRate,
   }) async {
     if (items.isEmpty) {
       return const RmkSaleSubmitResult(sentToServer: false, savedLocal: false);
@@ -137,7 +140,10 @@ class RmkRepository {
       paymentMethod: paymentMethod,
       paidAmount: paidAmount,
       debtAmount: debtAmount,
+      cashRegisterId: cashRegisterId,
       leadId: leadId,
+      currencyId: currencyId,
+      exchangeRate: exchangeRate,
     );
 
     await _db.into(_db.rmkOutboxSales).insert(
@@ -285,33 +291,49 @@ class RmkRepository {
       }
     }
 
-    var page = 1;
-    while (true) {
+    final response = await _apiService.getVariants(
+      page: 1,
+      perPage: _syncPageSize,
+      search: normalizedBarcode,
+      filters: {'storage_id': storageId},
+    );
+    final variants = response.data;
+    if (variants.isEmpty) return null;
+
+    final exactMatch = variants
+        .where((variant) => variant.barcode == normalizedBarcode)
+        .firstOrNull;
+    final match = exactMatch ?? variants.firstOrNull;
+
+    if (match != null) {
+      await _saveGoods([match], page: 1);
+      return (_db.select(_db.rmkGoods)
+            ..where((tbl) => tbl.id.equals(match.id)))
+          .getSingleOrNull();
+    }
+
+    return null;
+  }
+
+  Future<bool> searchAndCacheGoods(String query, int storageId) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) return false;
+
+    try {
       final response = await _apiService.getVariants(
-        page: page,
+        page: 1,
         perPage: _syncPageSize,
-        search: normalizedBarcode,
+        search: normalizedQuery,
         filters: {'storage_id': storageId},
       );
       final variants = response.data;
-      if (variants.isEmpty) return null;
-
-      final exactMatch = variants
-          .where((variant) => variant.barcode == normalizedBarcode)
-          .firstOrNull;
-      final match = exactMatch ?? variants.firstOrNull;
-      if (match != null) {
-        await _saveGoods([match], page: page);
-        return (_db.select(_db.rmkGoods)
-              ..where((tbl) => tbl.id.equals(match.id)))
-            .getSingleOrNull();
+      if (variants.isNotEmpty) {
+        await _saveGoods(variants, page: 1);
+        return true;
       }
-
-      if (page >= response.pagination.totalPages ||
-          variants.length < _syncPageSize) {
-        return null;
-      }
-      page += 1;
+      return false;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -383,7 +405,10 @@ class RmkRepository {
     required String? paymentMethod,
     required double paidAmount,
     required double debtAmount,
+    int? cashRegisterId,
     int? leadId,
+    int? currencyId,
+    double? exchangeRate,
   }) async {
     final saleItems = await Future.wait(items.map((item) async {
       final total = item.customTotal ?? item.quantity * item.price;
@@ -418,6 +443,9 @@ class RmkRepository {
       'paid_amount': paidAmount,
       'debt_amount': debtAmount,
       'approve': true,
+      if (cashRegisterId != null) 'cash_register_id': cashRegisterId,
+      if (currencyId != null) 'currency_id': currencyId,
+      if (exchangeRate != null) 'exchange_rate': exchangeRate,
     };
     if (paymentMethod != null) {
       payload['payment_type'] = paymentMethod;
@@ -465,10 +493,48 @@ class RmkRepository {
       final goods = await _apiService.getGoodsById(goodId, isFromOrder: true);
       if (goods.isNotEmpty) {
         await _saveGoodsFromLookup(goods);
+        return;
       }
     } catch (error) {
       debugPrint('RMK good unit refresh failed for $goodId: $error');
     }
+
+    try {
+      final variant = await _findVariantById(goodId);
+      if (variant != null) {
+        await _saveGoods([variant], page: 1);
+      }
+    } catch (error) {
+      debugPrint('RMK variant fallback refresh failed for $goodId: $error');
+    }
+  }
+
+  Future<Variant?> _findVariantById(int variantId) async {
+    var page = 1;
+    const maxPagesToCheck = 10;
+
+    while (page <= maxPagesToCheck) {
+      final response = await _apiService.getVariants(
+        page: page,
+        perPage: _syncPageSize,
+      );
+      final variants = response.data;
+      if (variants.isEmpty) return null;
+
+      final match = variants.where((item) => item.id == variantId).firstOrNull;
+      if (match != null) {
+        return match;
+      }
+
+      if (page >= response.pagination.totalPages ||
+          variants.length < _syncPageSize) {
+        return null;
+      }
+
+      page += 1;
+    }
+
+    return null;
   }
 
   static int? _extractUnitId(Map<String, dynamic> payload) {
@@ -751,7 +817,7 @@ class RmkRepository {
             id: Value(variant.id),
             name: variant.fullName ?? good?.name ?? '',
             normalizedName: _normalize(
-              '${variant.fullName ?? good?.name ?? ''} ${good?.article ?? ''}',
+              '${variant.fullName ?? good?.name ?? ''} ${good?.article ?? ''} ${variant.barcode ?? ''}',
             ),
             categoryId: Value(categoryId == 0 ? null : categoryId),
             categoryName: Value(categoryName),

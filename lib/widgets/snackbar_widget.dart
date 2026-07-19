@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/material.dart';
 
 void showCustomSnackBar({
@@ -8,11 +9,12 @@ void showCustomSnackBar({
 }) {
   if (message.isEmpty) return;
   if (!context.mounted) return;
+  final safeMessage = friendlyError(message);
 
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        AppLocalizations.of(context)?.translate(message) ?? message,
+        AppLocalizations.of(context)?.translate(safeMessage) ?? safeMessage,
         style: TextStyle(
           fontFamily: 'Gilroy',
           fontSize: 16,

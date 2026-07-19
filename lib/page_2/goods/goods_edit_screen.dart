@@ -206,7 +206,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     }
   }
 
-  Future<void> _scanBarcode() async {
+  Future<void> _scanBarcodeLegacy() async {
     final scannedCode = await Navigator.push<String>(
       context,
       MaterialPageRoute(builder: (_) => const RmkBarcodeScannerScreen()),
@@ -221,7 +221,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     });
   }
 
-  Future<void> _scanRowBarcode(int rowIndex) async {
+  Future<void> _scanRowBarcodeLegacy(int rowIndex) async {
     final scannedCode = await Navigator.push<String>(
       context,
       MaterialPageRoute(builder: (_) => const RmkBarcodeScannerScreen()),
@@ -313,6 +313,23 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         'name': selected['name'],
         'is_required': false,
       });
+    });
+  }
+
+  Future<void> _scanBarcode() async {
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || scannedCode == null || scannedCode.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      barcodeController.text = scannedCode.trim();
     });
   }
 
@@ -408,6 +425,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         for (var attr in individualAttrs) {
           newRow[attr.name] = TextEditingController();
         }
+        newRow['barcode'] = TextEditingController(text: variant.barcode ?? '');
 
         if (variant.attributeValues != null &&
             variant.attributeValues!.isNotEmpty) {
@@ -424,8 +442,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
           }
         }
 
-        newRow['barcode'] =
-            TextEditingController(text: variant.barcode ?? '');
+        newRow['barcode'] = TextEditingController(text: variant.barcode ?? '');
 
         if (selectedCategory!.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
@@ -439,7 +456,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       }
     } else {
       addTableRow();
-    } 
+    }
   }
 
   Future<void> fetchSubCategories() async {
@@ -548,6 +565,25 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     );
   }
 
+  Future<void> _scanRowBarcode(int rowIndex) async {
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || scannedCode == null || scannedCode.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      final controller =
+          tableAttributes[rowIndex]['barcode'] as TextEditingController?;
+      controller?.text = scannedCode.trim();
+    });
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
@@ -640,6 +676,35 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         );
       },
     );
+  }
+
+  Widget _buildBarcodeField() {
+    return CustomTextField(
+      controller: barcodeController,
+      hintText: 'Введите или отсканируйте штрих-код',
+      label: 'Штрих код',
+      keyboardType: TextInputType.text,
+      suffixIcon: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: IconButton(
+          onPressed: _scanBarcode,
+          tooltip: 'Сканировать штрих-код',
+          icon: Image.asset(
+            'assets/icons/AppBar/scanner.png',
+            width: 22,
+            height: 22,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGeneralBarcodeField() {
+    if (selectedCategory != null &&
+        selectedCategory!.attributes.any((attr) => attr.isIndividual)) {
+      return const SizedBox.shrink();
+    }
+    return _buildBarcodeField();
   }
 
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
@@ -1188,6 +1253,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                         : null,
                   ),
                   const SizedBox(height: 8),
+                  _buildGeneralBarcodeField(),
+                  if (!(selectedCategory != null &&
+                      selectedCategory!.attributes
+                          .any((attr) => attr.isIndividual)))
+                    const SizedBox(height: 8),
                   CustomTextField(
                     controller: goodsDescriptionController,
                     hintText: AppLocalizations.of(context)!
@@ -1639,6 +1709,42 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                         size: 20),
                                                     onPressed: () =>
                                                         _scanRowBarcode(index),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            SizedBox(
+                                              width: 190,
+                                              child: TextField(
+                                                controller: row['barcode'] ??
+                                                    TextEditingController(),
+                                                decoration: InputDecoration(
+                                                  hintText: 'Штрих код',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontFamily: 'Gilroy',
+                                                    color: Color(0xff99A4BA),
+                                                  ),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                  ),
+                                                  contentPadding:
+                                                      EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 16),
+                                                  suffixIcon: IconButton(
+                                                    onPressed: () =>
+                                                        _scanRowBarcode(index),
+                                                    icon: const Icon(
+                                                      Icons.qr_code_scanner,
+                                                      size: 18,
+                                                      color: Color(0xff1E2E52),
+                                                    ),
                                                   ),
                                                 ),
                                               ),

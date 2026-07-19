@@ -128,7 +128,7 @@ class Variant {
       id: json['id'] as int? ?? 0,
       goodId: json['good_id'] as int? ?? 0,
       isActive: json['is_active'] == 1,
-      barcode: json['barcode']?.toString(),
+      barcode: (json['barcode'] ?? json['barcode'])?.toString(),
       fullName: json['full_name'] as String? ?? '',
       price: price,
       attributeValues: attributeValues,

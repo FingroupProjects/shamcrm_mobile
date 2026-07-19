@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/expense_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:equatable/equatable.dart';
@@ -50,9 +51,9 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(
-            ClientSaleApproveMassError(e.toString(), statusCode: e.statusCode));
+            ClientSaleApproveMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientSaleApproveMassError(e.toString()));
+        emit(ClientSaleApproveMassError(friendlyError(e)));
       }
       add(FetchClientSales(forceRefresh: true));
     }
@@ -74,10 +75,10 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       emit(ClientSaleDisapproveMassSuccess("mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(ClientSaleDisapproveMassError(e.toString(),
+        emit(ClientSaleDisapproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(ClientSaleDisapproveMassError(e.toString()));
+        emit(ClientSaleDisapproveMassError(friendlyError(e)));
       }
       add(FetchClientSales(forceRefresh: true));
     }
@@ -102,9 +103,9 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       emit(ClientSaleDeleteMassSuccess("mass_delete_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(ClientSaleDeleteMassError(e.toString(), statusCode: e.statusCode));
+        emit(ClientSaleDeleteMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientSaleDeleteMassError(e.toString()));
+        emit(ClientSaleDeleteMassError(friendlyError(e)));
       }
       add(FetchClientSales(forceRefresh: true));
     }
@@ -129,9 +130,9 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
         emit(
-            ClientSaleRestoreMassError(e.toString(), statusCode: e.statusCode));
+            ClientSaleRestoreMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientSaleRestoreMassError(e.toString()));
+        emit(ClientSaleRestoreMassError(friendlyError(e)));
       }
       add(FetchClientSales(forceRefresh: true));
     }
@@ -273,9 +274,9 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       ));
     } catch (e) {
       if (e is ApiException) {
-        emit(ClientSaleError(e.toString(), statusCode: e.statusCode));
+        emit(ClientSaleError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientSaleError(e.toString()));
+        emit(ClientSaleError(friendlyError(e)));
       }
     }
   }
@@ -302,9 +303,9 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
           : 'Документ успешно создан'));
     } catch (e) {
       if (e is ApiException) {
-        emit(ClientSaleCreateError(e.toString(), statusCode: e.statusCode));
+        emit(ClientSaleCreateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientSaleCreateError(e.toString()));
+        emit(ClientSaleCreateError(friendlyError(e)));
       }
     }
   }
@@ -373,9 +374,9 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       emit(ClientSaleUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       if (e is ApiException) {
-        emit(ClientSaleUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(ClientSaleUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientSaleUpdateError(e.toString()));
+        emit(ClientSaleUpdateError(friendlyError(e)));
       }
     }
   }

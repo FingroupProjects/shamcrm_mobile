@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // Bloc
 import 'dart:io';
 
@@ -34,10 +35,10 @@ class UserBlocManager extends Bloc<UserEvent, UserState> {
       if (isInternetAvailable) {
         final data = await apiService.getUserStatsManager();
         if (cachedData == null || !_areListsEqual(data.finishedTasksPercent, cachedData)) {
-          
+
           // Сохраняем новые данные в кэше
           await UserTaskCompletionCacheHandler.saveUserTaskCompletionData(data.finishedTasksPercent);
-          
+
           // Обновляем UI с новыми данными
           emit(UserLoaded(data: data.finishedTasksPercent));
         } else {
@@ -48,7 +49,7 @@ class UserBlocManager extends Bloc<UserEvent, UserState> {
         }
       }
     } catch (e) {
-      emit(UserError(message: e.toString()));
+      emit(UserError(message: friendlyError(e)));
     }
   }
 

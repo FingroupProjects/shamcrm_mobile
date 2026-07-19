@@ -241,6 +241,21 @@ class _WorkdayCardState extends State<WorkdayCard> {
     return 'Нажмите «Начать», когда приступаете к работе.';
   }
 
+  IconData _workdayIcon() {
+    final record = _status?.result;
+
+    if (record?.isActive == true) {
+      return Icons.work_history_outlined;
+    }
+
+    if (record?.isCompleted == true) {
+      return Icons.task_alt_outlined;
+    }
+
+    // До ответа сервера и при отсутствии записи рабочий день ещё не начат.
+    return Icons.work_outline;
+  }
+
   String _formatTime(DateTime value) {
     final local = value.toLocal();
     final hour = local.hour.toString().padLeft(2, '0');

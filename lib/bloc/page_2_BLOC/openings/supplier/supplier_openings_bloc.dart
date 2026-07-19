@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
@@ -31,7 +32,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
       
       emit(SupplierOpeningsLoaded(suppliers: suppliers, search: event.search));
     } catch (e) {
-      emit(SupplierOpeningsError(message: e.toString()));
+      emit(SupplierOpeningsError(message: friendlyError(e)));
     }
   }
 
@@ -70,7 +71,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(SupplierOpeningDeleteError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }
@@ -102,7 +103,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     } catch (e) {
       // Эмитим ошибку создания
       emit(SupplierOpeningCreateError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }
@@ -134,7 +135,7 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(SupplierOpeningUpdateError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }

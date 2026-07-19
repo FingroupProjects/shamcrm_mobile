@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 
 /// Утилита для фокуса на первом товаре с ошибкой валидации в документах склада
 class WarehouseValidationHelper {
+  static double? parseFlexibleDecimal(dynamic value) {
+    if (value == null) return null;
+
+    final normalized = value.toString().trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return null;
+
+    return double.tryParse(normalized);
+  }
+
+  static bool isPositiveQuantity(dynamic value) {
+    final parsed = parseFlexibleDecimal(value);
+    return parsed != null && parsed > 0;
+  }
+
   /// Фокусируется на первом товаре с ошибкой валидации
   ///
   /// Находит первый товар с ошибкой (quantity или price), разворачивает его карточку,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
@@ -17,7 +19,11 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart'
+    show DeleteFileDialog;
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/file_helper.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
@@ -42,6 +48,8 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
+import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -104,6 +112,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   bool _isTotalEdited = false;
   bool _isLoadingInternetStores = false;
   List<OrderInternetStore> _internetStores = [];
+  final List<FileHelper> files = [];
 
   // Кастомные поля
   List<CustomField> customFields = [];
@@ -111,6 +120,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   // Конфигурация полей с сервера
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
+  bool _isTojsokhtmontjTenant = false;
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -189,6 +199,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       _loadStatuses();
       _loadCurrencyId(); // Загружаем currencyId
       _loadFieldConfiguration();
+      _loadTenantFlags();
       _loadInternetStores();
       _branchBloc.add(FetchBranches());
 
@@ -196,6 +207,14 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       if (phoneToSet.isNotEmpty && selectedDialCode != null) {
         debugPrint('OrderAddScreen: Auto-filled phone: $selectedDialCode');
       }
+    });
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
     });
   }
 
@@ -440,6 +459,201 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     );
   }
 
+  bool _isInnFieldName(String fieldName) {
+    final normalized = fieldName.trim().toLowerCase();
+    return normalized == 'инн' || normalized == 'inn';
+  }
+
+  String _normalizeTojsokhtmontjFieldName(String value) {
+    return value.trim().toLowerCase().replaceAll('ё', 'е');
+  }
+
+  bool _isTojsokhtmontjDealTypeField(String fieldName) {
+    final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
+    return normalized == 'тип сделки';
+  }
+
+  bool _isTojsokhtmontjInstallmentField(String fieldName) {
+    final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
+    return <String>{
+      'первоначальный взнос',
+      'срок рассрочки',
+      'сумма рассрочки',
+      'ежемесячная оплата',
+    }.contains(normalized);
+  }
+
+  bool _isTojsokhtmontjPricePerSquareField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'цена за квадрат';
+  }
+
+  bool _isTojsokhtmontjAreaField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'общая площадь кв';
+  }
+
+  bool _isTojsokhtmontjTotalField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'итого';
+  }
+
+  bool _isTojsokhtmontjInitialPaymentField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) ==
+        'первоначальный взнос';
+  }
+
+  bool _isTojsokhtmontjInstallmentTermField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'срок рассрочки';
+  }
+
+  bool _isTojsokhtmontjInstallmentAmountField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'сумма рассрочки';
+  }
+
+  bool _isTojsokhtmontjMonthlyPaymentField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'ежемесячная оплата';
+  }
+
+  bool _isTojsokhtmontjEditableCalculationSource(String fieldName) {
+    return _isTojsokhtmontjPricePerSquareField(fieldName) ||
+        _isTojsokhtmontjAreaField(fieldName) ||
+        _isTojsokhtmontjInitialPaymentField(fieldName) ||
+        _isTojsokhtmontjInstallmentTermField(fieldName);
+  }
+
+  bool _isTojsokhtmontjReadOnlyCalculatedField(String fieldName) {
+    return _isTojsokhtmontjTotalField(fieldName) ||
+        _isTojsokhtmontjInstallmentAmountField(fieldName) ||
+        _isTojsokhtmontjMonthlyPaymentField(fieldName);
+  }
+
+  bool _hasTojsokhtmontjConfiguredTotalField() {
+    return fieldConfigurations.any(
+      (config) =>
+          (config.isActive || _isAlwaysVisible(config)) &&
+          _isTojsokhtmontjTotalField(config.fieldName),
+    );
+  }
+
+  CustomField _getOrCreateTojsokhtmontjField(String fieldName) {
+    final existingField = customFields.firstWhere(
+      (field) =>
+          _normalizeTojsokhtmontjFieldName(field.fieldName) ==
+          _normalizeTojsokhtmontjFieldName(fieldName),
+      orElse: () {
+        final newField = CustomField(
+          fieldName: fieldName,
+          uniqueId: Uuid().v4(),
+          controller: TextEditingController(),
+          type: 'number',
+          isCustomField: true,
+        );
+        customFields.add(newField);
+        return newField;
+      },
+    );
+
+    return existingField;
+  }
+
+  double _parseTojsokhtmontjNumber(String value) {
+    final normalized = value
+        .replaceAll(RegExp(r'[\s\u00A0]'), '')
+        .replaceAll(',', '.')
+        .replaceAll(RegExp(r'[^0-9.\-]'), '');
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  String _formatTojsokhtmontjNumber(double value) {
+    if (!value.isFinite) return '';
+    final normalized = value.abs() < 0.005 ? 0 : value;
+    if ((normalized - normalized.roundToDouble()).abs() < 0.005) {
+      return normalized.round().toString();
+    }
+    return normalized.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
+  void _setTojsokhtmontjCalculatedValue(String fieldName, double value) {
+    final field = _getOrCreateTojsokhtmontjField(fieldName);
+    final nextValue = _formatTojsokhtmontjNumber(value);
+    if (field.controller.text != nextValue) {
+      field.controller.text = nextValue;
+    }
+  }
+
+  void _recalculateTojsokhtmontjApartmentFields() {
+    if (!_isTojsokhtmontjTenant) return;
+
+    final pricePerSquare = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Цена за квадрат').controller.text,
+    );
+    final area = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Общая площадь кв').controller.text,
+    );
+    final initialPayment = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Первоначальный взнос').controller.text,
+    );
+    final installmentTerm = _parseTojsokhtmontjNumber(
+      _getOrCreateTojsokhtmontjField('Срок рассрочки').controller.text,
+    );
+
+    final total = pricePerSquare * area;
+    final installmentAmount =
+        (total - initialPayment).clamp(0, double.infinity).toDouble();
+    final monthlyPayment =
+        installmentTerm > 0 ? installmentAmount / installmentTerm : 0.0;
+
+    // Для tojsokhtmontj выбранный товар представляет площадь квартиры:
+    // цена товара = цена за м², количество = общая площадь. Поэтому его
+    // «Сумма» и общий итог автоматически равны pricePerSquare * area.
+    if (_items.isNotEmpty) {
+      final selectedItem = _items.first;
+      selectedItem['price'] = pricePerSquare;
+      selectedItem['quantity'] = area;
+      _totalController.text = _formatTojsokhtmontjNumber(total);
+      _isTotalEdited = false;
+    }
+
+    _setTojsokhtmontjCalculatedValue('Итого', total);
+    _setTojsokhtmontjCalculatedValue('Сумма рассрочки', installmentAmount);
+    _setTojsokhtmontjCalculatedValue('Ежемесячная оплата', monthlyPayment);
+  }
+
+  Widget _buildTojsokhtmontjTotalField() {
+    _recalculateTojsokhtmontjApartmentFields();
+    final totalField = _getOrCreateTojsokhtmontjField('Итого');
+    return CustomFieldWidget(
+      fieldName: 'Итого',
+      valueController: totalField.controller,
+      type: 'number',
+      isDirectory: false,
+      readOnlyOverride: true,
+    );
+  }
+
+  bool _shouldHideTojsokhtmontjInstallmentFields() {
+    if (!_isTojsokhtmontjTenant) return false;
+
+    for (final field in customFields) {
+      if (_isTojsokhtmontjDealTypeField(field.fieldName)) {
+        return _normalizeTojsokhtmontjFieldName(field.controller.text) ==
+            'наличными';
+      }
+    }
+    return false;
+  }
+
+  String? _validateTojsokhtmontjInn(String? value) {
+    if (!_isTojsokhtmontjTenant) return null;
+
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return AppLocalizations.of(context)!.translate('field_required');
+    }
+    if (!RegExp(r'^\d{9}$').hasMatch(trimmed)) {
+      return 'ИНН должен содержать ровно 9 цифр';
+    }
+    return null;
+  }
+
   bool _isItemsField(String fieldName) {
     return <String>{'goods', 'order_goods', 'items', 'sum'}.contains(fieldName);
   }
@@ -621,6 +835,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       case 'items':
       case 'sum':
         return _buildItemsSection();
+      case 'files':
+        return _buildFileSelection();
       case 'delivery_type':
       case 'delivery':
       case 'deliveryType':
@@ -726,7 +942,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               overflow: TextOverflow.ellipsis,
             );
           },
-          hintBuilder: (context, hint, enabled) =>  Text(
+          hintBuilder: (context, hint, enabled) => Text(
             'Выберите интернет магазин',
             style: TextStyle(
               fontSize: 14,
@@ -751,13 +967,64 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget? _buildFieldWidget(FieldConfiguration config) {
+    if (config.fieldName == 'integration_id') {
+      return null;
+    }
+
+    if (_shouldHideTojsokhtmontjInstallmentFields() &&
+        _isTojsokhtmontjInstallmentField(config.fieldName)) {
+      return null;
+    }
+
     if (config.isCustomField) {
       final customField = _getOrCreateCustomField(config);
+      final isTojsokhtmontjInnField =
+          _isTojsokhtmontjTenant && _isInnFieldName(config.fieldName);
+      final isTojsokhtmontjEditableCalculationSource = _isTojsokhtmontjTenant &&
+          _isTojsokhtmontjEditableCalculationSource(config.fieldName);
+      final isTojsokhtmontjReadOnlyCalculatedField = _isTojsokhtmontjTenant &&
+          _isTojsokhtmontjReadOnlyCalculatedField(config.fieldName);
+      if (isTojsokhtmontjReadOnlyCalculatedField) {
+        _recalculateTojsokhtmontjApartmentFields();
+      }
       return CustomFieldWidget(
         fieldName: config.fieldName,
         valueController: customField.controller,
-        type: config.type,
+        type: (isTojsokhtmontjInnField ||
+                isTojsokhtmontjEditableCalculationSource ||
+                isTojsokhtmontjReadOnlyCalculatedField)
+            ? 'number'
+            : config.type,
         isDirectory: false,
+        keyboardTypeOverride: (isTojsokhtmontjInnField ||
+                isTojsokhtmontjEditableCalculationSource)
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : null,
+        inputFormattersOverride: isTojsokhtmontjInnField
+            ? [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(9),
+              ]
+            : isTojsokhtmontjEditableCalculationSource
+                ? [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'[0-9,.]'),
+                    ),
+                  ]
+                : null,
+        maxLength: isTojsokhtmontjInnField ? 9 : null,
+        validator: isTojsokhtmontjInnField ? _validateTojsokhtmontjInn : null,
+        showBorder: isTojsokhtmontjInnField,
+        autovalidateMode:
+            isTojsokhtmontjInnField ? AutovalidateMode.onUserInteraction : null,
+        readOnlyOverride: isTojsokhtmontjReadOnlyCalculatedField,
+        onChanged: isTojsokhtmontjEditableCalculationSource
+            ? (_) {
+                setState(() {
+                  _recalculateTojsokhtmontjApartmentFields();
+                });
+              }
+            : null,
       );
     }
 
@@ -830,6 +1097,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       final fieldWidget = _buildFieldWidget(config);
       if (fieldWidget != null) {
         widgets.add(fieldWidget);
+        if (_isTojsokhtmontjTenant &&
+            !_hasTojsokhtmontjConfiguredTotalField() &&
+            _isTojsokhtmontjAreaField(config.fieldName)) {
+          widgets.add(_buildTojsokhtmontjTotalField());
+        }
       }
     }
     return _withVerticalSpacing(widgets, spacing: 8);
@@ -1219,7 +1491,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       Curves.easeInOut.transform(animation.value);
                   final double scale = 1.0 + (animValue * 0.05);
                   final double elevation = animValue * 12.0;
-final colors = context.appColors;
+                  final colors = context.appColors;
                   return Transform.scale(
                     scale: scale,
                     child: Material(
@@ -1662,6 +1934,9 @@ final colors = context.appColors;
   // Метод форматирования цены
   String _formatPrice(double? price) {
     if (price == null) price = 0;
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0', 'ru_RU').format(price);
+    }
     String symbol = 'UZS'; // По умолчанию сум
 
     if (kDebugMode) {
@@ -1735,9 +2010,90 @@ final colors = context.appColors;
       width: 48,
       height: 48,
       color: colors.surfaceAccent,
-      child:
-       Center(child: Icon(Icons.image, color: colors.textSecondary, size: 24)),
+      child: Center(
+          child: Icon(Icons.image, color: colors.textSecondary, size: 24)),
     );
+  }
+
+  Future<void> _scanBarcodeLegacy() async {
+    final barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RmkBarcodeScannerScreen(),
+      ),
+    );
+
+    if (!mounted || barcode == null || barcode.isEmpty) return;
+
+    final apiService = ApiService();
+    try {
+      final variantResponse =
+          await apiService.getVariants(search: barcode, perPage: 1);
+      final variants = variantResponse.data;
+
+      if (variants.isEmpty) {
+        showCustomSnackBar(
+          context: context,
+          message: 'Товар по штрихкоду не найден',
+          isSuccess: false,
+        );
+        return;
+      }
+
+      final variant = variants.first;
+      int variantId = variant.id;
+      final price = (variant.price as num?)?.toDouble() ?? 0.0;
+
+      final existingIndex =
+          _items.indexWhere((item) => item['id'] == variantId);
+
+      if (existingIndex != -1) {
+        setState(() {
+          final currentQty =
+              (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0)
+                  .toInt();
+          _items[existingIndex]['quantity'] = currentQty + 1;
+
+          if (_isTotalEdited) {
+            final currentTotal = _getCurrentTotal();
+            _totalController.text = (currentTotal + price).toStringAsFixed(0);
+          }
+        });
+        showCustomSnackBar(
+          context: context,
+          message:
+              'Количество увеличено: ${variant.fullName ?? variant.good?.name ?? ''}',
+          isSuccess: true,
+        );
+      } else {
+        setState(() {
+          _items.add({
+            'id': variant.id,
+            'name': variant.fullName ?? variant.good?.name ?? '',
+            'price': price,
+            'quantity': 1,
+            'imagePath': variant.good?.mainImageUrl,
+          });
+
+          if (_isTotalEdited) {
+            final currentTotal = _getCurrentTotal();
+            _totalController.text = (currentTotal + price).toStringAsFixed(0);
+          }
+        });
+        showCustomSnackBar(
+          context: context,
+          message:
+              'Товар добавлен: ${variant.fullName ?? variant.good?.name ?? ''}',
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Ошибка поиска товара',
+        isSuccess: false,
+      );
+    }
   }
 
   void _navigateToAddProduct() async {
@@ -1812,11 +2168,23 @@ final colors = context.appColors;
         },
       );
       setState(() {
-        _items.addAll(addedItems);
+        if (_isTojsokhtmontjTenant) {
+          for (final controller in _quantityControllers.values) {
+            controller.dispose();
+          }
+          _quantityControllers.clear();
+          _items = addedItems.take(1).toList();
+        } else {
+          _items.addAll(addedItems);
+        }
         if (_isTotalEdited && addedTotal != 0) {
           final currentTotal = _getCurrentTotal();
           final adjustedTotal = currentTotal + addedTotal;
           _totalController.text = adjustedTotal.toStringAsFixed(0);
+        }
+
+        if (_isTojsokhtmontjTenant) {
+          _recalculateTojsokhtmontjApartmentFields();
         }
       });
     }
@@ -2026,7 +2394,6 @@ final colors = context.appColors;
 
   @override
   Widget build(BuildContext context) {
-    
     final colors = context.appColors;
     return MultiBlocProvider(
       providers: [
@@ -2064,7 +2431,7 @@ final colors = context.appColors;
           },
           builder: (context, configState) {
             if (configState is FieldConfigurationLoading) {
-              return  Center(
+              return Center(
                 child: CircularProgressIndicator(
                   color: colors.textPrimary,
                 ),
@@ -2075,7 +2442,7 @@ final colors = context.appColors;
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children:  [
+                  children: [
                     CircularProgressIndicator(
                       color: colors.textPrimary,
                     ),
@@ -2206,6 +2573,9 @@ final colors = context.appColors;
                             children: [
                               const SizedBox(height: 8),
                               ..._buildConfiguredFieldWidgets(),
+                              if (!fieldConfigurations
+                                  .any((field) => field.fieldName == 'files'))
+                                _buildFileSelection(),
                               const SizedBox(height: 16),
                             ],
                           ),
@@ -2229,8 +2599,7 @@ final colors = context.appColors;
       forceMaterialTransparency: true,
       elevation: 0,
       leading: IconButton(
-        icon:  Icon(Icons.arrow_back_ios,
-            color: colors.textPrimary, size: 24),
+        icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 24),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
@@ -2253,44 +2622,45 @@ final colors = context.appColors;
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () async {
-            if (isSettingsMode) {
-              if (_hasFieldChanges()) {
-                final shouldExit = await _showExitSettingsDialog();
-                if (!shouldExit) return;
-              }
+                if (isSettingsMode) {
+                  if (_hasFieldChanges()) {
+                    final shouldExit = await _showExitSettingsDialog();
+                    if (!shouldExit) return;
+                  }
 
-              setState(() {
-                if (originalFieldConfigurations != null) {
-                  fieldConfigurations = [...originalFieldConfigurations!];
+                  setState(() {
+                    if (originalFieldConfigurations != null) {
+                      fieldConfigurations = [...originalFieldConfigurations!];
+                    }
+                    originalFieldConfigurations = null;
+                    isSettingsMode = false;
+                  });
+                } else {
+                  setState(() {
+                    originalFieldConfigurations =
+                        fieldConfigurations.map((config) {
+                      return FieldConfiguration(
+                        id: config.id,
+                        tableName: config.tableName,
+                        fieldName: config.fieldName,
+                        position: config.position,
+                        required: false,
+                        isActive: config.isActive,
+                        isCustomField: config.isCustomField,
+                        createdAt: config.createdAt,
+                        updatedAt: config.updatedAt,
+                        customFieldId: config.customFieldId,
+                        directoryId: config.directoryId,
+                        type: config.type,
+                        isDirectory: config.isDirectory,
+                        showOnTable: config.showOnTable,
+                        showOnSite: config.showOnSite,
+                        originalRequired: config.originalRequired,
+                      );
+                    }).toList();
+                    isSettingsMode = true;
+                  });
                 }
-                originalFieldConfigurations = null;
-                isSettingsMode = false;
-              });
-            } else {
-              setState(() {
-                originalFieldConfigurations = fieldConfigurations.map((config) {
-                  return FieldConfiguration(
-                    id: config.id,
-                    tableName: config.tableName,
-                    fieldName: config.fieldName,
-                    position: config.position,
-                    required: false,
-                    isActive: config.isActive,
-                    isCustomField: config.isCustomField,
-                    createdAt: config.createdAt,
-                    updatedAt: config.updatedAt,
-                    customFieldId: config.customFieldId,
-                    directoryId: config.directoryId,
-                    type: config.type,
-                    isDirectory: config.isDirectory,
-                    showOnTable: config.showOnTable,
-                    showOnSite: config.showOnSite,
-                    originalRequired: config.originalRequired,
-                  );
-                }).toList();
-                isSettingsMode = true;
-              });
-            }
               },
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -2492,9 +2862,11 @@ final colors = context.appColors;
     if (!_isTotalEdited) {
       _totalController.text = autoTotal.toStringAsFixed(0);
     }
-    final String currencySymbol = _formatPrice(autoTotal).split(' ').isNotEmpty
-        ? _formatPrice(autoTotal).split(' ').last
-        : '';
+    final String currencySymbol = _isTojsokhtmontjTenant
+        ? ''
+        : _formatPrice(autoTotal).split(' ').isNotEmpty
+            ? _formatPrice(autoTotal).split(' ').last
+            : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2523,8 +2895,7 @@ final colors = context.appColors;
                 ),
                 _buildItemsToolbarAction(
                   icon: Icons.add,
-                  label:
-                      AppLocalizations.of(context)!.translate('add_product'),
+                  label: AppLocalizations.of(context)!.translate('add_product'),
                   onTap: _navigateToAddProduct,
                 ),
               ],
@@ -2664,7 +3035,7 @@ final colors = context.appColors;
                           _buildPlaceholderImage(),
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return  Center(
+                        return Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -2863,10 +3234,17 @@ final colors = context.appColors;
                 final List<Map<String, dynamic>> customFieldMap = [];
                 final List<Map<String, int>> directoryValues = [];
 
+                _recalculateTojsokhtmontjApartmentFields();
+
                 for (var field in customFields) {
                   final fieldName = field.fieldName.trim();
                   final fieldValue = field.controller.text.trim();
                   String? fieldType = field.type;
+
+                  if (_shouldHideTojsokhtmontjInstallmentFields() &&
+                      _isTojsokhtmontjInstallmentField(fieldName)) {
+                    continue;
+                  }
 
                   if (fieldType == 'text') {
                     fieldType = 'string';
@@ -2926,6 +3304,7 @@ final colors = context.appColors;
                   sum: currentTotal,
                   customFields: customFieldMap,
                   directoryValues: directoryValues,
+                  files: files.isNotEmpty ? files : null,
                 ));
               },
               style: ElevatedButton.styleFrom(
@@ -2935,16 +3314,162 @@ final colors = context.appColors;
                   padding: const EdgeInsets.symmetric(vertical: 16)),
               child: Text(
                 AppLocalizations.of(context)!.translate('create'),
-              style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: colors.buttonPrimaryFg),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: colors.buttonPrimaryFg),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _pickFile() async {
+    final totalSize = files.fold<double>(0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        final parsed = num.tryParse(file.size.toString());
+        return sum + (parsed != null ? parsed / 1024 : 0);
+      }
+      return sum + File(file.path).lengthSync() / (1024 * 1024);
+    });
+
+    final pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50,
+      currentTotalSizeMB: totalSize,
+      fileLabel: AppLocalizations.of(context)!.translate('file'),
+      galleryLabel: AppLocalizations.of(context)!.translate('gallery'),
+      cameraLabel: AppLocalizations.of(context)!.translate('camera'),
+      cancelLabel: AppLocalizations.of(context)!.translate('cancel'),
+      fileSizeTooLargeMessage:
+          AppLocalizations.of(context)!.translate('file_size_too_large'),
+      errorPickingFileMessage:
+          AppLocalizations.of(context)!.translate('error_picking_file'),
+    );
+
+    if (pickedFiles == null || pickedFiles.isEmpty || !mounted) return;
+    setState(() {
+      for (final file in pickedFiles) {
+        files.add(FileHelper(
+          id: 0,
+          name: file.name,
+          path: file.path,
+          size: file.sizeKB,
+        ));
+      }
+    });
+  }
+
+  void showDeleteFileDialog({required int fileId, required int index}) {
+    showDialog<bool>(
+      context: context,
+      builder: (context) => DeleteFileDialog(
+        isDeleting: false,
+        fileId: fileId,
+        onCancel: () => Navigator.of(context).pop(false),
+        onDelete: (_) async {
+          if (!mounted || index >= files.length) return;
+          setState(() => files.removeAt(index));
+          Navigator.of(context).pop(true);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFileSelection() {
+    final colors = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          AppLocalizations.of(context)!.translate('file'),
+          style: context.appTextStyles.labelLg.copyWith(
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: files.length + 1,
+            itemBuilder: (context, index) {
+              if (index == files.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: InkWell(
+                    onTap: _pickFile,
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icons/files/add.png',
+                            width: 60,
+                            height: 60,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!.translate('add_file'),
+                            textAlign: TextAlign.center,
+                            style: context.appTextStyles.caption.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final fileName = files[index].name;
+              final extension = fileName.split('.').last.toLowerCase();
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          buildFileIcon(files, fileName, extension),
+                          const SizedBox(height: 8),
+                          Text(
+                            fileName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: context.appTextStyles.caption.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: IconButton(
+                        onPressed: () =>
+                            showDeleteFileDialog(fileId: 0, index: index),
+                        icon: Icon(Icons.close,
+                            size: 16, color: colors.iconPrimary),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'template_event.dart';
 import 'template_state.dart';
@@ -20,12 +21,7 @@ class TemplateBloc extends Bloc<TemplateEvent, TemplateState> {
       );
       emit(TemplateLoaded(templates: response.templates));
     } catch (e) {
-      final errorText = e.toString().toLowerCase();
-      if (errorText.contains('timeout')) {
-        emit(TemplateLoaded(templates: const []));
-        return;
-      }
-      emit(TemplateError(e.toString()));
+      emit(TemplateError(friendlyError(e)));
     }
   }
 

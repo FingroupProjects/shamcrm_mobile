@@ -13,7 +13,7 @@ class CustomTextField extends StatefulWidget {
   final Widget? suffixIcon;
   final TextInputType keyboardType;
   final List<TextInputFormatter>? inputFormatters;
-  final int maxLines;
+  final int? maxLines;
   final String? Function(String?)? validator;
   final Function(String)? onChanged;
   final String? errorText;

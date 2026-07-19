@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/lead_chart/chart_state.dart';
@@ -58,7 +59,7 @@ class DashboardChartBloc extends Bloc<DashboardChartEvent, DashboardChartState> 
         }
       }
     } catch (e) {
-      emit(DashboardChartError(message: e.toString()));
+      emit(DashboardChartError(message: friendlyError(e)));
     }
   }
 
@@ -67,8 +68,8 @@ class DashboardChartBloc extends Bloc<DashboardChartEvent, DashboardChartState> 
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
       // Сравниваем label, data (списки) и color
-      if (a[i].label != b[i].label || 
-          !_areDataListsEqual(a[i].data, b[i].data) || 
+      if (a[i].label != b[i].label ||
+          !_areDataListsEqual(a[i].data, b[i].data) ||
           a[i].color != b[i].color) {
         return false;
       }

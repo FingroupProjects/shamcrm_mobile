@@ -400,6 +400,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
         final response = await apiService.createGoods(
           isService: event.isService,
           name: event.name,
+          barcode: event.barcode,
           parentId: event.parentId,
           description: event.description,
           quantity: event.quantity,
@@ -456,6 +457,7 @@ class GoodsBloc extends Bloc<GoodsEvent, GoodsState> {
           isService: event.isService,
           goodId: event.goodId,
           name: event.name,
+          barcode: event.barcode,
           parentId: event.parentId,
           description: event.description,
           quantity: event.quantity,

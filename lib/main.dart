@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
@@ -140,12 +140,14 @@ import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/update_dialog.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
 import 'package:crm_task_manager/widgets/native_internet_monitor_simple.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
 import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -188,7 +190,8 @@ const Duration _telegramRepeatEscalationWindow = Duration(minutes: 10);
 const int _telegramRepeatEscalationThreshold = 3;
 
 final Map<String, DateTime> _recentCrashReports = <String, DateTime>{};
-final Map<String, _IssueRepeatStats> _recentIssueStats = <String, _IssueRepeatStats>{};
+final Map<String, _IssueRepeatStats> _recentIssueStats =
+    <String, _IssueRepeatStats>{};
 
 class _CrashSeverity {
   final String emoji;
@@ -568,7 +571,8 @@ Future<void> _reportIssue({
   );
 
   _recentIssueStats.removeWhere(
-    (_, stats) => now.difference(stats.lastSeen) > _telegramRepeatEscalationWindow,
+    (_, stats) =>
+        now.difference(stats.lastSeen) > _telegramRepeatEscalationWindow,
   );
 
   final lastReportedAt = _recentCrashReports[fingerprint];
@@ -610,12 +614,14 @@ Future<void> _reportIssue({
       body['message_thread_id'] = formattedIssue.threadId.toString();
     }
 
-    await http.post(
-      Uri.parse(
-        'https://api.telegram.org/bot$_telegramCrashBotToken/sendMessage',
-      ),
-      body: body,
-    ).timeout(const Duration(seconds: 5));
+    await http
+        .post(
+          Uri.parse(
+            'https://api.telegram.org/bot$_telegramCrashBotToken/sendMessage',
+          ),
+          body: body,
+        )
+        .timeout(const Duration(seconds: 5));
   } catch (e, stackTrace) {
     debugPrint('main: Telegram crash notify error: $e');
     debugPrint('main: Telegram crash notify stackTrace: $stackTrace');
@@ -1173,7 +1179,8 @@ Future<SessionValidationResult> _validateApplicationSession(
 
     return SessionValidationResult(isValid: true);
   } catch (e) {
-    return SessionValidationResult(isValid: false, errorMessage: e.toString());
+    return SessionValidationResult(
+        isValid: false, errorMessage: friendlyError(e));
   }
 }
 
@@ -1373,7 +1380,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllSourceBloc()),
         BlocProvider(create: (context) => GetAllLeadChannelBloc()),
         BlocProvider(create: (context) => GetAllAdvertisingCampaignBloc()),
-        BlocProvider(   create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
+        BlocProvider(
+            create: (context) => GetAllLeadBloc(apiService: widget.apiService)),
         BlocProvider(create: (context) => GetAllCashRegisterBloc()),
         BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
         BlocProvider(create: (context) => GetAllSupplierBloc()),
@@ -1386,7 +1394,8 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => GetAllProjectBloc()),
         BlocProvider(create: (context) => UserTaskBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocTask(widget.apiService)),
-        BlocProvider(create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => TaskOverdueHistoryBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryLeadsBloc(widget.apiService)),
         BlocProvider(create: (context) => HistoryBlocMyTask(widget.apiService)),
         BlocProvider(create: (context) => RoleBloc(widget.apiService)),

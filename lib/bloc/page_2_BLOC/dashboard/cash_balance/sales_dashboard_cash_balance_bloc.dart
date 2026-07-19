@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -27,7 +28,7 @@ class SalesDashboardCashBalanceBloc extends Bloc<SalesDashboardCashBalanceEvent,
         emit(SalesDashboardCashBalanceLoaded(data: response));
       } catch (e) {
         emit(SalesDashboardCashBalanceError(
-          message: e.toString().replaceAll('Exception: ', ''),
+          message: friendlyError(e).replaceAll('Exception: ', ''),
         ));
       }
     });

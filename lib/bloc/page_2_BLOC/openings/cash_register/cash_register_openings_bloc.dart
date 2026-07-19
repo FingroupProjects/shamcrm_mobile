@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -56,7 +57,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
         debugPrint('🔴 CashRegisterOpeningsBloc: ОШИБКА при загрузке: $e');
         debugPrint('🔴 CashRegisterOpeningsBloc: STACK TRACE: $stackTrace');
       }
-      emit(CashRegisterOpeningsPaginationError(message: e.toString()));
+      emit(CashRegisterOpeningsPaginationError(message: friendlyError(e)));
     }
   }
 
@@ -95,7 +96,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(CashRegisterOpeningsOperationError(
-        message: e.toString(),
+        message: friendlyError(e),
         previousState: state,
       ));
     }
@@ -128,7 +129,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     } catch (e) {
       // Эмитим ошибку создания
       emit(CashRegisterOpeningCreateError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }
@@ -160,7 +161,7 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(CashRegisterOpeningUpdateError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }

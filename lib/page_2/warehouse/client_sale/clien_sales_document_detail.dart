@@ -1,4 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/printing/accounting_print_service.dart';
+import 'package:crm_task_manager/core/printing/print_template_settings.dart';
+import 'package:crm_task_manager/core/printing/print_template_settings_sheet.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/core/printing/accounting_print_service.dart';
 import 'package:crm_task_manager/core/printing/print_template_settings.dart';
@@ -1113,10 +1117,11 @@ class _ClientSalesDocumentDetailsScreenState
       return _buildPlaceholderImage();
     }
 
+    final imageUrl = resolveFileUrl(good.good!.files![0].path, baseUrl);
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.network(
-        '$baseUrl/${good.good!.files![0].path}',
+        imageUrl,
         width: 100,
         height: 100,
         fit: BoxFit.cover,

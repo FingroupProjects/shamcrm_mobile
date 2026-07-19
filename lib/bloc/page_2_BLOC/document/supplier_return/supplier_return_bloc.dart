@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import '../../../../models/api_exception_model.dart';
@@ -99,9 +100,9 @@ class SupplierReturnBloc
       ));
     } catch (e) {
       if (e is ApiException) {
-        emit(SupplierReturnError(e.toString(), statusCode: e.statusCode));
+        emit(SupplierReturnError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnError(e.toString()));
+        emit(SupplierReturnError(friendlyError(e)));
       }
     }
   }
@@ -126,9 +127,9 @@ class SupplierReturnBloc
       emit(SupplierReturnCreateSuccess('Документ успешно создан'));
     } catch (e) {
       if (e is ApiException) {
-        emit(SupplierReturnCreateError(e.toString(), statusCode: e.statusCode));
+        emit(SupplierReturnCreateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnCreateError(e.toString()));
+        emit(SupplierReturnCreateError(friendlyError(e)));
       }
     }
   }
@@ -153,9 +154,9 @@ class SupplierReturnBloc
       emit(SupplierReturnUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       if (e is ApiException) {
-        emit(SupplierReturnUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(SupplierReturnUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnUpdateError(e.toString()));
+        emit(SupplierReturnUpdateError(friendlyError(e)));
       }
     }
   }
@@ -230,10 +231,10 @@ class SupplierReturnBloc
           "mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(SupplierReturnApproveMassError(e.toString(),
+        emit(SupplierReturnApproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnApproveMassError(e.toString()));
+        emit(SupplierReturnApproveMassError(friendlyError(e)));
       }
       add(FetchSupplierReturn(forceRefresh: true));
     }
@@ -265,10 +266,10 @@ class SupplierReturnBloc
           "mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(SupplierReturnDisapproveMassError(e.toString(),
+        emit(SupplierReturnDisapproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnDisapproveMassError(e.toString()));
+        emit(SupplierReturnDisapproveMassError(friendlyError(e)));
       }
       add(FetchSupplierReturn(forceRefresh: true));
     }
@@ -303,10 +304,10 @@ class SupplierReturnBloc
           const SupplierReturnDeleteMassSuccess("mass_delete_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(SupplierReturnDeleteMassError(e.toString(),
+        emit(SupplierReturnDeleteMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnDeleteMassError(e.toString()));
+        emit(SupplierReturnDeleteMassError(friendlyError(e)));
       }
       add(FetchSupplierReturn(forceRefresh: true));
     }
@@ -340,10 +341,10 @@ class SupplierReturnBloc
           "mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(SupplierReturnRestoreMassError(e.toString(),
+        emit(SupplierReturnRestoreMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(SupplierReturnRestoreMassError(e.toString()));
+        emit(SupplierReturnRestoreMassError(friendlyError(e)));
       }
       add(FetchSupplierReturn(forceRefresh: true));
     }

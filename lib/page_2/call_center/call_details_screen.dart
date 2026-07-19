@@ -441,6 +441,9 @@ String formatDate(DateTime? date) {
 
   String _getCallTypeText(bool incoming, bool missed) {
     if (missed) {
+      if (!incoming) {
+        return 'Исходящий звонок без ответа';
+      }
       return AppLocalizations.of(context)!.translate('missed_call');
     } else if (incoming) {
       return AppLocalizations.of(context)!.translate('incoming_call');
@@ -457,6 +460,8 @@ String formatDate(DateTime? date) {
         return AppLocalizations.of(context)!.translate('outgoing_call');
       case CallType.missed:
         return AppLocalizations.of(context)!.translate('missed_call');
+      case CallType.outgoingMissed:
+        return 'Исходящий звонок без ответа';
     }
   }
 

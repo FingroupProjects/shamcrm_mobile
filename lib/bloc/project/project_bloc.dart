@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -17,7 +18,7 @@ class GetAllProjectBloc extends Bloc<GetAllProjectEvent, GetAllProjectState> {
         var res = await ApiService().getAllProject();
         emit(GetAllProjectSuccess(dataProject: res));
       } catch (e) {
-        emit(GetAllProjectError(message: e.toString()));
+        emit(GetAllProjectError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllProjectError(message: 'Нет подключения к интернету'));

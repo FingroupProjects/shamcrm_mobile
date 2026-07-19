@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_overdue_task_event.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/user_task/user_overdue_task_state.dart';
@@ -36,7 +37,7 @@ class UserOverdueTaskBloc extends Bloc<UserOverdueTaskEvent, UserOverdueTaskStat
 
       emit(UserOverdueTaskLoaded(data: data));
     } catch (e) {
-      emit(UserOverdueTaskError(message: e.toString()));
+      emit(UserOverdueTaskError(message: friendlyError(e)));
     }
   }
 }

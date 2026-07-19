@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/top_selling_card_model.dart';
 import 'package:equatable/equatable.dart';
 
@@ -25,7 +26,7 @@ class SalesDashboardTopSellingGoodsBloc extends Bloc<SalesDashboardTopSellingGoo
       ));
       } catch (e) {
         emit(SalesDashboardTopSellingGoodsError(
-          message: e.toString().replaceAll('Exception: ', ''),
+          message: friendlyError(e).replaceAll('Exception: ', ''),
         ));
       }
     });

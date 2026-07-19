@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -37,6 +38,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_histo
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_unite_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_sms_modal.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_to_1c.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/orders_widget.dart';
@@ -64,6 +66,8 @@ class LeadDetailsScreen extends StatefulWidget {
   final String leadName;
   final String leadStatus;
   final int statusId;
+  final int? initialCurrencyId;
+  final String? initialCurrencyName;
   final String? region;
   final int? regionId;
   final String? sourse;
@@ -82,6 +86,8 @@ class LeadDetailsScreen extends StatefulWidget {
     required this.leadName,
     required this.leadStatus,
     required this.statusId,
+    this.initialCurrencyId,
+    this.initialCurrencyName,
     this.region,
     this.regionId,
     this.sourse,
@@ -357,6 +363,25 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       setState(() {
         _normalizedContactPhones.add(normalizedPhone);
       });
+    }
+  }
+
+  Future<void> _openLeadUniteDialog() async {
+    if (currentLead == null) return;
+
+    final merged = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => LeadUniteDialog(
+        currentLeadId: currentLead!.id,
+      ),
+    );
+
+    if (merged == true && mounted) {
+      setState(() {
+        _statusChangedFromDetails = true;
+      });
+      Navigator.pop(context, _buildNavigationResult());
     }
   }
 
@@ -977,6 +1002,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       });
     }
 
+    final resolvedCurrencyName =
+        lead.currency?.name ?? widget.initialCurrencyName ?? '';
+    details.add({
+      'label': '${AppLocalizations.of(context)!.translate('currency_label') ?? 'Валюта'}:',
+      'value': resolvedCurrencyName,
+      'fieldName': 'currency',
+    });
+
     final refusalReason = (lead.refusalReasonText ?? '').trim();
     final refusalComment = (lead.reasonForRefusalComment ?? '').trim();
     if (refusalReason.isNotEmpty || refusalComment.isNotEmpty) {
@@ -1445,6 +1478,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             existedFiles: currentLead!.files,
                             priceTypeId: currentLead!.priceType?.id.toString(),
                             priceTypeName: currentLead!.priceType?.name,
+                            currencyId:
+                                currentLead!.currencyId ?? widget.initialCurrencyId,
+                            currencyName: currentLead!.currency?.name ??
+                                widget.initialCurrencyName,
                           ),
                         ),
                       );
@@ -1696,7 +1733,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (!mounted) return;
       showCustomSnackBar(
         context: context,
-        message: e.toString().replaceFirst('Exception: ', ''),
+        message: friendlyError(e).replaceFirst('Exception: ', ''),
         isSuccess: false,
       );
     } finally {
@@ -1744,7 +1781,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       if (!mounted) return;
       final message = e is LeadStatusUpdateException
           ? e.message
-          : e.toString().replaceFirst('Exception: ', '');
+          : friendlyError(e);
       showCustomSnackBar(
         context: context,
         message: message,

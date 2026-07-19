@@ -11,6 +11,14 @@ class CustomFieldWidget extends StatelessWidget {
   final bool isDirectory;
   final String? type;
   final bool isCustomField; // Новый флаг
+  final String? Function(String?)? validator;
+  final TextInputType? keyboardTypeOverride;
+  final List<TextInputFormatter>? inputFormattersOverride;
+  final int? maxLength;
+  final bool showBorder;
+  final AutovalidateMode? autovalidateMode;
+  final bool? readOnlyOverride;
+  final ValueChanged<String>? onChanged;
 
   const CustomFieldWidget({
     super.key,
@@ -20,6 +28,14 @@ class CustomFieldWidget extends StatelessWidget {
     this.isDirectory = false,
     this.type,
     this.isCustomField = false, // По умолчанию false
+    this.validator,
+    this.keyboardTypeOverride,
+    this.inputFormattersOverride,
+    this.maxLength,
+    this.showBorder = false,
+    this.autovalidateMode,
+    this.readOnlyOverride,
+    this.onChanged,
   });
 
   Future<void> _selectDate(BuildContext context,
@@ -160,12 +176,16 @@ class CustomFieldWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (!isDirectory)
-                TextField(
+                TextFormField(
                   controller: valueController,
-                  keyboardType: keyboardType,
-                  inputFormatters: inputFormatters,
-                  readOnly: readOnly,
-                  onTap: readOnly
+                  keyboardType: keyboardTypeOverride ?? keyboardType,
+                  inputFormatters: inputFormattersOverride ?? inputFormatters,
+                  maxLength: maxLength,
+                  validator: validator,
+                  autovalidateMode: autovalidateMode,
+                  readOnly: readOnlyOverride ?? readOnly,
+                  onChanged: onChanged,
+                  onTap: type == 'date' || type == 'datetime'
                       ? () => _selectDate(context, withTime: type == 'datetime')
                       : null,
                   decoration: InputDecoration(
@@ -175,7 +195,21 @@ class CustomFieldWidget extends StatelessWidget {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: context.appRadius.input,
-                      borderSide: BorderSide.none,
+                      borderSide: showBorder
+                          ? BorderSide(color: colors.borderPrimary, width: 0.5)
+                          : BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: context.appRadius.input,
+                      borderSide: showBorder
+                          ? BorderSide(color: colors.borderPrimary, width: 0.5)
+                          : BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: context.appRadius.input,
+                      borderSide: showBorder
+                          ? BorderSide(color: colors.buttonPrimaryBg, width: 1)
+                          : BorderSide.none,
                     ),
                     filled: true,
                     fillColor: fieldFill,
@@ -183,6 +217,8 @@ class CustomFieldWidget extends StatelessWidget {
                       vertical: 10,
                       horizontal: 12,
                     ),
+                    counterText: '',
+                    errorMaxLines: 2,
                   ),
                   style: context.appTextStyles.bodyLg.copyWith(
                     color: primaryText,

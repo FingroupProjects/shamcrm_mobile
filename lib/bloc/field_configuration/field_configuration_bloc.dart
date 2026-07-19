@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/foundation.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
@@ -98,7 +99,7 @@ class FieldConfigurationBloc
       if (kDebugMode) {
         //print('FieldConfigurationBloc: Error occurred: $e');
       }
-      emit(FieldConfigurationError(e.toString()));
+      emit(FieldConfigurationError(friendlyError(e)));
     }
   }
 }

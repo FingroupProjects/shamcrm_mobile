@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -23,6 +24,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 
@@ -42,8 +45,20 @@ part 'widgets/sip_journal_search_views.dart';
 part 'widgets/sip_main_views.dart';
 part 'widgets/sip_settings_sheet.dart';
 
+enum SipScreenInitialTab {
+  dial,
+  journal,
+  contacts,
+  search,
+}
+
 class SipScreen extends StatefulWidget {
-  const SipScreen({super.key});
+  const SipScreen({
+    super.key,
+    this.initialTab = SipScreenInitialTab.dial,
+  });
+
+  final SipScreenInitialTab initialTab;
 
   @override
   State<SipScreen> createState() => _SipScreenState();
@@ -71,11 +86,15 @@ class _SipScreenState extends State<SipScreen>
   final ScrollController _contactsListController = ScrollController();
   final ScrollController _journalListController = ScrollController();
 
+  static const String _operatorConnectingAsset = 'audio/operator_1.mp3';
+  static const String _connectingBeepAsset = 'audio/get.mp3';
+
   SipTransportUi _selectedTransport = SipTransportUi.ws;
 
   int _bottomTabIndex = 0;
   late final AnimationController _pulseController;
   Timer? _callDurationTimer;
+  StreamSubscription<void>? _feedbackCompletionSub;
   SipCallUiStatus? _lastObservedCallStatus;
   String? _lastShownSipNoticeKey;
   SipRegistrationUiStatus? _lastObservedRegistrationStatus;
@@ -183,6 +202,12 @@ class _SipScreenState extends State<SipScreen>
   @override
   void initState() {
     super.initState();
+    _bottomTabIndex = switch (widget.initialTab) {
+      SipScreenInitialTab.dial => 0,
+      SipScreenInitialTab.journal => 1,
+      SipScreenInitialTab.contacts => 2,
+      SipScreenInitialTab.search => 3,
+    };
     _sipService.setSipScreenVisible(true);
     _serverController.addListener(_handleDraftChanged);
     _loginController.addListener(_handleDraftChanged);
@@ -246,6 +271,7 @@ class _SipScreenState extends State<SipScreen>
     _contactsLeadSearchDebounce?.cancel();
     _contactsIndexOverlayTimer?.cancel();
     _journalDateRailOverlayTimer?.cancel();
+    _feedbackCompletionSub?.cancel();
     _pulseController.dispose();
     unawaited(_callFeedbackPlayer.stop());
     _callFeedbackPlayer.dispose();

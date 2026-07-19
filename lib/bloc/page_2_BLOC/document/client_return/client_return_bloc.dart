@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -96,9 +97,9 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       ));
     } catch (e) {
       if (e is ApiException) {
-        emit(ClientReturnError(e.toString(), statusCode: e.statusCode));
+        emit(ClientReturnError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientReturnError(e.toString()));
+        emit(ClientReturnError(friendlyError(e)));
       }
     }
   }
@@ -121,9 +122,9 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       emit(ClientReturnCreateSuccess('Документ успешно создан'));
     } catch (e) {
       if (e is ApiException) {
-        emit(ClientReturnCreateError(e.toString(), statusCode: e.statusCode));
+        emit(ClientReturnCreateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientReturnCreateError(e.toString()));
+        emit(ClientReturnCreateError(friendlyError(e)));
       }
     }
   }
@@ -189,10 +190,10 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
           const ClientReturnApproveMassSuccess("mass_approve_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(ClientReturnApproveMassError(e.toString(),
+        emit(ClientReturnApproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(ClientReturnApproveMassError(e.toString()));
+        emit(ClientReturnApproveMassError(friendlyError(e)));
       }
       add(FetchClientReturns(forceRefresh: true));
     }
@@ -215,10 +216,10 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
           "mass_disapprove_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(ClientReturnDisapproveMassError(e.toString(),
+        emit(ClientReturnDisapproveMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(ClientReturnDisapproveMassError(e.toString()));
+        emit(ClientReturnDisapproveMassError(friendlyError(e)));
       }
       add(FetchClientReturns(forceRefresh: true));
     }
@@ -243,10 +244,10 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       emit(const ClientReturnDeleteMassSuccess("mass_delete_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(ClientReturnDeleteMassError(e.toString(),
+        emit(ClientReturnDeleteMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(ClientReturnDeleteMassError(e.toString()));
+        emit(ClientReturnDeleteMassError(friendlyError(e)));
       }
       add(FetchClientReturns(forceRefresh: true));
     }
@@ -271,10 +272,10 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
           const ClientReturnRestoreMassSuccess("mass_restore_success_message"));
     } catch (e) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(ClientReturnRestoreMassError(e.toString(),
+        emit(ClientReturnRestoreMassError(friendlyError(e),
             statusCode: e.statusCode));
       } else {
-        emit(ClientReturnRestoreMassError(e.toString()));
+        emit(ClientReturnRestoreMassError(friendlyError(e)));
       }
       add(FetchClientReturns(forceRefresh: true));
     }
@@ -366,9 +367,9 @@ class ClientReturnBloc extends Bloc<ClientReturnEvent, ClientReturnState> {
       emit(ClientReturnUpdateSuccess('Документ успешно обновлен'));
     } catch (e) {
       if (e is ApiException) {
-        emit(ClientReturnUpdateError(e.toString(), statusCode: e.statusCode));
+        emit(ClientReturnUpdateError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(ClientReturnUpdateError(e.toString()));
+        emit(ClientReturnUpdateError(friendlyError(e)));
       }
     }
   }

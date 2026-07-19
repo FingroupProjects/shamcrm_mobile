@@ -452,29 +452,13 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
           return;
         }
 
-        // Если кэш есть, показываем его сразу, но НЕ пропускаем сетевой запрос.
-        final cachedStatuses = await LeadCache.getLeadStatuses();
-        if (cachedStatuses.isNotEmpty) {
-          final cachedResponse = cachedStatuses
-              .map((status) => LeadStatus.fromJson(status))
-              .toList();
-
-          _leadCounts.clear();
-          final cachedPersistentCounts =
-              await LeadCache.getPersistentLeadCounts();
-          for (var status in cachedResponse) {
-            final statusIdStr = status.id.toString();
-            _leadCounts[status.id] =
-                cachedPersistentCounts[statusIdStr] ?? status.leadsCount;
-          }
-
-          emit(LeadLoaded(cachedResponse, leadCounts: Map.from(_leadCounts)));
-
-          if (kDebugMode) {
-            debugPrint(
-                '🗂️ LeadBloc: emitted cached lead statuses, continuing with API refresh');
-          }
-        }
+        // Статусы и их видимость определяет сервер. Кэш используется внутри
+        // apiService только как fallback при ошибке запроса.
+        response = await apiService.getLeadStatuses(
+          reasonForRefusalIds: _currentReasonForRefusalIds,
+          bypassAnalyticsCache: true,
+        );
+        await LeadCache.cacheLeadStatuses(response);
 
         response = await apiService.getLeadStatuses(
           reasonForRefusalIds: _currentReasonForRefusalIds,
@@ -688,6 +672,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       if (event.priceTypeId != null)
         requestData['price_type_id'] =
             event.priceTypeId; // Добавляем price_type_id
+      if (event.currencyId != null) {
+        requestData['currency_id'] = event.currencyId;
+      }
 
       if (!await _checkInternetConnection()) {
         if (event.files != null && event.files!.isNotEmpty) {
@@ -779,6 +766,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       if (event.reasonForRefusal != null &&
           event.reasonForRefusal!.trim().isNotEmpty)
         'reason_for_refusal': event.reasonForRefusal!.trim(),
+      if (event.currencyId != null) 'currency_id': event.currencyId,
       'lead_custom_fields': event.customFields ?? [],
       'directory_values': event.directoryValues ?? [],
       if (event.files != null) 'files': event.files
@@ -847,6 +835,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         event.isFailure,
         event.isSuccess,
         event.isUnassembled,
+        event.userIds,
       );
 
       if (result['success']) {
@@ -908,6 +897,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         event.isSuccess,
         event.isFailure,
         event.isUnassembled,
+        event.userIds,
       );
 
       if (response['result'] == 'Success') {
@@ -1180,7 +1170,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
         daysWithoutActivity: event.daysWithoutActivity,
         numberOfDaysDeal: event.numberOfDaysDeal,
         directoryValues: event.directoryValues,
-        salesFunnelId: event.salesFunnelId,
+        bypassAnalyticsCache: true,
       );
 
       if (kDebugMode) {

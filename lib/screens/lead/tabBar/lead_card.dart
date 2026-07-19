@@ -20,6 +20,7 @@ class LeadCard extends StatefulWidget {
   final Lead lead;
   final String title;
   final int statusId;
+  final bool isWarehouseReferenceClient;
   final VoidCallback onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
   final GlobalKey? dropdownStatusKey;
@@ -29,6 +30,7 @@ class LeadCard extends StatefulWidget {
     required this.lead,
     required this.title,
     required this.statusId,
+    this.isWarehouseReferenceClient = false,
     required this.onStatusUpdated,
     required this.onStatusId,
     this.dropdownStatusKey,
@@ -383,6 +385,8 @@ class _LeadCardState extends State<LeadCard>
               leadName: widget.lead.name,
               leadStatus: dropdownValue,
               statusId: statusId,
+              initialCurrencyId: widget.lead.currency?.id,
+              initialCurrencyName: widget.lead.currency?.name,
             ),
           ),
         );
@@ -393,6 +397,14 @@ class _LeadCardState extends State<LeadCard>
           final newStatusId = result['newStatusId'] as int? ?? widget.statusId;
           context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
           widget.onStatusUpdated();
+          if (newStatusId == widget.statusId) {
+            context.read<LeadBloc>().add(
+                  FetchLeads(
+                    widget.statusId,
+                    ignoreCache: true,
+                  ),
+                );
+          }
           widget.onStatusId(newStatusId);
         } else {
           context.read<LeadBloc>().add(

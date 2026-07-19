@@ -1,4 +1,4 @@
-enum CallType { incoming, outgoing, missed }
+enum CallType { incoming, outgoing, missed, outgoingMissed }
 
 class CallLogEntry {
   final String id;
@@ -27,9 +27,11 @@ class CallLogEntry {
 
   factory CallLogEntry.fromJson(Map<String, dynamic> json) {
     final lead = json['lead'] as Map<String, dynamic>?;
-    final callType = json['missed'] == true
-        ? CallType.missed
-        : json['incoming'] == true
+    final isMissed = json['missed'] == true || json['missed'] == 1;
+    final isIncoming = json['incoming'] == true || json['incoming'] == 1;
+    final callType = isMissed
+        ? (isIncoming ? CallType.missed : CallType.outgoingMissed)
+        : isIncoming
             ? CallType.incoming
             : CallType.outgoing;
 

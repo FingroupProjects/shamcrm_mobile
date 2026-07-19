@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 import 'sip_state.dart';
@@ -31,6 +33,8 @@ class SipService extends ChangeNotifier
   static const String _portKey = 'sip_port';
   static const String _enabledKey = 'sip_enabled';
   static const String _voipPushTokenKey = 'sip_ios_voip_push_token';
+  static const String _pendingIncomingCallPushPayloadKey =
+      'sip_pending_incoming_call_push_payload_v1';
   static const String _backgroundReliabilityPromptedKey =
       'sip_background_reliability_prompted_v2';
   static const String _fullScreenIntentPromptedKey =
@@ -60,6 +64,9 @@ class SipService extends ChangeNotifier
 
   SipUiState _state = SipUiState.initial();
   SipUiState get state => _state;
+  int _callUiOpenRequestSerial = 0;
+  int get callUiOpenRequestSerial => _callUiOpenRequestSerial;
+  int _lastNativeCallUiRequestId = 0;
 
   bool _initialized = false;
   bool _disposed = false;
@@ -69,8 +76,8 @@ class SipService extends ChangeNotifier
   bool _renderersReady = false;
   bool get renderersReady => _renderersReady;
   bool get isConfigLoaded => _configLoaded;
-  bool _sipScreenVisible = false;
-  bool get isSipScreenVisible => _sipScreenVisible;
+  int _sipScreenVisibilityCount = 0;
+  bool get isSipScreenVisible => _sipScreenVisibilityCount > 0;
   bool _shouldStayConnected = false;
   bool _persistentSipEnabled = false;
   bool _networkAvailable = true;
@@ -97,6 +104,16 @@ class SipService extends ChangeNotifier
   MediaStream? _remoteStream;
   SipCallDirection _currentCallDirection = SipCallDirection.outgoing;
   DateTime? _currentCallStartedAt;
+  DateTime? get currentCallStartedAt => _currentCallStartedAt;
+
+  Duration get currentCallDuration {
+    final startedAt = _currentCallStartedAt;
+    if (startedAt == null) return Duration.zero;
+    final duration = DateTime.now().difference(startedAt);
+    return duration.isNegative ? Duration.zero : duration;
+  }
+
+  bool _speakerToggleInProgress = false;
   String? _currentCallTarget;
   String? _currentInviteUri;
   final List<Map<String, dynamic>> _pendingIosCallActions =
@@ -115,6 +132,9 @@ class SipService extends ChangeNotifier
   DateTime? _lastTerminalNativeCallAt;
   bool _secureStorageRecoveryTriggered = false;
   String? _pendingStorageRecoveryMessage;
+  String? _lastIncomingCallPushId;
+  DateTime? _lastIncomingCallPushAt;
+  final Set<String> _sentSipReadyKeys = <String>{};
 
   Future<void> initialize() async {
     if (_disposed) return;
@@ -133,17 +153,19 @@ class SipService extends ChangeNotifier
         WidgetsBinding.instance.addObserver(this);
       }
 
-      final server = await _readSecureStorageValue(
+      await _initializeNativeSipBridge();
+
+      var server = await _readSecureStorageValue(
             _serverKey,
             fallback: '',
           ) ??
           '';
-      final login = await _readSecureStorageValue(
+      var login = await _readSecureStorageValue(
             _loginKey,
             fallback: '',
           ) ??
           '';
-      final password = await _readSecureStorageValue(
+      var password = await _readSecureStorageValue(
             _passwordKey,
             fallback: '',
           ) ??
@@ -153,21 +175,50 @@ class SipService extends ChangeNotifier
             fallback: '',
           ) ??
           '';
-      final transportRaw = await _readSecureStorageValue(
+      var transportRaw = await _readSecureStorageValue(
             _transportKey,
             fallback: 'udp',
           ) ??
           'udp';
-      final portRaw = await _readSecureStorageValue(
+      var portRaw = await _readSecureStorageValue(
             _portKey,
             fallback: '5060',
           ) ??
           '5060';
-      final enabledRaw = await _readSecureStorageValue(
+      var enabledRaw = await _readSecureStorageValue(
             _enabledKey,
             fallback: 'false',
           ) ??
           'false';
+
+      if (Platform.isAndroid) {
+        final nativeConfig =
+            await _invokeNativeSipMethod<Map<dynamic, dynamic>>(
+                'getStoredConfig');
+        if (nativeConfig != null) {
+          final nativeServer = nativeConfig['server']?.toString().trim() ?? '';
+          final nativeLogin = nativeConfig['login']?.toString().trim() ?? '';
+          final nativePassword = nativeConfig['password']?.toString() ?? '';
+          if (nativeServer.isNotEmpty &&
+              nativeLogin.isNotEmpty &&
+              nativePassword.isNotEmpty) {
+            server = nativeServer;
+            login = nativeLogin;
+            password = nativePassword;
+          }
+          portRaw = nativeConfig['port']?.toString() ?? portRaw;
+          transportRaw = nativeConfig['transport']?.toString() ?? transportRaw;
+          enabledRaw = nativeConfig['enabled'] == true ? 'true' : 'false';
+          await _mirrorNativeConfigToFlutterStorage(
+            server: server,
+            login: login,
+            password: password,
+            port: portRaw,
+            transport: transportRaw,
+            enabled: enabledRaw,
+          );
+        }
+      }
       final parsedPort = int.tryParse(portRaw) ?? 5060;
       final hasStoredCredentials = server.trim().isNotEmpty &&
           login.trim().isNotEmpty &&
@@ -196,7 +247,6 @@ class SipService extends ChangeNotifier
       );
       _pendingStorageRecoveryMessage = null;
       await _ensureRenderersInitializedForCurrentMode();
-      await _initializeNativeSipBridge();
       await _syncNativeSnapshot();
       await _consumePendingIosCallActions();
       await _syncCurrentIosVoipPushTokenIfAvailable();
@@ -208,6 +258,7 @@ class SipService extends ChangeNotifier
       _configLoaded = true;
       unawaited(refreshRecentCallLogs(force: true));
       unawaited(_restorePersistentConnection());
+      unawaited(recoverPendingIncomingCallPush());
       _notifyListenersSafely();
       completer.complete();
     } catch (error, stackTrace) {
@@ -245,6 +296,33 @@ class SipService extends ChangeNotifier
       debugPrint('SipService secure storage read failed for $key: $error');
       debugPrint('SipService secure storage read stackTrace: $stackTrace');
       return fallback;
+    }
+  }
+
+  Future<void> _mirrorNativeConfigToFlutterStorage({
+    required String server,
+    required String login,
+    required String password,
+    required String port,
+    required String transport,
+    required String enabled,
+  }) async {
+    final values = <String, String>{
+      _serverKey: server,
+      _loginKey: login,
+      _passwordKey: password,
+      _portKey: port,
+      _transportKey: transport,
+      _enabledKey: enabled,
+    };
+    for (final entry in values.entries) {
+      try {
+        await _storage.write(key: entry.key, value: entry.value);
+      } catch (error) {
+        debugPrint(
+          'SipService native config mirror failed for ${entry.key}: $error',
+        );
+      }
     }
   }
 
@@ -342,8 +420,14 @@ class SipService extends ChangeNotifier
   }
 
   void setSipScreenVisible(bool visible) {
-    if (_sipScreenVisible == visible) return;
-    _sipScreenVisible = visible;
+    final wasVisible = isSipScreenVisible;
+    if (visible) {
+      _sipScreenVisibilityCount += 1;
+    } else if (_sipScreenVisibilityCount > 0) {
+      _sipScreenVisibilityCount -= 1;
+    }
+    final nowVisible = isSipScreenVisible;
+    if (wasVisible == nowVisible) return;
     if (visible) {
       unawaited(refreshRecentCallLogs());
     }
@@ -505,6 +589,9 @@ class SipService extends ChangeNotifier
           perPage: perPage,
           searchQuery: searchQuery,
         );
+      case CallType.outgoingMissed:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 
@@ -594,6 +681,12 @@ class SipService extends ChangeNotifier
     }
 
     await _syncNativeSnapshot();
+    final pendingCallUiRequest = await _invokeNativeSipMethod<Object?>(
+      'consumePendingCallUiRequest',
+    );
+    if (pendingCallUiRequest is Map) {
+      _handleNativeSipEvent(Map<String, dynamic>.from(pendingCallUiRequest));
+    }
     await _consumePendingIosCallActions();
   }
 
@@ -652,17 +745,22 @@ class SipService extends ChangeNotifier
         false;
   }
 
-  Future<void> _syncCurrentIosVoipPushTokenIfAvailable() async {
+  Future<void> _syncCurrentIosVoipPushTokenIfAvailable({
+    bool force = false,
+  }) async {
     if (!Platform.isIOS) {
       return;
     }
 
     final token = await getVoipPushToken();
     if (token == null || token.trim().isEmpty) {
+      debugPrint(
+        'SipService: iOS VoIP token is not available yet, backend sync skipped',
+      );
       return;
     }
 
-    await _syncIosVoipPushTokenWithBackend(token);
+    await _syncIosVoipPushTokenWithBackend(token, force: force);
   }
 
   Future<void> _restoreNativeRegistrationIfNeeded(String reason) async {
@@ -719,7 +817,7 @@ class SipService extends ChangeNotifier
   }
 
   Future<List<Map<String, dynamic>>> getNativeDiagnosticLogs() async {
-    if (!Platform.isIOS) {
+    if (!Platform.isIOS && !Platform.isAndroid) {
       return const <Map<String, dynamic>>[];
     }
 
@@ -740,7 +838,7 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> clearNativeDiagnosticLogs() async {
-    if (!Platform.isIOS) {
+    if (!Platform.isIOS && !Platform.isAndroid) {
       return;
     }
 
@@ -799,6 +897,210 @@ class SipService extends ChangeNotifier
     }
   }
 
+  Future<void> handleIncomingCallPushPayload(
+    Map<String, dynamic> rawPayload, {
+    String source = 'unknown',
+    bool persist = true,
+  }) async {
+    final payload =
+        _normalizeIncomingCallPushPayload(rawPayload, source: source);
+    if (payload == null) {
+      debugPrint(
+        'SipService incoming_call push ignored: invalid payload from $source -> $rawPayload',
+      );
+      return;
+    }
+
+    if (persist) {
+      await _savePendingIncomingCallPushPayload(payload);
+    }
+
+    if (_isDuplicateIncomingCallPush(payload)) {
+      debugPrint(
+        'SipService incoming_call push deduplicated -> call_id=${payload['call_id']}, source=$source',
+      );
+      return;
+    }
+
+    await initialize();
+
+    final shouldWakeSip = _sipEnabled || _persistentSipEnabled;
+    final remoteIdentity = payload['remote_identity']?.toString();
+    final callId = payload['call_id']?.toString();
+
+    _lastIncomingCallPushId = callId;
+    _lastIncomingCallPushAt = DateTime.now();
+    _rememberIncomingFingerprint(
+      callUUID: null,
+      callId: callId,
+      remoteIdentity: remoteIdentity,
+    );
+
+    if (_state.callStatus == SipCallUiStatus.idle ||
+        _state.callStatus == SipCallUiStatus.ended ||
+        _state.callStatus == SipCallUiStatus.failed) {
+      _state = _state.copyWith(
+        remoteIdentity: remoteIdentity,
+        errorMessage: 'Входящий вызов: пробуждаем SIP...',
+      );
+      _notifyListenersSafely();
+    }
+
+    if (shouldWakeSip &&
+        _networkAvailable &&
+        _hasSipCredentials() &&
+        _state.registrationStatus != SipRegistrationUiStatus.registered &&
+        _state.registrationStatus != SipRegistrationUiStatus.registering) {
+      _shouldStayConnected = true;
+      _persistentSipEnabled = true;
+      _sipEnabled = true;
+      await _storage.write(key: _enabledKey, value: 'true');
+      unawaited(_syncIncomingCallPushPreference(true));
+
+      if (_shouldUseNativeSip()) {
+        unawaited(_restoreNativeRegistrationIfNeeded('incoming-call-push'));
+      } else {
+        unawaited(connect());
+      }
+    }
+  }
+
+  Future<void> recoverPendingIncomingCallPush() async {
+    final payload = await _consumePendingIncomingCallPushPayload();
+    if (payload == null) {
+      return;
+    }
+
+    final receivedAt = payload['received_at_ms'] as int?;
+    if (receivedAt != null) {
+      final age = DateTime.now().difference(
+        DateTime.fromMillisecondsSinceEpoch(receivedAt),
+      );
+      if (age > const Duration(minutes: 2)) {
+        debugPrint('SipService pending incoming_call push expired -> age=$age');
+        return;
+      }
+    }
+
+    await handleIncomingCallPushPayload(
+      payload,
+      source: payload['source']?.toString() ?? 'recovered',
+      persist: false,
+    );
+  }
+
+  Map<String, dynamic>? _normalizeIncomingCallPushPayload(
+    Map<String, dynamic> rawPayload, {
+    required String source,
+  }) {
+    String? pickString(List<String> keys) {
+      for (final key in keys) {
+        final value = rawPayload[key];
+        if (value == null) {
+          continue;
+        }
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+          return normalized;
+        }
+      }
+      return null;
+    }
+
+    int? pickInt(List<String> keys) {
+      final value = pickString(keys);
+      return value == null ? null : int.tryParse(value);
+    }
+
+    final type = pickString(<String>['type']);
+    if (type != 'incoming_call') {
+      return null;
+    }
+
+    final callId = pickString(<String>['call_id', 'id']);
+    final leadId = pickInt(<String>['lead_id']);
+    final callerName = pickString(<String>[
+      'caller_name',
+      'lead_name',
+      'phone',
+      'from',
+    ]);
+    final remoteIdentity = pickString(<String>[
+          'remote_identity',
+          'phone',
+          'lead_name',
+          'caller_name',
+          'from',
+        ]) ??
+        callerName;
+
+    if ((callId == null || callId.isEmpty) &&
+        (remoteIdentity == null || remoteIdentity.isEmpty)) {
+      return null;
+    }
+
+    return <String, dynamic>{
+      'type': 'incoming_call',
+      'call_id': callId,
+      'lead_id': leadId,
+      'lead_name': pickString(<String>['lead_name']),
+      'caller_name': callerName,
+      'remote_identity': remoteIdentity,
+      'source': source,
+      'received_at_ms': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
+  bool _isDuplicateIncomingCallPush(Map<String, dynamic> payload) {
+    final callId = payload['call_id']?.toString().trim();
+    final lastAt = _lastIncomingCallPushAt;
+    if (callId == null || callId.isEmpty || lastAt == null) {
+      return false;
+    }
+
+    if (_lastIncomingCallPushId != callId) {
+      return false;
+    }
+
+    return DateTime.now().difference(lastAt) < const Duration(seconds: 12);
+  }
+
+  Future<void> _savePendingIncomingCallPushPayload(
+    Map<String, dynamic> payload,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _pendingIncomingCallPushPayloadKey,
+      jsonEncode(payload),
+    );
+  }
+
+  Future<Map<String, dynamic>?> _consumePendingIncomingCallPushPayload() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingIncomingCallPushPayloadKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+
+    await prefs.remove(_pendingIncomingCallPushPayloadKey);
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (error) {
+      debugPrint(
+        'SipService failed to decode pending incoming_call push payload: $error',
+      );
+    }
+
+    return null;
+  }
+
   Future<void> prepareSipRuntimePermissions() async {
     final inFlight = _prepareRuntimePermissionsFuture;
     if (inFlight != null) {
@@ -832,13 +1134,19 @@ class SipService extends ChangeNotifier
     } catch (_) {}
 
     if (_shouldUseNativeSip()) {
-      final canUseFullScreenIntent =
-          await _invokeNativeSipMethod<bool>('canUseFullScreenIntent') ?? true;
+      final canUseFullScreenIntent = await _invokeNativeSipMethod<bool>(
+            'canUseFullScreenIntent',
+            null,
+            false,
+          ) ??
+          true;
       final promptedFullScreenIntent =
           await _storage.read(key: _fullScreenIntentPromptedKey);
       if (!canUseFullScreenIntent && promptedFullScreenIntent != 'true') {
         final opened = await _invokeNativeSipMethod<bool>(
               'requestFullScreenIntentPermission',
+              null,
+              false,
             ) ??
             false;
         if (opened) {
@@ -854,6 +1162,8 @@ class SipService extends ChangeNotifier
       if (promptedBackgroundReliability != 'true') {
         final opened = await _invokeNativeSipMethod<bool>(
               'requestBackgroundReliabilitySettings',
+              null,
+              false,
             ) ??
             false;
         if (opened) {
@@ -867,8 +1177,12 @@ class SipService extends ChangeNotifier
       final promptedXiaomiAutoStart =
           await _storage.read(key: _xiaomiAutoStartPromptedKey);
       if (promptedXiaomiAutoStart != 'true') {
-        final opened =
-            await _invokeNativeSipMethod<bool>('openXiaomiSettings') ?? false;
+        final opened = await _invokeNativeSipMethod<bool>(
+              'openXiaomiSettings',
+              null,
+              false,
+            ) ??
+            false;
         if (opened) {
           await _storage.write(
             key: _xiaomiAutoStartPromptedKey,
@@ -918,6 +1232,11 @@ class SipService extends ChangeNotifier
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'true');
+    unawaited(_syncIncomingCallPushPreference(true));
+    if (Platform.isIOS) {
+      unawaited(_syncCurrentIosVoipPushTokenIfAvailable(force: true));
+      unawaited(_apiService.sendPendingVoipTokenIfNeeded());
+    }
     _logSipConfig('connect');
     await _startSipRegistration();
   }
@@ -1021,6 +1340,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'false');
+    unawaited(_syncIncomingCallPushPreference(false));
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1058,6 +1378,7 @@ class SipService extends ChangeNotifier
     _sipEnabled = false;
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
+    unawaited(_syncIncomingCallPushPreference(false));
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1179,6 +1500,12 @@ class SipService extends ChangeNotifier
         return;
       }
 
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.ringing,
+        clearError: true,
+      );
+      _notifyListenersSafely();
+
       final success = await _invokeNativeSipMethod<bool>('acceptCall') ?? false;
       if (!success) {
         _setError('Failed to accept native SIP call.');
@@ -1211,7 +1538,22 @@ class SipService extends ChangeNotifier
 
   Future<void> hangup() async {
     if (_shouldUseNativeSip()) {
-      await _invokeNativeSipMethod('hangup');
+      final success = await _invokeNativeSipMethod<bool>('hangup') ?? false;
+      if (!success) {
+        _setError('Не удалось завершить SIP-звонок.');
+      } else {
+        _clearIncomingFingerprint();
+        _markTerminalNativeCallFingerprint();
+        _currentInviteUri = null;
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.ended,
+          clearRemoteIdentity: true,
+          clearError: true,
+          isMuted: false,
+          isSpeakerOn: false,
+        );
+        _notifyListenersSafely();
+      }
       return;
     }
 
@@ -1256,37 +1598,53 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> toggleSpeaker() async {
+    if (_speakerToggleInProgress || !_isActiveUiCallStatus(_state.callStatus)) {
+      return;
+    }
+
     final targetSpeaker = !_state.isSpeakerOn;
+    final previousSpeaker = _state.isSpeakerOn;
     debugPrint(
       'SipService toggleSpeaker -> current=${_state.isSpeakerOn}, target=$targetSpeaker, callStatus=${_state.callStatus}',
     );
-    if (_shouldUseNativeSip()) {
-      final success = await _invokeNativeSipMethod<bool>(
-            'setSpeaker',
-            <String, dynamic>{'speakerOn': targetSpeaker},
-          ) ??
-          false;
-      debugPrint(
-        'SipService toggleSpeaker native result -> success=$success, target=$targetSpeaker',
-      );
-      if (!success) {
-        _setError('Failed to change speaker state.');
+    _speakerToggleInProgress = true;
+    _state = _state.copyWith(isSpeakerOn: targetSpeaker);
+    _notifyListenersSafely();
+
+    try {
+      if (_shouldUseNativeSip()) {
+        final success = await _invokeNativeSipMethod<bool>(
+              'setSpeaker',
+              <String, dynamic>{'speakerOn': targetSpeaker},
+            ) ??
+            false;
+        debugPrint(
+          'SipService toggleSpeaker native result -> success=$success, target=$targetSpeaker',
+        );
+        if (!success) {
+          _state = _state.copyWith(isSpeakerOn: previousSpeaker);
+          _notifyListenersSafely();
+          _setError('Не удалось изменить аудиовыход звонка.');
+        }
         return;
       }
-    } else {
+
       final track = _localStream?.getAudioTracks().isNotEmpty == true
           ? _localStream!.getAudioTracks().first
           : null;
-
-      if (track == null) return;
+      if (track == null) {
+        _state = _state.copyWith(isSpeakerOn: previousSpeaker);
+        _notifyListenersSafely();
+        return;
+      }
       track.enableSpeakerphone(targetSpeaker);
+    } catch (error) {
+      _state = _state.copyWith(isSpeakerOn: previousSpeaker);
+      _notifyListenersSafely();
+      _setError('Не удалось изменить аудиовыход звонка: $error');
+    } finally {
+      _speakerToggleInProgress = false;
     }
-
-    _state = _state.copyWith(isSpeakerOn: targetSpeaker);
-    debugPrint(
-      'SipService toggleSpeaker local state applied -> isSpeakerOn=${_state.isSpeakerOn}',
-    );
-    _notifyListenersSafely();
   }
 
   Future<void> sendDtmf(String tone) async {
@@ -1296,9 +1654,14 @@ class SipService extends ChangeNotifier
     }
 
     if (_shouldUseNativeSip()) {
-      await _invokeNativeSipMethod<bool>('sendDtmf', {
-        'tone': normalized,
-      });
+      final sent = await _invokeNativeSipMethod<bool>(
+        'sendDtmf',
+        <String, dynamic>{'tone': normalized},
+        false,
+      );
+      if (sent == false) {
+        debugPrint('Native SIP DTMF was not sent: $normalized');
+      }
       return;
     }
 
@@ -1367,6 +1730,7 @@ class SipService extends ChangeNotifier
   Future<T?> _invokeNativeSipMethod<T>(
     String method, [
     Map<String, dynamic>? arguments,
+    bool disableBridgeOnMissing = true,
   ]) async {
     if (!_isNativeSipPlatform()) {
       return null;
@@ -1379,11 +1743,15 @@ class SipService extends ChangeNotifier
     try {
       return await _nativeSipMethodChannel.invokeMethod<T>(method, arguments);
     } on MissingPluginException catch (error) {
+      if (!disableBridgeOnMissing) {
+        debugPrint('Optional native SIP method unavailable [$method]: $error');
+        return null;
+      }
       _nativeSipBridgeAvailable = false;
       unawaited(_nativeSipEventsSubscription?.cancel());
       _nativeSipEventsSubscription = null;
       final message =
-          'Native SIP bridge is not loaded in this build. Stop the app completely and rebuild it. Hot reload/hot restart does not load new native platform code. Details: $error';
+          'Телефония недоступна в этой версии приложения. Полностью закройте приложение и установите актуальную сборку.';
       debugPrint('SipService native SIP missing plugin [$method]: $message');
       _state = _state.copyWith(
         registrationStatus: SipRegistrationUiStatus.failed,
@@ -1439,8 +1807,41 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    if (type == 'sip_ready') {
+      _handleNativeSipReadyEvent(payload);
+      return;
+    }
+
     if (type == 'audio_session') {
       _handleNativeAudioSessionEvent(payload);
+      return;
+    }
+
+    if (type == 'call_ui_request') {
+      final requestId =
+          int.tryParse(payload['requestId']?.toString() ?? '') ?? 0;
+      if (requestId > 0 && requestId == _lastNativeCallUiRequestId) {
+        return;
+      }
+      if (requestId > 0) {
+        _lastNativeCallUiRequestId = requestId;
+      }
+      _applyNativeSnapshot(payload);
+      _callUiOpenRequestSerial += 1;
+      unawaited(recordUiDiagnostic(
+        'CALL_UI_EVENT_RECEIVED',
+        <String, Object?>{
+          'serial': _callUiOpenRequestSerial,
+          'source': payload['source'],
+          'request_id': requestId,
+          'call_state': payload['callState'],
+          'registration_state': payload['registrationState'],
+        },
+      ));
+      debugPrint(
+        'SipService native call UI requested -> serial=$_callUiOpenRequestSerial, source=${payload['source']}, callState=${payload['callState']}, registrationState=${payload['registrationState']}',
+      );
+      _notifyListenersSafely();
       return;
     }
   }
@@ -1466,13 +1867,119 @@ class SipService extends ChangeNotifier
     unawaited(_apiService.clearPendingVoipToken());
   }
 
-  Future<void> _syncIosVoipPushTokenWithBackend(String token) async {
+  void _handleNativeSipReadyEvent(Map<String, dynamic> payload) {
+    if (!Platform.isIOS) {
+      return;
+    }
+
+    final callId = payload['callId']?.toString().trim() ?? '';
+    final callUUID = payload['callUUID']?.toString().trim() ?? '';
+    final sipCallId = payload['sipCallId']?.toString().trim();
+    final extension =
+        payload['extension']?.toString().trim() ?? _state.login.trim();
+
+    if (callId.isEmpty && callUUID.isEmpty) {
+      debugPrint('SipService sip-ready ignored: missing call identifiers');
+      return;
+    }
+
+    final readyKey = '$callId|$callUUID|$extension';
+    if (_sentSipReadyKeys.contains(readyKey)) {
+      debugPrint('SipService sip-ready duplicate skipped -> $readyKey');
+      return;
+    }
+
+    _sentSipReadyKeys.add(readyKey);
+    unawaited(_sendSipReadyToBackend(
+      callId: callId,
+      callUUID: callUUID,
+      sipCallId: sipCallId == null || sipCallId.isEmpty ? null : sipCallId,
+      extension: extension,
+      readyKey: readyKey,
+    ));
+  }
+
+  Future<void> _sendSipReadyToBackend({
+    required String callId,
+    required String callUUID,
+    String? sipCallId,
+    required String extension,
+    required String readyKey,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      await _appendNativeDiagnosticLog('[VOIP] SIP_READY_REQUEST', {
+        'call_id': callId,
+        'call_uuid': callUUID,
+        'sip_call_id': sipCallId ?? '',
+        'extension': extension,
+      });
+      final statusCode = await _apiService.sendSipReady(
+        callId: callId,
+        callUUID: callUUID,
+        sipCallId: sipCallId,
+        extension: extension,
+      );
+      await _appendNativeDiagnosticLog('[VOIP] SIP_READY_RESPONSE', {
+        'call_id': callId,
+        'call_uuid': callUUID,
+        'sip_call_id': sipCallId ?? '',
+        'extension': extension,
+        'status': statusCode ?? '',
+        'duration_ms': stopwatch.elapsedMilliseconds,
+      });
+      debugPrint(
+        '[VOIP] SIP_READY_RESPONSE status=$statusCode duration_ms=${stopwatch.elapsedMilliseconds} call_id=$callId call_uuid=$callUUID sip_call_id=${sipCallId ?? ''} extension=$extension',
+      );
+    } catch (error, stackTrace) {
+      _sentSipReadyKeys.remove(readyKey);
+      await _appendNativeDiagnosticLog('[VOIP] SIP_READY_RESPONSE', {
+        'call_id': callId,
+        'call_uuid': callUUID,
+        'sip_call_id': sipCallId ?? '',
+        'extension': extension,
+        'status': 'failed',
+        'duration_ms': stopwatch.elapsedMilliseconds,
+        'error': error,
+      });
+      debugPrint('SipService sip-ready failed: $error');
+      debugPrint('SipService sip-ready stackTrace: $stackTrace');
+    }
+  }
+
+  Future<void> _appendNativeDiagnosticLog(
+    String event,
+    Map<String, Object?> details,
+  ) async {
+    if (!_isNativeSipPlatform()) return;
+
+    try {
+      await _nativeSipMethodChannel.invokeMethod<bool>('appendDiagnosticLog', {
+        'event': event,
+        'details': details.map((key, value) => MapEntry(key, '${value ?? ''}')),
+      });
+    } catch (error) {
+      debugPrint('SipService append native diagnostic failed: $error');
+    }
+  }
+
+  Future<void> recordUiDiagnostic(
+    String event, [
+    Map<String, Object?> details = const <String, Object?>{},
+  ]) {
+    return _appendNativeDiagnosticLog(event, details);
+  }
+
+  Future<void> _syncIosVoipPushTokenWithBackend(
+    String token, {
+    bool force = false,
+  }) async {
     if (!Platform.isIOS || token.trim().isEmpty) {
       return;
     }
 
     final normalizedToken = token.trim();
-    if (_lastSyncedIosVoipPushToken == normalizedToken) {
+    if (!force && _lastSyncedIosVoipPushToken == normalizedToken) {
       return;
     }
 
@@ -1901,15 +2408,17 @@ class SipService extends ChangeNotifier
 
     final usesNativeIosSip = Platform.isIOS && _shouldUseNativeSip();
 
+    // CallKit actions are already executed synchronously by
+    // IOSNativeSipManager before this informational event reaches Flutter.
+    // Replaying them here used to call acceptCall a second time and could
+    // refresh REGISTER while the real INVITE was still in flight.
+    if (usesNativeIosSip) {
+      return true;
+    }
+
     switch (actionName) {
       case 'answer':
         if (_state.callStatus == SipCallUiStatus.inCall) {
-          return true;
-        }
-        if (usesNativeIosSip &&
-            (_state.callStatus == SipCallUiStatus.incoming ||
-                _state.callStatus == SipCallUiStatus.ringing)) {
-          unawaited(acceptCall());
           return true;
         }
         if (_activeCall != null &&
@@ -1920,12 +2429,6 @@ class SipService extends ChangeNotifier
         _ensureIosSipSessionRecovery('system-answer');
         return false;
       case 'decline':
-        if (usesNativeIosSip &&
-            (_state.callStatus == SipCallUiStatus.incoming ||
-                _state.callStatus == SipCallUiStatus.ringing)) {
-          unawaited(decline());
-          return true;
-        }
         if (_activeCall != null &&
             _state.callStatus == SipCallUiStatus.incoming) {
           unawaited(decline());
@@ -1935,13 +2438,6 @@ class SipService extends ChangeNotifier
             _state.callStatus == SipCallUiStatus.failed ||
             _state.callStatus == SipCallUiStatus.idle;
       case 'end':
-        if (usesNativeIosSip &&
-            (_state.callStatus == SipCallUiStatus.calling ||
-                _state.callStatus == SipCallUiStatus.ringing ||
-                _state.callStatus == SipCallUiStatus.inCall)) {
-          unawaited(hangup());
-          return true;
-        }
         if (_activeCall != null) {
           unawaited(hangup());
           return true;
@@ -2708,6 +3204,22 @@ class SipService extends ChangeNotifier
       callStatus: _state.callStatus,
     );
     _notifyListenersSafely();
+  }
+
+  Future<void> _syncIncomingCallPushPreference(bool enabled) async {
+    try {
+      await _apiService.setSendIncomingCallPush(enabled);
+      debugPrint(
+        'SipService: send_incoming_call_push synced -> enabled=$enabled',
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'SipService: failed to sync send_incoming_call_push=$enabled: $error',
+      );
+      debugPrint(
+        'SipService: send_incoming_call_push sync stackTrace: $stackTrace',
+      );
+    }
   }
 
   void _logSipConfig(String stage, {Map<String, String>? extra}) {

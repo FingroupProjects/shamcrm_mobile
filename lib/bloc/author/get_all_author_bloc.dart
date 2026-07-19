@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -22,7 +23,7 @@ class GetAllAuthorBloc extends Bloc<GetAllAuthorEvent, GetAllAuthorState> {
       var res = await apiService.getAllAuthor();
       emit(GetAllAuthorSuccess(dataAuthor: res));
     } catch (e) {
-      emit(GetAllAuthorError(message: e.toString()));
+      emit(GetAllAuthorError(message: friendlyError(e)));
     }
   }
 

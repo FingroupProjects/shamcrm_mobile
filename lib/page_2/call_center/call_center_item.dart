@@ -70,7 +70,6 @@ class CallLogItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
 
-
                       const SizedBox(height: 4),
 
                       // Номер телефона
@@ -82,7 +81,7 @@ class CallLogItem extends StatelessWidget {
                           fontSize: 14,
                           color: context.appColors.textSecondary,
                         ),
-                               maxLines: 1,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
 
@@ -97,7 +96,7 @@ class CallLogItem extends StatelessWidget {
                           fontSize: 12,
                           color: context.appColors.textSecondary,
                         ),
-                               maxLines: 1,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
 
@@ -175,6 +174,8 @@ class CallLogItem extends StatelessWidget {
         return Icons.call_made;
       case CallType.missed:
         return Icons.call_missed;
+      case CallType.outgoingMissed:
+        return Icons.call_made;
     }
   }
 
@@ -186,39 +187,41 @@ class CallLogItem extends StatelessWidget {
         return context.appColors.buttonPrimaryBg;
       case CallType.missed:
         return context.appColors.error;
+      case CallType.outgoingMissed:
+        return context.appColors.error;
     }
   }
 
   String _formatDate(DateTime date) {
-  // Проверяем, что дата не null
-  if (date == null) {
-    return 'Дата неизвестна';
+    // Проверяем, что дата не null
+    if (date == null) {
+      return 'Дата неизвестна';
+    }
+
+    // Преобразуем UTC в локальное время устройства
+    final timeZoneOffset = DateTime.now().timeZoneOffset;
+    final localDate = date.add(timeZoneOffset);
+
+    // Логика отображения относительно текущего времени
+    final now = DateTime.now();
+    final difference = now.difference(localDate);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} мин назад';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} ч назад';
+    } else if (difference.inDays == 1) {
+      return 'Вчера';
+    } else {
+      // Формат даты и времени с учётом локального часового пояса
+      final day = localDate.day.toString().padLeft(2, '0');
+      final month = localDate.month.toString().padLeft(2, '0');
+      final year = localDate.year;
+      final hour = localDate.hour.toString().padLeft(2, '0');
+      final minute = localDate.minute.toString().padLeft(2, '0');
+      return '$day.$month.$year $hour:$minute';
+    }
   }
-
-  // Преобразуем UTC в локальное время устройства
-  final timeZoneOffset = DateTime.now().timeZoneOffset;
-  final localDate = date.add(timeZoneOffset);
-
-  // Логика отображения относительно текущего времени
-  final now = DateTime.now();
-  final difference = now.difference(localDate);
-
-  if (difference.inMinutes < 60) {
-    return '${difference.inMinutes} мин назад';
-  } else if (difference.inHours < 24) {
-    return '${difference.inHours} ч назад';
-  } else if (difference.inDays == 1) {
-    return 'Вчера';
-  } else {
-    // Формат даты и времени с учётом локального часового пояса
-    final day = localDate.day.toString().padLeft(2, '0');
-    final month = localDate.month.toString().padLeft(2, '0');
-    final year = localDate.year;
-    final hour = localDate.hour.toString().padLeft(2, '0');
-    final minute = localDate.minute.toString().padLeft(2, '0');
-    return '$day.$month.$year $hour:$minute';
-  }
-}
 
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes;

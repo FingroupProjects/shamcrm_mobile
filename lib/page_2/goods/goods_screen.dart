@@ -30,6 +30,9 @@ class _GoodsScreenState extends State<GoodsScreen> {
   late ScrollController _scrollController;
   Map<String, dynamic> _currentFilters = {};
   bool _canCreateProduct = false;
+  bool _isTojsokhtmontjTenant = false;
+  String? _tojsokhtmontjSortBy;
+  String _tojsokhtmontjSortDirection = 'asc';
   final ApiService _apiService = ApiService();
 
   @override
@@ -46,6 +49,15 @@ class _GoodsScreenState extends State<GoodsScreen> {
       _onSearch(_searchController.text);
     });
     _checkPermissions();
+    _loadTenantFlags();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+    });
   }
 
   Future<void> _checkPermissions() async {
@@ -127,6 +139,8 @@ class _GoodsScreenState extends State<GoodsScreen> {
     }
     setState(() {
       _currentFilters = {};
+      _tojsokhtmontjSortBy = null;
+      _tojsokhtmontjSortDirection = 'asc';
       if (kDebugMode) {
         debugPrint('GoodsScreen: Очищены текущие фильтры');
       }
@@ -247,61 +261,33 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     ),
                   );
                 } else if (state is GoodsDataLoaded) {
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: state.goods.length +
-                        (context.read<GoodsBloc>().allGoodsFetched ? 0 : 1),
-                    itemBuilder: (context, index) {
-                      if (index == state.goods.length) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(8),
-                            child: PlayStoreImageLoading(
-                              size: 80.0,
-                              duration: Duration(milliseconds: 1000),
-                            ),
-                          ),
-                        );
-                      }
-                      final Goods goods = state.goods[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: GoodsCard(
-                          goodsId: goods.id,
-                          goodsName: goods.name,
-                          goodsDescription: goods.description ?? "",
-                          goodsCategory: goods.category.name,
-                          goodsStockQuantity: goods.quantity ?? 0,
-                          goodsFiles: goods.files,
-                          isActive: goods.isActive,
-                          label: goods.label,
-                        ),
-                      );
-                    },
+                  final goodsList =
+                      _filterAndSortTojsokhtmontjGoods(state.goods);
+                  final list = _buildGoodsList(
+                    goodsList,
+                    showLoader: !context.read<GoodsBloc>().allGoodsFetched,
+                  );
+                  if (!_isTojsokhtmontjTenant) return list;
+                  return Column(
+                    children: [
+                      _buildTojsokhtmontjDirectoryToolbar(),
+                      Expanded(child: list),
+                    ],
                   );
                 } else if (state is GoodsBarcodeSearchResult) {
                   if (state.isMultiple) {
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: state.goods.length,
-                      itemBuilder: (context, index) {
-                        final Goods goods = state.goods[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: GoodsCard(
-                            goodsId: goods.id,
-                            goodsName: goods.name,
-                            goodsDescription: goods.description ?? "",
-                            goodsCategory: goods.category.name,
-                            goodsStockQuantity: goods.quantity ?? 0,
-                            goodsFiles: goods.files,
-                            isActive: goods.isActive,
-                            label: goods.label,
-                          ),
-                        );
-                      },
+                    final goodsList =
+                        _filterAndSortTojsokhtmontjGoods(state.goods);
+                    final list = _buildGoodsList(
+                      goodsList,
+                      showLoader: false,
+                    );
+                    if (!_isTojsokhtmontjTenant) return list;
+                    return Column(
+                      children: [
+                        _buildTojsokhtmontjDirectoryToolbar(),
+                        Expanded(child: list),
+                      ],
                     );
                   } else if (state.isEmpty) {
                     return Center(
@@ -404,5 +390,144 @@ class _GoodsScreenState extends State<GoodsScreen> {
             )
           : null,
     );
+  }
+
+  Widget _buildGoodsList(List<Goods> goodsList, {required bool showLoader}) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: goodsList.length + (showLoader ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == goodsList.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: PlayStoreImageLoading(
+                size: 80,
+                duration: Duration(milliseconds: 1000),
+              ),
+            ),
+          );
+        }
+
+        final goods = goodsList[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: GoodsCard(
+            goodsId: goods.id,
+            goodsName: goods.name,
+            goodsDescription: goods.description ?? '',
+            goodsCategory: goods.category.name,
+            goodsStockQuantity: goods.quantity ?? 0,
+            goodsFiles: goods.files,
+            isActive: goods.isActive,
+            label: goods.label,
+            isTojsokhtmontjTenant: _isTojsokhtmontjTenant,
+            availabilityStatus: goods.availabilityStatus,
+            characteristicsSummary: goods.characteristicsSummary,
+            characteristics: goods.characteristicLabels,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTojsokhtmontjDirectoryToolbar() {
+    final colors = context.appColors;
+    return Container(
+      color: colors.surfaceAccent,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colors.borderSubtle),
+        ),
+        child: Row(
+          children: [
+            _buildSortHeader('№', 'number', flex: 2),
+            _buildSortHeader('Категория', 'category', flex: 4),
+            _buildSortHeader('Статус', 'status', flex: 3),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortHeader(String title, String field, {required int flex}) {
+    final colors = context.appColors;
+    final isActive = _tojsokhtmontjSortBy == field;
+    return Expanded(
+      flex: flex,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (_tojsokhtmontjSortBy == field) {
+              _tojsokhtmontjSortDirection =
+                  _tojsokhtmontjSortDirection == 'asc' ? 'desc' : 'asc';
+            } else {
+              _tojsokhtmontjSortBy = field;
+              _tojsokhtmontjSortDirection = 'asc';
+            }
+          });
+        },
+        child: Container(
+          height: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isActive ? colors.success : Colors.transparent,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              '$title ${isActive ? (_tojsokhtmontjSortDirection == 'asc' ? '↑' : '↓') : '↕'}',
+              style: context.appTextStyles.caption.copyWith(
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                color: isActive ? colors.buttonPrimaryBg : colors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Goods> _filterAndSortTojsokhtmontjGoods(List<Goods> goods) {
+    if (!_isTojsokhtmontjTenant || _tojsokhtmontjSortBy == null) return goods;
+
+    final sorted = List<Goods>.from(goods);
+    final direction = _tojsokhtmontjSortDirection == 'desc' ? -1 : 1;
+
+    int statusRank(String? status) {
+      final normalized = (status ?? '').toLowerCase().replaceAll('ё', 'е');
+      if (normalized.contains('брон')) return 0;
+      if (normalized.contains('прод')) return 1;
+      if (normalized.contains('резерв')) return 2;
+      if (normalized.contains('свобод')) return 3;
+      return 4;
+    }
+
+    sorted.sort((a, b) {
+      var result = 0;
+      switch (_tojsokhtmontjSortBy) {
+        case 'number':
+          result = (a.sortOrder ?? a.id).compareTo(b.sortOrder ?? b.id);
+        case 'category':
+          result = a.category.name
+              .toLowerCase()
+              .compareTo(b.category.name.toLowerCase());
+        case 'status':
+          final aRank = statusRank(a.availabilityStatus);
+          final bRank = statusRank(b.availabilityStatus);
+          if (aRank == 4 && bRank != 4) return 1;
+          if (aRank != 4 && bRank == 4) return -1;
+          result = aRank.compareTo(bRank);
+      }
+      if (result == 0) result = a.id.compareTo(b.id);
+      return result * direction;
+    });
+    return sorted;
   }
 }

@@ -16,6 +16,10 @@ class GoodsCard extends StatefulWidget {
   final List<GoodsFile> goodsFiles;
   final bool? isActive;
   final Label? label;
+  final bool isTojsokhtmontjTenant;
+  final String? availabilityStatus;
+  final String? characteristicsSummary;
+  final List<String> characteristics;
 
   const GoodsCard({
     Key? key,
@@ -27,6 +31,10 @@ class GoodsCard extends StatefulWidget {
     required this.goodsFiles,
     this.isActive,
     this.label,
+    this.isTojsokhtmontjTenant = false,
+    this.availabilityStatus,
+    this.characteristicsSummary,
+    this.characteristics = const [],
   }) : super(key: key);
 
   @override
@@ -199,6 +207,29 @@ class _GoodsCardState extends State<GoodsCard> {
   }
 
   Widget _buildStatusLabel() {
+    if (widget.isTojsokhtmontjTenant) {
+      final statusText = widget.availabilityStatus?.trim() ?? '';
+      if (statusText.isEmpty) return const SizedBox.shrink();
+
+      final colors = _tojsokhtmontjStatusColors(statusText);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: colors.$1,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          statusText,
+          style: TextStyle(
+            color: colors.$2,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Gilroy',
+          ),
+        ),
+      );
+    }
+
     final localizations = AppLocalizations.of(context)!;
     final isActive = widget.isActive ?? false;
     final statusText = isActive
@@ -220,6 +251,64 @@ class _GoodsCardState extends State<GoodsCard> {
           fontFamily: 'Gilroy',
         ),
       ),
+    );
+  }
+
+  (Color, Color) _tojsokhtmontjStatusColors(String status) {
+    final normalized = status.trim().toLowerCase().replaceAll('ё', 'е');
+    if (normalized.contains('свобод')) {
+      return (const Color(0xFFE0F6E9), const Color(0xFF11B95C));
+    }
+    if (normalized.contains('брон')) {
+      return (const Color(0xFFFFF4DD), const Color(0xFFE18A00));
+    }
+    if (normalized.contains('прод')) {
+      return (const Color(0xFFFFE3E3), const Color(0xFFFF3B30));
+    }
+    if (normalized.contains('резерв')) {
+      return (const Color(0xFFE4EFFF), const Color(0xFF1D7CFF));
+    }
+    return (const Color(0xFFF1F4FA), const Color(0xFF61708A));
+  }
+
+  Widget _buildCharacteristics() {
+    final values = widget.characteristics
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    if (values.isEmpty) {
+      final summary = widget.characteristicsSummary?.trim();
+      if (summary == null || summary.isEmpty) return const SizedBox.shrink();
+      values.addAll(summary
+          .split(RegExp(r'\s*/\s*|,\s*'))
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty));
+    }
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: values.map((value) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xffF4F7FD),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xffE1E7F0)),
+          ),
+          child: Text(
+            value,
+            style: TaskCardStyles.priorityStyle(context).copyWith(
+              fontSize: 11,
+              color: const Color(0xff61708A),
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -291,6 +380,15 @@ class _GoodsCardState extends State<GoodsCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (widget.isTojsokhtmontjTenant &&
+                          (widget.characteristics.isNotEmpty ||
+                              (widget.characteristicsSummary
+                                      ?.trim()
+                                      .isNotEmpty ??
+                                  false))) ...[
+                        const SizedBox(height: 4),
+                        _buildCharacteristics(),
+                      ],
                       const SizedBox(height: 4),
                       _buildStatusLabel(),
                     ],

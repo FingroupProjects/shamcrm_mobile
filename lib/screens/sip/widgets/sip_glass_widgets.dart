@@ -14,21 +14,13 @@ abstract class _G {
   static const accent = Color(0xFF3D8EFF);
   static const green = Color(0xFF34C759);
   static const red = Color(0xFFFF3B30);
-  static const amber = Color(0xFFFFCC00);
-
   static const textPrimary = Colors.white;
   static const textSecondary = Color(0xAAFFFFFF);
   static const textTertiary = Color(0x66FFFFFF);
 
   static const lightBg = Color(0xFFF2F6FF);
-  static const lightSurface = Colors.white;
   static const lightText = Color(0xFF0F172A);
   static const lightSubtext = Color(0xFF64748B);
-  static const lightAccent = Color(0xFF0A84FF);
-  static const lightGreen = Color(0xFF25A344);
-  static const brandPrimary = Color(0xFF1E2E52);
-  static const brandMuted = Color(0xFF99A4BA);
-  static const lightPanel = Color(0xFFF4F7FD);
 }
 
 class _GlassContainer extends StatelessWidget {

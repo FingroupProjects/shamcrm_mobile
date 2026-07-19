@@ -4,6 +4,15 @@ part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 extension _SipSettingsSheetExtension on _SipScreenState {
   Future<void> _showSettingsSheet() async {
     final l10n = AppLocalizations.of(context)!;
+    var passwordVisible = false;
+    final currentState = _sipRuntime.state;
+    _suspendDraftAutosave = true;
+    _serverController.text = currentState.server;
+    _loginController.text = currentState.login;
+    _passwordController.text = currentState.password;
+    _portController.text = currentState.port.toString();
+    _selectedTransport = currentState.transport;
+    _suspendDraftAutosave = false;
 
     await showCupertinoModalPopup<void>(
       context: context,
@@ -70,10 +79,31 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 placeholder: l10n.translate('sip_login'),
                               ),
                               const SizedBox(height: 10),
-                              _iosField(
-                                controller: _passwordController,
-                                placeholder: l10n.translate('sip_password'),
-                                obscureText: true,
+                              StatefulBuilder(
+                                builder: (context, setPasswordState) =>
+                                    _iosField(
+                                  controller: _passwordController,
+                                  placeholder: l10n.translate('sip_password'),
+                                  obscureText: !passwordVisible,
+                                  suffix: CupertinoButton(
+                                    minimumSize: const Size(44, 44),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    onPressed: () {
+                                      setPasswordState(() {
+                                        passwordVisible = !passwordVisible;
+                                      });
+                                    },
+                                    child: Icon(
+                                      passwordVisible
+                                          ? CupertinoIcons.eye_slash
+                                          : CupertinoIcons.eye,
+                                      size: 21,
+                                      color: const Color(0xFF7A8499),
+                                    ),
+                                  ),
+                                ),
                               ),
                               const SizedBox(height: 10),
                               _transportSelector(context),
@@ -83,8 +113,9 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 placeholder: l10n.translate('sip_port'),
                                 keyboardType: TextInputType.number,
                               ),
-                              if (defaultTargetPlatform ==
-                                  TargetPlatform.iOS) ...[
+                              if (defaultTargetPlatform == TargetPlatform.iOS ||
+                                  defaultTargetPlatform ==
+                                      TargetPlatform.android) ...[
                                 const SizedBox(height: 10),
                                 SizedBox(
                                   width: double.infinity,
@@ -99,7 +130,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                       await _showIosDiagnosticsSheet(context);
                                     },
                                     child: const Text(
-                                      'iPhone SIP Диагностика',
+                                      'SIP Диагностика',
                                       style: TextStyle(
                                         color: Color(0xFF0A84FF),
                                         fontWeight: FontWeight.w700,
@@ -198,11 +229,14 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     required String placeholder,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    Widget? suffix,
   }) {
     return CupertinoTextField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      suffix: suffix,
+      suffixMode: OverlayVisibilityMode.always,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       placeholder: placeholder,
       decoration: BoxDecoration(
@@ -214,9 +248,12 @@ extension _SipSettingsSheetExtension on _SipScreenState {
   }
 
   Future<void> _showIosDiagnosticsSheet(BuildContext context) async {
-    final voipToken = await _sipRuntime.getVoipPushToken();
+    final isAndroid = Platform.isAndroid;
+    final voipToken = isAndroid ? null : await _sipRuntime.getVoipPushToken();
     final logs = await _sipRuntime.getNativeDiagnosticLogs();
-    final backendSync = await _apiService.getVoipSyncDiagnostics();
+    final backendSync = isAndroid
+        ? const <String, dynamic>{}
+        : await _apiService.getVoipSyncDiagnostics();
 
     final tokenText = (voipToken == null || voipToken.trim().isEmpty)
         ? 'VoIP token: MISSING'
@@ -252,12 +289,12 @@ extension _SipSettingsSheetExtension on _SipScreenState {
           }).toList(growable: false);
 
     final report = [
-      'iOS SIP Diagnostics',
+      '${Platform.isAndroid ? 'Android' : 'iOS'} SIP Diagnostics',
       registrationText,
       callText,
-      tokenText,
-      backendText,
-      if (backendError != null && backendError.trim().isNotEmpty)
+      if (!isAndroid) tokenText,
+      if (!isAndroid) backendText,
+      if (!isAndroid && backendError != null && backendError.trim().isNotEmpty)
         'Backend error: $backendError',
       'Native logs: ${logs.length} stored, newest first',
       '',
@@ -381,6 +418,45 @@ extension _SipSettingsSheetExtension on _SipScreenState {
         );
       },
     );
+  }
+
+  Future<void> _shareIosDiagnosticsReport(
+    String report,
+    BuildContext shareButtonContext,
+  ) async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateTime.now()
+          .toLocal()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
+      final file = File('${directory.path}/sip_diagnostics_$timestamp.md');
+      await file.writeAsString(report, flush: true);
+
+      final renderObject = shareButtonContext.findRenderObject();
+      final viewSize = MediaQuery.sizeOf(shareButtonContext);
+      final shareOrigin = renderObject is RenderBox && renderObject.hasSize
+          ? renderObject.localToGlobal(Offset.zero) & renderObject.size
+          : Rect.fromLTWH(
+              math.max(1, viewSize.width - 48),
+              12,
+              40,
+              40,
+            );
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'text/markdown')],
+        subject: 'iOS SIP Diagnostics',
+        text: 'iOS SIP Diagnostics',
+        sharePositionOrigin: shareOrigin,
+      );
+    } catch (error) {
+      _showSipSnackBar(
+        'Не удалось поделиться диагностикой: $error',
+        isError: true,
+      );
+    }
   }
 
   Widget _transportSelector(BuildContext context) {

@@ -60,7 +60,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _isManager = false;
 
   final TextEditingController _searchController = TextEditingController();
-  bool _canReadDealStatus = false;
   bool _canCreateDealStatus = false;
   bool _canUpdateDealStatus = false;
   bool _canDeleteDealStatus = false;
@@ -781,12 +780,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _checkPermissions() async {
-    final canRead = await _apiService.hasPermission('dealStatus.read');
     final canCreate = await _apiService.hasPermission('dealStatus.create');
     final canUpdate = await _apiService.hasPermission('dealStatus.update');
     final canDelete = await _apiService.hasPermission('dealStatus.delete');
     setState(() {
-      _canReadDealStatus = canRead;
       _canCreateDealStatus = canCreate;
       _canUpdateDealStatus = canUpdate;
       _canDeleteDealStatus = canDelete;
@@ -2172,7 +2169,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             setState(() {
               // Обновляем табы с новыми данными
               _tabTitles = state.dealStatuses
-                  .where((status) => _canReadDealStatus)
                   .map((status) => {
                         'id': status.id,
                         'title': status.title,

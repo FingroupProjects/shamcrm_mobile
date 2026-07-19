@@ -103,6 +103,7 @@ class CreateLeadStatus extends LeadEvent {
   final bool? isSuccess;
   final bool? isFailure;
   final bool isUnassembled;
+  final List<int>? userIds;
 
   CreateLeadStatus({
     required this.title,
@@ -111,6 +112,7 @@ class CreateLeadStatus extends LeadEvent {
     this.isSuccess,
     this.isFailure,
     this.isUnassembled = false,
+    this.userIds,
   });
 }
 
@@ -135,6 +137,7 @@ class CreateLead extends LeadEvent {
   final bool isSystemManager;
   final List<FileHelper>? files;
   final String? priceTypeId; // Новое поле
+  final int? currencyId;
 
   CreateLead({
     required this.name,
@@ -157,6 +160,7 @@ class CreateLead extends LeadEvent {
     this.isSystemManager = false,
     required this.localizations,
     this.priceTypeId, // Новое поле
+    this.currencyId,
   });
 }
 
@@ -195,6 +199,7 @@ class UpdateLead extends LeadEvent {
   final String? duplicate; // Новое поле
   final int? reasonForRefusalId;
   final String? reasonForRefusal;
+  final int? currencyId;
 
   UpdateLead({
     required this.leadId,
@@ -222,6 +227,7 @@ class UpdateLead extends LeadEvent {
     this.duplicate, // Новое поле]
     this.reasonForRefusalId,
     this.reasonForRefusal,
+    this.currencyId,
   });
 }
 
@@ -252,6 +258,7 @@ class UpdateLeadStatusEdit extends LeadEvent {
   final bool isFailure;
   final bool isUnassembled;
   final AppLocalizations localizations;
+  final List<int>? userIds;
 
   UpdateLeadStatusEdit(
     this.leadStatusId,
@@ -260,6 +267,7 @@ class UpdateLeadStatusEdit extends LeadEvent {
     this.isFailure,
     this.isUnassembled,
     this.localizations,
+    this.userIds,
   );
 }
 

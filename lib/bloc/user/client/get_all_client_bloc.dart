@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
@@ -14,7 +15,7 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
   GetAllClientBloc({required this.apiService}) : super(GetAllClientInitial()) {
     on<GetAllClientEv>(_getUsers);
     on<GetAnotherClientEv>(_getAnotherUsers);
-    on<GetUsersNotInChatEv>(_getUsersNotInChat);  
+    on<GetUsersNotInChatEv>(_getUsersNotInChat);
     on<GetUsersWithoutCorporateChatEv>(_getUsersWithoutCorporateChat);
   }
 
@@ -25,7 +26,7 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
       var res = await apiService.getAllUser();
       emit(GetAllClientSuccess(dataUser: res));
     } catch (e) {
-      emit(GetAllClientError(message: e.toString()));
+      emit(GetAllClientError(message: friendlyError(e)));
     }
   }
 
@@ -36,7 +37,7 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
       var res = await apiService.getAnotherUsers();
       emit(GetAllClientSuccess(dataUser: res));
     } catch (e) {
-      emit(GetAllClientError(message: e.toString()));
+      emit(GetAllClientError(message: friendlyError(e)));
     }
   }
   Future<void> _getUsersWithoutCorporateChat(
@@ -46,7 +47,7 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
       var res = await apiService.getUsersWihtoutCorporateChat();
       emit(GetAllClientSuccess(dataUser: res));
     } catch (e) {
-      emit(GetAllClientError(message: e.toString()));
+      emit(GetAllClientError(message: friendlyError(e)));
     }
   }
 
@@ -57,7 +58,7 @@ class GetAllClientBloc extends Bloc<GetAllClientEvent, GetAllClientState> {
       var res = await apiService.getUsersNotInChat(event.chatId);
       emit(GetAllClientSuccess(dataUser: res));
     } catch (e) {
-      emit(GetAllClientError(message: e.toString()));
+      emit(GetAllClientError(message: friendlyError(e)));
     }
   }
 

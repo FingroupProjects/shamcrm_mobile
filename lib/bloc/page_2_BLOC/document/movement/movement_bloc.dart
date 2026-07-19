@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -86,9 +87,9 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException) {
-          emit(MovementError(e.toString(), statusCode: e.statusCode));
+          emit(MovementError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(MovementError(e.toString()));
+          emit(MovementError(friendlyError(e)));
         }
       }
     }
@@ -121,9 +122,9 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException) {
-          emit(MovementCreateError(e.toString(), statusCode: e.statusCode));
+          emit(MovementCreateError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(MovementCreateError(e.toString()));
+          emit(MovementCreateError(friendlyError(e)));
         }
       }
     }
@@ -157,9 +158,9 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException) {
-          emit(MovementUpdateError(e.toString(), statusCode: e.statusCode));
+          emit(MovementUpdateError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(MovementUpdateError(e.toString()));
+          emit(MovementUpdateError(friendlyError(e)));
         }
       }
     }
@@ -255,9 +256,9 @@ Future<void> _onDeleteMovementDocument(DeleteMovementDocument event, Emitter<Mov
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(MovementApproveMassError(e.toString(), statusCode: e.statusCode));
+          emit(MovementApproveMassError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(MovementApproveMassError(e.toString()));
+          emit(MovementApproveMassError(friendlyError(e)));
         }
         add(FetchMovements(forceRefresh: true, filters: _filters, search: _search));
       }
@@ -282,9 +283,9 @@ Future<void> _onDeleteMovementDocument(DeleteMovementDocument event, Emitter<Mov
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(MovementDisapproveMassError(e.toString(), statusCode: e.statusCode));
+          emit(MovementDisapproveMassError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(MovementDisapproveMassError(e.toString()));
+          emit(MovementDisapproveMassError(friendlyError(e)));
         }
         add(FetchMovements(forceRefresh: true, filters: _filters, search: _search));
       }
@@ -313,9 +314,9 @@ Future<void> _onDeleteMovementDocument(DeleteMovementDocument event, Emitter<Mov
   } catch (e) {
     if (!isClosed) {
       if (e is ApiException && e.statusCode == 409) {
-        emit(MovementDeleteMassError(e.toString(), statusCode: e.statusCode));
+        emit(MovementDeleteMassError(friendlyError(e), statusCode: e.statusCode));
       } else {
-        emit(MovementDeleteMassError(e.toString()));
+        emit(MovementDeleteMassError(friendlyError(e)));
       }
       add(FetchMovements(forceRefresh: true, filters: _filters, search: _search));
     }
@@ -339,9 +340,9 @@ Future<void> _onDeleteMovementDocument(DeleteMovementDocument event, Emitter<Mov
     } catch (e) {
       if (!isClosed) {
         if (e is ApiException && e.statusCode == 409) {
-          emit(MovementRestoreMassError(e.toString(), statusCode: e.statusCode));
+          emit(MovementRestoreMassError(friendlyError(e), statusCode: e.statusCode));
         } else {
-          emit(MovementRestoreMassError(e.toString()));
+          emit(MovementRestoreMassError(friendlyError(e)));
         }
         add(FetchMovements(forceRefresh: true, filters: _filters, search: _search));
       }

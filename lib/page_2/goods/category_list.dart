@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -25,6 +26,7 @@ class CategoryDropdownWidget extends StatefulWidget {
 }
 
 class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
+  final ApiService _apiService = ApiService();
   SubCategoryAttributesData? selectedSubCategory;
 
   TextStyle get categoryTextStyle => TextStyle(
@@ -37,12 +39,56 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.selectedCategory != null && widget.subCategories.isNotEmpty) {
-      selectedSubCategory = widget.subCategories.firstWhere(
-        (subCat) => subCat.name == widget.selectedCategory,
-        orElse: () => widget.subCategories.first,
-      );
+    _syncSelectedCategory();
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryDropdownWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedCategory != widget.selectedCategory ||
+        oldWidget.subCategories != widget.subCategories) {
+      _syncSelectedCategory();
     }
+  }
+
+  void _syncSelectedCategory() {
+    if (widget.selectedCategory == null || widget.subCategories.isEmpty) {
+      selectedSubCategory = null;
+      return;
+    }
+
+    for (final subCategory in widget.subCategories) {
+      if (subCategory.name == widget.selectedCategory) {
+        selectedSubCategory = subCategory;
+        return;
+      }
+    }
+
+    selectedSubCategory = null;
+  }
+
+  Future<List<SubCategoryAttributesData>> _searchSubCategories(
+    String query,
+  ) async {
+    try {
+      final serverItems = await _apiService.getSubCategoryAttributes(
+        search: query,
+      );
+      if (serverItems.isNotEmpty || query.trim().isEmpty) {
+        return serverItems;
+      }
+    } catch (_) {
+      // Fall back to local filtering when server search is unavailable.
+    }
+
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return widget.subCategories;
+    }
+
+    return widget.subCategories
+        .where((item) => item.filter(normalizedQuery))
+        .toList();
   }
 
   @override
@@ -84,8 +130,7 @@ class _CategoryDropdownWidgetState extends State<CategoryDropdownWidget> {
             },
             headerBuilder: (context, selectedItem, enabled) {
               return Text(
-                selectedItem?.name ??
-                    AppLocalizations.of(context)!.translate('select_category'),
+                selectedItem.name,
                 style: categoryTextStyle,
               );
             },

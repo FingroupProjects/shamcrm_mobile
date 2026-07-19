@@ -9,6 +9,8 @@ import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import io.flutter.plugin.common.EventChannel
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class NativeSipStoredConfig(
     val server: String,
@@ -30,6 +32,11 @@ object NativeSipBridge {
     private const val KEY_TRANSPORT = "transport"
     private const val KEY_AUTH_USER = "auth_user"
     private const val KEY_ENABLED = "enabled"
+    private const val KEY_PENDING_CALL_UI_OPEN = "pending_call_ui_open"
+    private const val KEY_PENDING_CALL_UI_REQUEST_ID = "pending_call_ui_request_id"
+    private const val DIAGNOSTIC_PREFS = "native_sip_diagnostics"
+    private const val KEY_DIAGNOSTIC_LOGS = "logs"
+    private const val MAX_DIAGNOSTIC_LOGS = 500
 
     // Отдельный НЕЗАШИФРОВАННЫЙ файл только для флага enabled.
     // isPersistentEnabled() ДОЛЖЕН читать отсюда, а не из PREFS_NAME!
@@ -47,6 +54,8 @@ object NativeSipBridge {
     private var nativeSipManager: NativeSipManager? = null
     private var flutterEventSink: EventChannel.EventSink? = null
     private var appInForeground = false
+    @Volatile
+    private var incomingAnswerPending = false
     private var currentSnapshot = hashMapOf<String, Any?>(
         "registrationState" to "disconnected",
         "callState" to "idle",
@@ -107,7 +116,69 @@ object NativeSipBridge {
 
     fun setFlutterEventSink(eventSink: EventChannel.EventSink?) {
         flutterEventSink = eventSink
+        if (eventSink != null && hasPendingCallUiOpen()) {
+            dispatchBridgeEvent(buildCallUiRequestEvent("pending-native-intent"))
+        }
     }
+
+    fun requestFlutterCallUi(source: String) {
+        val context = appContext ?: return
+        val requestId = System.currentTimeMillis()
+        context.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_PENDING_CALL_UI_OPEN, true)
+            .putLong(KEY_PENDING_CALL_UI_REQUEST_ID, requestId)
+            .apply()
+
+        if (flutterEventSink != null) {
+            dispatchBridgeEvent(buildCallUiRequestEvent(source))
+        }
+    }
+
+    private fun buildCallUiRequestEvent(source: String): HashMap<String, Any?> {
+        return hashMapOf(
+            "type" to "call_ui_request",
+            "source" to source,
+            "requestId" to pendingCallUiRequestId(),
+            "registrationState" to currentSnapshot["registrationState"],
+            "callState" to currentSnapshot["callState"],
+            "remoteIdentity" to currentSnapshot["remoteIdentity"],
+            "message" to currentSnapshot["message"],
+            "muted" to currentSnapshot["muted"],
+            "speakerOn" to currentSnapshot["speakerOn"],
+            "persistentEnabled" to currentSnapshot["persistentEnabled"],
+        )
+    }
+
+    private fun hasPendingCallUiOpen(): Boolean {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return false
+        return flags.getBoolean(KEY_PENDING_CALL_UI_OPEN, false)
+    }
+
+    private fun pendingCallUiRequestId(): Long {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return 0L
+        return flags.getLong(KEY_PENDING_CALL_UI_REQUEST_ID, 0L)
+    }
+
+    fun consumePendingCallUiRequest(): HashMap<String, Any?>? {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return null
+        if (!flags.getBoolean(KEY_PENDING_CALL_UI_OPEN, false)) return null
+
+        val event = buildCallUiRequestEvent("flutter-method-consume")
+        flags.edit()
+            .remove(KEY_PENDING_CALL_UI_OPEN)
+            .remove(KEY_PENDING_CALL_UI_REQUEST_ID)
+            .apply()
+        return event
+    }
+
+    fun isIncomingAnswerPending(): Boolean = incomingAnswerPending
 
     fun addObserver(observer: (HashMap<String, Any?>) -> Unit) {
         bridgeObservers.add(observer)
@@ -232,8 +303,12 @@ object NativeSipBridge {
     }
 
     fun acceptCall(): Boolean {
-        startRuntimeServiceIfPossible("acceptCall")
-        return ensureManager().acceptCall()
+        val accepted = ensureManager().acceptCall()
+        if (accepted) {
+            incomingAnswerPending = true
+            startRuntimeServiceIfPossible("acceptCall")
+        }
+        return accepted
     }
 
     fun declineCall(): Boolean {
@@ -246,6 +321,10 @@ object NativeSipBridge {
 
     fun setMuted(muted: Boolean): Boolean {
         return ensureManager().setMuted(muted)
+    }
+
+    fun sendDtmf(tone: String): Boolean {
+        return ensureManager().sendDtmf(tone)
     }
 
     fun setSpeaker(enabled: Boolean): Boolean {
@@ -342,6 +421,61 @@ object NativeSipBridge {
         )
     }
 
+    fun getStoredConfigForFlutter(): HashMap<String, Any?>? {
+        val config = getStoredConfig() ?: return null
+        return hashMapOf(
+            "server" to config.server,
+            "login" to config.login,
+            "password" to config.password,
+            "port" to config.port,
+            "transport" to config.transport,
+            "authUser" to config.authUser,
+            "enabled" to config.enabled,
+        )
+    }
+
+    @Synchronized
+    fun getDiagnosticLogs(): List<HashMap<String, Any?>> {
+        val context = appContext ?: return emptyList()
+        val raw = context.getSharedPreferences(DIAGNOSTIC_PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_DIAGNOSTIC_LOGS, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(raw)
+            (0 until array.length()).map { index ->
+                val item = array.getJSONObject(index)
+                val detailsJson = item.optJSONObject("details") ?: JSONObject()
+                val details = hashMapOf<String, Any?>()
+                detailsJson.keys().forEach { key -> details[key] = detailsJson.opt(key) }
+                hashMapOf(
+                    "timestamp" to item.optDouble("timestamp", 0.0),
+                    "event" to item.optString("event", "unknown"),
+                    "details" to details,
+                )
+            }
+        } catch (error: Throwable) {
+            Log.w(TAG, "Failed to read SIP diagnostics: ${error.message}")
+            emptyList()
+        }
+    }
+
+    @Synchronized
+    fun clearDiagnosticLogs() {
+        appContext?.getSharedPreferences(DIAGNOSTIC_PREFS, Context.MODE_PRIVATE)
+            ?.edit()?.remove(KEY_DIAGNOSTIC_LOGS)?.apply()
+    }
+
+    fun recordDiagnosticEvent(
+        event: String,
+        details: HashMap<String, Any?> = hashMapOf(),
+    ) {
+        appendDiagnosticEvent(
+            hashMapOf<String, Any?>(
+                "type" to event,
+                *details.entries.map { it.key to it.value }.toTypedArray(),
+            ),
+        )
+    }
+
     fun disposeRuntime() {
         try {
             nativeSipManager?.dispose()
@@ -370,6 +504,7 @@ object NativeSipBridge {
     }
 
     private fun dispatchBridgeEvent(event: HashMap<String, Any?>) {
+        appendDiagnosticEvent(event)
         mainHandler.post {
             try {
                 flutterEventSink?.success(event)
@@ -386,6 +521,30 @@ object NativeSipBridge {
         }
     }
 
+    @Synchronized
+    private fun appendDiagnosticEvent(event: HashMap<String, Any?>) {
+        val context = appContext ?: return
+        try {
+            val diagnosticPrefs =
+                context.getSharedPreferences(DIAGNOSTIC_PREFS, Context.MODE_PRIVATE)
+            val array = JSONArray(diagnosticPrefs.getString(KEY_DIAGNOSTIC_LOGS, "[]") ?: "[]")
+            val details = JSONObject()
+            event.forEach { (key, value) ->
+                if (key != "type") details.put(key, value ?: JSONObject.NULL)
+            }
+            array.put(
+                JSONObject()
+                    .put("timestamp", System.currentTimeMillis() / 1000.0)
+                    .put("event", event["type"]?.toString() ?: "native")
+                    .put("details", details)
+            )
+            while (array.length() > MAX_DIAGNOSTIC_LOGS) array.remove(0)
+            diagnosticPrefs.edit().putString(KEY_DIAGNOSTIC_LOGS, array.toString()).apply()
+        } catch (error: Throwable) {
+            Log.w(TAG, "Failed to append SIP diagnostic event: ${error.message}")
+        }
+    }
+
     private fun updateSnapshotFromEvent(event: HashMap<String, Any?>) {
         when (event["type"]?.toString()) {
             "registration" -> {
@@ -394,6 +553,14 @@ object NativeSipBridge {
             }
             "call" -> {
                 val callState = event["state"]?.toString() ?: "idle"
+                val previousCallState = currentSnapshot["callState"]?.toString()
+                if (callState == "incoming" && previousCallState != "incoming") {
+                    incomingAnswerPending = false
+                } else if (callState == "in_call" || callState == "ended" ||
+                    callState == "failed" || callState == "idle"
+                ) {
+                    incomingAnswerPending = false
+                }
                 currentSnapshot["callState"] = callState
                 currentSnapshot["message"] = event["message"]
                 currentSnapshot["remoteIdentity"] = if (

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 // BLoC для запроса временного PIN-кода
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -32,7 +33,7 @@ Future<void> _onRequestForgotPin(
       email: response.email,
     ));
   } catch (error) {
-    emit(ForgotPinFailure(error.toString()));
+    emit(ForgotPinFailure(friendlyError(error)));
   }
 }
 }

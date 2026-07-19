@@ -12,13 +12,13 @@ class GoodsCard extends StatelessWidget {
   final bool isSelected;
 
   const GoodsCard({
-    Key? key,
+    super.key,
     required this.goods,
     required this.onClick,
     required this.onLongPress,
     this.isSelectionMode = false,
     this.isSelected = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +78,16 @@ class GoodsCard extends StatelessWidget {
                     style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Сумма: ${goods.totalSum}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1E2E52),
                     ),
                   ),
                 ],

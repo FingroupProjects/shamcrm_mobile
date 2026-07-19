@@ -19,7 +19,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order? order;
 
-  const ProductSelectionSheetAdd({ this.order, super.key});
+  const ProductSelectionSheetAdd({this.order, super.key});
 
   @override
   State<ProductSelectionSheetAdd> createState() =>
@@ -41,6 +41,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   bool _showAllMode = false;
   Timer? _searchDebounce;
   int? currencyId;
+  bool _isTojsokhtmontjTenant = false;
 
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
@@ -51,10 +52,19 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   void initState() {
     super.initState();
     _initializeBaseUrl();
+    _loadTenantFlags();
     _loadCurrencyId();
     _scrollController.addListener(_onScroll);
     _bloc = context.read<VariantBottomSheetBloc>();
     _loadSettings();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() {
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+    });
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -154,6 +164,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   // Метод форматирования цены
   String _formatPrice(double? price) {
     if (price == null) price = 0;
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0.00', 'ru_RU').format(price);
+    }
     String symbol = '₽';
 
     if (kDebugMode) {
@@ -188,16 +201,20 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * _scrollThreshold) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * _scrollThreshold) {
       final state = _bloc.state;
 
       if (state.isLoadingMore) return;
 
-      if (state.isInSearchMode && _hasMorePages(state.searchVariantsPagination, state.currentPage)) {
+      if (state.isInSearchMode &&
+          _hasMorePages(state.searchVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreSearchResults(state.currentPage));
-      } else if (state.isInAllVariantsMode && _hasMorePages(state.allVariantsPagination, state.currentPage)) {
+      } else if (state.isInAllVariantsMode &&
+          _hasMorePages(state.allVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreVariants(state.currentPage));
-      } else if (state.isInCategoryMode && _hasMorePages(state.categoryVariantsPagination, state.currentPage)) {
+      } else if (state.isInCategoryMode &&
+          _hasMorePages(state.categoryVariantsPagination, state.currentPage)) {
         _bloc.add(FetchMoreVariantsByCategory(
           categoryId: state.selectedCategoryId!,
           currentPage: state.currentPage,
@@ -254,6 +271,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         _selectedVariants.remove(variantId);
         _selectedQuantities.remove(variantId);
       } else {
+        if (_isTojsokhtmontjTenant) {
+          for (final controller in _quantityControllers.values) {
+            controller.dispose();
+          }
+          _selectedVariants.clear();
+          _selectedQuantities.clear();
+          _quantityControllers.clear();
+        }
         _selectedVariants[variantId] = variant;
         _selectedQuantities[variantId] = 1;
       }
@@ -369,14 +394,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final colors = context.appColors;
     final selectedProducts = _selectedVariants.values
         .map((variant) => {
-      'id': variant.id,
-      'name': _getDisplayName(variant),
-      'price': variant.price ?? 0.0,
-      'quantity': _getVariantQuantity(variant),
-      'imagePath': variant.good?.files.isNotEmpty == true
-          ? variant.good!.files[0].path
-          : null,
-    })
+              'id': variant.id,
+              'name': _getDisplayName(variant),
+              'price': variant.price ?? 0.0,
+              'quantity':
+                  _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
+              'imagePath': variant.good?.files.isNotEmpty == true
+                  ? variant.good!.files[0].path
+                  : null,
+            })
         .toList();
 
     if (selectedProducts.isEmpty) {
@@ -410,9 +436,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   String _getDisplayName(Variant variant) {
     if (variant.attributeValues.isNotEmpty) {
-      return variant.attributeValues
-          .map((attr) => attr.value)
-          .join(', ');
+      return variant.attributeValues.map((attr) => attr.value).join(', ');
     }
     return variant.fullName?.isNotEmpty == true
         ? variant.fullName!
@@ -522,10 +546,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                     color: colors.textPrimary,
                   ),
                 ),
-                if (state.isInCategoryMode)
-                  _buildCategoryBreadcrumb(state),
-                if (state.isInSearchMode)
-                  _buildSearchBreadcrumb(state),
+                if (state.isInCategoryMode) _buildCategoryBreadcrumb(state),
+                if (state.isInSearchMode) _buildSearchBreadcrumb(state),
               ],
             ),
           ),
@@ -582,7 +604,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildSearchBreadcrumb(VariantBottomSheetState state) {
-    final totalResults = state.searchCategories.length + state.searchVariants.length;
+    final totalResults =
+        state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
 final colors = context.appColors;
     return Padding(
@@ -685,7 +708,8 @@ final colors = context.appColors;
     );
   }
 
-  Widget _buildContent(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildContent(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     // Show loading only if there's no data yet
     if (state.isLoading && !state.hasData) {
       return const Center(child: CircularProgressIndicator());
@@ -748,7 +772,8 @@ final colors = context.appColors;
     return const Center(child: CircularProgressIndicator());
   }
 
-  Widget _buildSearchResults(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildSearchResults(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     if (state.isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -766,16 +791,18 @@ final colors = context.appColors;
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         if (state.searchCategories.isNotEmpty) ...[
-          _buildSectionHeader(localizations.translate('categories'), state.searchCategories.length),
+          _buildSectionHeader(localizations.translate('categories'),
+              state.searchCategories.length),
           ...state.searchCategories.map((cat) => _buildCategoryCard(cat)),
           const SizedBox(height: 24),
         ],
         if (state.searchVariants.isNotEmpty) ...[
-          _buildSectionHeader(localizations.translate('goods'), state.searchVariants.length),
-          ...state.searchVariants.map((v) => _buildVariantCard(v, localizations)),
+          _buildSectionHeader(
+              localizations.translate('goods'), state.searchVariants.length),
+          ...state.searchVariants
+              .map((v) => _buildVariantCard(v, localizations)),
         ],
-        if (state.isLoadingMore)
-          _buildLoadingIndicator(),
+        if (state.isLoadingMore) _buildLoadingIndicator(),
       ],
     );
   }
@@ -855,7 +882,8 @@ final colors = context.appColors;
     return GestureDetector(
       onTap: () => _onCategoryTap(category.id, category.name),
       child: Container(
-        margin: EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
+        margin:
+            EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
@@ -936,7 +964,8 @@ final colors = context.appColors;
     );
   }
 
-  Widget _buildAllVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildAllVariants(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     return _buildVariantsList(
       variants: state.allVariants,
       emptyMessageKey: 'no_variants_found',
@@ -945,7 +974,8 @@ final colors = context.appColors;
     );
   }
 
-  Widget _buildCategoryVariants(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildCategoryVariants(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     String emptyMessageKey = state.categoryVariants.isEmpty
         ? 'no_goods_in_category'
         : 'no_variants_found';
@@ -1112,7 +1142,7 @@ final colors = context.appColors;
                 ],
               ),
             ),
-            if (isSelected) ...[
+            if (isSelected && !_isTojsokhtmontjTenant) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -1239,6 +1269,9 @@ final colors = context.appColors;
   Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
     final remainder = variant.remainder;
     final hasStock = remainder != null && remainder > 0;
+    if (_isTojsokhtmontjTenant && !hasStock) {
+      return const SizedBox.shrink();
+    }
     final quantityText = localizations.translate('quantity');
     final outOfStockText = localizations.translate('out_of_stock');
 final colors = context.appColors;

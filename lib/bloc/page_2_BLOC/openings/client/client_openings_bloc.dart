@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
@@ -30,7 +31,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
       
       emit(ClientOpeningsLoaded(clients: clients, search: event.search));
     } catch (e) {
-      emit(ClientOpeningsError(message: e.toString()));
+      emit(ClientOpeningsError(message: friendlyError(e)));
     }
   }
 
@@ -67,7 +68,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     } catch (e) {
       // Сохраняем текущее состояние и эмитим операционную ошибку
       emit(ClientOpeningsOperationError(
-        message: e.toString(),
+        message: friendlyError(e),
         previousState: state,
       ));
     }
@@ -100,7 +101,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     } catch (e) {
       // Эмитим ошибку создания
       emit(ClientOpeningCreateError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }
@@ -132,7 +133,7 @@ class ClientOpeningsBloc extends Bloc<ClientOpeningsEvent, ClientOpeningsState> 
     } catch (e) {
       // Эмитим ошибку обновления для показа в snackbar
       emit(ClientOpeningUpdateError(
-        message: e.toString(),
+        message: friendlyError(e),
       ));
     }
   }

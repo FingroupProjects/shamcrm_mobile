@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/lead_multi_model.dart';
@@ -29,7 +30,7 @@ class GetAllLeadMultiBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
         var res = await ApiService().getAllLeadMulti();
         emit(GetAllLeadSuccess(dataLead: res));
       } catch (e) {
-        emit(GetAllLeadError(message: e.toString()));
+        emit(GetAllLeadError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllLeadError(message: 'Нет подключения к интернету'));

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -22,7 +23,7 @@ class GetAllRegionBloc extends Bloc<GetAllRegionEvent, GetAllRegionState> {
         var res = await ApiService().getAllRegion();
         emit(GetAllRegionSuccess(dataRegion: res));
       } catch (e) {
-        emit(GetAllRegionError(message: e.toString()));
+        emit(GetAllRegionError(message: friendlyError(e)));
       }
     } else {
       emit(GetAllRegionError(message: 'Нет подключения к интернету'));

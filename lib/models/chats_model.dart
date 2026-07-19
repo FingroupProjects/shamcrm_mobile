@@ -503,38 +503,42 @@ class Message {
     if (latitude != null && longitude != null) return 'location';
     if (extractLocationCoordinatesFromText(text) != null) return 'location';
     if (normalizedType == 'file' || normalizedType == 'document') {
-      final path = (filePath ?? text).toLowerCase();
-      const imageExtensions = <String>[
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.gif',
-        '.webp',
-        '.bmp',
-        '.heic',
-        '.heif',
-      ];
-      const videoExtensions = <String>[
-        '.mp4',
-        '.mov',
-        '.m4v',
-        '.avi',
-        '.mkv',
-        '.webm',
-        '.3gp',
-        '.mpeg',
-        '.mpg',
-        '.mts',
-        '.m2ts',
-        '.ts',
-        '.wmv',
-        '.flv',
-        '.hevc',
-      ];
-      if (imageExtensions.any(path.endsWith)) return 'image';
-      if (videoExtensions.any(path.endsWith)) return 'video';
+      final candidate = (filePath?.isNotEmpty == true) ? filePath! : text;
+      if (_looksLikeImage(candidate)) return 'image';
+      if (_looksLikeVideo(candidate)) return 'video';
     }
     return normalizedType;
+  }
+
+  static bool _looksLikeImage(String value) {
+    final lower = value.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.bmp') ||
+        lower.endsWith('.heic') ||
+        lower.endsWith('.heif');
+  }
+
+  static bool _looksLikeVideo(String value) {
+    final lower = value.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.m4v') ||
+        lower.endsWith('.avi') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.webm') ||
+        lower.endsWith('.3gp') ||
+        lower.endsWith('.mpeg') ||
+        lower.endsWith('.mpg') ||
+        lower.endsWith('.mts') ||
+        lower.endsWith('.m2ts') ||
+        lower.endsWith('.ts') ||
+        lower.endsWith('.wmv') ||
+        lower.endsWith('.flv') ||
+        lower.endsWith('.hevc');
   }
 
   factory Message.fromJson(Map<String, dynamic> json, {String? chatType}) {

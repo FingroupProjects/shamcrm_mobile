@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
+import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
@@ -35,6 +36,7 @@ import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
@@ -259,6 +261,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Маппинг идентификаторов экранов на их типы
     int? targetIndexGroup1;
     int? targetIndexGroup2;
+
+    if (kShowSip &&
+        (screenIdentifier == 'sip_journal' ||
+            screenIdentifier == 'sip' ||
+            screenIdentifier == 'sip_dial')) {
+      debugPrint(
+          'HomeScreen: SIP screen identifier detected: $screenIdentifier');
+
+      if (Navigator.canPop(context)) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SipScreen(
+              initialTab: screenIdentifier == 'sip_journal'
+                  ? SipScreenInitialTab.journal
+                  : SipScreenInitialTab.dial,
+            ),
+          ),
+        );
+        debugPrint(
+          'HomeScreen: ✅ Navigated to SIP screen: $screenIdentifier',
+        );
+      });
+
+      return;
+    }
 
     // Handle accounting document screen identifiers
     final accountingScreenIdentifiers = [
@@ -1005,11 +1038,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // ========== КЛЮЧЕВАЯ ЛОГИКА ==========
 
-    bool hasWarehouseAccess = false;
-    if (hasPermission('accounting_of_goods') ||
-        hasPermission('accounting_money')) {
-      hasWarehouseAccess = true;
-    }
+    final hasWarehouseDocumentAccess = hasPermission('accounting_of_goods') ||
+        hasPermission('accounting_money') ||
+        hasPermission('income_document.read') ||
+        hasPermission('movement_document.read') ||
+        hasPermission('manufacture.read') ||
+        hasPermission('manufacture_document.read') ||
+        hasPermission('write_off_document.read') ||
+        hasPermission('expense_document.read') ||
+        hasPermission('client_return_document.read') ||
+        hasPermission('supplier_return_document.read') ||
+        hasPermission('checking_account_pko.read') ||
+        hasPermission('checking_account_rko.read');
+    final hasWarehouseReferenceAccess = hasPermission('storage.read') ||
+        hasPermission('unit.read') ||
+        hasPermission('supplier.read') ||
+        hasPermission('product.read') ||
+        hasPermission('price_type.read') ||
+        hasPermission('category.read') ||
+        hasPermission('lead.read') ||
+        hasPermission('initial_balance.read') ||
+        hasPermission('cash_register.read') ||
+        hasPermission('rko_article.read') ||
+        hasPermission('pko_article.read');
+    final bool hasWarehouseAccess =
+        hasWarehouseDocumentAccess || hasWarehouseReferenceAccess;
 
     // Показываем раздел заказов, если есть любой order.* доступ
     bool hasOrderAccess = hasAnyPermissionWithPrefix('order.');

@@ -323,6 +323,35 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     );
   }
 
+  Widget _buildLegacyBarcodeField() {
+    return CustomTextField(
+      controller: barcodeController,
+      hintText: 'Введите или отсканируйте штрих-код',
+      label: 'Штрих код',
+      keyboardType: TextInputType.text,
+      suffixIcon: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: IconButton(
+          onPressed: _scanBarcode,
+          tooltip: 'Сканировать штрих-код',
+          icon: Image.asset(
+            'assets/icons/AppBar/scanner.png',
+            width: 22,
+            height: 22,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGeneralBarcodeField() {
+    if (selectedCategory != null &&
+        selectedCategory!.attributes.any((attr) => attr.isIndividual)) {
+      return const SizedBox.shrink();
+    }
+    return _buildBarcodeField();
+  }
+
   Future<void> _pickImageForRow(int rowIndex, ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
@@ -344,12 +373,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     }
   }
 
-
   Widget _buildBarcodeField() {
     return CustomTextField(
       controller: barcodeController,
-      hintText:
-          AppLocalizations.of(context)?.translate('barcode_hint') ?? 'Введите или отсканируйте штрих-код',
+      hintText: AppLocalizations.of(context)?.translate('barcode_hint') ??
+          'Введите или отсканируйте штрих-код',
       label: AppLocalizations.of(context)?.translate('barcode') ?? 'Штрих код',
       keyboardType: TextInputType.text,
       suffixIcon: Padding(
@@ -364,7 +392,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
   }
 
   Widget _buildProductionTypeSection() {
-
     final colors = context.appColors;
     if (!_manufactureLoaded || !_hasManufacture) {
       return const SizedBox.shrink();
@@ -917,6 +944,11 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                           : null,
                     ),
                     const SizedBox(height: 8),
+                    _buildGeneralBarcodeField(),
+                    if (!(selectedCategory != null &&
+                        selectedCategory!.attributes
+                            .any((attr) => attr.isIndividual)))
+                      const SizedBox(height: 8),
                     CategoryDropdownWidget(
                       selectedCategory: selectedCategory?.name,
                       onSelectCategory: (category) {
@@ -1352,6 +1384,46 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                         onPressed: () =>
                                                             _scanRowBarcode(
                                                                 index),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              DataCell(
+                                                SizedBox(
+                                                  width: 190,
+                                                  child: TextField(
+                                                    controller: row['barcode'],
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Штрих код',
+                                                      hintStyle: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontFamily: 'Gilroy',
+                                                        color:
+                                                            Color(0xff99A4BA),
+                                                      ),
+                                                      border:
+                                                          OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 16),
+                                                      suffixIcon: IconButton(
+                                                        onPressed: () =>
+                                                            _scanRowBarcode(
+                                                                index),
+                                                        icon: const Icon(
+                                                          Icons.qr_code_scanner,
+                                                          size: 18,
+                                                          color:
+                                                              Color(0xff1E2E52),
+                                                        ),
                                                       ),
                                                     ),
                                                   ),

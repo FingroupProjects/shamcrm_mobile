@@ -400,6 +400,7 @@ class _EditSupplierScreenState extends State<EditSupplierScreen> {
                           label:
                               AppLocalizations.of(context)!.translate('note') ??
                                   'Примечание',
+                          maxLines: 5,
                         ),
                       ],
                     ),

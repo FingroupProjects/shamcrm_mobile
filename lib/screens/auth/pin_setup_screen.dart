@@ -46,6 +46,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   String _confirmPin = '';
   bool _isConfirming = false;
   bool _pinsDoNotMatch = false;
+  bool _isValidatingPins = false;
+  bool _isBiometricPromptInFlight = false;
   static const String _biometricPromptShownKey =
       'biometric_prompt_shown_after_first_login';
 
@@ -550,74 +552,216 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _validatePins() async {
+    if (_isValidatingPins) {
+      return;
+    }
+
+    _isValidatingPins = true;
     final apiService = context.read<ApiService>();
-    if (_pin == _confirmPin) {
-      debugPrint('════════════════════════════════════════════════════════');
-      debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
+    try {
+      if (_pin == _confirmPin) {
+        debugPrint('════════════════════════════════════════════════════════');
+        debugPrint('PinSetupScreen: ✅ PIN-коды совпадают, сохраняем...');
 
-      final prefs = await SharedPreferences.getInstance();
-      final userId = int.tryParse(
-        prefs.getString('userID') ?? prefs.getString('user_id') ?? '',
-      );
+        final prefs = await SharedPreferences.getInstance();
+        final userId = int.tryParse(
+          prefs.getString('userID') ?? prefs.getString('user_id') ?? '',
+        );
 
-      if (userId != null) {
-        try {
-          final hasAccess = await apiService.checkUserAccess(userId);
-          if (!hasAccess) {
-            debugPrint('PinSetupScreen: ⛔ Аккаунт пользователя заблокирован');
-            if (!mounted) return;
-            _showBlockedAccountSnackBar();
-            _triggerErrorEffect();
-            return;
+        if (userId != null) {
+          try {
+            final hasAccess = await apiService.checkUserAccess(userId);
+            if (!hasAccess) {
+              debugPrint('PinSetupScreen: ⛔ Аккаунт пользователя заблокирован');
+              if (!mounted) return;
+              _showBlockedAccountSnackBar();
+              _triggerErrorEffect();
+              return;
+            }
+          } catch (e) {
+            debugPrint('PinSetupScreen: Ошибка проверки доступа: $e');
           }
+        } else {
+          debugPrint(
+              'PinSetupScreen: Не удалось определить user_id для проверки');
+        }
+
+        await prefs.setString('user_pin', _pin);
+
+        debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
+
+        // ✅ Проверка отложенных токенов (на всякий случай)
+        try {
+          debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
+          await apiService.ensureInitialized();
+          await apiService.sendPendingFCMTokenIfNeeded();
+          await apiService.sendPendingVoipTokenIfNeeded();
+          debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
         } catch (e) {
-          debugPrint('PinSetupScreen: Ошибка проверки доступа: $e');
+          debugPrint(
+              'PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');
+        }
+
+        if (userId != null) {
+          try {
+            final hasAccess = await apiService.checkUserAccess(userId);
+            if (!hasAccess) {
+              debugPrint('PinSetupScreen: ⛔ Аккаунт пользователя заблокирован');
+              if (!mounted) return;
+              _showBlockedAccountSnackBar();
+              _triggerErrorEffect();
+              return;
+            }
+          } catch (e) {
+            debugPrint('PinSetupScreen: Ошибка проверки доступа: $e');
+          }
+        } else {
+          debugPrint(
+              'PinSetupScreen: Не удалось определить user_id для проверки');
+        }
+
+        await prefs.setString('user_pin', _pin);
+
+        debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
+
+        // ✅ Проверка отложенных токенов (на всякий случай)
+        try {
+          debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
+          await apiService.ensureInitialized();
+          await apiService.sendPendingFCMTokenIfNeeded();
+          await apiService.sendPendingVoipTokenIfNeeded();
+          debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
+        } catch (e) {
+          debugPrint(
+              'PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');
+        }
+
+        if (isPermissionsLoaded) {
+          debugPrint('PinSetupScreen: 🏠 Переход на HomeScreen');
+          debugPrint(
+              '════════════════════════════════════════════════════════');
+
+          await _maybeShowBiometricPrompt();
+          final shouldOpenWorkdayProfile =
+              await _shouldOpenInitialWorkdayProfile(apiService);
+          if (!mounted) return;
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(
+                initialShowProfileScreen: shouldOpenWorkdayProfile,
+              ),
+            ),
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          debugPrint('PinSetupScreen: ⚠️ Permissions ещё не загружены');
+          debugPrint(
+              '════════════════════════════════════════════════════════');
         }
       } else {
-        debugPrint(
-            'PinSetupScreen: Не удалось определить user_id для проверки');
+        debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
+        _triggerErrorEffect();
       }
+    } finally {
+      _isValidatingPins = false;
+    }
+  }
 
-      await prefs.setString('user_pin', _pin);
+  void _showLegacyBlockedAccountSnackBar() {
+    const accentColor = Color.fromARGB(255, 33, 41, 188);
 
-      debugPrint('PinSetupScreen: ✅ PIN-код сохранён');
-
-      // ✅ Проверка отложенных токенов (на всякий случай)
-      try {
-        debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
-        await apiService.ensureInitialized();
-        await apiService.sendPendingFCMTokenIfNeeded();
-        await apiService.sendPendingVoipTokenIfNeeded();
-        debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
-      } catch (e) {
-        debugPrint('PinSetupScreen: ❌ Ошибка отправки отложенных токенов: $e');
-      }
-
-      if (isPermissionsLoaded) {
-        debugPrint('PinSetupScreen: 🏠 Переход на HomeScreen');
-        debugPrint('════════════════════════════════════════════════════════');
-
-        await _maybeShowBiometricPrompt();
-        final shouldOpenWorkdayProfile =
-            await _shouldOpenInitialWorkdayProfile(apiService);
-        if (!mounted) return;
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              initialShowProfileScreen: shouldOpenWorkdayProfile,
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          elevation: 8,
+          backgroundColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          duration: const Duration(minutes: 1),
+          content: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.red.withValues(alpha: 0.26),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.14),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text:
+                              'Ваш аккаунт заблокирован. Пожалуйста, обратитесь к тех поддержке ',
+                        ),
+                        TextSpan(
+                          text: '@shamcrm_uz',
+                          style: const TextStyle(
+                            color: accentColor,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = _openLegacySupportTelegram,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          (Route<dynamic> route) => false,
-        );
-      } else {
-        debugPrint('PinSetupScreen: ⚠️ Permissions ещё не загружены');
-        debugPrint('════════════════════════════════════════════════════════');
-      }
-    } else {
-      debugPrint('PinSetupScreen: ❌ PIN-коды не совпадают');
-      _triggerErrorEffect();
+        ),
+      );
+  }
+
+  Future<void> _openLegacySupportTelegram() async {
+    const username = 'shamcrm_uz';
+    final telegramUri = Uri.parse('tg://resolve?domain=$username');
+    final webUri = Uri.parse('https://t.me/$username');
+
+    final openedTelegram = await launchUrl(
+      telegramUri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!openedTelegram) {
+      await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -743,6 +887,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   Future<void> _maybeShowBiometricPrompt() async {
+    if (_isBiometricPromptInFlight) {
+      return;
+    }
+
+    _isBiometricPromptInFlight = true;
     try {
       final prefs = await SharedPreferences.getInstance();
       final wasShown = prefs.getBool(_biometricPromptShownKey) ?? false;
@@ -757,8 +906,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      final shouldEnable = await _showBiometricPromptDialog(availability);
+      // Сохраняем флаг до await модалки: это блокирует повторный показ,
+      // если подтверждение PIN было вызвано несколько раз подряд.
       await prefs.setBool(_biometricPromptShownKey, true);
+      final shouldEnable = await _showBiometricPromptDialog(availability);
 
       if (shouldEnable != true || !mounted) {
         return;
@@ -798,6 +949,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       );
     } catch (e) {
       debugPrint('PinSetupScreen: Ошибка предложения биометрии: $e');
+    } finally {
+      _isBiometricPromptInFlight = false;
     }
   }
 

@@ -1,5 +1,6 @@
 package com.softtech.crm_task_manager
 
+import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -8,6 +9,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -165,6 +167,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         handleWidgetIntent(intent)
         updateIncomingCallWindowMode(intent)
+        handleSipCallIntent(intent, "activity-create")
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -315,8 +318,34 @@ class MainActivity : FlutterFragmentActivity() {
                 "getStateSnapshot" -> {
                     result.success(NativeSipBridge.getStateSnapshot())
                 }
+                "getStoredConfig" -> {
+                    result.success(NativeSipBridge.getStoredConfigForFlutter())
+                }
+                "getDiagnosticLogs" -> {
+                    result.success(NativeSipBridge.getDiagnosticLogs())
+                }
+                "clearDiagnosticLogs" -> {
+                    NativeSipBridge.clearDiagnosticLogs()
+                    result.success(true)
+                }
+                "appendDiagnosticLog" -> {
+                    val event = call.argument<String>("event")?.trim().orEmpty()
+                    val rawDetails = call.argument<Map<String, Any?>>("details")
+                    if (event.isEmpty()) {
+                        result.error("INVALID_EVENT", "Diagnostic event is empty", null)
+                    } else {
+                        NativeSipBridge.recordDiagnosticEvent(
+                            event = event,
+                            details = HashMap(rawDetails ?: emptyMap()),
+                        )
+                        result.success(true)
+                    }
+                }
                 "restoreRegistrationIfNeeded" -> {
                     result.success(NativeSipBridge.restoreRegistrationIfNeeded())
+                }
+                "consumePendingCallUiRequest" -> {
+                    result.success(NativeSipBridge.consumePendingCallUiRequest())
                 }
                 "makeCall" -> {
                     val target = call.argument<String>("target")
@@ -333,12 +362,29 @@ class MainActivity : FlutterFragmentActivity() {
                     val muted = call.argument<Boolean>("muted") ?: false
                     result.success(NativeSipBridge.setMuted(muted))
                 }
+                "sendDtmf" -> {
+                    val tone = call.argument<String>("tone")
+                    if (tone.isNullOrBlank()) {
+                        result.error("INVALID_TONE", "DTMF tone is empty", null)
+                    } else {
+                        result.success(NativeSipBridge.sendDtmf(tone))
+                    }
+                }
                 "setSpeaker" -> {
                     val speakerOn = call.argument<Boolean>("speakerOn") ?: false
                     result.success(NativeSipBridge.setSpeaker(speakerOn))
                 }
+                "canUseFullScreenIntent" -> {
+                    result.success(canUseFullScreenIntent())
+                }
+                "requestFullScreenIntentPermission" -> {
+                    result.success(requestFullScreenIntentPermission())
+                }
                 "requestBackgroundReliabilitySettings" -> {
                     result.success(requestBackgroundReliabilitySettings())
+                }
+                "openXiaomiSettings" -> {
+                    result.success(openXiaomiSettings())
                 }
                 "dispose" -> {
                     result.success(true)
@@ -391,6 +437,7 @@ class MainActivity : FlutterFragmentActivity() {
         setIntent(intent)
         handleWidgetIntent(intent)
         updateIncomingCallWindowMode(intent)
+        handleSipCallIntent(intent, "activity-new-intent")
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
         if (!screenIdentifier.isNullOrEmpty()) {
@@ -467,6 +514,71 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
+    private fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true
+        }
+
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        return notificationManager.canUseFullScreenIntent()
+    }
+
+    private fun requestFullScreenIntentPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+            canUseFullScreenIntent()
+        ) {
+            return false
+        }
+
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+            true
+        } catch (error: Throwable) {
+            Log.e("MainActivity", "Failed to open full-screen intent settings", error)
+            false
+        }
+    }
+
+    private fun openXiaomiSettings(): Boolean {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val brand = Build.BRAND.lowercase()
+        val isXiaomiDevice = listOf(manufacturer, brand).any {
+            it.contains("xiaomi") || it.contains("redmi") || it.contains("poco")
+        }
+        if (!isXiaomiDevice) {
+            return false
+        }
+
+        val intents = listOf(
+            Intent("miui.intent.action.OP_AUTO_START").apply {
+                component = ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity",
+                )
+            },
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+            },
+        )
+
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                return true
+            } catch (error: Throwable) {
+                Log.w("MainActivity", "Xiaomi settings intent unavailable", error)
+            }
+        }
+        return false
+    }
+
     private fun updateIncomingCallWindowMode(intent: Intent?) {
         val shouldWakeForCall = intent?.getBooleanExtra("open_sip_call", false) == true
 
@@ -494,6 +606,21 @@ class MainActivity : FlutterFragmentActivity() {
         } else {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+    }
+
+    private fun handleSipCallIntent(intent: Intent?, source: String) {
+        if (intent?.getBooleanExtra("open_sip_call", false) != true) return
+        intent.removeExtra("open_sip_call")
+        val snapshot = NativeSipBridge.getStateSnapshot()
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "call_ui_intent_received",
+            details = hashMapOf(
+                "source" to source,
+                "callState" to snapshot["callState"],
+                "registrationState" to snapshot["registrationState"],
+            ),
+        )
+        NativeSipBridge.requestFlutterCallUi(source)
     }
 
     private fun checkHasAnyNetwork(): Boolean {

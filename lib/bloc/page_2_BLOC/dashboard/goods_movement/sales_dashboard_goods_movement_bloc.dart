@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
@@ -181,7 +182,7 @@ class SalesDashboardGoodsMovementBloc extends Bloc<SalesDashboardGoodsMovementEv
       // If it's a pagination error (not initial load), emit pagination error
       if (event.page > 1 && currentState is SalesDashboardGoodsMovementLoaded) {
         emit(SalesDashboardGoodsMovementPaginationError(
-          message: e.toString().replaceAll('Exception: ', ''),
+          message: friendlyError(e).replaceAll('Exception: ', ''),
           variants: currentState.variants,
           currentPage: currentState.currentPage,
           totalPages: currentState.totalPages,
@@ -195,7 +196,7 @@ class SalesDashboardGoodsMovementBloc extends Bloc<SalesDashboardGoodsMovementEv
           debugPrint('SalesDashboardGoodsMovementBloc: Error loading variants: $e');
         }
         emit(SalesDashboardGoodsMovementError(
-          message: e.toString().replaceAll('Exception: ', ''),
+          message: friendlyError(e).replaceAll('Exception: ', ''),
         ));
       }
     }

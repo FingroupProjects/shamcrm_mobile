@@ -1,3 +1,6 @@
+import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
+
 abstract class OrderEvent {}
 
 class FetchOrderStatuses extends OrderEvent {
@@ -105,6 +108,7 @@ class CreateOrder extends OrderEvent {
   final double sum;
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
+  final List<FileHelper>? files;
 
   CreateOrder({
     required this.phone,
@@ -123,6 +127,7 @@ class CreateOrder extends OrderEvent {
     required this.sum,
     this.customFields,
     this.directoryValues,
+    this.files,
   });
 }
 
@@ -144,6 +149,8 @@ class UpdateOrder extends OrderEvent {
   final double sum;
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
+  final List<String>? filePaths;
+  final List<OrderFile>? existingFiles;
 
   UpdateOrder({
     required this.orderId,
@@ -163,6 +170,8 @@ class UpdateOrder extends OrderEvent {
     required this.sum,
     this.customFields,
     this.directoryValues,
+    this.filePaths,
+    this.existingFiles,
   });
 }
 

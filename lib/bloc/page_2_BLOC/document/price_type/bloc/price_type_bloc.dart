@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/price_type/bloc/price_type_state.dart';
@@ -68,7 +69,7 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
         emit(PriceTypeLoaded(units));
       }
     } catch (e) {
-      emit(PriceTypeError(e.toString()));
+      emit(PriceTypeError(friendlyError(e)));
     }
   }
 
@@ -90,7 +91,7 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
       debugPrint("Error adding price type: $e");
-      emit(PriceTypeError(e.toString()));
+      emit(PriceTypeError(friendlyError(e)));
     }
   }
 
@@ -111,7 +112,7 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       // Then refresh the list with saved query
       await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
-      emit(PriceTypeError(e.toString()));
+      emit(PriceTypeError(friendlyError(e)));
     }
   }
 
@@ -132,7 +133,7 @@ class PriceTypeScreenBloc extends Bloc<PriceTypeEvent, PriceTypeState> {
       // Then refresh the list with saved query
       await _fetchAndEmit(emit, search: _currentQuery);
     } catch (e) {
-      emit(PriceTypeError(e.toString()));
+      emit(PriceTypeError(friendlyError(e)));
     }
   }
 }

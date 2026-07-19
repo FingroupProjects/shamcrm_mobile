@@ -351,7 +351,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         // Загружаем статусы с сервера
         currentSalesFunnelId = event.salesFunnelId;
         response = await apiService.getDealStatuses(
-            salesFunnelId: event.salesFunnelId);
+            salesFunnelId: event.salesFunnelId, bypassCache: true);
 
         // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
         if (event.salesFunnelId != currentSalesFunnelId) {
@@ -421,7 +421,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         // ВСЕГДА загружаем с API для получения актуальных счётчиков
         currentSalesFunnelId = event.salesFunnelId;
         response = await apiService.getDealStatuses(
-            salesFunnelId: event.salesFunnelId);
+            salesFunnelId: event.salesFunnelId, bypassCache: true);
 
         // КРИТИЧНО: Проверяем, не переключил ли пользователь воронку, пока мы ждали ответа
         if (event.salesFunnelId != currentSalesFunnelId) {

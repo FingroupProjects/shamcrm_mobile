@@ -9,7 +9,6 @@ import 'package:crm_task_manager/page_2/order/order_details/payment_status_style
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -168,13 +167,25 @@ class _OrderCardState extends State<OrderCard> {
   late String dropdownValue;
   late int statusId;
   int? currencyId;
+  bool _hideTojsokhtmontjOrderPaymentBadges = false;
 
   @override
   void initState() {
     super.initState();
     statusId = widget.order.orderStatus.id;
     dropdownValue = widget.order.orderStatus.name;
+    _loadTenantFlags();
     _loadCurrencyId();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final shouldHideOrderPaymentBadges =
+        await ApiService().isTojsokhtmontjTenant();
+    if (!mounted) return;
+
+    setState(() {
+      _hideTojsokhtmontjOrderPaymentBadges = shouldHideOrderPaymentBadges;
+    });
   }
 
   Future<void> _loadCurrencyId() async {
@@ -239,6 +250,11 @@ class _OrderCardState extends State<OrderCard> {
 
   String _formatSum(double? sum) {
     if (sum == null) sum = 0;
+
+    if (_hideTojsokhtmontjOrderPaymentBadges) {
+      return NumberFormat('#,##0.00', 'ru_RU').format(sum);
+    }
+
     String symbol = '₽';
 
     switch (currencyId) {
@@ -303,7 +319,6 @@ class _OrderCardState extends State<OrderCard> {
               result['statusId'] as int? ?? widget.order.orderStatus.id;
           final newStatusId = result['newStatusId'] as int? ?? oldStatusId;
 
-          context.read<OrderBloc>().add(FetchOrderStatuses(forceRefresh: true));
           widget.onStatusUpdated(oldStatusId, newStatusId);
         }
       },
@@ -360,12 +375,16 @@ class _OrderCardState extends State<OrderCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        width: 32,
-                        height: 18,
-                        child: getPaymentStatusStyle(widget.order.paymentStatus, context).content,
-                      ),
+                      if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
+                        const SizedBox(width: 4),
+                        SizedBox(
+                          width: 32,
+                          height: 18,
+                          child: getPaymentStatusStyle(
+                                  widget.order.paymentStatus, context)
+                              .content,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -405,7 +424,8 @@ class _OrderCardState extends State<OrderCard> {
                         borderRadius: BorderRadius.circular(8),
                         color: colors.fieldBg.withValues(alpha: 0.55),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -455,25 +475,32 @@ class _OrderCardState extends State<OrderCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
-                  flex: 1,
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.42,
-                    ),
-                    child: IntrinsicWidth(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: getPaymentTypeStyle(widget.order.paymentMethod, context).backgroundColor,
-                          borderRadius: BorderRadius.circular(6),
+                if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
+                  Flexible(
+                    flex: 1,
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.42,
+                      ),
+                      child: IntrinsicWidth(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: getPaymentTypeStyle(
+                                    widget.order.paymentMethod, context)
+                                .backgroundColor,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: getPaymentTypeStyle(
+                                  widget.order.paymentMethod, context)
+                              .content,
                         ),
-                        child: getPaymentTypeStyle(widget.order.paymentMethod, context).content,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
+                  const SizedBox(width: 16),
+                ],
                 Flexible(
                   flex: 1,
                   child: Container(
@@ -482,7 +509,8 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                     child: IntrinsicWidth(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: colors.surfaceElevated,
                           borderRadius: BorderRadius.circular(6),

@@ -12,7 +12,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
-import android.graphics.BitmapFactory
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
@@ -51,6 +50,12 @@ class NativeSipForegroundService : Service() {
                 true
             } catch (error: Throwable) {
                 Log.e(TAG, "Failed to start foreground SIP service: ${error.message}", error)
+                NativeSipBridge.recordDiagnosticEvent(
+                    event = "foreground_service_start_failed",
+                    details = hashMapOf(
+                        "error" to (error.message ?: error.javaClass.simpleName),
+                    ),
+                )
                 false
             }
         }
@@ -190,11 +195,18 @@ class NativeSipForegroundService : Service() {
         super.onCreate()
         explicitStopRequested = false
         NativeSipBridge.initialize(applicationContext)
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "foreground_service_created",
+            details = hashMapOf(
+                "persistentEnabled" to NativeSipBridge.isPersistentEnabled(),
+            ),
+        )
         NativeSipBridge.addObserver(bridgeObserver)
         createNotificationChannels()
         startRegistrationHeartbeat()
         try {
             startSipForeground(buildServiceNotification(NativeSipBridge.getStateSnapshot()))
+            reconcileIncomingCallFromSnapshot("service-created")
         } catch (error: Throwable) {
             Log.e(TAG, "startForeground failed: ${error.message}", error)
             stopSelf()
@@ -202,6 +214,13 @@ class NativeSipForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "foreground_service_started",
+            details = hashMapOf(
+                "action" to (intent?.action ?: "system-restart"),
+                "startId" to startId,
+            ),
+        )
         when (intent?.action) {
             ACTION_STOP -> {
                 explicitStopRequested = true
@@ -226,10 +245,18 @@ class NativeSipForegroundService : Service() {
         }
 
         updateServiceNotification()
+        reconcileIncomingCallFromSnapshot("service-started")
         return START_STICKY
     }
 
     override fun onDestroy() {
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "foreground_service_destroyed",
+            details = hashMapOf(
+                "explicitStop" to explicitStopRequested,
+                "persistentEnabled" to NativeSipBridge.isPersistentEnabled(),
+            ),
+        )
         stopIncomingCallRingtone()
         releaseIncomingCallWakeLock()
         stopRegistrationHeartbeat()
@@ -257,6 +284,12 @@ class NativeSipForegroundService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "foreground_service_task_removed",
+            details = hashMapOf(
+                "persistentEnabled" to NativeSipBridge.isPersistentEnabled(),
+            ),
+        )
         if (!explicitStopRequested && NativeSipBridge.isPersistentEnabled()) {
             scheduleRestart(applicationContext, delayMs = 1000L)
         }
@@ -273,16 +306,20 @@ class NativeSipForegroundService : Service() {
                 )
                 when (state) {
                     "incoming" -> {
-                        logIncomingUiDecision("call-event")
-                        acquireIncomingCallWakeLock()
-                        notificationManager.cancel(NOTIFICATION_CALL_ID)
-                        showIncomingCallNotification(event)
-                        if (shouldPlaySystemIncomingRingtone()) {
-                            startIncomingCallRingtone()
+                        if (NativeSipBridge.isIncomingAnswerPending()) {
+                            clearIncomingPresentation("incoming-event-answer-pending")
                         } else {
-                            stopIncomingCallRingtone()
+                            logIncomingUiDecision("call-event")
+                            acquireIncomingCallWakeLock()
+                            notificationManager.cancel(NOTIFICATION_CALL_ID)
+                            showIncomingCallNotification(event)
+                            if (shouldPlaySystemIncomingRingtone()) {
+                                startIncomingCallRingtone()
+                            } else {
+                                stopIncomingCallRingtone()
+                            }
+                            scheduleIncomingUiWatchdog()
                         }
-                        scheduleIncomingUiWatchdog()
                     }
                     "calling", "ringing", "in_call", "ended", "failed", "idle" -> {
                         cancelIncomingUiWatchdog()
@@ -326,6 +363,44 @@ class NativeSipForegroundService : Service() {
             startIncomingCallRingtone()
         } else {
             stopIncomingCallRingtone()
+        }
+        scheduleIncomingUiWatchdog()
+    }
+
+    /**
+     * Registration can restore and deliver an INVITE before this service has
+     * attached its bridge observer. Recover the current incoming state so the
+     * call UI is not lost during a cold FCM wake-up.
+     */
+    private fun reconcileIncomingCallFromSnapshot(source: String) {
+        val snapshot = NativeSipBridge.getStateSnapshot()
+        if (snapshot["callState"]?.toString() != "incoming" ||
+            NativeSipBridge.isIncomingAnswerPending()
+        ) {
+            if (NativeSipBridge.isIncomingAnswerPending()) {
+                clearIncomingPresentation("snapshot-answer-pending")
+            }
+            return
+        }
+
+        val incomingEvent = hashMapOf<String, Any?>(
+            "type" to "call",
+            "state" to "incoming",
+            "remoteIdentity" to snapshot["remoteIdentity"],
+        )
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "incoming_ui_recovered",
+            details = hashMapOf(
+                "source" to source,
+                "remoteIdentity" to snapshot["remoteIdentity"],
+                "appForeground" to NativeSipBridge.isAppInForeground(),
+            ),
+        )
+        acquireIncomingCallWakeLock()
+        notificationManager.cancel(NOTIFICATION_CALL_ID)
+        showIncomingCallNotification(incomingEvent)
+        if (shouldPlaySystemIncomingRingtone()) {
+            startIncomingCallRingtone()
         }
         scheduleIncomingUiWatchdog()
     }
@@ -431,8 +506,11 @@ class NativeSipForegroundService : Service() {
     }
 
     private fun showIncomingCallNotification(event: HashMap<String, Any?>) {
+        if (NativeSipBridge.isIncomingAnswerPending()) {
+            clearIncomingPresentation("notification-answer-pending")
+            return
+        }
         val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
-        val largeIcon = BitmapFactory.decodeResource(resources, R.drawable.sham_crm_logo)
         val declineIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_DECLINE)
         val answerIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_ANSWER)
         val caller = Person.Builder()
@@ -445,7 +523,6 @@ class NativeSipForegroundService : Service() {
             .setContentTitle("SHAMCRM: входящий звонок")
             .setContentText("Входящий звонок")
             .setSubText("Телефония")
-            .setLargeIcon(largeIcon)
             .setColor(0xFF1E88E5.toInt())
             .setColorized(true)
             .setStyle(
@@ -469,10 +546,35 @@ class NativeSipForegroundService : Service() {
         try {
             notificationManager.notify(NOTIFICATION_CALL_ID, notification)
             Log.d(TAG, "Incoming call notification posted with fullScreenIntent")
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "incoming_notification_posted",
+                details = hashMapOf(
+                    "remoteIdentity" to remoteIdentity,
+                    "fullScreenAllowed" to canUseFullScreenIntent(),
+                    "notificationsEnabled" to notificationManager.areNotificationsEnabled(),
+                ),
+            )
             launchIncomingCallUiIfNeeded(event, "notification")
         } catch (error: Throwable) {
             Log.e(TAG, "showIncomingCallNotification failed: ${error.message}", error)
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "incoming_notification_failed",
+                details = hashMapOf(
+                    "error" to (error.message ?: error.javaClass.simpleName),
+                ),
+            )
         }
+    }
+
+    private fun clearIncomingPresentation(reason: String) {
+        cancelIncomingUiWatchdog()
+        stopIncomingCallRingtone()
+        releaseIncomingCallWakeLock()
+        notificationManager.cancel(NOTIFICATION_CALL_ID)
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "incoming_presentation_cleared",
+            details = hashMapOf("reason" to reason),
+        )
     }
 
     private fun mainActivityPendingIntent(openCall: Boolean): PendingIntent {
@@ -649,6 +751,14 @@ class NativeSipForegroundService : Service() {
         } else {
             @Suppress("DEPRECATION")
             keyguardManager.isKeyguardLocked
+        }
+    }
+
+    private fun canUseFullScreenIntent(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            notificationManager.canUseFullScreenIntent()
+        } else {
+            true
         }
     }
 

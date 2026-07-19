@@ -225,6 +225,10 @@ class ApiService {
     'sham-back',
     'khnodiraaaicloudcom-back',
   };
+  static const Set<String> _tojsokhtmontjSubdomains = {
+    'tojsokhtmontj',
+    'tojsokhtmontj-back',
+  };
 
   String? baseUrl;
   String? baseUrlSocket;
@@ -234,6 +238,7 @@ class ApiService {
       GlobalKey<ScaffoldMessengerState>();
   static DateTime? _lastWorkdayWarningAt;
   static bool _isWorkdayRedirectInProgress = false;
+  static bool _isForceLogoutInProgress = false;
   // Добавьте этот список эндпоинтов, которые не требуют проверки сессии
   static const List<String> _noSessionCheckEndpoints = [
     '/login',
@@ -455,6 +460,14 @@ class ApiService {
   // Также нужно обновить метод _initializeIfDomainExists
   // Обновленный метод инициализации с проверкой сессии
   Future<void> _initializeIfDomainExists() async {
+    // ApiService создаётся и на экране авторизации. При отсутствии токена
+    // это обычное состояние, поэтому нельзя запускать принудительную
+    // навигацию на AuthScreen из конструктора каждого экземпляра.
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
     // Сначала проверяем валидность сессии
     if (!await _isSessionValid()) {
       // debugPrint('ApiService: Session is invalid, redirecting to auth');
@@ -662,7 +675,6 @@ class ApiService {
 
   // Метод для перенаправления на окно входа
   void _redirectToLogin() {
-    final navigatorKey = GlobalKey<NavigatorState>();
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/local_auth',
       (route) => false,
@@ -710,6 +722,11 @@ class ApiService {
   Future<bool> isWorkdayFeatureEnabled() async {
     final subdomain = await getCurrentTenantSubdomain();
     return subdomain != null && _workdayEnabledSubdomains.contains(subdomain);
+  }
+
+  Future<bool> isTojsokhtmontjTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null && _tojsokhtmontjSubdomains.contains(subdomain);
   }
 
   Future<WorkdayStatusResponse?> getWorkdayStatus() async {
@@ -1505,6 +1522,7 @@ class ApiService {
   Future<Map<String, dynamic>> _buildGoodsRequestBody({
     required bool isService,
     required String name,
+    String? barcode,
     required int parentId,
     required String description,
     required int? quantity,
@@ -1519,13 +1537,13 @@ class ApiService {
     required List<Map<String, dynamic>> materialGoods,
     required List<Map<String, dynamic>> relatedGoods,
     String? comments,
-    String? barcode,
   }) async {
     final organizationId = await getSelectedOrganization();
     final salesFunnelId = await getSelectedSalesFunnel();
 
     final body = <String, dynamic>{
       'name': name,
+      'barcode': barcode,
       'category_id': parentId.toString(),
       'label_id': labelId?.toString(),
       'quantity': quantity?.toString() ?? 'null',
@@ -1578,6 +1596,11 @@ class ApiService {
 
         if (variant['id'] != null) {
           item['id'] = variant['id'].toString();
+        }
+
+        if (variant['barcode'] != null &&
+            variant['barcode'].toString().isNotEmpty) {
+          item['barcode'] = variant['barcode'].toString();
         }
 
         final variantAttributes =
@@ -1918,6 +1941,20 @@ class ApiService {
 
   // Новый метод для принудительного сброса к начальному экрану
   Future<void> _forceLogoutAndRedirect() async {
+    if (_isForceLogoutInProgress) {
+      debugPrint(
+          'ApiService: Force logout уже выполняется, повторный переход пропущен');
+      return;
+    }
+
+    // После первого logout токен уже удалён. Не запускаем второй logout и
+    // второй переход, если параллельный запрос тоже получил 401.
+    final token = await getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    _isForceLogoutInProgress = true;
     try {
       debugPrint('ApiService: Force logout and redirect to auth');
 
@@ -1967,6 +2004,8 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('ApiService: Error in force logout: $e');
+    } finally {
+      _isForceLogoutInProgress = false;
     }
   }
 
@@ -2109,8 +2148,20 @@ class ApiService {
       }
 
       final organizationId = await getSelectedOrganization();
+      final prefs = await SharedPreferences.getInstance();
+      final userId =
+          prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+      if (userId.trim().isEmpty) {
+        debugPrint('sendVoipToken: user_id не найден → отложенный');
+        await _savePendingVoipToken(voipToken);
+        await _saveVoipSyncDiagnostics(
+          status: 'pending_user_id',
+          error: 'User ID is missing',
+        );
+        return;
+      }
       final url =
-          '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+          '$baseUrl/user/add-voip-token/${userId.trim()}${organizationId != null ? '?organization_id=$organizationId' : ''}';
 
       debugPrint('sendVoipToken: URL: $url');
 
@@ -2126,8 +2177,9 @@ class ApiService {
           'type': 'mobile',
           'token': voipToken,
           'platform': 'ios',
-          'push_type': 'voip',
           'provider': 'apns_voip',
+          if (organizationId != null) 'organization_id': organizationId,
+          if (userId.trim().isNotEmpty) 'user_id': userId.trim(),
         }),
       );
 
@@ -2223,6 +2275,80 @@ class ApiService {
     debugPrint(
         'sendPendingVoipTokenIfNeeded: Найден отложенный токен → отправляем');
     await sendVoipToken(pending);
+  }
+
+  Future<void> setSendIncomingCallPush(bool enabled) async {
+    await ensureInitialized();
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId =
+        prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+
+    if (userId.trim().isEmpty) {
+      throw Exception(
+        'ApiService.setSendIncomingCallPush: userID not found in SharedPreferences',
+      );
+    }
+
+    final response = await _postRequest(
+      '/user/send-incoming-call-push/$userId',
+      <String, dynamic>{
+        'send_incoming_call_push': enabled,
+      },
+    );
+
+    if (kDebugMode) {
+      debugPrint(
+        'ApiService.setSendIncomingCallPush: userId=$userId, enabled=$enabled, status=${response.statusCode}',
+      );
+    }
+  }
+
+  Future<int?> sendSipReady({
+    required String callId,
+    required String callUUID,
+    // Test flow: optional SIP Call-ID is separate from Push/Linkedid call_id.
+    // Previous behavior for quick rollback: remove this parameter and omit sip_call_id from body.
+    String? sipCallId,
+    required String extension,
+  }) async {
+    await ensureInitialized();
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId =
+        prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+
+    if (userId.trim().isEmpty) {
+      throw Exception(
+        'ApiService.sendSipReady: userID not found in SharedPreferences',
+      );
+    }
+
+    final organizationId = await getSelectedOrganization();
+    final body = <String, dynamic>{
+      'call_id': callId,
+      'call_uuid': callUUID,
+      // Test flow: keep call_id from Push; send SIP Call-ID only as nullable extra context.
+      if (sipCallId != null && sipCallId.trim().isNotEmpty)
+        'sip_call_id': sipCallId.trim(),
+      'extension': extension,
+      'platform': 'ios',
+      'provider': 'apns_voip',
+      if (organizationId != null) 'organization_id': organizationId,
+      'user_id': userId.trim(),
+    };
+
+    final response = await _postRequest(
+      '/user/sip-ready/${userId.trim()}',
+      body,
+    );
+
+    if (kDebugMode) {
+      debugPrint(
+        'ApiService.sendSipReady: userId=$userId, callId=$callId, callUUID=$callUUID, sipCallId=${sipCallId ?? ''}, extension=$extension, status=${response.statusCode}',
+      );
+    }
+    return response.statusCode;
   }
 
   // Гарантируем, что baseUrl готов (вызывать везде, где нужен ApiService)
@@ -2749,6 +2875,41 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> uniteLead(
+    int leadId, {
+    required int unitedLeadId,
+  }) async {
+    try {
+      final organizationId = await getSelectedOrganization();
+      final salesFunnelId = await getSelectedSalesFunnel();
+      final path = await _appendQueryParams('/lead/unite/$leadId');
+      final response = await _postRequest(
+        path,
+        {
+          'lead_id': unitedLeadId,
+          'organization_id': organizationId ?? '1',
+          'sales_funnel_id': salesFunnelId ?? '1',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+
+      if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        final message = (data is Map<String, dynamic> ? data['message'] : null)
+                ?.toString() ??
+            'Не удалось объединить лид';
+        throw Exception(message);
+      }
+
+      throw Exception('Не удалось объединить лид');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> acceptLead(int leadId) async {
     try {
       final path = await _appendQueryParams('/lead/accept/$leadId');
@@ -3235,21 +3396,26 @@ class ApiService {
       } else if (data is Map<String, dynamic>) {
         if (data['result'] is List) {
           statusList = data['result'] as List;
+        } else if (data['result'] is Map<String, dynamic>) {
+          final result = data['result'] as Map<String, dynamic>;
+          if (result['data'] is List) {
+            statusList = result['data'] as List;
+          } else if (result['statuses'] is List) {
+            statusList = result['statuses'] as List;
+          }
         } else if (data['data'] is List) {
           statusList = data['data'] as List;
         } else if (data['statuses'] is List) {
           statusList = data['statuses'] as List;
-        } else if (data['result'] is Map<String, dynamic> &&
-            (data['result'] as Map<String, dynamic>)['statuses'] is List) {
-          statusList =
-              (data['result'] as Map<String, dynamic>)['statuses'] as List;
         }
       }
 
-      if (statusList == null || statusList.isEmpty) {
-        throw Exception('Результат отсутствует в ответе или пустой');
+      if (statusList == null) {
+        throw Exception('Результат отсутствует в ответе');
       }
 
+      // Пустой список — валидный ответ сервера: пользователь может не иметь
+      // доступных статусов при включённом управлении видимостью.
       await prefs.setString(cacheKey, json.encode(statusList));
 
       final statuses = statusList
@@ -3268,6 +3434,12 @@ class ApiService {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ getLeadStatuses WITH FILTERS - Error: $e');
+      }
+
+      // При принудительном запросе нельзя подменять ответ сервера кэшем:
+      // вызывающий код должен получить настоящую причину ошибки.
+      if (bypassAnalyticsCache) {
+        rethrow;
       }
 
       final cachedStatuses = prefs.getString(cacheKey);
@@ -3305,6 +3477,7 @@ class ApiService {
     bool? isFailure,
     bool? isSuccess,
     bool isUnassembled,
+    List<int>? userIds,
   ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status');
@@ -3312,12 +3485,18 @@ class ApiService {
       //debugPrint('ApiService: createLeadStatus - Generated path: $path');
     }
 
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
     final response = await _postRequest(path, {
       'title': title,
       'color': color,
       "is_success": isSuccess == true ? 1 : 0,
       "is_failure": isFailure == true ? 1 : 0,
       "is_unassembled": isUnassembled,
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      if (userIds != null) "users": userIds,
     });
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -3998,6 +4177,9 @@ class ApiService {
     if (data['wa_phone'] != null) {
       request.fields['wa_phone'] = data['wa_phone'].toString();
     }
+    if (data['currency_id'] != null) {
+      request.fields['currency_id'] = data['currency_id'].toString();
+    }
     if (data['price_type_id'] != null) {
       request.fields['price_type_id'] =
           data['price_type_id'].toString(); // Добавляем price_type_id
@@ -4509,6 +4691,7 @@ class ApiService {
     bool isSuccess,
     bool isFailure,
     bool isUnassembled,
+    List<int>? userIds,
   ) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/lead-status/$leadStatusId');
@@ -4516,12 +4699,17 @@ class ApiService {
       //debugPrint('ApiService: updateLeadStatusEdit - Generated path: $path');
     }
 
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
     final payload = {
       "title": title,
       "is_success": isSuccess ? 1 : 0,
       "is_failure": isFailure ? 1 : 0,
       "is_unassembled": isUnassembled,
-      "organization_id": await getSelectedOrganization(),
+      "organization_id": organizationId?.toString() ?? '',
+      if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
+      if (userIds != null) "users": userIds,
     };
 
     final response = await _patchRequest(
@@ -5534,8 +5722,8 @@ class ApiService {
       'is_unassembled': isUnassembled,
       'organization_id': organizationId?.toString() ?? '',
       if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId.toString(),
-      if (userIds != null && userIds.isNotEmpty) 'users': userIds,
-      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+      if (userIds != null) 'users': userIds,
+      if (changeStatusUserIds != null)
         'change_status_users': changeStatusUserIds, // ✅ НОВОЕ
     };
 
@@ -6098,8 +6286,8 @@ class ApiService {
       "organization_id": organizationId?.toString() ?? '',
       if (salesFunnelId != null) "sales_funnel_id": salesFunnelId.toString(),
       // ✅ Добавляем оба массива пользователей
-      if (userIds != null && userIds.isNotEmpty) "users": userIds,
-      if (changeStatusUserIds != null && changeStatusUserIds.isNotEmpty)
+      if (userIds != null) "users": userIds,
+      if (changeStatusUserIds != null)
         "change_status_users": changeStatusUserIds, // ✅ НОВОЕ
     };
 
@@ -7644,6 +7832,21 @@ class ApiService {
       return {'result': 'Success'};
     } else {
       throw Exception('Failed to delete task file!');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteOrderFile(int fileId) async {
+    final path = await _appendQueryParams('/order/deleteFile/$fileId');
+    if (kDebugMode) {
+      //debugPrint('ApiService: deleteOrderFile - Generated path: $path');
+    }
+
+    final response = await _deleteRequest(path);
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return {'result': 'Success'};
+    } else {
+      throw Exception('Failed to delete order file!');
     }
   }
 
@@ -9471,6 +9674,7 @@ class ApiService {
     void Function(int sent, int total)? onSendProgress,
   }) async {
     if (filePaths.isEmpty) return;
+
     if (filePaths.length == 1) {
       await sendChatFile(
         chatId,
@@ -9483,32 +9687,38 @@ class ApiService {
     final token = await getToken();
     final path = await _appendQueryParams('/v2/chat/sendFile/$chatId');
     final requestUrl = '$baseUrl$path';
+
     final dio = LoggedDioClient.create();
 
-    final formData = FormData.fromMap({
-      'files[]': [
-        for (final filePath in filePaths)
-          await MultipartFile.fromFile(filePath),
-      ],
-      if (responseType != null) 'response_type': responseType,
-    });
+    try {
+      final formMap = <String, dynamic>{
+        if (responseType != null) 'response_type': responseType,
+      };
 
-    final response = await dio.post(
-      requestUrl,
-      data: formData,
-      onSendProgress: onSendProgress,
-      options: Options(
-        headers: {
-          "Authorization": "Bearer $token",
-          "Accept": "application/json",
-          'Device': 'mobile'
-        },
-        contentType: 'multipart/form-data',
-      ),
-    );
+      formMap['files[]'] = [
+        for (final pathFile in filePaths)
+          await MultipartFile.fromFile(pathFile),
+      ];
 
-    if (response.statusCode != 200) {
-      throw Exception('Error sending files: ${response.data}');
+      final response = await dio.post(
+        requestUrl,
+        data: FormData.fromMap(formMap),
+        onSendProgress: onSendProgress,
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Accept": "application/json",
+            'Device': 'mobile'
+          },
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Error sending media batch: ${response.data}');
+      }
+    } catch (e) {
+      throw Exception('Failed to send media batch due to an exception!');
     }
   }
 
@@ -12518,7 +12728,7 @@ class ApiService {
   }) async {
     String path = '/good?page=$page&per_page=$perPage';
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=$search&barCode=$search';
     }
 
     if (filters != null) {
@@ -12608,7 +12818,7 @@ class ApiService {
     }
 
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search';
+      path += '&search=$search&barcode=$search';
     }
 
     if (filters != null) {
@@ -12677,9 +12887,15 @@ class ApiService {
     }
   }
 
-  Future<List<SubCategoryAttributesData>> getSubCategoryAttributes() async {
+  Future<List<SubCategoryAttributesData>> getSubCategoryAttributes({
+    String? search,
+  }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/category/get/subcategories');
+    final encodedSearch = search?.trim();
+    final basePath = encodedSearch != null && encodedSearch.isNotEmpty
+        ? '/category/get/subcategories?search=${Uri.encodeQueryComponent(encodedSearch)}'
+        : '/category/get/subcategories';
+    final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
       //debugPrint('ApiService: getSubCategoryAttributes - Generated path: $path');
     }
@@ -12707,6 +12923,7 @@ class ApiService {
   Future<Map<String, dynamic>> createGoods({
     required bool isService,
     required String name,
+    String? barcode,
     required int parentId,
     required String description,
     required int? quantity,
@@ -12723,12 +12940,12 @@ class ApiService {
     String? productionType,
     List<Map<String, dynamic>> materialGoods = const [],
     List<Map<String, dynamic>> relatedGoods = const [],
-    String? barcode,
   }) async {
     try {
       final requestBody = await _buildGoodsRequestBody(
         isService: isService,
         name: name,
+        barcode: barcode,
         parentId: parentId,
         description: description,
         quantity: quantity,
@@ -12742,7 +12959,6 @@ class ApiService {
         productionType: productionType,
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
-        barcode: barcode,
       );
 
       final hasFiles = await _goodsRequestHasFiles(images, variants);
@@ -12764,6 +12980,7 @@ class ApiService {
         });
 
         request.fields['name'] = name;
+        request.fields['barcode'] = barcode ?? '';
         request.fields['category_id'] = parentId.toString();
         request.fields['description'] = description;
         request.fields['quantity'] = quantity?.toString() ?? 'null';
@@ -12818,6 +13035,11 @@ class ApiService {
               variants[i]['is_active'] ? '1' : '0';
           final variantPrice = variants[i]['price'] ?? 0.0;
           request.fields['variants[$i][price]'] = variantPrice.toString();
+          if (variants[i]['barcode'] != null &&
+              variants[i]['barcode'].toString().isNotEmpty) {
+            request.fields['variants[$i][barcode]'] =
+                variants[i]['barcode'].toString();
+          }
 
           List<dynamic> variantAttributes =
               variants[i]['variant_attributes'] ?? [];
@@ -12863,9 +13085,20 @@ class ApiService {
           'data': responseBody,
         };
       } else {
+        String errorMessage =
+            responseBody['message'] ?? 'Не удалось создать товар';
+        // Локализуем ошибку штрих-кода
+        final errors = responseBody['errors'] as Map<String, dynamic>?;
+        final bool hasBarcodeError = errors != null &&
+            errors.keys.any((k) =>
+                k == 'barcode' ||
+                k.startsWith('variants.') && k.endsWith('.barcode'));
+        if (hasBarcodeError || errorMessage.contains('barcode')) {
+          errorMessage = 'Такое значение штрих кода уже существует';
+        }
         return {
           'success': false,
-          'message': responseBody['message'] ?? 'Не удалось создать товар',
+          'message': errorMessage,
           'error': responseBody,
         };
       }
@@ -12883,6 +13116,7 @@ class ApiService {
     required bool isService,
     required int goodId,
     required String name,
+    String? barcode,
     required int parentId,
     required String description,
     required int? quantity,
@@ -12899,12 +13133,12 @@ class ApiService {
     String? productionType,
     List<Map<String, dynamic>> materialGoods = const [],
     List<Map<String, dynamic>> relatedGoods = const [],
-    String? barcode,
   }) async {
     try {
       final requestBody = await _buildGoodsRequestBody(
         isService: isService,
         name: name,
+        barcode: barcode,
         parentId: parentId,
         description: description,
         quantity: quantity,
@@ -12919,7 +13153,6 @@ class ApiService {
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
         comments: comments,
-        barcode: barcode,
       );
 
       final hasFiles = await _goodsRequestHasFiles(images, variants);
@@ -12941,6 +13174,7 @@ class ApiService {
         });
 
         request.fields['name'] = name;
+        request.fields['barcode'] = barcode ?? '';
         request.fields['category_id'] = parentId.toString();
         request.fields['description'] = description;
         request.fields['quantity'] = quantity?.toString() ?? 'null';
@@ -13006,6 +13240,11 @@ class ApiService {
               variants[i]['is_active'] ? '1' : '0';
           request.fields['variants[$i][price]'] =
               (variants[i]['price'] ?? 0.0).toString();
+          if (variants[i]['barcode'] != null &&
+              variants[i]['barcode'].toString().isNotEmpty) {
+            request.fields['variants[$i][barcode]'] =
+                variants[i]['barcode'].toString();
+          }
 
           List<dynamic> variantAttributes =
               variants[i]['variant_attributes'] ?? [];
@@ -13058,9 +13297,19 @@ class ApiService {
           'data': responseBody,
         };
       } else {
+        String errorMessage =
+            responseBody['message'] ?? 'Failed to update goods';
+        final errors = responseBody['errors'] as Map<String, dynamic>?;
+        final bool hasBarcodeError = errors != null &&
+            errors.keys.any((k) =>
+                k == 'barcode' ||
+                k.startsWith('variants.') && k.endsWith('.barcode'));
+        if (hasBarcodeError || errorMessage.contains('barcode')) {
+          errorMessage = 'Такое значение штрих кода уже существует';
+        }
         return {
           'success': false,
-          'message': responseBody['message'] ?? 'Failed to update goods',
+          'message': errorMessage,
           'error': responseBody,
         };
       }
@@ -13133,7 +13382,7 @@ class ApiService {
   }
 
   Future<List<Goods>> getGoodsByBarcode(String barcode) async {
-    String path = '/good/getByBarcode?barcode=$barcode';
+    String path = '/good?search=$barcode';
     path = await _appendQueryParams(path);
     if (kDebugMode) {
       debugPrint('ApiService: Запрос товаров по штрихкоду: $path');
@@ -13166,7 +13415,11 @@ class ApiService {
         if (result is List) {
           goodsData = result;
         } else if (result is Map<String, dynamic>) {
-          goodsData = [result];
+          if (result.containsKey('data') && result['data'] is List) {
+            goodsData = result['data'];
+          } else {
+            goodsData = [result];
+          }
         } else {
           if (kDebugMode) {
             debugPrint(
@@ -13413,7 +13666,7 @@ class ApiService {
         return Order.fromJson(decodedData);
       } else {
         throw Exception(
-            'Ошибка загрузки деталей заказа и нет кэшированных данных!');
+            'Ошибка загрузки деталей заказа и нет кэширвованных данных!');
       }
     }
   }
@@ -13486,6 +13739,7 @@ class ApiService {
     required double sum,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
+    List<FileHelper>? files,
   }) async {
     try {
       final token = await getToken();
@@ -13498,6 +13752,108 @@ class ApiService {
       }
 
       final uri = Uri.parse('$baseUrl$path');
+      if (files != null && files.isNotEmpty) {
+        final request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Device': 'mobile',
+        });
+
+        request.fields['phone'] = phone;
+        request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
+        request.fields['organization_id'] = organizationId.toString();
+        request.fields['status_id'] = statusId.toString();
+        request.fields['payment_type'] = 'cash';
+        request.fields['sum'] = sum.toString();
+        if (commentToCourier != null) {
+          request.fields['comment_to_courier'] = commentToCourier;
+        }
+        if (managerId != null) {
+          request.fields['manager_id'] = managerId.toString();
+        }
+        if (integration != null) {
+          request.fields['integration_id'] = integration.toString();
+        }
+        if (leadId != null) {
+          request.fields['lead_id'] = leadId.toString();
+        }
+        if (dealId != null) {
+          request.fields['deal_id'] = dealId.toString();
+        }
+        if (branchId != null) {
+          request.fields['branch_id'] = branchId.toString();
+        }
+        if (delivery && deliveryAddressId != null) {
+          request.fields['delivery_address_id'] = deliveryAddressId.toString();
+        }
+
+        for (int i = 0; i < goods.length; i++) {
+          final item = goods[i];
+          request.fields['goods[$i][variant_id]'] =
+              item['variant_id'].toString();
+          request.fields['goods[$i][quantity]'] =
+              (item['quantity'] ?? 1).toString();
+          request.fields['goods[$i][price]'] = item['price'].toString();
+        }
+
+        if (customFields != null && customFields.isNotEmpty) {
+          for (int i = 0; i < customFields.length; i++) {
+            final field = customFields[i];
+            request.fields['order_custom_fields[$i][key]'] =
+                field['key']?.toString() ?? '';
+            request.fields['order_custom_fields[$i][value]'] =
+                field['value']?.toString() ?? '';
+            request.fields['order_custom_fields[$i][type]'] =
+                field['type']?.toString() ?? 'string';
+          }
+        }
+
+        if (directoryValues != null && directoryValues.isNotEmpty) {
+          for (int i = 0; i < directoryValues.length; i++) {
+            final value = directoryValues[i];
+            request.fields['directory_values[$i][entry_id]'] =
+                value['entry_id'].toString();
+            request.fields['directory_values[$i][directory_id]'] =
+                value['directory_id'].toString();
+          }
+        }
+
+        final newFiles = files.where((f) => f.id == 0).toList();
+        for (final fileData in newFiles) {
+          final file = await http.MultipartFile.fromPath(
+            'files[]',
+            fileData.path,
+            filename: fileData.name,
+          );
+          request.files.add(file);
+        }
+
+        final response = await _multipartPostRequest('', request);
+        if (<int>[200, 201, 202, 203, 204, 300, 301]
+            .contains(response.statusCode)) {
+          final jsonResponse = response.body.isNotEmpty
+              ? jsonDecode(response.body)
+              : <String, dynamic>{};
+          if (jsonResponse['result'] == 'success' ||
+              jsonResponse['result'] is Map<String, dynamic> ||
+              response.statusCode == 204) {
+            return {
+              'success': true,
+              'statusId': statusId,
+              'order': jsonResponse['result'] is Map<String, dynamic>
+                  ? jsonResponse['result']
+                  : null,
+            };
+          }
+        }
+
+        final jsonResponse = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : <String, dynamic>{};
+        throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
+      }
+
       final body = {
         'phone': phone,
         'deliveryType': delivery ? 'delivery' : 'pickup',
@@ -13534,7 +13890,7 @@ class ApiService {
       body['branch_id'] = branchId;
 
       if (customFields != null && customFields.isNotEmpty) {
-        body['custom_fields'] = customFields;
+        body['order_custom_fields'] = customFields;
       }
 
       if (directoryValues != null && directoryValues.isNotEmpty) {
@@ -13607,6 +13963,8 @@ class ApiService {
     required double sum,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
+    List<String>? filePaths,
+    List<OrderFile>? existingFiles,
   }) async {
     try {
       final token = await getToken();
@@ -13619,6 +13977,114 @@ class ApiService {
       }
 
       final uri = Uri.parse('$baseUrl$path');
+      if ((filePaths != null && filePaths.isNotEmpty) ||
+          existingFiles != null) {
+        final request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Device': 'mobile',
+        });
+
+        request.fields['phone'] = phone;
+        request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
+        request.fields['organization_id'] = organizationId.toString();
+        request.fields['payment_type'] = 'cash';
+        request.fields['sum'] = sum.toString();
+        if (commentToCourier != null) {
+          request.fields['comment_to_courier'] = commentToCourier;
+        }
+        if (managerId != null) {
+          request.fields['manager_id'] = managerId.toString();
+        }
+        if (integration != null) {
+          request.fields['integration_id'] = integration.toString();
+        }
+        if (leadId != null) {
+          request.fields['lead_id'] = leadId.toString();
+        }
+        if (dealId != null) {
+          request.fields['deal_id'] = dealId.toString();
+        }
+        if (branchId != null) {
+          request.fields['branch_id'] = branchId.toString();
+        }
+        if (delivery) {
+          if (deliveryAddress != null) {
+            request.fields['delivery_address'] = deliveryAddress;
+          }
+          if (deliveryAddressId != null) {
+            request.fields['delivery_address_id'] =
+                deliveryAddressId.toString();
+          }
+        }
+
+        for (int i = 0; i < goods.length; i++) {
+          final item = goods[i];
+          request.fields['goods[$i][variant_id]'] =
+              item['variant_id'].toString();
+          request.fields['goods[$i][quantity]'] =
+              (item['quantity'] ?? 1).toString();
+          request.fields['goods[$i][price]'] = item['price'].toString();
+        }
+
+        if (customFields != null && customFields.isNotEmpty) {
+          for (int i = 0; i < customFields.length; i++) {
+            final field = customFields[i];
+            request.fields['order_custom_fields[$i][key]'] =
+                field['key']?.toString() ?? '';
+            request.fields['order_custom_fields[$i][value]'] =
+                field['value']?.toString() ?? '';
+            request.fields['order_custom_fields[$i][type]'] =
+                field['type']?.toString() ?? 'string';
+          }
+        }
+
+        if (directoryValues != null && directoryValues.isNotEmpty) {
+          for (int i = 0; i < directoryValues.length; i++) {
+            final value = directoryValues[i];
+            request.fields['directory_values[$i][entry_id]'] =
+                value['entry_id'].toString();
+            request.fields['directory_values[$i][directory_id]'] =
+                value['directory_id'].toString();
+          }
+        }
+
+        if (existingFiles != null && existingFiles.isNotEmpty) {
+          for (int i = 0; i < existingFiles.length; i++) {
+            request.fields['existing_files[$i]'] =
+                existingFiles[i].id.toString();
+          }
+        }
+
+        if (filePaths != null && filePaths.isNotEmpty) {
+          for (final filePath in filePaths) {
+            final file = await http.MultipartFile.fromPath('files[]', filePath);
+            request.files.add(file);
+          }
+        }
+
+        final response = await _multipartPostRequest('', request);
+        if (<int>[200, 201, 202, 203, 204, 300, 301]
+            .contains(response.statusCode)) {
+          final jsonResponse = response.body.isNotEmpty
+              ? jsonDecode(response.body)
+              : <String, dynamic>{};
+          return {
+            'success': true,
+            'order': jsonResponse['result'] is Map<String, dynamic>
+                ? jsonResponse['result']
+                : null,
+          };
+        }
+
+        final jsonResponse = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : <String, dynamic>{};
+        throw Exception(
+            jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
+      }
+
       final body = {
         'phone': phone,
         'deliveryType': delivery
@@ -13658,7 +14124,7 @@ class ApiService {
       body['branch_id'] = branchId;
 
       if (customFields != null && customFields.isNotEmpty) {
-        body['custom_fields'] = customFields;
+        body['order_custom_fields'] = customFields;
       }
 
       if (directoryValues != null && directoryValues.isNotEmpty) {
@@ -13667,7 +14133,7 @@ class ApiService {
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
-      final response = await http.patch(
+      final response = await http.post(
         uri,
         headers: {
           'Authorization': 'Bearer $token',
@@ -14276,7 +14742,7 @@ class ApiService {
     String? searchQuery,
     Map<String, dynamic>? filters,
   }) async {
-    String path = '/calls?incoming=0&missed=0&page=$page&per_page=$perPage';
+    String path = '/calls?incoming=0&page=$page&per_page=$perPage';
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
@@ -15029,7 +15495,7 @@ class ApiService {
       final token = await getToken();
       if (token == null) throw 'Токен не найден';
 
-      final path = await _appendQueryParams('/purchase-documents');
+      final path = await _appendQueryParams('/rmk-income-documents');
       final uri = Uri.parse('$baseUrl$path');
 
       final payload = <String, dynamic>{

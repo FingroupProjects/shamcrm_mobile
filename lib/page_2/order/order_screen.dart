@@ -226,6 +226,11 @@ class _OrderScreenState extends State<OrderScreen>
     }
 
     if (_statuses.isNotEmpty) {
+      // Сначала обновляем статусы и очищаем устаревший кэш. После этого
+      // загружаем список заказов, чтобы OrderLoaded не был затёрт пустым
+      // состоянием статусов.
+      _orderBloc.add(FetchOrderStatuses(forceRefresh: true));
+
       _orderBloc.add(FetchOrders(
         statusId: oldStatusId,
         page: 1,

@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-/// Форматтер для ввода количества
+/// Форматтер для ввода количества.
 /// Разрешает:
 /// - Целые числа: 1, 2, 10, 100, и т.д.
 /// - Десятичные числа: 1.5, 2,75 и т.д.
@@ -49,7 +49,14 @@ class QuantityInputFormatter extends TextInputFormatter {
     }
 
     // Запрещаем несколько нулей в начале (00, 000, и т.д.)
-    if (newText.length >= 2 && newText.startsWith('00')) {
+    final normalizedText = newText.replaceAll(',', '.');
+    final parts = normalizedText.split('.');
+
+    if (parts.length > 2) {
+      return oldValue;
+    }
+
+    if (parts.first.length >= 2 && parts.first.startsWith('00')) {
       return oldValue;
     }
 

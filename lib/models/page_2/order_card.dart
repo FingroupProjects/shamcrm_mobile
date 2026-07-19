@@ -27,6 +27,7 @@ class Order {
       storageId; // Новое поле для storage_id (пока используется вместо branchId)
   final List<CustomFieldValue> customFieldValues;
   final List<DirectoryValue> directoryValues;
+  final List<OrderFile> files;
   final int? reasonForRefusalId;
   final String? reasonForRefusalComment;
   final String? refusalReasonText;
@@ -55,6 +56,7 @@ class Order {
     this.storageId,
     this.customFieldValues = const [],
     this.directoryValues = const [],
+    this.files = const [],
     this.reasonForRefusalId,
     this.reasonForRefusalComment,
     this.refusalReasonText,
@@ -114,13 +116,20 @@ class Order {
             : int.tryParse('${json['reason_for_refusal_id']}'),
         reasonForRefusalComment: json['reason_for_refusal']?.toString(),
         refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
-        customFieldValues: (json['customFieldValues'] as List<dynamic>? ?? [])
-            .map((item) =>
-                CustomFieldValue.fromJson(item as Map<String, dynamic>))
+        // The order API returns this relation as `custom_field_values`.
+        // Keep the camelCase fallback for locally cached/legacy payloads.
+        customFieldValues: ((json['custom_field_values'] ??
+                    json['customFieldValues']) as List<dynamic>? ??
+                [])
+            .whereType<Map<String, dynamic>>()
+            .map(CustomFieldValue.fromJson)
             .toList(),
         directoryValues: (json['directory_values'] as List<dynamic>? ?? [])
             .map(
                 (item) => DirectoryValue.fromJson(item as Map<String, dynamic>))
+            .toList(),
+        files: (json['files'] as List<dynamic>? ?? [])
+            .map((item) => OrderFile.fromJson(item as Map<String, dynamic>))
             .toList(),
       );
     } catch (e) {
@@ -158,6 +167,7 @@ class Order {
       'refusalReason': refusalReasonText,
       'customFieldValues': customFieldValues.map((e) => e.toJson()).toList(),
       'directory_values': directoryValues.map((e) => e.toJson()).toList(),
+      'files': files.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -182,6 +192,7 @@ class Order {
     int? storageId,
     List<CustomFieldValue>? customFieldValues,
     List<DirectoryValue>? directoryValues,
+    List<OrderFile>? files,
     int? reasonForRefusalId,
     String? reasonForRefusalComment,
     String? refusalReasonText,
@@ -211,7 +222,40 @@ class Order {
       refusalReasonText: refusalReasonText ?? this.refusalReasonText,
       customFieldValues: customFieldValues ?? this.customFieldValues,
       directoryValues: directoryValues ?? this.directoryValues,
+      files: files ?? this.files,
     );
+  }
+}
+
+class OrderFile {
+  final int id;
+  final String name;
+  final String path;
+  final String? size;
+
+  const OrderFile({
+    required this.id,
+    required this.name,
+    required this.path,
+    this.size,
+  });
+
+  factory OrderFile.fromJson(Map<String, dynamic> json) {
+    return OrderFile(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name: (json['name'] ?? json['file_name'] ?? '').toString(),
+      path: (json['path'] ?? json['url'] ?? json['file'] ?? '').toString(),
+      size: json['size']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'path': path,
+      'size': size,
+    };
   }
 }
 
@@ -412,7 +456,9 @@ class Good {
       variantGood: variantGoodItem,
       goodId: json['variant_id'] ?? json['good_id'] ?? goodItem.id,
       goodName: cachedGoodName ??
-          (goodItem.name.isNotEmpty ? goodItem.name : (variantGoodItem?.name ?? '')),
+          (goodItem.name.isNotEmpty
+              ? goodItem.name
+              : (variantGoodItem?.name ?? '')),
       quantity: json['quantity'] ?? 0,
       price: double.tryParse(
             json['price']?.toString() ??
@@ -421,7 +467,8 @@ class Good {
                         ?.toString()
                     : null) ??
                 (goodRaw is Map<String, dynamic>
-                    ? ((goodRaw['good_price'] as Map<String, dynamic>?)?['price'])
+                    ? ((goodRaw['good_price']
+                            as Map<String, dynamic>?)?['price'])
                         ?.toString()
                     : null) ??
                 '0',

@@ -44,8 +44,13 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 
 class LeadScreen extends StatefulWidget {
   final int? initialStatusId;
+  final bool isWarehouseReferenceClients;
 
-  LeadScreen({this.initialStatusId});
+  LeadScreen({
+    super.key,
+    this.initialStatusId,
+    this.isWarehouseReferenceClients = false,
+  });
 
   @override
   _LeadScreenState createState() => _LeadScreenState();
@@ -61,7 +66,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _isSearching = false;
   bool _isManager = false;
   final TextEditingController _searchController = TextEditingController();
-  bool _canReadLeadStatus = false;
   bool _canCreateLeadStatus = false;
   bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
@@ -175,6 +179,60 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   bool get _hasActiveCustomFieldFilters =>
       _selectedCustomFieldFilters.values.any((values) => values.isNotEmpty);
+
+  void _refreshAfterLeadCreated(int statusId) {
+    final leadBloc = context.read<LeadBloc>();
+    leadBloc.add(FetchLeadStatuses(forceRefresh: true));
+    leadBloc.add(
+      FetchLeads(
+        statusId,
+        salesFunnelId: _selectedFunnel?.id,
+        query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+        managerIds: _selectedManagers.isNotEmpty
+            ? _selectedManagers.map((e) => e.id).toList()
+            : null,
+        regionsIds: _selectedRegions.isNotEmpty
+            ? _selectedRegions.map((e) => e.id).toList()
+            : null,
+        regionId: _selectedState?.id,
+        cityIds: _selectedCities.isNotEmpty
+            ? _selectedCities.map((e) => e.id).toList()
+            : null,
+        sourcesIds: _selectedSources.isNotEmpty
+            ? _selectedSources.map((e) => e.id).toList()
+            : null,
+        channelIds: _selectedChannels.isNotEmpty
+            ? _selectedChannels.map((e) => e.id).toList()
+            : null,
+        advertisingCampaignIds: _selectedAdvertisingCampaigns.isNotEmpty
+            ? _selectedAdvertisingCampaigns.map((e) => e.id).toList()
+            : null,
+        reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
+            ? _selectedReasonForRefusalIds
+            : null,
+        statusIds: _selectedStatuses,
+        fromDate: _fromDate,
+        toDate: _toDate,
+        hasSuccessDeals: _hasSuccessDeals,
+        hasInProgressDeals: _hasInProgressDeals,
+        hasFailureDeals: _hasFailureDeals,
+        hasNotices: _hasNotices,
+        hasContact: _hasContact,
+        hasChat: _hasChat,
+        hasNoReplies: _hasNoReplies,
+        hasUnreadMessages: _hasUnreadMessages,
+        hasDeal: _hasDeal,
+        hasOrders: _hasOrders,
+        daysWithoutActivity: _daysWithoutActivity,
+        numberOfDaysDeal: _numberOfDaysDeal,
+        directoryValues: _directoryValues.isNotEmpty ? _directoryValues : null,
+        customFieldFilters: _selectedCustomFieldFilters.isNotEmpty
+            ? _selectedCustomFieldFilters
+            : null,
+        ignoreCache: true,
+      ),
+    );
+  }
 
   // Метод для проверки наличия активных фильтров
   bool _hasActiveFilters() {
@@ -538,7 +596,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final canAddLead = await _apiService.hasPermission('lead.create');
     if (mounted) {
       setState(() {
-        _canReadLeadStatus = canRead;
         _canCreateLeadStatus = canCreate;
         _canUpdateLeadStatus = canUpdate;
         _canDeleteLeadStatus = canDelete;
@@ -547,14 +604,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       });
     }
 
-    if (mounted && canRead) {
+    // Статусы и их видимость определяет сервер. Не блокируем этот запрос
+    // локальной проверкой leadStatus.read.
+    if (mounted) {
       final leadState = context.read<LeadBloc>().state;
       if (leadState is LeadInitial ||
           (leadState is LeadLoaded && _tabTitles.isEmpty)) {
         context.read<LeadBloc>().add(FetchLeadStatuses());
       }
-    } else if (mounted && !canRead) {
-      _resetLeadLoaderFlags();
     }
 
     try {
@@ -1309,7 +1366,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: context.appColors.surfaceElevated,
+                                        color:
+                                            context.appColors.surfaceElevated,
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
                                           color: context.appColors.borderSubtle,
@@ -1317,7 +1375,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                       ),
                                       child: Icon(
                                         icon,
-                                        color: context.appColors.buttonPrimaryBg,
+                                        color:
+                                            context.appColors.buttonPrimaryBg,
                                         size: 26,
                                       ),
                                     ),
@@ -1347,119 +1406,108 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
                         return SafeArea(
                           child: Container(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                          decoration: BoxDecoration(
-                            color: context.appColors.surfaceElevated,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(28),
-                            ),
-                            border: Border.all(
-                              color: context.appColors.borderSubtle,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: context.appColors.shadow
-                                    .withValues(alpha: 0.18),
-                                blurRadius: 18,
-                                offset: const Offset(0, -6),
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                            decoration: BoxDecoration(
+                              color: context.appColors.surfaceElevated,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(28),
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 4,
-                                margin: const EdgeInsets.only(bottom: 18),
-                                decoration: BoxDecoration(
-                                  color: context.appColors.borderSubtle,
-                                  borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: context.appColors.borderSubtle,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.appColors.shadow
+                                      .withValues(alpha: 0.18),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, -6),
                                 ),
-                              ),
-                              Text(
-                                AppLocalizations.of(context)!
-                                    .translate('add_for_current_status'),
-                                style: TextStyle(
-                                  color: context.appColors.textPrimary,
-                                  fontSize: 18,
-                                  fontFamily: "Gilroy",
-                                  fontWeight: FontWeight.bold,
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 4,
+                                  margin: const EdgeInsets.only(bottom: 18),
+                                  decoration: BoxDecoration(
+                                    color: context.appColors.borderSubtle,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 18),
-                              buildActionTile(
-                                title: AppLocalizations.of(context)!
-                                    .translate('new_lead_in_switch'),
-                                icon: Icons.add_rounded,
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LeadAddScreen(
-                                          statusId: currentStatusId),
-                                    ),
-                                  ).then((_) => context.read<LeadBloc>().add(
-                                        FetchLeads(
-                                          currentStatusId,
-                                          salesFunnelId: _selectedFunnel?.id,
-                                          advertisingCampaignIds:
-                                              _selectedAdvertisingCampaigns
-                                                      .isNotEmpty
-                                                  ? _selectedAdvertisingCampaigns
-                                                      .map((campaign) =>
-                                                          campaign.id)
-                                                      .toList()
-                                                  : null,
-                                          reasonForRefusalIds:
-                                              _selectedReasonForRefusalIds
-                                                      .isNotEmpty
-                                                  ? _selectedReasonForRefusalIds
-                                                  : null,
+                                Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('add_for_current_status'),
+                                  style: TextStyle(
+                                    color: context.appColors.textPrimary,
+                                    fontSize: 18,
+                                    fontFamily: "Gilroy",
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 18),
+                                buildActionTile(
+                                  title: AppLocalizations.of(context)!
+                                      .translate('new_lead_in_switch'),
+                                  icon: Icons.add_rounded,
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => LeadAddScreen(
+                                          statusId: currentStatusId,
+                                          isWarehouseReferenceClient: widget
+                                              .isWarehouseReferenceClients,
                                         ),
-                                      ));
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              buildActionTile(
-                                title: AppLocalizations.of(context)!
-                                    .translate('import_contact'),
-                                icon: Icons.contact_phone_rounded,
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ContactsScreen(
-                                          statusId: currentStatusId),
-                                    ),
-                                  ).then((_) => context.read<LeadBloc>().add(
-                                        FetchLeads(
-                                          currentStatusId,
-                                          salesFunnelId: _selectedFunnel?.id,
-                                          advertisingCampaignIds:
-                                              _selectedAdvertisingCampaigns
-                                                      .isNotEmpty
-                                                  ? _selectedAdvertisingCampaigns
-                                                      .map((campaign) =>
-                                                          campaign.id)
-                                                      .toList()
-                                                  : null,
-                                          reasonForRefusalIds:
-                                              _selectedReasonForRefusalIds
-                                                      .isNotEmpty
-                                                  ? _selectedReasonForRefusalIds
-                                                  : null,
-                                        ),
-                                      ));
-                                },
-                              ),
-                              const SizedBox(height: 6),
-                            ],
+                                      ),
+                                    ).then((result) {
+                                      if (result is int && mounted) {
+                                        _refreshAfterLeadCreated(result);
+                                      }
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                buildActionTile(
+                                  title: AppLocalizations.of(context)!
+                                      .translate('import_contact'),
+                                  icon: Icons.contact_phone_rounded,
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ContactsScreen(
+                                            statusId: currentStatusId),
+                                      ),
+                                    ).then((_) => context.read<LeadBloc>().add(
+                                          FetchLeads(
+                                            currentStatusId,
+                                            salesFunnelId: _selectedFunnel?.id,
+                                            advertisingCampaignIds:
+                                                _selectedAdvertisingCampaigns
+                                                        .isNotEmpty
+                                                    ? _selectedAdvertisingCampaigns
+                                                        .map((campaign) =>
+                                                            campaign.id)
+                                                        .toList()
+                                                    : null,
+                                            reasonForRefusalIds:
+                                                _selectedReasonForRefusalIds
+                                                        .isNotEmpty
+                                                    ? _selectedReasonForRefusalIds
+                                                    : null,
+                                          ),
+                                        ));
+                                  },
+                                ),
+                                const SizedBox(height: 6),
+                              ],
+                            ),
                           ),
-                        ),
                         );
                       },
                     );
@@ -1467,25 +1515,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            LeadAddScreen(statusId: currentStatusId),
+                        builder: (context) => LeadAddScreen(
+                          statusId: currentStatusId,
+                          isWarehouseReferenceClient:
+                              widget.isWarehouseReferenceClients,
+                        ),
                       ),
-                    ).then((_) => context.read<LeadBloc>().add(
-                          FetchLeads(
-                            currentStatusId,
-                            salesFunnelId: _selectedFunnel?.id,
-                            advertisingCampaignIds:
-                                _selectedAdvertisingCampaigns.isNotEmpty
-                                    ? _selectedAdvertisingCampaigns
-                                        .map((campaign) => campaign.id)
-                                        .toList()
-                                    : null,
-                            reasonForRefusalIds:
-                                _selectedReasonForRefusalIds.isNotEmpty
-                                    ? _selectedReasonForRefusalIds
-                                    : null,
-                          ),
-                        ));
+                    ).then((result) {
+                      if (result is int && mounted) {
+                        _refreshAfterLeadCreated(result);
+                      }
+                    });
                   }
                 },
                 backgroundColor: context.appColors.buttonPrimaryBg,
@@ -1586,6 +1626,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               lead: lead,
               title: lead.leadStatus?.title ?? "",
               statusId: lead.statusId,
+              isWarehouseReferenceClient: widget.isWarehouseReferenceClients,
               onStatusUpdated: () {},
               onStatusId: (StatusLeadId) {
                 final index = _tabTitles
@@ -1689,6 +1730,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                       lead: lead,
                       title: lead.leadStatus?.title ?? "",
                       statusId: lead.statusId,
+                      isWarehouseReferenceClient:
+                          widget.isWarehouseReferenceClients,
                       onStatusUpdated: () {},
                       onStatusId: (StatusLeadId) {
                         final index = _tabTitles.indexWhere(
@@ -1725,20 +1768,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 child: PlayStoreImageLoading(
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),
-                ),
-              );
-            }
-
-            if (!_canReadLeadStatus) {
-              return Center(
-                child: Text(
-                  'Нет доступа к статусам лидов',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: context.appColors.textSecondary,
-                  ),
                 ),
               );
             }
@@ -1889,7 +1918,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.edit_rounded, color: context.appColors.iconSecondary),
+                Icon(Icons.edit_rounded,
+                    color: context.appColors.iconSecondary),
                 const SizedBox(width: 10),
                 Text(
                   'Изменить',
@@ -2145,17 +2175,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         }
         if (state is LeadLoaded) {
           if (!_permissionsInitialized) {
-            return;
-          }
-
-          if (!_canReadLeadStatus) {
-            if (mounted) {
-              setState(() {
-                _tabTitles.clear();
-                _tabKeys.clear();
-                _currentTabIndex = 0;
-              });
-            }
             return;
           }
 
@@ -2434,20 +2453,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 child: PlayStoreImageLoading(
                   size: 80.0,
                   duration: Duration(milliseconds: 1000),
-                ),
-              );
-            }
-
-            if (!_canReadLeadStatus) {
-              return Center(
-                child: Text(
-                  'Нет доступа к статусам лидов',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: context.appColors.textSecondary,
-                  ),
                 ),
               );
             }

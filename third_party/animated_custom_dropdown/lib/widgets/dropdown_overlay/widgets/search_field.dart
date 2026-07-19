@@ -43,9 +43,9 @@ class _SearchField<T> extends StatefulWidget {
 
 class _SearchFieldState<T> extends State<_SearchField<T>> {
   final searchCtrl = TextEditingController();
-  bool isFieldEmpty = false;
   FocusNode focusNode = FocusNode();
   Timer? _delayTimer;
+  int _requestGeneration = 0;
 
   @override
   void initState() {
@@ -80,7 +80,12 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
   void onClear() {
     if (searchCtrl.text.isNotEmpty) {
       searchCtrl.clear();
-      if (widget.onSearchQueryChanged != null) {
+      _delayTimer?.cancel();
+      if (widget.searchType == _SearchType.onRequestData &&
+          widget.futureRequest != null) {
+        widget.onFutureRequestLoading?.call(true);
+        searchRequest('');
+      } else if (widget.onSearchQueryChanged != null) {
         widget.onSearchQueryChanged!('');
       } else {
         widget.onSearchedItems(widget.items);
@@ -89,19 +94,21 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
   }
 
   void searchRequest(String val) async {
+    final requestGeneration = ++_requestGeneration;
     List<T> result = [];
     try {
       result = await widget.futureRequest!(val);
-      widget.onFutureRequestLoading!(false);
     } catch (_) {
-      widget.onFutureRequestLoading!(false);
+      result = [];
     }
-    widget.onSearchedItems(isFieldEmpty ? widget.items : result);
-    widget.mayFoundResult!(result.isNotEmpty);
 
-    if (isFieldEmpty) {
-      isFieldEmpty = false;
+    if (!mounted || requestGeneration != _requestGeneration) {
+      return;
     }
+
+    widget.onFutureRequestLoading?.call(false);
+    widget.onSearchedItems(result);
+    widget.mayFoundResult!(result.isNotEmpty);
   }
 
   @override
@@ -112,12 +119,6 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
         focusNode: focusNode,
         style: widget.decoration?.textStyle,
         onChanged: (val) async {
-          if (val.isEmpty) {
-            isFieldEmpty = true;
-          } else if (isFieldEmpty) {
-            isFieldEmpty = false;
-          }
-        
           if (widget.searchType != null &&
               widget.searchType == _SearchType.onRequestData &&
               widget.onSearchQueryChanged != null) {
@@ -128,17 +129,18 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
           } else if (widget.searchType != null &&
               widget.searchType == _SearchType.onRequestData &&
               val.isNotEmpty) {
-            widget.onFutureRequestLoading!(true);
+            widget.onFutureRequestLoading?.call(true);
 
-            if (widget.futureRequestDelay != null) {
-              _delayTimer?.cancel();
-              _delayTimer =
-                  Timer(widget.futureRequestDelay ?? Duration.zero, () {
-                searchRequest(val);
-              });
-            } else {
+            _delayTimer?.cancel();
+            _delayTimer = Timer(widget.futureRequestDelay ?? Duration.zero, () {
               searchRequest(val);
-            }
+            });
+          } else if (widget.searchType != null &&
+              widget.searchType == _SearchType.onRequestData &&
+              val.isEmpty) {
+            _delayTimer?.cancel();
+            widget.onFutureRequestLoading?.call(true);
+            searchRequest(val);
           } else if (widget.searchType == _SearchType.onListData) {
             onSearch(val);
           } else {

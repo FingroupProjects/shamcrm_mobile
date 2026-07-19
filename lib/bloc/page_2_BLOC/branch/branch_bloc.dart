@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'branch_event.dart';
@@ -17,7 +18,7 @@ class BranchBloc extends Bloc<BranchEvent, BranchState> {
       final branches = await _apiService.getBranches();
       emit(BranchLoaded(branches));
     } catch (e) {
-      emit(BranchError(e.toString()));
+      emit(BranchError(friendlyError(e)));
     }
   }
 }

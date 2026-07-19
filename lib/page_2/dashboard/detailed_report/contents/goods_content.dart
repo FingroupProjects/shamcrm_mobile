@@ -6,6 +6,7 @@ import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/goods_card.dart';
+import '../details/goods_storages_details.dart';
 
 class GoodsContent extends StatefulWidget {
   const GoodsContent({super.key});
@@ -89,7 +90,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
           return GoodsCard(
             goods: goods[index],
-            onClick: (e) {},
+            onClick: (e) => showGoodsStoragesDetailsDialog(context, e),
             onLongPress: (e) {},
           );
         },

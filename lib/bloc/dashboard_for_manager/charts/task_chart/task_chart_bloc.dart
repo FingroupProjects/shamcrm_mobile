@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/task_chart_event.dart';
@@ -58,7 +59,7 @@ class DashboardTaskChartBlocManager
         }
       }
     } catch (e) {
-      emit(DashboardTaskChartErrorManager(message: e.toString()));
+      emit(DashboardTaskChartErrorManager(message: friendlyError(e)));
     }
   }
 

@@ -61,6 +61,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
           _isFailure,
           _isUnassembled,
           localizations,
+          null,
         ),
       );
     }
@@ -213,7 +214,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                       ),
                       IconButton(
                         icon: Icon(Icons.close,
-                          size: 24, color: context.appColors.textSecondary),
+                            size: 24, color: context.appColors.textSecondary),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -232,7 +233,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                        _buildTextFieldWithLabel(
+                                _buildTextFieldWithLabel(
                                   label: 'Название',
                                   controller: _titleController,
                                   isRequired: true,

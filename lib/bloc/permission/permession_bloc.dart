@@ -20,11 +20,11 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
   Future<void> _fetchPermissions(
       FetchPermissionsEvent event, Emitter<PermissionsState> emit) async {
     emit(PermissionsLoading());
-    
+
     // Количество попыток при сетевых ошибках
     const int maxRetries = 3;
     int retryCount = 0;
-    
+
     while (retryCount < maxRetries) {
       try {
         final permissions = await apiService.fetchPermissionsByRoleId();
@@ -32,7 +32,8 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
         // ✅ КЛЮЧЕВАЯ ЛОГИКА: Если пришел пустой массив - это реально нет доступа
         if (permissions.isEmpty) {
           if (kDebugMode) {
-            debugPrint('PermissionsBloc: Получен пустой массив permissions - нет доступа');
+            debugPrint(
+                'PermissionsBloc: Получен пустой массив permissions - нет доступа');
           }
           emit(PermissionsNoAccess());
           return;
@@ -43,31 +44,55 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
             .toList();
 
         await apiService.savePermissions(permissions);
-        
+
         // ✅ ИЗМЕНЕНО: Запрос локализации синхронно (await), чтобы применялось сразу
         await _fetchAndApplyLocalization();
-        
+
         // Sync permissions to iOS widget via App Groups
         await WidgetService.syncPermissionsToWidget(permissions);
-        
+
         // Sync visibility flags to Android widget
-        // Warehouse/Accounting - requires accounting_of_goods OR accounting_money
-        final hasWarehouseAccess = permissions.contains('accounting_of_goods') || 
-                                   permissions.contains('accounting_money');
-        
+        final hasWarehouseDocumentAccess =
+            permissions.contains('accounting_of_goods') ||
+                permissions.contains('accounting_money') ||
+                permissions.contains('income_document.read') ||
+                permissions.contains('movement_document.read') ||
+                permissions.contains('manufacture.read') ||
+                permissions.contains('manufacture_document.read') ||
+                permissions.contains('write_off_document.read') ||
+                permissions.contains('expense_document.read') ||
+                permissions.contains('client_return_document.read') ||
+                permissions.contains('supplier_return_document.read') ||
+                permissions.contains('checking_account_pko.read') ||
+                permissions.contains('checking_account_rko.read');
+        final hasWarehouseReferenceAccess =
+            permissions.contains('storage.read') ||
+                permissions.contains('unit.read') ||
+                permissions.contains('supplier.read') ||
+                permissions.contains('product.read') ||
+                permissions.contains('price_type.read') ||
+                permissions.contains('category.read') ||
+                permissions.contains('lead.read') ||
+                permissions.contains('initial_balance.read') ||
+                permissions.contains('cash_register.read') ||
+                permissions.contains('rko_article.read') ||
+                permissions.contains('pko_article.read');
+        final hasWarehouseAccess =
+            hasWarehouseDocumentAccess || hasWarehouseReferenceAccess;
+
         // Orders - visible when user has any order.* permission and warehouse access
         final hasAnyOrderAccess =
             permissions.any((permission) => permission.startsWith('order.'));
         final hasOrdersAccess = hasAnyOrderAccess && hasWarehouseAccess;
-        
+
         // Online Store - visible when user has access to categories/products/orders without warehouse access
         final hasOnlineStoreFeatureAccess =
             permissions.contains('category.read') ||
-            permissions.contains('product.read') ||
-            hasAnyOrderAccess;
+                permissions.contains('product.read') ||
+                hasAnyOrderAccess;
         final hasOnlineStoreAccess =
             hasOnlineStoreFeatureAccess && !hasWarehouseAccess;
-        
+
         await WidgetService.syncWidgetVisibilityToAndroid({
           'dashboard': permissions.contains('section.dashboard'),
           'tasks': permissions.contains('task.read'),
@@ -78,22 +103,23 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
           'orders': hasOrdersAccess,
           'online_store': hasOnlineStoreAccess,
         });
-        
+
         // Also sync current language to widget
         await LanguageManager.syncCurrentLanguageToWidget();
-        
+
         emit(PermissionsLoaded(permissionModels));
         return; // Успешно загружено, выходим
       } catch (e) {
         // Проверяем, является ли это сетевой ошибкой
         final isNetworkError = _isNetworkError(e);
-        
+
         if (isNetworkError) {
           retryCount++;
           if (kDebugMode) {
-            debugPrint('PermissionsBloc: Сетевая ошибка (попытка $retryCount/$maxRetries): $e');
+            debugPrint(
+                'PermissionsBloc: Сетевая ошибка (попытка $retryCount/$maxRetries): $e');
           }
-          
+
           if (retryCount < maxRetries) {
             // Ждем перед повторной попыткой (экспоненциальная задержка)
             await Future.delayed(Duration(seconds: retryCount));
@@ -101,9 +127,11 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
           } else {
             // Все попытки исчерпаны
             if (kDebugMode) {
-              debugPrint('PermissionsBloc: Все попытки исчерпаны, сетевой сбой');
+              debugPrint(
+                  'PermissionsBloc: Все попытки исчерпаны, сетевой сбой');
             }
-            emit(PermissionsNetworkError('Не удалось получить данные. Проверьте подключение к интернету.'));
+            emit(PermissionsNetworkError(
+                'Не удалось получить данные. Проверьте подключение к интернету.'));
             return;
           }
         } else {
@@ -148,36 +176,41 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
       if (kDebugMode) {
         debugPrint('PermissionsBloc: Получаем локализацию с сервера...');
       }
-      
+
       final localizationResponse = await apiService.getLocalization();
-      
+
       if (localizationResponse?.result != null) {
         final newLanguage = localizationResponse!.result!.language ?? 'ru';
-        final newPhoneCode = localizationResponse.result!.countryPhoneCodes ?? '+992';
+        final newPhoneCode =
+            localizationResponse.result!.countryPhoneCodes ?? '+992';
         final newCurrency = localizationResponse.result!.currency;
-        
+
         // Получаем текущие сохранённые значения
         final currentLanguage = await LocalizationService.getLanguage();
         final currentPhoneCode = await LocalizationService.getDialCode();
-        
+
         if (kDebugMode) {
-          debugPrint('PermissionsBloc: Текущие настройки - язык: $currentLanguage, код: $currentPhoneCode');
-          debugPrint('PermissionsBloc: Новые настройки - язык: $newLanguage, код: $newPhoneCode');
+          debugPrint(
+              'PermissionsBloc: Текущие настройки - язык: $currentLanguage, код: $currentPhoneCode');
+          debugPrint(
+              'PermissionsBloc: Новые настройки - язык: $newLanguage, код: $newPhoneCode');
         }
-        
+
         // Сохраняем настройки локализации в SharedPreferences
         await LocalizationService.applyLocalizationSettings(
           language: newLanguage,
           phoneCode: newPhoneCode,
           currency: newCurrency,
         );
-        
+
         if (kDebugMode) {
-          debugPrint('PermissionsBloc: Локализация сохранена и применена успешно');
+          debugPrint(
+              'PermissionsBloc: Локализация сохранена и применена успешно');
         }
       } else {
         if (kDebugMode) {
-          debugPrint('PermissionsBloc: Не удалось получить локализацию с сервера');
+          debugPrint(
+              'PermissionsBloc: Не удалось получить локализацию с сервера');
         }
       }
     } catch (e) {
