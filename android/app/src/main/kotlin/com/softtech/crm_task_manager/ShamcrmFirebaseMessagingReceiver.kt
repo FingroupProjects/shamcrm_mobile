@@ -18,6 +18,10 @@ class ShamcrmFirebaseMessagingReceiver : FlutterFirebaseMessagingReceiver() {
                 val data = extras.keySet().associateWith { key ->
                     extras.get(key)?.toString().orEmpty()
                 }
+                if (ChatQuickReplyManager.isChatMessagePush(data)) {
+                    ChatQuickReplyManager.showNotification(context, data)
+                    return
+                }
                 if (isIncomingCallPush(data)) {
                     val applicationContext = context.applicationContext
                     NativeSipBridge.initialize(applicationContext)
