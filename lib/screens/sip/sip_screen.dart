@@ -235,12 +235,20 @@ class _SipScreenState extends State<SipScreen>
   }
 
   Future<void> _initializeSip() async {
-    await _sipService.initialize();
-    await _sipService.prepareSipRuntimePermissions();
-    await Future.wait([
-      _loadSearchCapabilities(),
-      _loadContactsConfiguration(),
-    ]);
+    try {
+      await _sipService.initialize().timeout(const Duration(seconds: 8));
+      await _sipService
+          .prepareSipRuntimePermissions()
+          .timeout(const Duration(seconds: 5));
+      await Future.wait([
+        _loadSearchCapabilities(),
+        _loadContactsConfiguration(),
+      ]).timeout(const Duration(seconds: 10));
+    } catch (error) {
+      debugPrint('SipScreen initialization timeout/error: $error');
+      // The dialer must remain usable even when call history or native setup
+      // is temporarily unavailable. Those parts retry independently.
+    }
     final state = _sipService.state;
 
     _suspendDraftAutosave = true;

@@ -823,6 +823,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             result(defaults.string(forKey: Constants.voipTokenKey))
         case "getPendingCallActions":
             result(loadPendingCallActions().map { $0.toFlutterDictionary() })
+        case "consumePendingCallUiRequest":
+            // iOS delivers CallKit actions through the native delegate and
+            // does not persist a separate Flutter UI request like Android.
+            result(nil)
         case "consumePendingCallActions":
             let actions = loadPendingCallActions()
             savePendingCallActions([])

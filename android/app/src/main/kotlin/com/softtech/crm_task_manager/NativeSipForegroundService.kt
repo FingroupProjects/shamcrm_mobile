@@ -263,9 +263,10 @@ class NativeSipForegroundService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         NativeSipBridge.removeObserver(bridgeObserver)
         notificationManager.cancel(NOTIFICATION_CALL_ID)
-        if (!explicitStopRequested && NativeSipBridge.isPersistentEnabled()) {
-            scheduleRestart(applicationContext, delayMs = 2000L)
-        }
+        // Do not schedule a second service instance from onDestroy(). Android
+        // keeps this service sticky; FCM and WorkManager handle real process
+        // recovery. An Alarm here causes an unnecessary register cycle after
+        // the task is removed from recents.
         super.onDestroy()
     }
 
@@ -290,9 +291,10 @@ class NativeSipForegroundService : Service() {
                 "persistentEnabled" to NativeSipBridge.isPersistentEnabled(),
             ),
         )
-        if (!explicitStopRequested && NativeSipBridge.isPersistentEnabled()) {
-            scheduleRestart(applicationContext, delayMs = 1000L)
-        }
+        // Removing the app task must not restart SIP. The service uses
+        // stopWithTask=false, so a normal recents swipe leaves Linphone Core
+        // and its registration alive. Recovery is handled by START_STICKY,
+        // FCM and WorkManager instead of an unconditional Alarm restart.
         super.onTaskRemoved(rootIntent)
     }
 

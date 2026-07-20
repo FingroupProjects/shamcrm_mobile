@@ -167,6 +167,10 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                                     _sipRuntime.connect());
                                               });
                                             },
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 15,
+                                      ),
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -187,8 +191,15 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                             state.registrationStatus ==
                                                     SipRegistrationUiStatus
                                                         .registering
-                                                ? 'Подключение...'
+                                                ? l10n
+                                                    .translate('sip_connecting')
                                                 : l10n.translate('sip_connect'),
+                                            style: const TextStyle(
+                                              fontFamily: 'Gilroy',
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ],
                                       ),

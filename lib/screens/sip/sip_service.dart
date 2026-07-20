@@ -32,6 +32,7 @@ class SipService extends ChangeNotifier
   static const String _transportKey = 'sip_transport';
   static const String _portKey = 'sip_port';
   static const String _enabledKey = 'sip_enabled';
+  static const String _installMarkerKey = 'sip_install_marker_v1';
   static const String _voipPushTokenKey = 'sip_ios_voip_push_token';
   static const String _pendingIncomingCallPushPayloadKey =
       'sip_pending_incoming_call_push_payload_v1';
@@ -154,6 +155,7 @@ class SipService extends ChangeNotifier
       }
 
       await _initializeNativeSipBridge();
+      await _resetSipStorageAfterFreshInstallIfNeeded();
 
       var server = await _readSecureStorageValue(
             _serverKey,
@@ -277,6 +279,27 @@ class SipService extends ChangeNotifier
     } finally {
       _initializationCompleter = null;
     }
+  }
+
+  Future<void> _resetSipStorageAfterFreshInstallIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_installMarkerKey) == true) {
+      return;
+    }
+
+    // SharedPreferences is removed with the app, while iOS Keychain-backed
+    // secure storage can survive reinstall. Treat a missing marker as a new
+    // installation and remove the old SIP account before loading the UI.
+    await _invokeNativeSipMethod('unregister', null, false);
+    for (final key in _sipSecureStorageKeys) {
+      try {
+        await _storage.delete(key: key);
+      } catch (error) {
+        debugPrint(
+            'SipService fresh-install storage delete failed for $key: $error');
+      }
+    }
+    await prefs.setBool(_installMarkerKey, true);
   }
 
   Future<String?> _readSecureStorageValue(

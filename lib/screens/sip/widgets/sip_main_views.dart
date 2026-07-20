@@ -363,8 +363,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                         const SizedBox(height: 16),
                         CustomButton(
                           buttonText: isRegistering
-                              ? 'Подключение...'
-                              : 'Подключить телефонию',
+                              ? l10n.translate('sip_connecting')
+                              : l10n.translate('sip_connect'),
                           buttonColor: const Color(0xff4F40EC),
                           textColor: Colors.white,
                           isLoading: isRegistering,
@@ -374,6 +374,17 @@ extension _SipMainViewsExtension on _SipScreenState {
                                   await _saveDraft();
                                   await _sipRuntime.connect();
                                 },
+                          child: Text(
+                            isRegistering
+                                ? l10n.translate('sip_connecting')
+                                : l10n.translate('sip_connect'),
+                            style: const TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -389,6 +400,7 @@ extension _SipMainViewsExtension on _SipScreenState {
 
   Widget _projectTransportSelector(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     final items = <(SipTransportUi, String)>[
       (SipTransportUi.ws, l10n.translate('sip_transport_ws')),
       (SipTransportUi.udp, 'UDP'),
@@ -404,15 +416,16 @@ extension _SipMainViewsExtension on _SipScreenState {
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.fieldBg,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.fieldBorder),
           ),
           child: Row(
             children: [
@@ -438,14 +451,13 @@ extension _SipMainViewsExtension on _SipScreenState {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         color: _selectedTransport == items[i].$1
-                            ? Colors.white
-                            : Colors.transparent,
+                            ? colors.surfaceElevated
+                            : colors.fieldBg.withValues(alpha: 0.35),
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: _selectedTransport == items[i].$1
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xff1E2E52)
-                                      .withValues(alpha: 0.08),
+                                  color: colors.shadow.withValues(alpha: 0.18),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -460,8 +472,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: _selectedTransport == items[i].$1
-                              ? const Color(0xff1E2E52)
-                              : const Color(0xff5A6B87),
+                              ? colors.textPrimary
+                              : colors.textSecondary,
                         ),
                       ),
                     ),

@@ -1243,9 +1243,6 @@ class ErrorApp extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// MYAPP - УБРАНА ЛИШНЯЯ ИНИЦИАЛИЗАЦИЯ
-// =============================================================================
 
 class MyApp extends StatefulWidget {
   final ApiService apiService;

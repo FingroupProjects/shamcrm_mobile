@@ -62,7 +62,7 @@ class _SipCallHistoryScreenState extends State<_SipCallHistoryScreen> {
         filters: {
           'leads': [leadId],
         },
-      );
+      ).timeout(const Duration(seconds: 12));
 
       final calls = response['calls'] as List<CallLogEntry>;
       final pagination = response['pagination'] as Map<String, dynamic>;
