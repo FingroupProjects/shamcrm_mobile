@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/utils/global_fun.dart';
 
 import '../../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
 import '../../../../models/page_2/dashboard/creditors_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/creditor_card.dart';
+import '../widgets/pinned_report_total.dart';
 
 class CreditorsContent extends StatefulWidget {
   const CreditorsContent({super.key});
@@ -100,6 +102,21 @@ class _CreditorsContentState extends State<CreditorsContent> {
             },
           )
         : _buildEmptyState();
+  }
+
+  Widget _buildContentWithTotal({
+    required Widget child,
+    required num? totalDebt,
+  }) {
+    return Column(
+      children: [
+        Expanded(child: child),
+        PinnedReportTotal(
+          total: parseNumberToString(totalDebt, nullValue: '0'),
+          icon: Icons.account_balance_wallet_outlined,
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState() {
@@ -253,10 +270,12 @@ class _CreditorsContentState extends State<CreditorsContent> {
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardCreditorsLoaded) {
           _isLoadingMore = false;
-          if (state.result.result == null) {
-            return _buildEmptyState();
-          }
-          return _buildCreditorsList(state.result);
+          return _buildContentWithTotal(
+            totalDebt: state.result.result?.totalDebt,
+            child: state.result.result == null
+                ? _buildEmptyState()
+                : _buildCreditorsList(state.result),
+          );
         }
 
         return _buildEmptyState();

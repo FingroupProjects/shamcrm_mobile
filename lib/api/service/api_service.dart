@@ -2133,23 +2133,25 @@ class ApiService {
 
       debugPrint('sendVoipToken: URL: $url');
 
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-          'Device': 'mobile',
-        },
-        body: json.encode({
-          'type': 'mobile',
-          'token': voipToken,
-          'platform': 'ios',
-          'provider': 'apns_voip',
-          if (organizationId != null) 'organization_id': organizationId,
-          if (userId.trim().isNotEmpty) 'user_id': userId.trim(),
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $token',
+              'Device': 'mobile',
+            },
+            body: json.encode({
+              'type': 'mobile',
+              'token': voipToken,
+              'platform': 'ios',
+              'provider': 'apns_voip',
+              if (organizationId != null) 'organization_id': organizationId,
+              if (userId.trim().isNotEmpty) 'user_id': userId.trim(),
+            }),
+          )
+          .timeout(_defaultRequestTimeout);
 
       debugPrint(
           'sendVoipToken: Ответ: ${response.statusCode} ${response.body}');
@@ -12686,6 +12688,41 @@ class ApiService {
 
 //_________________________________ START_____API_SCREEN__GOODS____________________________________________//
 
+  Future<List<Goods>> getGoodsByCategoryForOrderSelection(
+      int categoryId) async {
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+    final queryParts = <String>[
+      if (organizationId != null &&
+          organizationId.isNotEmpty &&
+          organizationId != 'null')
+        'organization_id=${Uri.encodeComponent(organizationId)}',
+      if (salesFunnelId != null &&
+          salesFunnelId.isNotEmpty &&
+          salesFunnelId != 'null')
+        'sales_funnel_id=${Uri.encodeComponent(salesFunnelId)}',
+      'page=1',
+      'search=',
+      'category_id=$categoryId',
+    ];
+    final path = '/good?${queryParts.join('&')}';
+
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data is Map<String, dynamic> &&
+          data['result'] is Map<String, dynamic> &&
+          data['result']['data'] is List) {
+        return (data['result']['data'] as List)
+            .map((item) => Goods.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Ошибка: Неверный формат данных');
+    }
+
+    throw Exception('Ошибка загрузки товаров: ${response.statusCode}');
+  }
+
   Future<List<Goods>> getGoods({
     int page = 1,
     int perPage = 20,
@@ -12698,12 +12735,31 @@ class ApiService {
     }
 
     if (filters != null) {
-      if (filters.containsKey('category_id') &&
-          filters['category_id'] is List &&
-          (filters['category_id'] as List).isNotEmpty) {
-        final categoryIds = filters['category_id'] as List;
-        for (int i = 0; i < categoryIds.length; i++) {
-          path += '&category_id[]=${categoryIds[i]}';
+      if (filters.containsKey('category_id')) {
+        final categoryFilter = filters['category_id'];
+        if (categoryFilter is int) {
+          path += '&category_id=$categoryFilter';
+        } else if (categoryFilter is List && categoryFilter.isNotEmpty) {
+          for (final categoryId in categoryFilter) {
+            path += '&category_id[]=$categoryId';
+          }
+        }
+      }
+
+      if (filters.containsKey('subcategory_id')) {
+        final subcategoryFilter = filters['subcategory_id'];
+        if (subcategoryFilter is int) {
+          path += '&subcategory_id=$subcategoryFilter';
+        } else if (subcategoryFilter is String &&
+            subcategoryFilter.trim().isNotEmpty) {
+          path += '&subcategory_id=${Uri.encodeComponent(subcategoryFilter)}';
+        }
+      }
+
+      if (filters.containsKey('status')) {
+        final statusFilter = filters['status'];
+        if (statusFilter is String && statusFilter.trim().isNotEmpty) {
+          path += '&status=${Uri.encodeComponent(statusFilter.trim())}';
         }
       }
 
@@ -19883,22 +19939,13 @@ class ApiService {
     Map<String, dynamic>? filters,
     String? search,
   }) async {
-    String path = '/dashboard/goods-report?';
-
-    final categoryId = filters?['category_id'] as int?;
-    final daysWithoutMovement = filters?['days_without_movement'] as int?;
-    final goodId = filters?['good_id'] as int?;
-    final sumFrom = filters?['sum_from'] as String?;
-    final sumTo = filters?['sum_to'] as String?;
-
-    if (categoryId != null) path += '&category_id=$categoryId';
-    if (daysWithoutMovement != null)
-      path += '&days_without_movement=$daysWithoutMovement';
-    if (goodId != null) path += '&good_id=$goodId';
-    if (sumFrom != null && sumFrom.isNotEmpty) path += '&sum_from=$sumFrom';
-    if (sumTo != null && sumTo.isNotEmpty) path += '&sum_to=$sumTo';
-    if (search != null && search.isNotEmpty) path += '&search=$search';
-    path += '&page=$page&per_page=$perPage';
+    String path = _buildSalesDashboardGoodsReportPath(
+      endpoint: '/dashboard/goods-report',
+      page: page,
+      perPage: perPage,
+      filters: filters,
+      search: search,
+    );
 
     path = await _appendQueryParams(path);
     if (kDebugMode) {
@@ -19923,8 +19970,82 @@ class ApiService {
         );
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
+  }
+
+  Future<String> getSalesDashboardGoodsReportTotalSum({
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    String path = _buildSalesDashboardGoodsReportPath(
+      endpoint: '/dashboard/goods-report-total-sum',
+      filters: filters,
+      search: search,
+    );
+
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getSalesDashboardGoodsReportTotalSum - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученная общая сумма по отчёту товаров: $rawData");
+
+        final resultData =
+            rawData is Map<String, dynamic> ? rawData['result'] : null;
+        final totalSource = resultData is Map
+            ? Map<String, dynamic>.from(resultData)
+            : rawData is Map<String, dynamic>
+                ? rawData
+                : <String, dynamic>{};
+
+        return DashboardGoodsReportTotal.fromJson(totalSource).totalSum;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении общей суммы отчёта товаров!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  String _buildSalesDashboardGoodsReportPath({
+    required String endpoint,
+    int? page,
+    int? perPage,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) {
+    final queryParams = <String, String>{};
+
+    void addParam(String key, dynamic value) {
+      final stringValue = value?.toString();
+      if (stringValue != null && stringValue.isNotEmpty) {
+        queryParams[key] = stringValue;
+      }
+    }
+
+    addParam('category_id', filters?['category_id']);
+    addParam('days_without_movement', filters?['days_without_movement']);
+    addParam('good_id', filters?['good_id']);
+    addParam('sum_from', filters?['sum_from']);
+    addParam('sum_to', filters?['sum_to']);
+    addParam('search', search?.trim());
+    addParam('page', page);
+    addParam('per_page', perPage);
+
+    return Uri(
+      path: endpoint,
+      queryParameters: queryParams.isEmpty ? null : queryParams,
+    ).toString();
   }
 
   Future<List<BatchData>> getBatchRemainders({

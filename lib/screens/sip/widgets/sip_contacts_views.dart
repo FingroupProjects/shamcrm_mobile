@@ -98,6 +98,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
   }
 
   Widget _contactsView(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_contactsEnabled && !_contactsLoaded && !_isContactsLoading) {
       unawaited(_loadContacts());
     }
@@ -256,7 +258,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     if (_contactsEnabled)
                       Expanded(
                         child: _contactsStatusChip(
-                          label: 'Контакты',
+                          label: l10n.translate('sip_tab_contacts'),
                           count: _contactsTotalCount,
                           selected: activeTab == _SipContactsTabSource.contacts,
                           onTap: () => _selectContactsTabSource(
@@ -269,7 +271,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     if (_leadSearchEnabled)
                       Expanded(
                         child: _contactsStatusChip(
-                          label: 'Лиды',
+                          label: l10n.translate('leads'),
                           count: _leadTotalCount,
                           selected: activeTab == _SipContactsTabSource.leads,
                           loading: _isLeadCountLoading,
@@ -284,8 +286,8 @@ extension _SipContactsViewsExtension on _SipScreenState {
               ],
               _cleanSearchField(
                 placeholder: activeTab == _SipContactsTabSource.contacts
-                    ? 'Поиск по контактам'
-                    : 'Поиск по лидам',
+                    ? l10n.translate('sip_search_contacts')
+                    : l10n.translate('sip_search_leads'),
                 onChanged: _handleContactsViewChanged,
               ),
             ],

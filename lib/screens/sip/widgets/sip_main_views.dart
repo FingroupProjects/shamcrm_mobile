@@ -3,6 +3,7 @@ part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 
 extension _SipMainViewsExtension on _SipScreenState {
   Widget _buildTopBar(BuildContext context, SipUiState state) {
+    final l10n = AppLocalizations.of(context)!;
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final showCompactStatus =
@@ -16,12 +17,12 @@ extension _SipMainViewsExtension on _SipScreenState {
     final subtitle = hasActiveCall
         ? _resolvedCallLabel(context, state)
         : isReconnectInProgress
-            ? 'Восстанавливаем SIP-соединение...'
+            ? l10n.translate('sip_reconnect_compact')
             : isNetworkUnavailable
-                ? 'Сеть потеряна. Ждём восстановление соединения'
+                ? l10n.translate('sip_network_lost')
                 : isRegistered
-                    ? 'Линия готова к звонкам'
-                    : 'Подключите линию для звонков в фоне';
+                    ? l10n.translate('sip_line_ready')
+                    : l10n.translate('sip_line_background_hint');
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
@@ -38,9 +39,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Телефония',
-                      style: TextStyle(
+                    Text(
+                      l10n.translate('appbar_sip'),
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF111827),
@@ -64,7 +65,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                         ),
                         if (showCompactStatus) ...[
                           const SizedBox(width: 8),
-                          _buildRegisteredIndicator(),
+                          _buildRegisteredIndicator(context),
                         ],
                       ],
                     ),
@@ -72,8 +73,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                 ),
               ),
               _buildTopIconButton(
-                icon: CupertinoIcons.gear_alt_fill,
-                onPressed: _showSettingsSheet,
+                icon: CupertinoIcons.search,
+                onPressed: _openSearchTab,
               ),
             ],
           ),
@@ -144,7 +145,18 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _buildRegisteredIndicator() {
+  void _openSearchTab() {
+    _updateView(() {
+      _bottomTabIndex = 3;
+      _liquidNavDragIndex = null;
+      _isLiquidNavPressed = false;
+      _expandedCallLogId = null;
+    });
+  }
+
+  Widget _buildRegisteredIndicator(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -152,18 +164,18 @@ extension _SipMainViewsExtension on _SipScreenState {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: const Color(0xFFCFE9D8)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             CupertinoIcons.check_mark_circled_solid,
             size: 12,
             color: Color(0xFF22C55E),
           ),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(
-            'В сети',
-            style: TextStyle(
+            l10n.translate('sip_online'),
+            style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: Color(0xFF22C55E),
@@ -199,10 +211,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Телефония',
-                        style: TextStyle(
+                        l10n.translate('appbar_sip'),
+                        style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
@@ -356,8 +368,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                       const SizedBox(height: 16),
                       CustomButton(
                         buttonText: isRegistering
-                            ? 'Подключение...'
-                            : 'Подключить телефонию',
+                            ? l10n.translate('sip_connecting')
+                            : l10n.translate('sip_connect'),
                         buttonColor: const Color(0xff4F40EC),
                         textColor: Colors.white,
                         isLoading: isRegistering,
@@ -383,16 +395,16 @@ extension _SipMainViewsExtension on _SipScreenState {
     final l10n = AppLocalizations.of(context)!;
     final items = <(SipTransportUi, String)>[
       (SipTransportUi.ws, l10n.translate('sip_transport_ws')),
-      (SipTransportUi.udp, 'UDP'),
+      (SipTransportUi.udp, l10n.translate('sip_transport_udp')),
       (SipTransportUi.tcp, l10n.translate('sip_transport_tcp')),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Транспорт',
-          style: TextStyle(
+        Text(
+          l10n.translate('sip_transport'),
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
@@ -496,16 +508,16 @@ extension _SipMainViewsExtension on _SipScreenState {
                         ? const Color(0xFFEF4444)
                         : const Color(0xFF9CA3AF);
     final title = isReconnectInProgress
-        ? 'Восстанавливаем соединение'
+        ? l10n.translate('sip_reconnecting_title')
         : isNetworkUnavailable
-            ? 'Сеть недоступна'
+            ? l10n.translate('sip_network_unavailable')
             : isRegistered
-                ? 'Телефония подключена'
-                : 'Телефония не подключена';
+                ? l10n.translate('sip_connected')
+                : l10n.translate('sip_not_connected');
     final subtitle = isReconnectInProgress
-        ? 'Сеть восстановлена. Переподключаем SIP-линию'
+        ? l10n.translate('sip_network_restored_reconnecting')
         : isNetworkUnavailable
-            ? 'Как только сеть вернётся, SIP подключится автоматически'
+            ? l10n.translate('sip_network_auto_connect')
             : '${l10n.translate('sip_call_state')}: ${_resolvedCallLabel(context, state)}';
 
     return Container(
@@ -593,7 +605,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                       const SizedBox(width: 8),
                     ],
                     Text(
-                      isRegistering ? 'Подключение...' : 'Подключить',
+                      isRegistering
+                          ? l10n.translate('sip_connecting')
+                          : l10n.translate('sip_connect'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -657,80 +671,188 @@ extension _SipMainViewsExtension on _SipScreenState {
     return LayoutBuilder(
       key: const ValueKey('dial'),
       builder: (context, constraints) {
-        return Stack(
-          children: [
-            if (!_isDialPanelCollapsed)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    _updateView(() {
-                      _isDialPanelCollapsed = true;
-                    });
-                  },
-                  child: const SizedBox.expand(),
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: _isDialPanelCollapsed
+              ? Align(
+                  key: const ValueKey('dial_collapsed'),
+                  alignment: Alignment.bottomCenter,
+                  child: _collapsedDialPanel(context, state),
+                )
+              : SizedBox.expand(
+                  key: const ValueKey('dial_expanded'),
+                  child: _ios26DialPanel(context, state, constraints),
                 ),
-              ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 240),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: _isDialPanelCollapsed
-                    ? _collapsedDialPanel(state)
-                    : _ios26DialPanel(context, state, constraints),
-              ),
-            ),
-          ],
         );
       },
     );
   }
 
-  Widget _inlineDialSuggestion(BoxConstraints constraints) {
+  double _fitDialTextFontSize({
+    required String text,
+    required double maxWidth,
+    required double maxFontSize,
+    required double minFontSize,
+    required FontWeight fontWeight,
+  }) {
+    if (text.trim().isEmpty || maxWidth <= 0) return maxFontSize;
+
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: maxFontSize,
+          fontWeight: fontWeight,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    if (painter.width <= maxWidth) return maxFontSize;
+
+    return (maxFontSize * maxWidth / painter.width)
+        .clamp(minFontSize, maxFontSize);
+  }
+
+  _DialPadMetrics _dialPadMetrics(BoxConstraints constraints) {
+    final maxWidth = constraints.maxWidth.isFinite
+        ? constraints.maxWidth
+        : MediaQuery.sizeOf(context).width;
+    final maxHeight = constraints.maxHeight.isFinite
+        ? constraints.maxHeight
+        : MediaQuery.sizeOf(context).height * 0.68;
+    final hasQuery = _sipIdController.text.trim().isNotEmpty;
+    final isVeryCompact = maxHeight < 560 || maxWidth < 360;
+    final isCompact = isVeryCompact || maxHeight < 620 || maxWidth < 395;
+
+    final horizontalPadding = isVeryCompact
+        ? 14.0
+        : isCompact
+            ? 18.0
+            : 24.0;
+    final rowGap = isVeryCompact
+        ? 5.0
+        : isCompact
+            ? 7.0
+            : 10.0;
+    final headerHeight = isVeryCompact
+        ? 38.0
+        : isCompact
+            ? 44.0
+            : 52.0;
+    final suggestionHeight = hasQuery
+        ? isVeryCompact
+            ? 52.0
+            : isCompact
+                ? 62.0
+                : 104.0
+        : isVeryCompact
+            ? 2.0
+            : isCompact
+                ? 6.0
+                : 10.0;
+    final bottomPadding = isVeryCompact
+        ? 4.0
+        : isCompact
+            ? 6.0
+            : 10.0;
+
+    final widthKeySize =
+        ((maxWidth - (horizontalPadding * 2) - (rowGap * 2)) / 3)
+            .clamp(58.0, 92.0);
+    final reservedHeight =
+        headerHeight + suggestionHeight + bottomPadding + (rowGap * 4);
+    final heightKeySize =
+        ((maxHeight - reservedHeight) / 4.76).clamp(58.0, 92.0);
+    final keyOuterSize = math.min(widthKeySize, heightKeySize);
+    final actionButtonSize = (keyOuterSize * 0.76).clamp(46.0, 68.0);
+    final actionIconSize = (actionButtonSize * 0.42).clamp(21.0, 32.0);
+
+    return _DialPadMetrics(
+      horizontalPadding: horizontalPadding,
+      rowGap: rowGap,
+      headerHeight: headerHeight,
+      suggestionHeight: suggestionHeight,
+      keyOuterSize: keyOuterSize,
+      actionButtonSize: actionButtonSize,
+      actionIconSize: actionIconSize,
+      bottomPadding: bottomPadding,
+      isCompact: isCompact,
+      isVeryCompact: isVeryCompact,
+    );
+  }
+
+  Widget _inlineDialSuggestion(
+    BoxConstraints constraints, {
+    required double height,
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
     final query = _sipIdController.text.trim();
+    if (query.isEmpty || height <= 4) {
+      return SizedBox(height: height);
+    }
+
     final isNarrow = constraints.maxWidth < 395;
-    final isTight = constraints.maxWidth < 370;
-    final horizontalPadding = isTight ? 12.0 : 16.0;
-    final rowHeight = isTight ? 46.0 : 50.0;
-    final extraRowHeight = isTight ? 42.0 : 46.0;
-    final reservedHeight = rowHeight + 1 + extraRowHeight + 2;
-    final iconSize = isTight ? 17.0 : 18.0;
-    final gap = isTight ? 8.0 : 10.0;
-    final hasQuery = query.isNotEmpty;
-    final hasSuggestion = _dialSuggestions.isNotEmpty && hasQuery;
+    final horizontalPadding = isVeryCompact ? 12.0 : 16.0;
+    final bottomPadding = isVeryCompact
+        ? 4.0
+        : isCompact
+            ? 6.0
+            : 8.0;
+    final containerHeight = (height - bottomPadding).clamp(42.0, height);
+    final hasSuggestion = _dialSuggestions.isNotEmpty;
     final suggestion = hasSuggestion ? _dialSuggestions.first : null;
     final extraResults =
         hasSuggestion ? math.max(0, _dialSuggestionTotalCount - 1) : 0;
+    final showExtraRow = !isCompact && extraResults > 0;
+    final contentHeight = math.max(0.0, containerHeight - 2);
+    final dividerHeight = showExtraRow ? 1.0 : 0.0;
+    final rowHeight = showExtraRow
+        ? math.max(0.0, (contentHeight - dividerHeight) * 0.56)
+        : contentHeight;
+    final extraRowHeight = showExtraRow
+        ? math.max(0.0, contentHeight - rowHeight - dividerHeight)
+        : 0.0;
+    final iconSize = isVeryCompact
+        ? 16.0
+        : isCompact
+            ? 17.0
+            : 18.0;
+    final gap = isVeryCompact ? 7.0 : 10.0;
     final nameStyle = TextStyle(
       color: const Color(0xFF6B7280),
-      fontSize: isTight ? 12.0 : 13.0,
+      fontSize: isVeryCompact
+          ? 11.0
+          : isCompact
+              ? 12.0
+              : 13.0,
       fontWeight: FontWeight.w500,
       height: 1.1,
     );
     final phoneStyle = TextStyle(
       color: const Color(0xFF111827),
-      fontSize: isTight ? 13.0 : 14.0,
+      fontSize: isVeryCompact
+          ? 12.0
+          : isCompact
+              ? 13.0
+              : 14.0,
       fontWeight: FontWeight.w600,
       height: 1.1,
     );
 
-    if (!hasQuery) {
-      return SizedBox(height: reservedHeight + 8);
-    }
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
       child: SizedBox(
-        height: reservedHeight,
+        height: containerHeight,
         child: Align(
           alignment: Alignment.topCenter,
           child: suggestion == null
               ? const SizedBox.shrink()
               : Container(
+                  height: containerHeight,
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.90),
@@ -747,7 +869,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                     ),
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.max,
                     children: [
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -828,7 +950,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                 ),
                         ),
                       ),
-                      if (extraResults > 0) ...[
+                      if (showExtraRow) ...[
                         const Divider(
                           height: 1,
                           thickness: 1,
@@ -859,7 +981,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: const Color(0xFF6B7280),
-                                      fontSize: isTight ? 12.0 : 13.0,
+                                      fontSize: isVeryCompact ? 11.0 : 13.0,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -884,34 +1006,44 @@ extension _SipMainViewsExtension on _SipScreenState {
   ) {
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
-    final isNarrow = constraints.maxWidth < 395;
-    final isTight = constraints.maxWidth < 370;
-    final horizontalPadding = isTight ? 18.0 : (isNarrow ? 20.0 : 24.0);
-    final keyOuterSize =
-        ((constraints.maxWidth - (horizontalPadding * 2) - 12) / 3)
-            .clamp(80.0, 92.0);
-    final actionButtonSize = (keyOuterSize * 0.76).clamp(60.0, 68.0);
-    final actionIconSize = (actionButtonSize * 0.42).clamp(24.0, 32.0);
+    final metrics = _dialPadMetrics(constraints);
 
     return Container(
       decoration: const BoxDecoration(
         color: Colors.transparent,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 2, 20, 2),
-            child: _dialNumberHeader(constraints),
+          SizedBox(
+            height: metrics.headerHeight,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                metrics.isVeryCompact ? 0 : 2,
+                20,
+                metrics.isVeryCompact ? 0 : 2,
+              ),
+              child: _dialNumberHeader(constraints, metrics),
+            ),
           ),
-          if (isRegistered) _inlineDialSuggestion(constraints),
+          if (isRegistered)
+            _inlineDialSuggestion(
+              constraints,
+              height: metrics.suggestionHeight,
+              isCompact: metrics.isCompact,
+              isVeryCompact: metrics.isVeryCompact,
+            )
+          else
+            SizedBox(height: metrics.suggestionHeight),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            padding:
+                EdgeInsets.symmetric(horizontal: metrics.horizontalPadding),
             child: Column(
               children: List.generate(4, (row) {
                 final start = row * 3;
                 return Padding(
-                  padding: EdgeInsets.only(bottom: isTight ? 10 : 12),
+                  padding: EdgeInsets.only(bottom: metrics.rowGap),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(3, (col) {
@@ -920,7 +1052,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                       return _ios26DialKey(
                         value: key,
                         letters: item['letters']!,
-                        outerSize: keyOuterSize,
+                        outerSize: metrics.keyOuterSize,
                         onTap: () => _insertDialText(key),
                         onLongPress:
                             key == '0' ? () => _insertDialText('+') : null,
@@ -931,20 +1063,19 @@ extension _SipMainViewsExtension on _SipScreenState {
               }),
             ),
           ),
-          SizedBox(height: isTight ? 0 : 2),
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              horizontalPadding + 2,
-              0,
-              horizontalPadding + 2,
-              isTight ? 10 : 12,
+            padding: EdgeInsets.only(
+              left: metrics.horizontalPadding + 2,
+              right: metrics.horizontalPadding + 2,
+              top: 0,
+              bottom: metrics.bottomPadding,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SizedBox(
-                  width: actionButtonSize,
-                  height: actionButtonSize,
+                  width: metrics.actionButtonSize,
+                  height: metrics.actionButtonSize,
                   child: _sipIdController.text.isNotEmpty
                       ? CupertinoButton(
                           padding: EdgeInsets.zero,
@@ -952,7 +1083,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           child: Icon(
                             CupertinoIcons.person_crop_circle_badge_plus,
                             color: Color(0xFF6B7280),
-                            size: actionIconSize,
+                            size: metrics.actionIconSize,
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -960,8 +1091,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                 GestureDetector(
                   onTap: isRegistered ? _startDialCall : null,
                   child: Container(
-                    width: actionButtonSize,
-                    height: actionButtonSize,
+                    width: metrics.actionButtonSize,
+                    height: metrics.actionButtonSize,
                     decoration: BoxDecoration(
                       color: isRegistered
                           ? const Color(0xFF34C759)
@@ -982,13 +1113,13 @@ extension _SipMainViewsExtension on _SipScreenState {
                     child: Icon(
                       CupertinoIcons.phone_fill,
                       color: Colors.white,
-                      size: actionIconSize + 2,
+                      size: metrics.actionIconSize + 2,
                     ),
                   ),
                 ),
                 SizedBox(
-                  width: actionButtonSize,
-                  height: actionButtonSize,
+                  width: metrics.actionButtonSize,
+                  height: metrics.actionButtonSize,
                   child: _sipIdController.text.isNotEmpty
                       ? CupertinoButton(
                           padding: EdgeInsets.zero,
@@ -997,7 +1128,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           child: Icon(
                             CupertinoIcons.delete_left_fill,
                             color: Color(0xFF6B7280),
-                            size: actionIconSize - 1,
+                            size: metrics.actionIconSize - 1,
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -1010,12 +1141,30 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _dialNumberHeader(BoxConstraints constraints) {
-    final isNarrow = constraints.maxWidth < 395;
-    final isTight = constraints.maxWidth < 370;
-    final fontSize = isTight ? 30.0 : (isNarrow ? 34.0 : 38.0);
-    final placeholderSize = isTight ? 21.0 : (isNarrow ? 24.0 : 27.0);
-    final cursorHeight = isTight ? 30.0 : (isNarrow ? 34.0 : 38.0);
+  Widget _dialNumberHeader(
+    BoxConstraints constraints,
+    _DialPadMetrics metrics,
+  ) {
+    final typedNumber = _sipIdController.text.trim();
+    final maxFontSize = metrics.isVeryCompact
+        ? 28.0
+        : metrics.isCompact
+            ? 32.0
+            : 38.0;
+    final minFontSize = metrics.isVeryCompact ? 20.0 : 22.0;
+    final fontSize = _fitDialTextFontSize(
+      text: typedNumber,
+      maxWidth: constraints.maxWidth - 40,
+      maxFontSize: maxFontSize,
+      minFontSize: minFontSize,
+      fontWeight: FontWeight.w300,
+    );
+    final placeholderSize = metrics.isVeryCompact
+        ? 19.0
+        : metrics.isCompact
+            ? 22.0
+            : 27.0;
+    final cursorHeight = fontSize;
     return GestureDetector(
       onTap: _expandDialPanel,
       onLongPress: _showDialActions,
@@ -1028,11 +1177,12 @@ extension _SipMainViewsExtension on _SipScreenState {
         cursorWidth: 2,
         cursorHeight: cursorHeight,
         textAlign: TextAlign.center,
+        maxLines: 1,
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w300,
           color: const Color(0xFF111827),
-          letterSpacing: isTight ? 1.0 : 1.6,
+          letterSpacing: 0,
         ),
         placeholder: 'Введите номер',
         placeholderStyle: TextStyle(
@@ -1041,9 +1191,18 @@ extension _SipMainViewsExtension on _SipScreenState {
           color: const Color(0xFFD1D5DB),
         ),
         magnifierConfiguration: TextMagnifierConfiguration.disabled,
+        contextMenuBuilder: (menuContext, editableTextState) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            editableTextState.hideToolbar();
+            if (mounted) {
+              _showDialActions();
+            }
+          });
+          return const SizedBox.shrink();
+        },
         padding: EdgeInsets.symmetric(
-          horizontal: isTight ? 4 : 8,
-          vertical: isTight ? 2 : 4,
+          horizontal: metrics.isVeryCompact ? 2 : 6,
+          vertical: metrics.isVeryCompact ? 0 : 2,
         ),
         decoration: const BoxDecoration(),
       ),
@@ -1057,8 +1216,11 @@ extension _SipMainViewsExtension on _SipScreenState {
     required VoidCallback onTap,
     VoidCallback? onLongPress,
   }) {
-    final innerSize = (outerSize - 8).clamp(74.0, 88.0);
-    final isTight = outerSize < 90;
+    final isTight = outerSize < 84;
+    final innerInset = isTight ? 4.0 : 8.0;
+    final innerSize = (outerSize - innerInset).clamp(52.0, 88.0);
+    final digitSize = (outerSize * 0.37).clamp(24.0, 34.0);
+    final letterSize = (outerSize * 0.11).clamp(7.0, 10.0);
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -1099,7 +1261,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: isTight ? 30 : 34,
+                    fontSize: digitSize,
                     height: 1.0,
                     fontWeight: FontWeight.w300,
                     color: const Color(0xFF111827),
@@ -1110,11 +1272,11 @@ extension _SipMainViewsExtension on _SipScreenState {
                     letters,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: isTight ? 9 : 10,
-                      letterSpacing: isTight ? 0.8 : 1.2,
+                      fontSize: letterSize,
+                      letterSpacing: 0,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF9CA3AF),
-                      height: 1.2,
+                      height: isTight ? 1.05 : 1.12,
                     ),
                   ),
               ],
@@ -1125,7 +1287,9 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _collapsedDialPanel(SipUiState state) {
+  Widget _collapsedDialPanel(BuildContext context, SipUiState state) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Row(
       children: [
         Expanded(
@@ -1167,9 +1331,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'Набор',
-                          style: TextStyle(
+                        Text(
+                          l10n.translate('sip_tab_keypad'),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF111827),
@@ -1177,7 +1341,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                         ),
                         Text(
                           _sipIdController.text.trim().isEmpty
-                              ? 'Открыть клавиатуру'
+                              ? l10n.translate('sip_open_keypad')
                               : _sipIdController.text.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1252,14 +1416,14 @@ extension _SipMainViewsExtension on _SipScreenState {
         index: 1,
         iconAsset: 'assets/icons/sip/recents_off.png',
         activeIconAsset: 'assets/icons/sip/recents_on.png',
-        label: 'Вызовы',
+        label: l10n.translate('sip_tab_calls'),
       ),
       if (_hasContactsTab)
         (
           index: 2,
           iconAsset: 'assets/icons/sip/contact_off.png',
           activeIconAsset: 'assets/icons/sip/contact_on.png',
-          label: 'Контакты',
+          label: l10n.translate('sip_tab_contacts'),
         ),
     ];
     final segmentCount = navItems.length;
@@ -1278,6 +1442,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   final maxIndex = segmentCount - 1;
                   final currentNavPosition = navItems
                       .indexWhere((item) => item.index == _bottomTabIndex);
+                  final hasSegmentSelection = currentNavPosition >= 0;
                   final fallbackNavPosition = navItems.indexWhere(
                     (item) => item.index == 1,
                   );
@@ -1467,20 +1632,23 @@ extension _SipMainViewsExtension on _SipScreenState {
                                   ),
                                 ),
                               ),
-                              AnimatedPositioned(
-                                duration: const Duration(milliseconds: 120),
-                                curve: Curves.easeOutCubic,
-                                left: thumbLeft,
-                                top: thumbTop,
-                                width: segmentWidth,
-                                height: thumbHeight,
-                                child: _liquidMirrorThumb(
-                                  isPressed: _isLiquidNavPressed,
+                              if (hasSegmentSelection)
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 120),
+                                  curve: Curves.easeOutCubic,
+                                  left: thumbLeft,
+                                  top: thumbTop,
+                                  width: segmentWidth,
+                                  height: thumbHeight,
+                                  child: _liquidMirrorThumb(
+                                    isPressed: _isLiquidNavPressed,
+                                  ),
                                 ),
-                              ),
                               IgnorePointer(
                                 child: buildItemsRow(
-                                  (index) => index == highlightedIndex,
+                                  (index) =>
+                                      hasSegmentSelection &&
+                                      index == highlightedIndex,
                                 ),
                               ),
                             ],
@@ -1493,9 +1661,8 @@ extension _SipMainViewsExtension on _SipScreenState {
               ),
             ),
             const SizedBox(width: 10),
-            _liquidSearchButton(
-              selected: _bottomTabIndex == 3,
-              onTap: () => _updateView(() => _bottomTabIndex = 3),
+            _liquidSettingsButton(
+              onTap: _showSettingsSheet,
             ),
           ],
         ),
@@ -1697,8 +1864,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _liquidSearchButton({
-    required bool selected,
+  Widget _liquidSettingsButton({
     required VoidCallback onTap,
   }) {
     return CupertinoButton(
@@ -1718,8 +1884,8 @@ extension _SipMainViewsExtension on _SipScreenState {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: selected ? 0.94 : 0.82),
-                  Colors.white.withValues(alpha: selected ? 0.74 : 0.62),
+                  Colors.white.withValues(alpha: 0.82),
+                  Colors.white.withValues(alpha: 0.62),
                   const Color(0xFFEAF2FF).withValues(alpha: 0.46),
                 ],
               ),
@@ -1729,15 +1895,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                 width: 1.2,
               ),
               boxShadow: [
-                if (selected)
-                  BoxShadow(
-                    color: const Color(0xFF0A84FF).withValues(alpha: 0.12),
-                    blurRadius: 18,
-                    offset: const Offset(-4, 8),
-                  ),
                 BoxShadow(
                   color: const Color(0xFF111827).withValues(
-                    alpha: selected ? 0.11 : 0.08,
+                    alpha: 0.08,
                   ),
                   blurRadius: 26,
                   offset: const Offset(0, 12),
@@ -1767,11 +1927,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                   ),
                 ),
                 Icon(
-                  selected
-                      ? CupertinoIcons.search_circle_fill
-                      : CupertinoIcons.search,
-                  color: selected ? const Color(0xFF0A84FF) : Colors.black,
-                  size: selected ? 28 : 24,
+                  CupertinoIcons.gear_alt_fill,
+                  color: Colors.black,
+                  size: 24,
                 ),
               ],
             ),
@@ -1782,4 +1940,30 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
+}
+
+class _DialPadMetrics {
+  const _DialPadMetrics({
+    required this.horizontalPadding,
+    required this.rowGap,
+    required this.headerHeight,
+    required this.suggestionHeight,
+    required this.keyOuterSize,
+    required this.actionButtonSize,
+    required this.actionIconSize,
+    required this.bottomPadding,
+    required this.isCompact,
+    required this.isVeryCompact,
+  });
+
+  final double horizontalPadding;
+  final double rowGap;
+  final double headerHeight;
+  final double suggestionHeight;
+  final double keyOuterSize;
+  final double actionButtonSize;
+  final double actionIconSize;
+  final double bottomPadding;
+  final bool isCompact;
+  final bool isVeryCompact;
 }

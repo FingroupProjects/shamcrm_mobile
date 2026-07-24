@@ -100,51 +100,92 @@ extension _SipScreenDialerExtension on _SipScreenState {
     _dialFocusNode.requestFocus();
   }
 
-  Future<void> _copyDial() async {
-    final text = _sipIdController.text.trim();
-    if (text.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: text));
-  }
-
-  Future<void> _pasteDial() async {
+  Future<String> _clipboardDialText() async {
     final data = await Clipboard.getData('text/plain');
     final source = (data?.text ?? '').trim();
-    if (source.isEmpty) return;
+    if (source.isEmpty) return '';
     final normalized = source.replaceAll(RegExp(r'[^0-9+*#]'), '');
-    _insertDialText(normalized.isEmpty ? source : normalized);
+    return normalized.isEmpty ? source : normalized;
+  }
+
+  Future<bool> _pasteDial() async {
+    final text = await _clipboardDialText();
+    if (text.isEmpty) return false;
+    _insertDialText(text);
+    return true;
   }
 
   Future<void> _showDialActions() async {
+    if (_isDialActionsSheetVisible) return;
+    _isDialActionsSheetVisible = true;
+    final l10n = AppLocalizations.of(context)!;
+    final clipboardText = await _clipboardDialText();
+    if (!mounted) {
+      _isDialActionsSheetVisible = false;
+      return;
+    }
+
+    try {
+      await showCupertinoModalPopup<void>(
+        context: context,
+        builder: (sheetContext) => CupertinoActionSheet(
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                final pasted = await _pasteDial();
+                if (!pasted) {
+                  _showSipSnackBar(
+                    l10n.translate('clipboard_empty'),
+                    isError: true,
+                  );
+                }
+              },
+              child: Text(l10n.translate('paste')),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                await _showDialClipboardSheet(clipboardText);
+              },
+              child: Text(l10n.translate('clipboard')),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(sheetContext).pop(),
+            child: Text(l10n.translate('cancel')),
+          ),
+        ),
+      );
+    } finally {
+      _isDialActionsSheetVisible = false;
+    }
+  }
+
+  Future<void> _showDialClipboardSheet(String clipboardText) async {
+    final l10n = AppLocalizations.of(context)!;
+    final previewText = clipboardText.isEmpty
+        ? l10n.translate('clipboard_empty')
+        : clipboardText;
+
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (sheetContext) => CupertinoActionSheet(
+        title: Text(l10n.translate('clipboard')),
+        message: Text(previewText),
         actions: [
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _copyDial();
-            },
-            child: const Text('Копировать'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _pasteDial();
-            },
-            child: const Text('Вставить'),
-          ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              Navigator.of(context).pop();
-              _clearDial();
-            },
-            child: const Text('Очистить'),
-          ),
+          if (clipboardText.isNotEmpty)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.of(sheetContext).pop();
+                _insertDialText(clipboardText);
+              },
+              child: Text(l10n.translate('paste')),
+            ),
         ],
         cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Отмена'),
+          onPressed: () => Navigator.of(sheetContext).pop(),
+          child: Text(l10n.translate('cancel')),
         ),
       ),
     );
@@ -525,9 +566,111 @@ extension _SipScreenDialerExtension on _SipScreenState {
     );
   }
 
-  Future<void> _startDialCall() async {
+  Future<void> _startDialCall({String? fallbackNumber}) async {
+    var target = _sipIdController.text.trim();
+    if (target.isEmpty) {
+      target = fallbackNumber?.trim().isNotEmpty == true
+          ? fallbackNumber!.trim()
+          : _lastCallDialTarget();
+      if (target.isNotEmpty) {
+        _setDialControllerText(target);
+      }
+    }
+
     await _saveDraft();
-    await _sipRuntime.makeCall();
+    await _sipRuntime.makeCallTo(target);
+  }
+
+  String _lastCallDialTarget() {
+    final calls = <SipCallLogEntry>[
+      ..._sipRuntime.state.serverCallLogs,
+      ..._sipRuntime.state.callLogs,
+    ]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    for (final call in calls) {
+      final target = _callLogDialTarget(call);
+      if (target.isNotEmpty) return target;
+    }
+
+    return '';
+  }
+
+  String _callLogDialTarget(SipCallLogEntry entry) {
+    final candidates = <String>[
+      entry.dialTarget,
+      entry.target,
+    ];
+
+    for (final candidate in candidates) {
+      final value = candidate.trim();
+      if (_isCallableNumber(value) && !_isOwnLineNumber(value)) {
+        return value;
+      }
+    }
+
+    for (final candidate in candidates) {
+      final value = candidate.trim();
+      if (_isCallableNumber(value)) {
+        return value;
+      }
+    }
+
+    return entry.dialTarget.trim().isNotEmpty
+        ? entry.dialTarget.trim()
+        : entry.target.trim();
+  }
+
+  bool _isCallableNumber(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed == 'Неизвестно') return false;
+    if (trimmed.startsWith('sip:') || trimmed.contains('@')) return true;
+
+    final digits = _digitsOnly(trimmed);
+    if (digits.length < 3) return false;
+
+    return RegExp(r'^[+0-9()\-\s#*]+$').hasMatch(trimmed);
+  }
+
+  bool _isOwnLineNumber(String value) {
+    final candidateDigits = _identityDigits(value);
+    if (candidateDigits.length < 4) return false;
+
+    final state = _sipRuntime.state;
+    final ownCandidates = <String>[
+      state.login,
+      state.login.split('@').first,
+    ];
+
+    for (final ownCandidate in ownCandidates) {
+      final ownDigits = _identityDigits(ownCandidate);
+      if (ownDigits.length < 4) continue;
+      if (candidateDigits == ownDigits ||
+          ownDigits.endsWith(candidateDigits) ||
+          candidateDigits.endsWith(ownDigits)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  String _identityDigits(String value) {
+    var identity = value.trim();
+    identity = identity.replaceFirst(
+      RegExp(r'^sips?:', caseSensitive: false),
+      '',
+    );
+    if (identity.contains('@')) {
+      identity = identity.split('@').first;
+    }
+    return _digitsOnly(identity);
+  }
+
+  void _setDialControllerText(String phoneNumber) {
+    _sipIdController.value = TextEditingValue(
+      text: phoneNumber,
+      selection: TextSelection.collapsed(offset: phoneNumber.length),
+    );
   }
 
   Future<void> _openCallLogDetails(SipCallLogEntry entry) async {
@@ -560,10 +703,7 @@ extension _SipScreenDialerExtension on _SipScreenState {
   }
 
   void _openDialerWithNumber(String phoneNumber) {
-    _sipIdController.value = TextEditingValue(
-      text: phoneNumber,
-      selection: TextSelection.collapsed(offset: phoneNumber.length),
-    );
+    _setDialControllerText(phoneNumber);
     _updateView(() {
       _bottomTabIndex = 0;
       _liquidNavDragIndex = 0;
@@ -573,19 +713,13 @@ extension _SipScreenDialerExtension on _SipScreenState {
   }
 
   Future<void> _fillAndCallContact(_SipContactSuggestion suggestion) async {
-    _sipIdController.value = TextEditingValue(
-      text: suggestion.phone,
-      selection: TextSelection.collapsed(offset: suggestion.phone.length),
-    );
+    _setDialControllerText(suggestion.phone);
     await _saveDraft();
-    await _sipRuntime.makeCall();
+    await _sipRuntime.makeCallTo(suggestion.phone);
   }
 
   void _fillContactNumber(_SipContactSuggestion suggestion) {
-    _sipIdController.value = TextEditingValue(
-      text: suggestion.phone,
-      selection: TextSelection.collapsed(offset: suggestion.phone.length),
-    );
+    _setDialControllerText(suggestion.phone);
     _dialFocusNode.requestFocus();
   }
 }

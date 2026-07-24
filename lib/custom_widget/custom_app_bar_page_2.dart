@@ -63,6 +63,7 @@ class CustomAppBarPage2 extends StatefulWidget {
 
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
+  final bool isTojsokhtmontjTenant;
 
   CustomAppBarPage2({
     super.key,
@@ -95,6 +96,7 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.onClientReturnResetFilters,
     required this.currentFilters,
     this.initialLabels,
+    this.isTojsokhtmontjTenant = false,
   });
 
   @override
@@ -753,7 +755,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             onPressed: _scanBarcode,
             tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
           ),
-        if (widget.showFilterIcon && _canCreateProduct)
+        if (widget.showFilterIcon)
           IconButton(
             icon: Padding(
               padding: const EdgeInsets.only(left: 0),
@@ -798,10 +800,11 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     List<String>? initialLabels;
     bool? initialIsActive;
 
-    if (widget.currentFilters.containsKey('category_id') &&
-        widget.currentFilters['category_id'] is List &&
-        widget.currentFilters['category_id'].isNotEmpty) {
-      initialCategoryIds = (widget.currentFilters['category_id'] as List)
+    final currentCategoryId = widget.currentFilters['category_id'];
+    if (currentCategoryId is int) {
+      initialCategoryIds = [currentCategoryId];
+    } else if (currentCategoryId is List && currentCategoryId.isNotEmpty) {
+      initialCategoryIds = currentCategoryId
           .map((id) => int.tryParse(id.toString()) ?? 0)
           .where((id) => id != 0)
           .toList();
@@ -851,6 +854,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           initialDiscountPercent: initialDiscountPercent,
           initialLabels: initialLabels,
           initialIsActive: initialIsActive,
+          isTojsokhtmontjTenant: widget.isTojsokhtmontjTenant,
         ),
       ),
     );

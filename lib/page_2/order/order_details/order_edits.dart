@@ -439,6 +439,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   void _navigateToAddProduct() async {
+    int itemQuantityAsInt(Map<String, dynamic> item) {
+      final quantity = item['quantity'];
+      if (quantity is num) return quantity.toInt();
+      return int.tryParse('$quantity') ?? 1;
+    }
+
     final Order tempOrder = widget.order.copyWith(
       phone: _fullPhoneNumber ?? widget.order.phone,
       delivery: _deliveryMethod ==
@@ -452,11 +458,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         phone: _fullPhoneNumber ?? widget.order.phone,
       ),
       goods: _items.map((item) {
+        final quantity = itemQuantityAsInt(item);
         final goodItem = GoodItem(
           id: item['id'],
           name: item['name'],
           description: '',
-          quantity: item['quantity'],
+          quantity: quantity,
           files: item['imagePath'] != null
               ? [GoodFile(id: 0, name: '', path: item['imagePath'])]
               : [],
@@ -467,7 +474,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           goodId: item['id'],
           goodName: item['name'],
           price: item['price'],
-          quantity: item['quantity'],
+          quantity: quantity,
         );
       }).toList(),
     );
@@ -734,6 +741,20 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }.contains(normalized);
   }
 
+  bool _isTojsokhtmontjMixedPaymentField(String fieldName) {
+    final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
+    return <String>{
+      'имущество 1',
+      'имущества 1',
+      'характеристика 1',
+      'сумма 1',
+      'имущество 2',
+      'имущества 2',
+      'характеристика 2',
+      'сумма 2',
+    }.contains(normalized);
+  }
+
   bool _isTojsokhtmontjPricePerSquareField(String fieldName) {
     return _normalizeTojsokhtmontjFieldName(fieldName) == 'цена за квадрат';
   }
@@ -879,6 +900,18 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       }
     }
     return false;
+  }
+
+  bool _shouldHideTojsokhtmontjMixedPaymentFields() {
+    if (!_isTojsokhtmontjTenant) return false;
+
+    for (final field in customFields) {
+      if (_isTojsokhtmontjDealTypeField(field.fieldName)) {
+        return _normalizeTojsokhtmontjFieldName(field.controller.text) !=
+            'смешанные';
+      }
+    }
+    return true;
   }
 
   String? _validateTojsokhtmontjInn(String? value) {
@@ -1201,6 +1234,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     if (_shouldHideTojsokhtmontjInstallmentFields() &&
         _isTojsokhtmontjInstallmentField(config.fieldName)) {
+      return null;
+    }
+
+    if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
+        _isTojsokhtmontjMixedPaymentField(config.fieldName)) {
       return null;
     }
 
@@ -3219,6 +3257,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
                     if (_shouldHideTojsokhtmontjInstallmentFields() &&
                         _isTojsokhtmontjInstallmentField(fieldName)) {
+                      continue;
+                    }
+
+                    if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
+                        _isTojsokhtmontjMixedPaymentField(fieldName)) {
                       continue;
                     }
 

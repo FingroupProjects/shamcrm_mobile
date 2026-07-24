@@ -71,7 +71,7 @@ object NativeSipBridge {
         val context = appContext ?: return
         val started = NativeSipForegroundService.start(context)
         if (!started) {
-            currentSnapshot["message"] = "Foreground SIP service was not started: $reason"
+            currentSnapshot["message"] = "Сервис телефонии не был запущен: $reason"
             Log.w(TAG, "Foreground SIP service was not started: $reason")
         }
     }
@@ -224,7 +224,7 @@ object NativeSipBridge {
         }
 
         persistConfig(requestedConfig)
-        markRegistrationStarting("Starting native SIP registration")
+        markRegistrationStarting("Подключение телефонии")
 
         val success = ensureManager().register(
             server = trimmedServer,
@@ -264,7 +264,7 @@ object NativeSipBridge {
             return true
         }
 
-        markRegistrationStarting("Restoring native SIP registration")
+        markRegistrationStarting("Восстанавливаем подключение телефонии")
         val success = ensureManager().register(
             server = config.server,
             login = config.login,

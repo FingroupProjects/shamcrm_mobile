@@ -493,6 +493,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
     final accentColor = _callLogAccentColor(item);
     final fillColor = _callLogFillColor(item);
     final logIcon = _callLogIcon(item);
+    final callDialTarget = _callLogDialTarget(item);
 
     final tile = ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -525,8 +526,8 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           ? CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () async {
-                _openDialerWithNumber(item.dialTarget);
-                await _startDialCall();
+                _openDialerWithNumber(callDialTarget);
+                await _startDialCall(fallbackNumber: callDialTarget);
               },
               child: Container(
                 width: 44,
@@ -569,77 +570,81 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           ],
         ),
         child: Column(
-        children: [
-          tile,
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 180),
-            crossFadeState:
-                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Column(
-                children: [
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'В набор',
-                          icon: CupertinoIcons.circle_grid_3x3_fill,
-                          onTap: () => _openDialerWithNumber(item.dialTarget),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'Добавить',
-                          icon: CupertinoIcons.add_circled,
-                          onTap: () => _showAddNumberSheetFor(
-                            item.dialTarget,
-                            suggestedName: item.target == item.dialTarget
-                                ? null
-                                : item.target,
-                            leadId: item.serverLeadId,
-                            showCreateLead: false,
+          children: [
+            tile,
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 180),
+              crossFadeState: expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: Column(
+                  children: [
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _callActionButton(
+                            label: 'В набор',
+                            icon: CupertinoIcons.circle_grid_3x3_fill,
+                            onTap: () => _openDialerWithNumber(callDialTarget),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'История',
-                          icon: CupertinoIcons.clock,
-                          onTap: () => _openCallLogHistory(item),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _callActionButton(
+                            label: 'Добавить',
+                            icon: CupertinoIcons.add_circled,
+                            onTap: () => _showAddNumberSheetFor(
+                              callDialTarget,
+                              suggestedName: item.target == callDialTarget
+                                  ? null
+                                  : item.target,
+                              leadId: item.serverLeadId,
+                              showCreateLead: false,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _callActionButton(
-                          label: 'Инфо',
-                          icon: CupertinoIcons.info_circle,
-                          onTap: () => _openCallLogDetails(item),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _callActionButton(
+                            label: 'История',
+                            icon: CupertinoIcons.clock,
+                            onTap: () => _openCallLogHistory(item),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _callActionButton(
+                            label: 'Инфо',
+                            icon: CupertinoIcons.info_circle,
+                            onTap: () => _openCallLogDetails(item),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
 
     return Dismissible(
       key: ValueKey('swipe_call_${item.id}_${compact ? 'compact' : 'full'}'),
-      direction: DismissDirection.startToEnd,
-      dismissThresholds: const {DismissDirection.startToEnd: 0.32},
+      direction: DismissDirection.horizontal,
+      dismissThresholds: const {
+        DismissDirection.startToEnd: 0.32,
+        DismissDirection.endToStart: 0.32,
+      },
       confirmDismiss: (_) async {
-        _openDialerWithNumber(item.dialTarget);
-        await _startDialCall();
+        _openDialerWithNumber(callDialTarget);
+        await _startDialCall(fallbackNumber: callDialTarget);
         return false;
       },
       background: Container(
@@ -666,7 +671,30 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           ],
         ),
       ),
-      secondaryBackground: const SizedBox.shrink(),
+      secondaryBackground: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF22C55E),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        alignment: Alignment.centerRight,
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Позвонить',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(width: 10),
+            Icon(CupertinoIcons.phone_fill, color: Colors.white, size: 22),
+          ],
+        ),
+      ),
       child: card,
     );
   }
@@ -701,7 +729,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
         : callEntries
             .where((item) {
               final target = item.target.toLowerCase();
-              final targetDigits = _digitsOnly(item.dialTarget);
+              final targetDigits = _digitsOnly(_callLogDialTarget(item));
               final phoneMatch =
                   queryDigits.isNotEmpty && targetDigits.contains(queryDigits);
               return target.contains(lowerQuery) || phoneMatch;
@@ -976,21 +1004,22 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
     final label = _resolvedCallLogLabel(context, item);
     final time = _formatTime(item.timestamp);
     final duration = item.isMissed ? null : _formatDuration(item.duration);
+    final dialTarget = _callLogDialTarget(item);
 
     if (compact) {
-      if (item.dialTarget == item.target) {
+      if (dialTarget == item.target) {
         return '$label • $time';
       }
-      return '${item.dialTarget} • $time';
+      return '$dialTarget • $time';
     }
 
-    if (item.dialTarget == item.target) {
+    if (dialTarget == item.target) {
       return duration == null ? '$label • $time' : '$label • $duration';
     }
 
     return duration == null
-        ? '$label • ${item.dialTarget}'
-        : '$label • $duration • ${item.dialTarget}';
+        ? '$label • $dialTarget'
+        : '$label • $duration • $dialTarget';
   }
 
   Widget _callActionButton({
@@ -1064,55 +1093,56 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           ],
         ),
         child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        onTap: () => _fillLeadPhone(lead),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(15),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          onTap: () => _fillLeadPhone(lead),
+          leading: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              CupertinoIcons.person_crop_circle,
+              color: Color(0xFF6B7280),
+              size: 22,
+            ),
           ),
-          child: const Icon(
-            CupertinoIcons.person_crop_circle,
-            color: Color(0xFF6B7280),
-            size: 22,
+          title: Text(
+            lead.name.trim().isEmpty ? 'Без имени' : lead.name,
+            style: const TextStyle(
+              color: Color(0xFF111827),
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        title: Text(
-          lead.name.trim().isEmpty ? 'Без имени' : lead.name,
-          style: const TextStyle(
-            color: Color(0xFF111827),
-            fontWeight: FontWeight.w700,
+          subtitle: Text(
+            phone.isEmpty ? 'Нет телефона' : phone,
+            style: const TextStyle(
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
           ),
-        ),
-        subtitle: Text(
-          phone.isEmpty ? 'Нет телефона' : phone,
-          style: const TextStyle(
-            color: Color(0xFF9CA3AF),
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
-          ),
-        ),
-        trailing: phone.isEmpty
-            ? null
-            : CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () async => _callLead(lead),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.phone_fill,
-                    size: 18,
-                    color: Colors.white,
+          trailing: phone.isEmpty
+              ? null
+              : CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () async => _callLead(lead),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF22C55E),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.phone_fill,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
         ),
       ),
     );

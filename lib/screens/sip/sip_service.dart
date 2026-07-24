@@ -37,8 +37,6 @@ class SipService extends ChangeNotifier
       'sip_pending_incoming_call_push_payload_v1';
   static const String _backgroundReliabilityPromptedKey =
       'sip_background_reliability_prompted_v2';
-  static const String _fullScreenIntentPromptedKey =
-      'sip_full_screen_intent_prompted_v1';
   static const String _xiaomiAutoStartPromptedKey =
       'sip_xiaomi_autostart_prompted_v1';
   static const List<String> _sipSecureStorageKeys = <String>[
@@ -54,6 +52,9 @@ class SipService extends ChangeNotifier
       MethodChannel('com.shamcrm/native_sip/methods');
   static const EventChannel _nativeSipEventChannel =
       EventChannel('com.shamcrm/native_sip/events');
+  static const Duration _secureStorageReadTimeout = Duration(seconds: 3);
+  static const Duration _nativeStartupStepTimeout = Duration(seconds: 4);
+  static const Duration _iosVoipTokenSyncTimeout = Duration(seconds: 8);
 
   final SIPUAHelper _helper = SIPUAHelper();
   final Connectivity _connectivity = Connectivity();
@@ -153,7 +154,10 @@ class SipService extends ChangeNotifier
         WidgetsBinding.instance.addObserver(this);
       }
 
-      await _initializeNativeSipBridge();
+      await _runStartupStep(
+        'native_bridge',
+        _ensureNativeSipBridgeInitialized().then((_) {}),
+      );
 
       var server = await _readSecureStorageValue(
             _serverKey,
@@ -246,12 +250,36 @@ class SipService extends ChangeNotifier
         clearRemoteIdentity: true,
       );
       _pendingStorageRecoveryMessage = null;
-      await _ensureRenderersInitializedForCurrentMode();
-      await _syncNativeSnapshot();
-      await _consumePendingIosCallActions();
-      await _syncCurrentIosVoipPushTokenIfAvailable();
+      await _runStartupStep(
+        'renderers',
+        _ensureRenderersInitializedForCurrentMode(),
+      );
+      if (_nativeSipBridgeAvailable) {
+        await _runStartupStep(
+          'native_snapshot',
+          _syncNativeSnapshot(),
+        );
+        await _runStartupStep(
+          'pending_ios_call_actions',
+          _consumePendingIosCallActions(),
+        );
+      } else if (_isNativeSipPlatform()) {
+        debugPrint(
+          'SipService.initialize native snapshot skipped: bridge unavailable',
+        );
+      }
+      unawaited(_syncCurrentIosVoipPushTokenIfAvailable()
+          .timeout(_iosVoipTokenSyncTimeout)
+          .catchError((error, stackTrace) {
+        debugPrint('SipService iOS VoIP token sync skipped: $error');
+      }));
       if (Platform.isIOS) {
-        await _apiService.sendPendingVoipTokenIfNeeded();
+        unawaited(_apiService
+            .sendPendingVoipTokenIfNeeded()
+            .timeout(_iosVoipTokenSyncTimeout)
+            .catchError((error, stackTrace) {
+          debugPrint('SipService pending VoIP token sync skipped: $error');
+        }));
       }
       _startConnectivityMonitoring();
       _startRegistrationWatchdog();
@@ -268,7 +296,7 @@ class SipService extends ChangeNotifier
       _configLoaded = true;
       _state = SipUiState.initial().copyWith(
         errorMessage:
-            'Не удалось открыть сохраненные SIP-настройки. Проверьте данные и попробуйте снова.',
+            'Не удалось открыть сохраненные настройки телефонии. Проверьте данные и попробуйте снова.',
       );
       _notifyListenersSafely();
       if (!completer.isCompleted) {
@@ -284,7 +312,16 @@ class SipService extends ChangeNotifier
     String? fallback,
   }) async {
     try {
-      return await _storage.read(key: key) ?? fallback;
+      return await _storage.read(key: key).timeout(
+            _secureStorageReadTimeout,
+            onTimeout: () {
+              debugPrint(
+                'SipService secure storage read timed out for $key',
+              );
+              return fallback;
+            },
+          ) ??
+          fallback;
     } on PlatformException catch (error, stackTrace) {
       debugPrint('SipService secure storage read failed for $key: $error');
       debugPrint('SipService secure storage read stackTrace: $stackTrace');
@@ -296,6 +333,25 @@ class SipService extends ChangeNotifier
       debugPrint('SipService secure storage read failed for $key: $error');
       debugPrint('SipService secure storage read stackTrace: $stackTrace');
       return fallback;
+    }
+  }
+
+  Future<void> _runStartupStep(
+    String name,
+    Future<void> future, {
+    Duration timeout = _nativeStartupStepTimeout,
+  }) async {
+    try {
+      await future.timeout(timeout);
+    } on TimeoutException {
+      debugPrint(
+        'SipService.initialize startup step timed out [$name] after ${timeout.inSeconds}s',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('SipService.initialize startup step failed [$name]: $error');
+      debugPrint(
+        'SipService.initialize startup step stackTrace [$name]: $stackTrace',
+      );
     }
   }
 
@@ -340,7 +396,7 @@ class SipService extends ChangeNotifier
     }
     _secureStorageRecoveryTriggered = true;
     _pendingStorageRecoveryMessage =
-        'Сохраненные SIP-настройки были повреждены и сброшены. Введите их заново.';
+        'Сохраненные настройки телефонии были повреждены и сброшены. Введите их заново.';
 
     for (final key in _sipSecureStorageKeys) {
       try {
@@ -656,7 +712,13 @@ class SipService extends ChangeNotifier
     try {
       await _nativeSipEventsSubscription?.cancel();
       _nativeSipEventsSubscription = null;
-      await _nativeSipMethodChannel.invokeMethod('initialize');
+      final initialized =
+          await _invokeNativeSipMethod<bool>('initialize', null, false) ??
+              false;
+      if (!initialized) {
+        _nativeSipBridgeAvailable = false;
+        return;
+      }
       _nativeSipBridgeAvailable = true;
       _nativeSipEventsSubscription =
           _nativeSipEventChannel.receiveBroadcastStream().listen(
@@ -681,11 +743,15 @@ class SipService extends ChangeNotifier
     }
 
     await _syncNativeSnapshot();
-    final pendingCallUiRequest = await _invokeNativeSipMethod<Object?>(
-      'consumePendingCallUiRequest',
-    );
-    if (pendingCallUiRequest is Map) {
-      _handleNativeSipEvent(Map<String, dynamic>.from(pendingCallUiRequest));
+    if (Platform.isAndroid) {
+      final pendingCallUiRequest = await _invokeNativeSipMethod<Object?>(
+        'consumePendingCallUiRequest',
+        null,
+        false,
+      );
+      if (pendingCallUiRequest is Map) {
+        _handleNativeSipEvent(Map<String, dynamic>.from(pendingCallUiRequest));
+      }
     }
     await _consumePendingIosCallActions();
   }
@@ -925,7 +991,8 @@ class SipService extends ChangeNotifier
     await initialize();
 
     final shouldWakeSip = _sipEnabled || _persistentSipEnabled;
-    final remoteIdentity = payload['remote_identity']?.toString();
+    final remoteIdentity =
+        _normalizeRemoteIdentity(payload['remote_identity']?.toString());
     final callId = payload['call_id']?.toString();
 
     _lastIncomingCallPushId = callId;
@@ -941,7 +1008,7 @@ class SipService extends ChangeNotifier
         _state.callStatus == SipCallUiStatus.failed) {
       _state = _state.copyWith(
         remoteIdentity: remoteIdentity,
-        errorMessage: 'Входящий вызов: пробуждаем SIP...',
+        errorMessage: 'Входящий вызов: пробуждаем телефонию...',
       );
       _notifyListenersSafely();
     }
@@ -1025,14 +1092,14 @@ class SipService extends ChangeNotifier
       'phone',
       'from',
     ]);
-    final remoteIdentity = pickString(<String>[
+    final remoteIdentity = _normalizeRemoteIdentity(pickString(<String>[
           'remote_identity',
           'phone',
           'lead_name',
           'caller_name',
           'from',
         ]) ??
-        callerName;
+        callerName);
 
     if ((callId == null || callId.isEmpty) &&
         (remoteIdentity == null || remoteIdentity.isEmpty)) {
@@ -1134,29 +1201,6 @@ class SipService extends ChangeNotifier
     } catch (_) {}
 
     if (_shouldUseNativeSip()) {
-      final canUseFullScreenIntent = await _invokeNativeSipMethod<bool>(
-            'canUseFullScreenIntent',
-            null,
-            false,
-          ) ??
-          true;
-      final promptedFullScreenIntent =
-          await _storage.read(key: _fullScreenIntentPromptedKey);
-      if (!canUseFullScreenIntent && promptedFullScreenIntent != 'true') {
-        final opened = await _invokeNativeSipMethod<bool>(
-              'requestFullScreenIntentPermission',
-              null,
-              false,
-            ) ??
-            false;
-        if (opened) {
-          await _storage.write(
-            key: _fullScreenIntentPromptedKey,
-            value: 'true',
-          );
-        }
-      }
-
       final promptedBackgroundReliability =
           await _storage.read(key: _backgroundReliabilityPromptedKey);
       if (promptedBackgroundReliability != 'true') {
@@ -1195,7 +1239,7 @@ class SipService extends ChangeNotifier
 
   Future<void> connect() async {
     if (!_hasSipCredentials()) {
-      _setError('Заполните сервер, логин и пароль SIP.');
+      _setError('Заполните сервер телефонии, логин и пароль.');
       return;
     }
 
@@ -1206,7 +1250,7 @@ class SipService extends ChangeNotifier
     }
 
     if (!_networkAvailable) {
-      _setError('Нет интернета. Регистрация SIP приостановлена.');
+      _setError('Нет интернета. Подключение телефонии приостановлено.');
       return;
     }
 
@@ -1287,7 +1331,7 @@ class SipService extends ChangeNotifier
       if (!success) {
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.failed,
-          errorMessage: 'Native SIP registration failed',
+          errorMessage: 'Не удалось подключить телефонию',
         );
         _notifyListenersSafely();
       }
@@ -1326,7 +1370,7 @@ class SipService extends ChangeNotifier
       debugPrint('SipService: _helper.start stackTrace: $stackTrace');
       _state = _state.copyWith(
         registrationStatus: SipRegistrationUiStatus.failed,
-        errorMessage: 'SIP start failed: $error',
+        errorMessage: 'Не удалось запустить телефонию: $error',
       );
       _notifyListenersSafely();
     }
@@ -1418,13 +1462,13 @@ class SipService extends ChangeNotifier
 
   Future<void> makeCallTo(String dialTarget) async {
     if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
-      _setError('SIP is not registered. Connect first.');
+      _setError('Телефония не подключена. Сначала подключите линию.');
       return;
     }
 
-    final normalizedTarget = dialTarget.trim();
+    final normalizedTarget = _restoreTajikPlusIfMissing(dialTarget);
     if (normalizedTarget.isEmpty) {
-      _setError('sipId is empty.');
+      _setError('Введите номер для звонка.');
       return;
     }
 
@@ -1455,7 +1499,7 @@ class SipService extends ChangeNotifier
           ) ??
           false;
       if (!success) {
-        _setError('Native SIP call failed to start.');
+        _setError('Не удалось начать звонок через телефонию.');
         return;
       }
 
@@ -1508,7 +1552,15 @@ class SipService extends ChangeNotifier
 
       final success = await _invokeNativeSipMethod<bool>('acceptCall') ?? false;
       if (!success) {
-        _setError('Failed to accept native SIP call.');
+        _setError('Не удалось ответить на звонок телефонии.');
+      } else {
+        _currentCallStartedAt ??= DateTime.now();
+        _clearIncomingFingerprint();
+        _state = _state.copyWith(
+          callStatus: SipCallUiStatus.inCall,
+          clearError: true,
+        );
+        _notifyListenersSafely();
       }
       return;
     }
@@ -1540,7 +1592,7 @@ class SipService extends ChangeNotifier
     if (_shouldUseNativeSip()) {
       final success = await _invokeNativeSipMethod<bool>('hangup') ?? false;
       if (!success) {
-        _setError('Не удалось завершить SIP-звонок.');
+        _setError('Не удалось завершить звонок телефонии.');
       } else {
         _clearIncomingFingerprint();
         _markTerminalNativeCallFingerprint();
@@ -1681,14 +1733,14 @@ class SipService extends ChangeNotifier
   String? _validateSipConfiguration() {
     final server = _state.server.trim();
     if (server.isEmpty) {
-      return 'Сервер SIP не указан.';
+      return 'Сервер телефонии не указан.';
     }
 
     final isWsAddress =
         server.startsWith('ws://') || server.startsWith('wss://');
 
     if (_state.transport == SipTransportUi.ws && !isWsAddress) {
-      return 'Для WS/WSS нужен полный адрес `ws://` или `wss://`. Для обычной SIP-телефонии используйте UDP или TCP.';
+      return 'Для WS/WSS нужен полный адрес `ws://` или `wss://`. Для обычной телефонии используйте UDP или TCP.';
     }
 
     if (_state.transport != SipTransportUi.ws && isWsAddress) {
@@ -1741,7 +1793,16 @@ class SipService extends ChangeNotifier
     }
 
     try {
-      return await _nativeSipMethodChannel.invokeMethod<T>(method, arguments);
+      return await _nativeSipMethodChannel
+          .invokeMethod<T>(method, arguments)
+          .timeout(_nativeMethodTimeoutFor(method));
+    } on TimeoutException {
+      debugPrint(
+        'SipService native SIP method timed out [$method] after ${_nativeMethodTimeoutFor(method).inSeconds}s',
+      );
+      if (method == 'initialize') {
+        _nativeSipBridgeAvailable = false;
+      }
     } on MissingPluginException catch (error) {
       if (!disableBridgeOnMissing) {
         debugPrint('Optional native SIP method unavailable [$method]: $error');
@@ -1766,6 +1827,20 @@ class SipService extends ChangeNotifier
       debugPrint('SipService native SIP method error [$method]: $error');
     }
     return null;
+  }
+
+  Duration _nativeMethodTimeoutFor(String method) {
+    return switch (method) {
+      'register' || 'restoreRegistrationIfNeeded' => const Duration(seconds: 8),
+      'makeCall' ||
+      'acceptCall' ||
+      'declineCall' ||
+      'hangup' ||
+      'unregister' ||
+      'endSystemCall' =>
+        const Duration(seconds: 5),
+      _ => _nativeStartupStepTimeout,
+    };
   }
 
   void _handleNativeSipEvent(dynamic event) {
@@ -2016,7 +2091,27 @@ class SipService extends ChangeNotifier
     }
 
     normalized = normalized.trim();
+    normalized = _restoreTajikPlusIfMissing(normalized);
     return normalized.isEmpty ? null : normalized;
+  }
+
+  String _restoreTajikPlusIfMissing(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.startsWith('+')) {
+      return trimmed;
+    }
+
+    final phoneFormattedOnly = RegExp(r'^[0-9\s().-]+$').hasMatch(trimmed);
+    if (!phoneFormattedOnly) {
+      return trimmed;
+    }
+
+    final digits = trimmed.replaceAll(RegExp(r'[\s().-]'), '');
+    if (RegExp(r'^992\d{9}$').hasMatch(digits)) {
+      return '+$digits';
+    }
+
+    return trimmed;
   }
 
   bool _isRemoteDeclineCause(String? rawCause) {
@@ -2551,7 +2646,8 @@ class SipService extends ChangeNotifier
     final registrationState =
         snapshot['registrationState']?.toString() ?? 'disconnected';
     final callState = snapshot['callState']?.toString() ?? 'idle';
-    final remoteIdentity = snapshot['remoteIdentity']?.toString();
+    final remoteIdentity =
+        _normalizeRemoteIdentity(snapshot['remoteIdentity']?.toString());
     final message = snapshot['message']?.toString();
     final muted = snapshot['muted'] as bool? ?? false;
     final speakerOn = snapshot['speakerOn'] as bool? ?? false;
@@ -2687,13 +2783,13 @@ class SipService extends ChangeNotifier
         }
         if (_isAuthorizationFailureMessage(message)) {
           _stopReconnectOnAuthorizationFailure(
-            'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
+            'Авторизация телефонии отклонена сервером. Проверьте логин, пароль и auth ID.',
           );
           return;
         }
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.failed,
-          errorMessage: message ?? 'Native SIP registration failed',
+          errorMessage: message ?? 'Не удалось подключить телефонию',
         );
         if (_shouldStayConnected) {
           _scheduleReconnect('native-registration-failed');
@@ -2701,15 +2797,26 @@ class SipService extends ChangeNotifier
         break;
       case 'disconnected':
       default:
-        _state = _state.copyWith(
-          registrationStatus: SipRegistrationUiStatus.disconnected,
-          callStatus: SipCallUiStatus.idle,
-          errorMessage: message == 'Registration disabled' ||
-                  message == 'Unregistration done'
-              ? null
-              : message,
-          clearRemoteIdentity: true,
-        );
+        final shouldClearMessage = message == 'Registration disabled' ||
+            message == 'Unregistration done';
+        if (_isActiveUiCallStatus(_state.callStatus)) {
+          debugPrint(
+            'SipService native registration disconnected while call is active -> preserving callStatus=${_state.callStatus}',
+          );
+          _state = _state.copyWith(
+            registrationStatus: SipRegistrationUiStatus.disconnected,
+            errorMessage: shouldClearMessage ? null : message,
+            clearError: shouldClearMessage,
+          );
+        } else {
+          _state = _state.copyWith(
+            registrationStatus: SipRegistrationUiStatus.disconnected,
+            callStatus: SipCallUiStatus.idle,
+            errorMessage: shouldClearMessage ? null : message,
+            clearError: shouldClearMessage,
+            clearRemoteIdentity: true,
+          );
+        }
         if (_shouldStayConnected) {
           _scheduleReconnect('native-disconnected');
         }
@@ -2878,7 +2985,7 @@ class SipService extends ChangeNotifier
           callStatus:
               treatAsEnded ? SipCallUiStatus.ended : SipCallUiStatus.failed,
           errorMessage:
-              treatAsEnded ? null : (message ?? 'Native SIP call failed'),
+              treatAsEnded ? null : (message ?? 'Не удалось выполнить звонок'),
           clearError: treatAsEnded,
           clearRemoteIdentity: true,
           isMuted: false,
@@ -2951,7 +3058,7 @@ class SipService extends ChangeNotifier
       if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registering,
-          errorMessage: 'Network restored. Reconnecting SIP...',
+          errorMessage: 'Сеть восстановлена. Переподключаем телефонию...',
         );
         _notifyListenersSafely();
       }
@@ -3251,7 +3358,7 @@ class SipService extends ChangeNotifier
       SipTransportUi.udp => 'UDP',
     };
 
-    return 'Call timeout for $target over $transport. REGISTER succeeded, but INVITE got no SIP response. If Zoiper works with the same account, this usually means the provider accepts classic SIP/RTP, while this app is sending WebRTC-style SDP (ICE/DTLS/SAVPF), or the INVITE is being lost over UDP.';
+    return 'Таймаут звонка для $target через $transport. Регистрация прошла, но вызов не получил ответа от сервера. Если Zoiper работает с тем же аккаунтом, проверьте SDP/ICE/DTLS/SAVPF или потерю INVITE по UDP.';
   }
 
   bool _isConnectionRefusedCause(Object? cause) {
@@ -3328,7 +3435,7 @@ class SipService extends ChangeNotifier
       SipTransportUi.udp => 'UDP',
     };
     final endpoint = '${_extractDomain(_state.server)}:${_state.port}';
-    return '$transport соединение к $endpoint отклонено сервером. Проверьте, что АТС реально слушает $transport на этом порту. Для обычного SIP на 5060 чаще всего нужен UDP.';
+    return '$transport соединение к $endpoint отклонено сервером. Проверьте, что АТС реально слушает $transport на этом порту. Для обычной телефонии на 5060 чаще всего нужен UDP.';
   }
 
   bool _shouldFallbackFromTcpToUdp() {
@@ -3437,7 +3544,7 @@ class SipService extends ChangeNotifier
         }
         if (_isAuthorizationFailureMessage(state.cause?.toString())) {
           _stopReconnectOnAuthorizationFailure(
-            'SIP авторизация отклонена сервером. Проверьте логин, пароль и auth ID.',
+            'Авторизация телефонии отклонена сервером. Проверьте логин, пароль и auth ID.',
           );
           break;
         }
@@ -3474,8 +3581,9 @@ class SipService extends ChangeNotifier
   @override
   void callStateChanged(Call call, CallState callState) {
     if (_shouldUseNativeSip()) return;
+    final remoteIdentity = _normalizeRemoteIdentity(call.remote_identity);
     debugPrint(
-      'SipService: callStateChanged -> state=${callState.state}, direction=${call.direction}, remote=${call.remote_identity}, cause=${callState.cause}',
+      'SipService: callStateChanged -> state=${callState.state}, direction=${call.direction}, remote=$remoteIdentity, cause=${callState.cause}',
     );
     _activeCall = call;
 
@@ -3502,12 +3610,12 @@ class SipService extends ChangeNotifier
         _currentCallDirection = call.direction == 'INCOMING'
             ? SipCallDirection.incoming
             : SipCallDirection.outgoing;
-        _currentCallTarget = call.remote_identity ?? _state.sipId;
+        _currentCallTarget = remoteIdentity ?? _state.sipId;
         _state = _state.copyWith(
           callStatus: call.direction == 'INCOMING'
               ? SipCallUiStatus.incoming
               : SipCallUiStatus.calling,
-          remoteIdentity: call.remote_identity,
+          remoteIdentity: remoteIdentity,
           clearError: true,
         );
         if (call.direction == 'INCOMING') {
@@ -3518,7 +3626,7 @@ class SipService extends ChangeNotifier
       case CallStateEnum.PROGRESS:
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ringing,
-          remoteIdentity: call.remote_identity,
+          remoteIdentity: remoteIdentity,
         );
         break;
       case CallStateEnum.ACCEPTED:
@@ -3527,7 +3635,7 @@ class SipService extends ChangeNotifier
         _currentCallStartedAt ??= DateTime.now();
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.inCall,
-          remoteIdentity: call.remote_identity,
+          remoteIdentity: remoteIdentity,
           clearError: true,
         );
         unawaited(_reportIosSystemCallConnectedIfNeeded());

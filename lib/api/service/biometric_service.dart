@@ -38,15 +38,22 @@ class BiometricAvailability {
 
 class BiometricService {
   static const String biometricEnabledKey = 'biometric_auth_enabled';
+  static const Duration _platformCallTimeout = Duration(seconds: 3);
 
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   Future<BiometricAvailability> getAvailability() async {
     try {
-      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      final canCheckBiometrics = await _localAuth.canCheckBiometrics
+          .timeout(_platformCallTimeout, onTimeout: () => false);
+      final isDeviceSupported = await _localAuth
+          .isDeviceSupported()
+          .timeout(_platformCallTimeout, onTimeout: () => false);
       final availableBiometrics = canCheckBiometrics && isDeviceSupported
-          ? await _localAuth.getAvailableBiometrics()
+          ? await _localAuth.getAvailableBiometrics().timeout(
+              _platformCallTimeout,
+              onTimeout: () => const <BiometricType>[],
+            )
           : const <BiometricType>[];
 
       return BiometricAvailability(
@@ -91,14 +98,16 @@ class BiometricService {
         return false;
       }
 
-      return await _localAuth.authenticate(
-        localizedReason: reason,
-        options: AuthenticationOptions(
-          stickyAuth: stickyAuth,
-          biometricOnly: true,
-          useErrorDialogs: useErrorDialogs,
-        ),
-      );
+      return await _localAuth
+          .authenticate(
+            localizedReason: reason,
+            options: AuthenticationOptions(
+              stickyAuth: stickyAuth,
+              biometricOnly: true,
+              useErrorDialogs: useErrorDialogs,
+            ),
+          )
+          .timeout(_platformCallTimeout, onTimeout: () => false);
     } catch (_) {
       return false;
     }

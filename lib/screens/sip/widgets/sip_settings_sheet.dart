@@ -129,9 +129,9 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                     onPressed: () async {
                                       await _showIosDiagnosticsSheet(context);
                                     },
-                                    child: const Text(
-                                      'SIP Диагностика',
-                                      style: TextStyle(
+                                    child: Text(
+                                      l10n.translate('sip_diagnostics'),
+                                      style: const TextStyle(
                                         color: Color(0xFF0A84FF),
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -181,7 +181,8 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                             state.registrationStatus ==
                                                     SipRegistrationUiStatus
                                                         .registering
-                                                ? 'Подключение...'
+                                                ? l10n
+                                                    .translate('sip_connecting')
                                                 : l10n.translate('sip_connect'),
                                           ),
                                         ],
@@ -248,19 +249,36 @@ extension _SipSettingsSheetExtension on _SipScreenState {
   }
 
   Future<void> _showIosDiagnosticsSheet(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final isAndroid = Platform.isAndroid;
-    final voipToken = isAndroid ? null : await _sipRuntime.getVoipPushToken();
-    final logs = await _sipRuntime.getNativeDiagnosticLogs();
+    final voipToken = isAndroid
+        ? null
+        : await _safeDiagnosticsValue<String?>(
+            _sipRuntime.getVoipPushToken(),
+            null,
+            label: 'voip_token',
+          );
+    final logs = await _safeDiagnosticsValue<List<Map<String, dynamic>>>(
+      _sipRuntime.getNativeDiagnosticLogs(),
+      const <Map<String, dynamic>>[],
+      label: 'native_logs',
+    );
     final backendSync = isAndroid
         ? const <String, dynamic>{}
-        : await _apiService.getVoipSyncDiagnostics();
+        : await _safeDiagnosticsValue<Map<String, dynamic>>(
+            _apiService.getVoipSyncDiagnostics(),
+            const <String, dynamic>{},
+            label: 'backend_sync',
+          );
 
+    final tokenLabel = l10n.translate('sip_diagnostics_token');
     final tokenText = (voipToken == null || voipToken.trim().isEmpty)
-        ? 'VoIP token: MISSING'
-        : 'VoIP token: ${voipToken.trim()}';
+        ? l10n.translate('sip_diagnostics_token_missing')
+        : '$tokenLabel: ${voipToken.trim()}';
     final registrationText =
-        'Registration: ${_sipRuntime.state.registrationStatus.name}';
-    final callText = 'Call: ${_sipRuntime.state.callStatus.name}';
+        '${l10n.translate('sip_diagnostics_registration')}: ${_diagnosticRegistrationStatusLabel(l10n, _sipRuntime.state.registrationStatus)}';
+    final callText =
+        '${l10n.translate('sip_diagnostics_call')}: ${_diagnosticCallStatusLabel(l10n, _sipRuntime.state.callStatus)}';
     final syncedAtMillis = backendSync['syncedAt'] as int?;
     final syncedAt = syncedAtMillis == null
         ? 'unknown'
@@ -268,12 +286,12 @@ extension _SipSettingsSheetExtension on _SipScreenState {
             .toLocal()
             .toIso8601String();
     final backendText =
-        'Backend sync: status=${backendSync['status']}, http=${backendSync['httpCode'] ?? 'n/a'}, pending=${backendSync['hasPendingToken']}, at=$syncedAt';
+        '${l10n.translate('sip_diagnostics_backend_sync')}: status=${backendSync['status']}, http=${backendSync['httpCode'] ?? 'n/a'}, pending=${backendSync['hasPendingToken']}, at=$syncedAt';
     final backendError = backendSync['error']?.toString();
 
     final visibleLogs = logs.reversed.toList(growable: false);
     final logLines = visibleLogs.isEmpty
-        ? <String>['Native logs: empty']
+        ? <String>[l10n.translate('sip_diagnostics_native_logs_empty')]
         : visibleLogs.map((entry) {
             final timestamp = DateTime.fromMillisecondsSinceEpoch(
               (((entry['timestamp'] as num?) ?? 0) * 1000).round(),
@@ -289,14 +307,16 @@ extension _SipSettingsSheetExtension on _SipScreenState {
           }).toList(growable: false);
 
     final report = [
-      '${Platform.isAndroid ? 'Android' : 'iOS'} SIP Diagnostics',
+      '${Platform.isAndroid ? 'Android' : 'iOS'} ${l10n.translate('sip_diagnostics')}',
       registrationText,
       callText,
       if (!isAndroid) tokenText,
       if (!isAndroid) backendText,
       if (!isAndroid && backendError != null && backendError.trim().isNotEmpty)
-        'Backend error: $backendError',
-      'Native logs: ${logs.length} stored, newest first',
+        '${l10n.translate('sip_diagnostics_backend_error')}: $backendError',
+      l10n
+          .translate('sip_diagnostics_native_logs_header')
+          .replaceFirst('{count}', '${logs.length}'),
       '',
       ...logLines,
     ].join('\n');
@@ -348,16 +368,16 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                   ),
                                 ),
                               ),
-                              const Positioned(
+                              Positioned(
                                 left: 48,
                                 right: 48,
                                 bottom: 3,
                                 child: Text(
-                                  'SIP Диагностика',
+                                  l10n.translate('sip_diagnostics'),
                                   textAlign: TextAlign.center,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -369,7 +389,9 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 child: Builder(
                                   builder: (shareButtonContext) {
                                     return Tooltip(
-                                      message: 'Поделиться диагностикой',
+                                      message: l10n.translate(
+                                        'sip_diagnostics_share',
+                                      ),
                                       child: CupertinoButton(
                                         minimumSize: const Size.square(40),
                                         padding: EdgeInsets.zero,
@@ -429,11 +451,13 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                   if (context.mounted) {
                                     Navigator.of(context).pop();
                                   }
-                                  _showSipSnackBar('Диагностика скопирована');
+                                  _showSipSnackBar(
+                                    l10n.translate('sip_diagnostics_copied'),
+                                  );
                                 },
-                                child: const Text(
-                                  'Копировать',
-                                  style: TextStyle(
+                                child: Text(
+                                  l10n.translate('copy'),
+                                  style: const TextStyle(
                                     color: Color(0xFF0A84FF),
                                   ),
                                 ),
@@ -449,9 +473,11 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                   if (context.mounted) {
                                     Navigator.of(context).pop();
                                   }
-                                  _showSipSnackBar('Диагностика очищена');
+                                  _showSipSnackBar(
+                                    l10n.translate('sip_diagnostics_cleared'),
+                                  );
                                 },
-                                child: const Text('Очистить'),
+                                child: Text(l10n.translate('clear')),
                               ),
                             ),
                           ],
@@ -468,10 +494,25 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     );
   }
 
+  Future<T> _safeDiagnosticsValue<T>(
+    Future<T> future,
+    T fallback, {
+    required String label,
+  }) async {
+    try {
+      return await future.timeout(const Duration(seconds: 4));
+    } catch (error) {
+      debugPrint('SIP diagnostics load skipped [$label]: $error');
+      return fallback;
+    }
+  }
+
   Future<void> _shareIosDiagnosticsReport(
     String report,
     BuildContext shareButtonContext,
   ) async {
+    final l10n = AppLocalizations.of(shareButtonContext)!;
+
     try {
       final directory = await getTemporaryDirectory();
       final timestamp = DateTime.now()
@@ -495,16 +536,48 @@ extension _SipSettingsSheetExtension on _SipScreenState {
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'text/markdown')],
-        subject: 'iOS SIP Diagnostics',
-        text: 'iOS SIP Diagnostics',
+        subject: l10n.translate('sip_diagnostics'),
+        text: l10n.translate('sip_diagnostics'),
         sharePositionOrigin: shareOrigin,
       );
     } catch (error) {
       _showSipSnackBar(
-        'Не удалось поделиться диагностикой: $error',
+        l10n
+            .translate('sip_diagnostics_share_failed')
+            .replaceFirst('{error}', '$error'),
         isError: true,
       );
     }
+  }
+
+  String _diagnosticRegistrationStatusLabel(
+    AppLocalizations l10n,
+    SipRegistrationUiStatus status,
+  ) {
+    return switch (status) {
+      SipRegistrationUiStatus.disconnected =>
+        l10n.translate('sip_status_disconnected'),
+      SipRegistrationUiStatus.registering =>
+        l10n.translate('sip_status_registering'),
+      SipRegistrationUiStatus.registered =>
+        l10n.translate('sip_status_registered'),
+      SipRegistrationUiStatus.failed => l10n.translate('sip_status_failed'),
+    };
+  }
+
+  String _diagnosticCallStatusLabel(
+    AppLocalizations l10n,
+    SipCallUiStatus status,
+  ) {
+    return switch (status) {
+      SipCallUiStatus.idle => l10n.translate('sip_call_idle'),
+      SipCallUiStatus.incoming => l10n.translate('sip_call_incoming'),
+      SipCallUiStatus.calling => l10n.translate('sip_call_calling'),
+      SipCallUiStatus.ringing => l10n.translate('sip_call_ringing'),
+      SipCallUiStatus.inCall => l10n.translate('sip_call_in_call'),
+      SipCallUiStatus.ended => l10n.translate('sip_call_ended'),
+      SipCallUiStatus.failed => l10n.translate('sip_call_failed'),
+    };
   }
 
   Widget _transportSelector(BuildContext context) {
@@ -523,9 +596,9 @@ extension _SipSettingsSheetExtension on _SipScreenState {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Text(l10n.translate('sip_transport_ws')),
           ),
-          SipTransportUi.udp: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Text('UDP'),
+          SipTransportUi.udp: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Text(l10n.translate('sip_transport_udp')),
           ),
           SipTransportUi.tcp: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),

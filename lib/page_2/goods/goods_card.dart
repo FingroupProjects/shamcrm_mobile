@@ -2,7 +2,10 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +22,9 @@ class GoodsCard extends StatefulWidget {
   final String? availabilityStatus;
   final String? characteristicsSummary;
   final List<String> characteristics;
+  final int? orderId;
+  final String? orderNumber;
+  final double? goodsPrice;
 
   const GoodsCard({
     Key? key,
@@ -34,6 +40,9 @@ class GoodsCard extends StatefulWidget {
     this.availabilityStatus,
     this.characteristicsSummary,
     this.characteristics = const [],
+    this.orderId,
+    this.orderNumber,
+    this.goodsPrice,
   }) : super(key: key);
 
   @override
@@ -86,6 +95,73 @@ class _GoodsCardState extends State<GoodsCard> {
     );
   }
 
+  void _navigateToOrderDetails() {
+    final orderId = widget.orderId;
+    if (orderId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderDetailsScreen(
+          orderId: orderId,
+          categoryName: '',
+          order: Order(
+            id: orderId,
+            phone: '',
+            orderNumber: widget.orderNumber ?? orderId.toString(),
+            delivery: false,
+            lead: OrderLead(id: 0, name: '', channels: const [], phone: ''),
+            orderStatus: OrderStatusName(id: 0, name: ''),
+            goods: const [],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool get _isFreeForTojsokhtmontjOrder {
+    if (!widget.isTojsokhtmontjTenant) return false;
+    final normalized = (widget.availabilityStatus ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('ё', 'е');
+    return normalized.contains('свобод');
+  }
+
+  void _navigateToCreateOrder() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderAddScreen(
+          initialGoodsItem: {
+            'id': widget.goodsId,
+            'name': widget.goodsName,
+            'price': widget.goodsPrice ?? 0.0,
+            'quantity': 1,
+            'imagePath': _getMainImage()?.path,
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateOrderIconButton() {
+    if (!_isFreeForTojsokhtmontjOrder) return const SizedBox.shrink();
+
+    return IconButton(
+      onPressed: _navigateToCreateOrder,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+      style: IconButton.styleFrom(
+        backgroundColor: const Color(0xff1D2D51),
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      icon: const Icon(Icons.add_rounded, size: 22),
+      tooltip: 'Создать заказ',
+    );
+  }
+
   GoodsFile? _getMainImage() {
     if (widget.goodsFiles.isEmpty) {
       //print('⚠️ [GoodsCard] Нет файлов для товара ${widget.goodsName}');
@@ -101,7 +177,7 @@ class _GoodsCardState extends State<GoodsCard> {
     return mainImage;
   }
 
-  Widget _buildImageWidget(GoodsFile file) {
+  Widget _buildImageWidget(GoodsFile file, {double size = 100}) {
     // Строим полный URL для изображения
     //print('🔧 [GoodsCard] Строим URL изображения...');
     //print('🔧 [GoodsCard] baseUrl: "$baseUrl"');
@@ -116,15 +192,15 @@ class _GoodsCardState extends State<GoodsCard> {
       child: imageUrl != null
           ? Image.network(
               imageUrl,
-              width: 100,
-              height: 100,
+              width: size,
+              height: size,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 //print('❌ [GoodsCard] Ошибка загрузки изображения: $error');
                 //print('❌ [GoodsCard] URL с ошибкой: "$imageUrl"');
                 return Container(
-                  width: 100,
-                  height: 100,
+                  width: size,
+                  height: size,
                   color: Colors.white,
                   child: const Icon(Icons.broken_image,
                       size: 40, color: Color(0xff99A4BA)),
@@ -139,16 +215,16 @@ class _GoodsCardState extends State<GoodsCard> {
                     (loadingProgress.expectedTotalBytes ?? 1);
                 //print('⏳ [GoodsCard] Загрузка изображения: ${(progress * 100).toStringAsFixed(0)}%');
                 return Container(
-                  width: 100,
-                  height: 100,
+                  width: size,
+                  height: size,
                   color: Colors.grey[200],
                   child: const Center(child: CircularProgressIndicator()),
                 );
               },
             )
           : Container(
-              width: 100,
-              height: 100,
+              width: size,
+              height: size,
               color: Colors.grey[200],
               child: const Center(child: CircularProgressIndicator()),
             ),
@@ -268,6 +344,158 @@ class _GoodsCardState extends State<GoodsCard> {
     );
   }
 
+  Widget _buildOrderLink() {
+    if (!widget.isTojsokhtmontjTenant || widget.orderId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final number = widget.orderNumber?.trim();
+    final label = number == null || number.isEmpty
+        ? 'Заказ #${widget.orderId}'
+        : 'Заказ №$number';
+
+    return InkWell(
+      onTap: _navigateToOrderDetails,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xffEEF0FF),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.receipt_long_outlined,
+                size: 15, color: Color(0xff4759FF)),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TaskCardStyles.priorityStyle.copyWith(
+                fontSize: 12,
+                color: const Color(0xff4759FF),
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTojsokhtmontjCard(GoodsFile? mainImage) {
+    final hasCharacteristics = widget.characteristics.isNotEmpty ||
+        (widget.characteristicsSummary?.trim().isNotEmpty ?? false);
+    const imageSize = 82.0;
+
+    return GestureDetector(
+      onTap: _navigateToGoodsDetails,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xffE4E9F2)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: imageSize,
+                      height: imageSize,
+                      child: mainImage != null
+                          ? _buildImageWidget(mainImage, size: imageSize)
+                          : Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF4F7FD),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.image_not_supported,
+                                  size: 30, color: Color(0xff99A4BA)),
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: imageSize),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.goodsName,
+                              style: TaskCardStyles.titleStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.goodsCategory,
+                              style: TaskCardStyles.priorityStyle.copyWith(
+                                color: const Color(0xff6F7E98),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (hasCharacteristics)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(
+                                  widget.characteristicsSummary ??
+                                      widget.characteristics.join(' / '),
+                                  style: TaskCardStyles.priorityStyle.copyWith(
+                                    color: const Color(0xff1E2E52),
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xffE9EDF4)),
+                const SizedBox(height: 9),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(child: _buildOrderLink()),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildStatusLabel(),
+                        if (_isFreeForTojsokhtmontjOrder) ...[
+                          const SizedBox(width: 8),
+                          _buildCreateOrderIconButton(),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   (Color, Color) _tojsokhtmontjStatusColors(String status) {
     final normalized = status.trim().toLowerCase().replaceAll('ё', 'е');
     if (normalized.contains('свобод')) {
@@ -329,6 +557,11 @@ class _GoodsCardState extends State<GoodsCard> {
   @override
   Widget build(BuildContext context) {
     final mainImage = _getMainImage();
+    if (widget.isTojsokhtmontjTenant) {
+      return _buildTojsokhtmontjCard(mainImage);
+    }
+
+    final imageSize = widget.isTojsokhtmontjTenant ? 74.0 : 100.0;
     return GestureDetector(
       onTap: _navigateToGoodsDetails,
       child: Padding(
@@ -348,7 +581,7 @@ class _GoodsCardState extends State<GoodsCard> {
                       Text(
                         widget.goodsName,
                         style: TaskCardStyles.titleStyle,
-                        maxLines: 2,
+                        maxLines: widget.isTojsokhtmontjTenant ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
@@ -402,23 +635,28 @@ class _GoodsCardState extends State<GoodsCard> {
                       ],
                       const SizedBox(height: 4),
                       _buildStatusLabel(),
+                      if (widget.isTojsokhtmontjTenant &&
+                          widget.orderId != null) ...[
+                        const SizedBox(height: 4),
+                        _buildOrderLink(),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(width: 16),
-                Container(
-                  width: 100,
-                  height: 100,
+                SizedBox(
+                  width: imageSize,
+                  height: imageSize,
                   child: mainImage != null
-                      ? _buildImageWidget(mainImage)
+                      ? _buildImageWidget(mainImage, size: imageSize)
                       : Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.image_not_supported,
-                            size: 40,
+                            size: widget.isTojsokhtmontjTenant ? 32 : 40,
                             color: Color(0xff99A4BA),
                           ),
                         ),

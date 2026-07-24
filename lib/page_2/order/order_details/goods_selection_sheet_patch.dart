@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bottom_sheet_bloc/vari
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart' as goods_model;
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   Timer? _searchDebounce;
   int? currencyId;
   bool _isTojsokhtmontjTenant = false;
+  final Set<int> _expandedCategoryIds = {};
+  final Map<int, List<CategoryWithCount>> _loadedCategoryChildren = {};
+  bool _isCategoryChildrenLoading = false;
+  List<Variant>? _categoryEndpointVariants;
+  String? _categoryEndpointName;
 
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
@@ -162,7 +168,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   // Метод форматирования цены
   String _formatPrice(double? price) {
-    if (price == null) price = 0;
+    price ??= 0;
     if (_isTojsokhtmontjTenant) {
       return NumberFormat('#,##0.00', 'ru_RU').format(price);
     }
@@ -228,6 +234,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   void _onSearchChanged(String query) {
     _searchDebounce?.cancel();
+    if (_categoryEndpointVariants != null) {
+      setState(() {
+        _categoryEndpointVariants = null;
+        _categoryEndpointName = null;
+      });
+    }
     _searchDebounce = Timer(_searchDebounceDelay, () {
       if (mounted) {
         _bloc.add(SearchAll(query));
@@ -239,6 +251,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     setState(() {
       _showAllMode = !_showAllMode;
       _searchController.clear();
+      _expandedCategoryIds.clear();
+      _categoryEndpointVariants = null;
+      _categoryEndpointName = null;
     });
 
     _saveDisplayMode(_showAllMode);
@@ -250,14 +265,112 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     }
   }
 
-  void _onCategoryTap(int categoryId, String categoryName) {
-    _bloc.add(FetchVariantsByCategory(
-      categoryId: categoryId,
-      categoryName: categoryName,
-    ));
+  Future<void> _onCategoryTap(CategoryWithCount categoryWithCount) async {
+    final category = categoryWithCount.category;
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _isCategoryChildrenLoading = true;
+    });
+
+    try {
+      final goods =
+          await _apiService.getGoodsByCategoryForOrderSelection(category.id);
+      final variants = goods.map(_goodsToSelectionVariant).toList();
+
+      if (!mounted) return;
+
+      setState(() {
+        _categoryEndpointVariants = variants;
+        _categoryEndpointName = category.name;
+        _isCategoryChildrenLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isCategoryChildrenLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Не удалось загрузить товары категории: $error',
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Variant _goodsToSelectionVariant(goods_model.Goods goods) {
+    final units = goods.units ?? const <goods_model.Unit>[];
+    final price = double.tryParse(goods.price ?? '') ??
+        goods.discountedPrice ??
+        goods.discountPrice ??
+        0;
+
+    return Variant(
+      id: goods.id,
+      goodId: goods.id,
+      isActive: goods.isActive ?? true,
+      barcode: goods.barcode,
+      fullName: goods.name,
+      price: price,
+      attributeValues: const [],
+      good: goods,
+      selectedUnit:
+          units.isNotEmpty ? units.first.shortName ?? units.first.name : null,
+      availableUnits: units,
+    );
+  }
+
+  void _toggleCategoryExpansion(int categoryId) {
+    setState(() {
+      if (_expandedCategoryIds.contains(categoryId)) {
+        _expandedCategoryIds.remove(categoryId);
+        _collapseCategoryChildren(categoryId);
+      } else {
+        _expandedCategoryIds.add(categoryId);
+      }
+    });
+  }
+
+  void _collapseCategoryChildren(int categoryId) {
+    final categoryTree = [
+      ..._bloc.state.categories,
+      ..._bloc.state.searchCategories,
+      ..._loadedCategoryChildren.values.expand((children) => children),
+    ];
+    final childIds = categoryTree
+        .where((item) => item.parentId == categoryId)
+        .map((item) => item.category.id)
+        .toList();
+
+    for (final childId in childIds) {
+      _expandedCategoryIds.remove(childId);
+      _collapseCategoryChildren(childId);
+    }
   }
 
   void _onBackFromCategory() {
+    if (_categoryEndpointVariants != null) {
+      setState(() {
+        _categoryEndpointVariants = null;
+        _categoryEndpointName = null;
+      });
+      return;
+    }
     _bloc.add(FetchCategories());
   }
 
@@ -460,10 +573,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     return BlocBuilder<VariantBottomSheetBloc, VariantBottomSheetState>(
       builder: (context, state) {
         return PopScope(
-          canPop: !state.isInCategoryMode && !state.isInSearchMode,
+          canPop: _categoryEndpointVariants == null &&
+              !state.isInCategoryMode &&
+              !state.isInSearchMode,
           onPopInvokedWithResult: (didPop, result) {
             if (!didPop) {
-              if (state.isInSearchMode) {
+              if (_categoryEndpointVariants != null) {
+                _onBackFromCategory();
+              } else if (state.isInSearchMode) {
                 _searchController.clear();
                 // Вместо SearchAll('') возвращаемся к предыдущему режиму
                 if (_showAllMode) {
@@ -525,6 +642,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                     color: Color(0xff1E2E52),
                   ),
                 ),
+                if (_categoryEndpointVariants != null)
+                  _buildCategoryEndpointBreadcrumb(),
                 if (state.isInCategoryMode) _buildCategoryBreadcrumb(state),
                 if (state.isInSearchMode) _buildSearchBreadcrumb(state),
               ],
@@ -563,6 +682,37 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             Flexible(
               child: Text(
                 categoryName,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xff4759FF),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryEndpointBreadcrumb() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: GestureDetector(
+        onTap: _onBackFromCategory,
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back,
+              size: 14,
+              color: Color(0xff4759FF),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                _categoryEndpointName ?? '',
                 style: const TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
@@ -642,7 +792,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               ),
             ),
           ),
-          if (!state.isInSearchMode && !state.isInCategoryMode) ...[
+          if (_categoryEndpointVariants == null &&
+              !state.isInSearchMode &&
+              !state.isInCategoryMode) ...[
             const SizedBox(width: 8),
             Container(
               width: 48,
@@ -669,6 +821,19 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   Widget _buildContent(
       AppLocalizations localizations, VariantBottomSheetState state) {
+    if (_isCategoryChildrenLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_categoryEndpointVariants != null) {
+      return _buildVariantsList(
+        variants: _categoryEndpointVariants!,
+        emptyMessageKey: 'no_goods_in_category',
+        state: state,
+        localizations: localizations,
+      );
+    }
+
     // Show loading only if there's no data yet
     if (state.isLoading && !state.hasData) {
       return const Center(child: CircularProgressIndicator());
@@ -752,7 +917,15 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         if (state.searchCategories.isNotEmpty) ...[
           _buildSectionHeader(localizations.translate('categories'),
               state.searchCategories.length),
-          ...state.searchCategories.map((cat) => _buildCategoryCard(cat)),
+          ..._visibleCategories(
+            _categoriesWithLoadedChildren(state.searchCategories),
+          ).map(
+            (cat) => _buildCategoryCard(
+              cat,
+              allCategories:
+                  _categoriesWithLoadedChildren(state.searchCategories),
+            ),
+          ),
           const SizedBox(height: 24),
         ],
         if (state.searchVariants.isNotEmpty) ...[
@@ -821,27 +994,99 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       );
     }
 
+    final categories = _categoriesWithLoadedChildren(state.categories);
+    final visibleCategories = _visibleCategories(categories);
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: state.categories.length,
+      itemCount: visibleCategories.length,
       itemBuilder: (context, index) {
-        return _buildCategoryCard(state.categories[index]);
+        return _buildCategoryCard(
+          visibleCategories[index],
+          allCategories: categories,
+        );
       },
     );
   }
 
-  Widget _buildCategoryCard(CategoryWithCount categoryWithCount) {
+  List<CategoryWithCount> _categoriesWithLoadedChildren(
+      List<CategoryWithCount> categories) {
+    final originalByParent = <int, List<CategoryWithCount>>{};
+    for (final item in categories) {
+      final parentId = item.parentId;
+      if (parentId == null) continue;
+      originalByParent.putIfAbsent(parentId, () => []).add(item);
+    }
+
+    final topLevel = categories.where((item) => item.parentId == null).toList();
+    final result = <CategoryWithCount>[];
+    final addedIds = <int>{};
+
+    void append(CategoryWithCount item) {
+      if (!addedIds.add(item.category.id)) return;
+
+      result.add(item);
+
+      final children = _loadedCategoryChildren[item.category.id] ??
+          originalByParent[item.category.id] ??
+          const <CategoryWithCount>[];
+
+      for (final child in children) {
+        append(child);
+      }
+    }
+
+    for (final item in topLevel) {
+      append(item);
+    }
+
+    for (final item in categories) {
+      append(item);
+    }
+
+    return result;
+  }
+
+  List<CategoryWithCount> _visibleCategories(
+      List<CategoryWithCount> categories) {
+    final byId = {
+      for (final item in categories) item.category.id: item,
+    };
+
+    bool isVisible(CategoryWithCount item) {
+      final parentId = item.parentId;
+      if (parentId == null) return true;
+
+      final parent = byId[parentId];
+      if (parent == null) return true;
+
+      return _expandedCategoryIds.contains(parentId) && isVisible(parent);
+    }
+
+    return categories.where(isVisible).toList();
+  }
+
+  Widget _buildCategoryCard(
+    CategoryWithCount categoryWithCount, {
+    required List<CategoryWithCount> allCategories,
+  }) {
     final category = categoryWithCount.category;
     final level = categoryWithCount.level;
+    final hasChildren =
+        allCategories.any((item) => item.parentId == category.id) ||
+            category.subcategories.isNotEmpty;
+    final isExpanded = _expandedCategoryIds.contains(category.id);
 
     final leftPadding = 16.0 + (level * 24.0);
 
-    return GestureDetector(
-      onTap: () => _onCategoryTap(category.id, category.name),
+    return Material(
+      color: Colors.transparent,
       child: Container(
-        margin:
-            EdgeInsets.only(bottom: 12, left: level > 0 ? leftPadding - 16 : 0),
+        margin: EdgeInsets.only(
+          bottom: 12,
+          left: level > 0 ? leftPadding - 16 : 0,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -852,78 +1097,107 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             width: 1,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              if (level > 0) ...[
-                Container(
-                  width: 3,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff4759FF).withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(12),
                 ),
-                const SizedBox(width: 12),
-              ],
-              Container(
-                width: level > 0 ? 40 : 50,
-                height: level > 0 ? 40 : 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: category.image != null && category.image!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: CachedNetworkImage(
-                          imageUrl:
-                              'https://shamcrm.com/storage/${category.image}',
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Icon(
-                            level > 0
-                                ? Icons.subdirectory_arrow_right
-                                : Icons.category,
-                            color: const Color(0xff4759FF),
-                            size: level > 0 ? 20 : 28,
+                onTap: () => _onCategoryTap(categoryWithCount),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      if (level > 0) ...[
+                        Container(
+                          width: 3,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xff4759FF).withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                      )
-                    : Icon(
-                        level > 0
-                            ? Icons.subdirectory_arrow_right
-                            : Icons.category,
-                        color: const Color(0xff4759FF),
-                        size: level > 0 ? 20 : 28,
+                        const SizedBox(width: 12),
+                      ],
+                      Container(
+                        width: level > 0 ? 40 : 50,
+                        height: level > 0 ? 40 : 50,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffF4F7FD),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: category.image != null &&
+                                category.image!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: CachedNetworkImage(
+                                  imageUrl:
+                                      'https://shamcrm.com/storage/${category.image}',
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => const Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    level > 0
+                                        ? Icons.subdirectory_arrow_right
+                                        : Icons.category,
+                                    color: const Color(0xff4759FF),
+                                    size: level > 0 ? 20 : 28,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                level > 0
+                                    ? Icons.subdirectory_arrow_right
+                                    : Icons.category,
+                                color: const Color(0xff4759FF),
+                                size: level > 0 ? 20 : 28,
+                              ),
                       ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  category.name,
-                  style: TextStyle(
-                    fontSize: level > 0 ? 14 : 16,
-                    fontFamily: 'Gilroy',
-                    fontWeight: level > 0 ? FontWeight.w500 : FontWeight.w600,
-                    color: const Color(0xff1E2E52),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          category.name,
+                          style: TextStyle(
+                            fontSize: level > 0 ? 14 : 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight:
+                                level > 0 ? FontWeight.w500 : FontWeight.w600,
+                            color: const Color(0xff1E2E52),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Color(0xff99A4BA),
-                size: 18,
-              ),
-            ],
-          ),
+            ),
+            if (hasChildren)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: AnimatedRotation(
+                  turns: isExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 160),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xff99A4BA),
+                    size: 18,
+                  ),
+                ),
+                onPressed: () => _toggleCategoryExpansion(category.id),
+              )
+            else
+              const SizedBox(width: 40),
+          ],
         ),
       ),
     );

@@ -11,7 +11,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Биометрия -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
@@ -77,15 +76,6 @@
                 <data android:mimeType="audio/*" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".IncomingCallActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:launchMode="singleTask"
-            android:showOnLockScreen="true"
-            android:turnScreenOn="true"
-            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
 
         <service
             android:name=".NativeSipForegroundService"

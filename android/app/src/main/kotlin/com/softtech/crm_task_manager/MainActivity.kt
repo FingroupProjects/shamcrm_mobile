@@ -1,6 +1,5 @@
 package com.softtech.crm_task_manager
 
-import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -374,12 +373,6 @@ class MainActivity : FlutterFragmentActivity() {
                     val speakerOn = call.argument<Boolean>("speakerOn") ?: false
                     result.success(NativeSipBridge.setSpeaker(speakerOn))
                 }
-                "canUseFullScreenIntent" -> {
-                    result.success(canUseFullScreenIntent())
-                }
-                "requestFullScreenIntentPermission" -> {
-                    result.success(requestFullScreenIntentPermission())
-                }
                 "requestBackgroundReliabilitySettings" -> {
                     result.success(requestBackgroundReliabilitySettings())
                 }
@@ -510,37 +503,6 @@ class MainActivity : FlutterFragmentActivity() {
                 "Failed to open background reliability settings: ${error.message}",
                 error,
             )
-            false
-        }
-    }
-
-    private fun canUseFullScreenIntent(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            return true
-        }
-
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        return notificationManager.canUseFullScreenIntent()
-    }
-
-    private fun requestFullScreenIntentPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
-            canUseFullScreenIntent()
-        ) {
-            return false
-        }
-
-        return try {
-            startActivity(
-                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
-                    data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            )
-            true
-        } catch (error: Throwable) {
-            Log.e("MainActivity", "Failed to open full-screen intent settings", error)
             false
         }
     }

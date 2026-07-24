@@ -40,6 +40,8 @@ class _PinScreenState extends State<PinScreen>
     with SingleTickerProviderStateMixin {
   static const String _sipPinRequiredAfterCallKey =
       'sip_pin_required_after_call_v1';
+  static const Duration _startupStepTimeout = Duration(seconds: 4);
+  static const Duration _startupWatchdogTimeout = Duration(seconds: 10);
 
   String _pin = '';
   bool _isWrongPin = false;
@@ -55,6 +57,7 @@ class _PinScreenState extends State<PinScreen>
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
   final ApiService _apiService = ApiService();
+  Timer? _startupWatchdog;
 
   FirebaseApi? _firebaseApi;
 
@@ -77,6 +80,11 @@ class _PinScreenState extends State<PinScreen>
       }
     });
 
+    _startupWatchdog = Timer(_startupWatchdogTimeout, () {
+      if (!mounted || !_isLoading) return;
+      debugPrint('PinScreen: startup watchdog released loading state');
+      setState(() => _isLoading = false);
+    });
     _initializeMinimal();
   }
 
@@ -89,19 +97,31 @@ class _PinScreenState extends State<PinScreen>
     _isInitialized = true;
 
     try {
+      debugPrint('PinScreen: initialization started');
+
       // ШАГ 1: Проверка обновления (быстро, не блокирует)
       _checkForNewVersionSilently();
 
       // ШАГ 2: Инициализация FirebaseApi
-      await _initializeFirebaseApi();
+      await _initializeFirebaseApi().timeout(_startupStepTimeout);
+      debugPrint('PinScreen: FirebaseApi prepared');
 
       // ШАГ 3: Загрузка базовой информации (из кэша - быстро)
       await _loadUserBasicInfo();
+      debugPrint('PinScreen: basic user info loaded');
 
       // ШАГ 4: Проверка PIN
       await _checkSavedPin();
+      debugPrint('PinScreen: saved PIN checked');
 
-      if (await _shouldBypassPinForActiveSipCall()) {
+      final shouldBypassPin = await _shouldBypassPinForActiveSipCall()
+          .timeout(_startupStepTimeout, onTimeout: () {
+        debugPrint('PinScreen: SIP bypass check timed out');
+        return false;
+      });
+      debugPrint('PinScreen: SIP bypass check completed: $shouldBypassPin');
+
+      if (shouldBypassPin) {
         await _markPinRequiredAfterSipCall();
         if (!mounted) return;
         _navigateToSipCallOnly();
@@ -109,26 +129,23 @@ class _PinScreenState extends State<PinScreen>
       }
 
       // ШАГ 5: Загрузка настройки биометрии
-      await _loadBiometricSetting();
+      await _loadBiometricSetting().timeout(_startupStepTimeout, onTimeout: () {
+        debugPrint('PinScreen: biometric setting load timed out');
+      });
+      debugPrint('PinScreen: biometric setting loaded');
 
       // ШАГ 6: Биометрия (только если включена)
-      await _initBiometrics();
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      await _initBiometrics().timeout(_startupStepTimeout, onTimeout: () {
+        debugPrint('PinScreen: biometric init timed out');
+      });
+      debugPrint('PinScreen: biometric init completed');
     } catch (e) {
+      debugPrint('PinScreen: initialization error: $e');
+    } finally {
+      _startupWatchdog?.cancel();
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog(
-          AppLocalizations.of(context)?.translate('initialization_error') ??
-              'Ошибка инициализации',
-          e.toString(),
-        );
+        setState(() => _isLoading = false);
+        debugPrint('PinScreen: loading finished');
       }
     }
   }
@@ -758,6 +775,7 @@ class _PinScreenState extends State<PinScreen>
 
   @override
   void dispose() {
+    _startupWatchdog?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -771,18 +789,6 @@ class _PinScreenState extends State<PinScreen>
     final localizations = AppLocalizations.of(context);
 
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: PlayStoreImageLoading(
-            size: 80.0,
-            duration: Duration(milliseconds: 1000),
-          ),
-        ),
-      );
-    }
-
-    if (localizations == null) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: Center(
@@ -821,8 +827,8 @@ class _PinScreenState extends State<PinScreen>
               const SizedBox(height: 8),
               Text(
                 _isWrongPin
-                    ? localizations.translate('wrong_pin')
-                    : localizations.translate('enter_pin'),
+                    ? localizations?.translate('wrong_pin') ?? 'Неверный PIN'
+                    : localizations?.translate('enter_pin') ?? 'Введите PIN',
                 style: TextStyle(
                   fontSize: 16,
                   color: _isWrongPin ? Colors.red : Colors.grey,
@@ -875,7 +881,7 @@ class _PinScreenState extends State<PinScreen>
                     TextButton(
                       onPressed: _onExitPressed,
                       child: Text(
-                        localizations.translate('exit'),
+                        localizations?.translate('exit') ?? 'Выйти',
                         style: const TextStyle(
                           fontSize: 16,
                           color: Color.fromARGB(255, 33, 41, 188),
@@ -923,7 +929,7 @@ class _PinScreenState extends State<PinScreen>
                   ));
                 },
                 child: Text(
-                  localizations.translate('forgot_pin'),
+                  localizations?.translate('forgot_pin') ?? 'Забыли PIN?',
                   style:
                       const TextStyle(color: Color.fromARGB(255, 24, 65, 99)),
                 ),

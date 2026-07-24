@@ -196,6 +196,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
           currentFilters: _currentFilters,
+          isTojsokhtmontjTenant: _isTojsokhtmontjTenant,
           initialLabels: _currentFilters['label_id'] != null
               ? List<String>.from(_currentFilters['label_id'])
               : null,
@@ -424,6 +425,12 @@ class _GoodsScreenState extends State<GoodsScreen> {
             availabilityStatus: goods.availabilityStatus,
             characteristicsSummary: goods.characteristicsSummary,
             characteristics: goods.characteristicLabels,
+            orderId: goods.orderId,
+            orderNumber: goods.orderNumber,
+            goodsPrice: double.tryParse(goods.price ?? '') ??
+                goods.discountedPrice ??
+                goods.discountPrice ??
+                0,
           ),
         );
       },
@@ -434,26 +441,35 @@ class _GoodsScreenState extends State<GoodsScreen> {
     return Container(
       color: const Color(0xffF8F9FB),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Container(
-        height: 42,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xffE5E9F2)),
-        ),
-        child: Row(
-          children: [
-            _buildSortHeader('№', 'number', flex: 2),
-            _buildSortHeader('Категория', 'category', flex: 4),
-            _buildSortHeader('Статус', 'status', flex: 3),
-          ],
-        ),
+      child: Column(
+        children: [
+          Container(
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xffE5E9F2)),
+            ),
+            child: Row(
+              children: [
+                _buildSortHeader('№', 'number', flex: 2),
+                _buildSortHeader('Категория', 'category', flex: 4),
+                _buildSortHeader('Статус', 'status', flex: 3),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSortHeader(String title, String field, {required int flex}) {
     final isActive = _tojsokhtmontjSortBy == field;
+    final icon = !isActive
+        ? Icons.unfold_more
+        : _tojsokhtmontjSortDirection == 'asc'
+            ? Icons.arrow_upward
+            : Icons.arrow_downward;
     return Expanded(
       flex: flex,
       child: InkWell(
@@ -477,16 +493,33 @@ class _GoodsScreenState extends State<GoodsScreen> {
             ),
           ),
           child: Center(
-            child: Text(
-              '$title ${isActive ? (_tojsokhtmontjSortDirection == 'asc' ? '↟' : '↡') : '↕'}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                fontFamily: 'Gilroy',
-                color: isActive
-                    ? const Color(0xff4759FF)
-                    : const Color(0xff718096),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                      fontFamily: 'Gilroy',
+                      color: isActive
+                          ? const Color(0xff4759FF)
+                          : const Color(0xff718096),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isActive
+                      ? const Color(0xff4759FF)
+                      : const Color(0xff718096),
+                ),
+              ],
             ),
           ),
         ),

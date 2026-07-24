@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/variant_details_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,6 +47,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   bool _isAutoScrollEnabled = true;
   final PageController _pageController = PageController();
   bool _canUpdateProduct = false;
+  bool _isTojsokhtmontjTenant = false;
 
   @override
   void initState() {
@@ -56,6 +58,22 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         .add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
     _initializeBaseUrl();
     _checkPermissions();
+    _loadTenantFlags();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    try {
+      final isTenant = await _apiService.isTojsokhtmontjTenant();
+      if (!mounted) return;
+      setState(() {
+        _isTojsokhtmontjTenant = isTenant;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isTojsokhtmontjTenant = false;
+      });
+    }
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -268,56 +286,57 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           ),
         ),
       ),
-      actions: widget.showActions &&
-              _canUpdateProduct &&
-              widget.showEditButton // Добавляем проверку showEditButton
-          ? [
-              BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
-                builder: (context, state) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Image.asset('assets/icons/edit.png',
-                            width: 24, height: 24),
-                        onPressed: state is GoodsByIdLoaded
-                            ? () async {
-                                final sortedFiles =
-                                    List<GoodsFile>.from(state.goods.files);
-                                final mainImageIndex = sortedFiles
-                                    .indexWhere((file) => file.isMain);
-                                if (mainImageIndex != -1) {
-                                  final mainImage =
-                                      sortedFiles.removeAt(mainImageIndex);
-                                  sortedFiles.insert(0, mainImage);
-                                }
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => GoodsEditScreen(
-                                      goods: state.goods,
-                                      sortedFiles: sortedFiles,
-                                      initialMainImageIndex:
-                                          mainImageIndex != -1 ? 0 : null,
-                                    ),
-                                  ),
-                                );
-                                if (result == true) {
-                                  context
-                                      .read<GoodsByIdBloc>()
-                                      .add(FetchGoodsById(widget.id));
-                                }
-                              }
-                            : null,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ]
-          : null,
+      actions: [
+        BlocBuilder<GoodsByIdBloc, GoodsByIdState>(
+          builder: (context, state) {
+            final goods = state is GoodsByIdLoaded ? state.goods : null;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.showActions &&
+                    _canUpdateProduct &&
+                    widget.showEditButton)
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Image.asset('assets/icons/edit.png',
+                        width: 24, height: 24),
+                    onPressed: goods != null
+                        ? () async {
+                            final sortedFiles =
+                                List<GoodsFile>.from(goods.files);
+                            final mainImageIndex =
+                                sortedFiles.indexWhere((file) => file.isMain);
+                            if (mainImageIndex != -1) {
+                              final mainImage =
+                                  sortedFiles.removeAt(mainImageIndex);
+                              sortedFiles.insert(0, mainImage);
+                            }
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GoodsEditScreen(
+                                  goods: goods,
+                                  sortedFiles: sortedFiles,
+                                  initialMainImageIndex:
+                                      mainImageIndex != -1 ? 0 : null,
+                                ),
+                              ),
+                            );
+                            if (result == true) {
+                              context
+                                  .read<GoodsByIdBloc>()
+                                  .add(FetchGoodsById(widget.id));
+                            }
+                          }
+                        : null,
+                  ),
+                const SizedBox(width: 8),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -357,7 +376,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           goods.variants!.first.barcode != null &&
           goods.variants!.first.barcode!.isNotEmpty)
         {
-          'label': AppLocalizations.of(context)!.translate('barcode') ?? 'Штрих код',
+          'label':
+              AppLocalizations.of(context)!.translate('barcode') ?? 'Штрих код',
           'value': goods.variants!.first.barcode!
         },
       if (goods.productionType != null && goods.productionType!.isNotEmpty)
@@ -457,12 +477,65 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             ),
           ),
         const SizedBox(height: 16),
-        _buildGoodsRelationsSection(goods),
-        if (goods.variants != null && 
+        _buildCreateOrderButton(goods),
+        // Toj Sokhtmon does not use raw-material/related-goods blocks in product details.
+        if (!_isTojsokhtmontjTenant) _buildGoodsRelationsSection(goods),
+        if (goods.variants != null &&
             goods.variants!.isNotEmpty &&
-            !(goods.variants!.length == 1 && goods.variants!.first.attributeValues.isEmpty))
+            !(goods.variants!.length == 1 &&
+                goods.variants!.first.attributeValues.isEmpty))
           _buildVariantsSection(goods),
       ],
+    );
+  }
+
+  bool _canCreateTojsokhtmontjOrder(Goods goods) {
+    if (!_isTojsokhtmontjTenant) return false;
+    final normalized = (goods.availabilityStatus ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('ё', 'е');
+    if (normalized.isEmpty) {
+      return goods.orderId == null;
+    }
+    return normalized.contains('свобод');
+  }
+
+  Widget _buildCreateOrderButton(Goods goods) {
+    if (!_canCreateTojsokhtmontjOrder(goods)) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: CustomButton(
+        buttonText: 'Создать заказ',
+        onPressed: () => _navigateToCreateOrder(goods),
+        buttonColor: const Color(0xff1D2D51),
+        textColor: Colors.white,
+      ),
+    );
+  }
+
+  double _goodsOrderPrice(Goods goods) {
+    return double.tryParse(goods.price ?? '') ??
+        goods.discountedPrice ??
+        goods.discountPrice ??
+        0;
+  }
+
+  void _navigateToCreateOrder(Goods goods) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderAddScreen(
+          initialGoodsItem: {
+            'id': goods.id,
+            'name': goods.name,
+            'price': _goodsOrderPrice(goods),
+            'quantity': 1,
+            'imagePath': goods.files.isNotEmpty ? goods.files.first.path : null,
+          },
+        ),
+      ),
     );
   }
 
@@ -545,7 +618,8 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               title: item.displayName,
               icon: Icons.link_outlined,
               meta: [
-                if (item.price != null) 'Цена: ${_formatRelationPrice(item.price!)}',
+                if (item.price != null)
+                  'Цена: ${_formatRelationPrice(item.price!)}',
               ],
               badgeText: item.isRequired ? 'Обязательный' : 'Необязательный',
               badgeColor: item.isRequired

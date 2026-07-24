@@ -58,6 +58,55 @@ class CallLogEntry {
       }
     }
 
+    String pickOptionalString(List<Object?> values) {
+      for (final value in values) {
+        final text = value?.toString().trim() ?? '';
+        if (text.isNotEmpty &&
+            text.toLowerCase() != 'null' &&
+            text != 'Неизвестно') {
+          return text;
+        }
+      }
+      return '';
+    }
+
+    String pickString(List<Object?> values) {
+      final value = pickOptionalString(values);
+      return value.isEmpty ? 'Неизвестно' : value;
+    }
+
+    String leadPhone() {
+      if (lead == null) return '';
+      return pickOptionalString([
+        lead['phone'],
+        lead['phone_number'],
+        lead['wa_phone'],
+        lead['whatsapp'],
+        lead['telegram'],
+      ]);
+    }
+
+    final phoneNumber = isIncoming
+        ? pickString([
+            json['caller'],
+            json['from'],
+            json['client_phone'],
+            json['phone_number'],
+            json['phone'],
+            leadPhone(),
+            json['destination_number'],
+          ])
+        : pickString([
+            json['destination_number'],
+            json['callee'],
+            json['to'],
+            json['client_phone'],
+            json['phone_number'],
+            json['phone'],
+            leadPhone(),
+            json['caller'],
+          ]);
+
     // Логика выбора даты
     DateTime callDate;
     if (json['call_started_at'] != null) {
@@ -75,7 +124,7 @@ class CallLogEntry {
           : int.tryParse(lead?['id']?.toString() ?? ''),
       leadName:
           lead != null && lead['name'] != null ? lead['name'] : 'Неизвестно',
-      phoneNumber: json['caller'] ?? json['destination_number'] ?? 'Неизвестно',
+      phoneNumber: phoneNumber,
       callDate: callDate,
       callType: callType,
       duration: json['call_duration'] != null

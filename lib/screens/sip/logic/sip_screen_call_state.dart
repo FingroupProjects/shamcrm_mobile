@@ -83,12 +83,20 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     switch (status) {
       case SipCallUiStatus.incoming:
         _stopCallDurationTicker();
-        unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
+        if (_shouldPlayFlutterCallFeedback) {
+          unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
+        } else {
+          unawaited(_stopFeedbackLoop());
+        }
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopCallDurationTicker();
-        unawaited(_playOperatorThenBeep());
+        if (_shouldPlayFlutterCallFeedback) {
+          unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
+        } else {
+          unawaited(_stopFeedbackLoop());
+        }
         break;
       case SipCallUiStatus.inCall:
         _startCallDurationTicker();
@@ -102,6 +110,9 @@ extension _SipScreenCallStateExtension on _SipScreenState {
         break;
     }
   }
+
+  bool get _shouldPlayFlutterCallFeedback =>
+      defaultTargetPlatform != TargetPlatform.android;
 
   void _syncSipNotifications(SipUiState state) {
     _syncRegistrationNotifications(state);
@@ -212,13 +223,13 @@ extension _SipScreenCallStateExtension on _SipScreenState {
 
     if (_isRegistrationServerUnavailableMessage(message)) {
       return (
-        'SIP сервер не отвечает. Проверьте интернет, адрес сервера и порт',
+        'Сервер телефонии не отвечает. Проверьте интернет, адрес сервера и порт',
         true
       );
     }
 
     if (message == null || message.isEmpty) {
-      return ('Не удалось подключиться к SIP серверу', true);
+      return ('Не удалось подключиться к серверу телефонии', true);
     }
 
     return (message, true);
@@ -254,28 +265,6 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     }
 
     return null;
-  }
-
-  Future<void> _playOperatorThenBeep() async {
-    if (_activeFeedbackAsset == _SipScreenState._operatorConnectingAsset) {
-      return;
-    }
-    _activeFeedbackAsset = _SipScreenState._operatorConnectingAsset;
-
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = _callFeedbackPlayer.onPlayerComplete.listen((_) {
-        if (_activeFeedbackAsset != _SipScreenState._operatorConnectingAsset) {
-          return;
-        }
-        unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
-      });
-
-      await _callFeedbackPlayer.stop();
-      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.stop);
-      await _callFeedbackPlayer
-          .play(AssetSource(_SipScreenState._operatorConnectingAsset));
-    } catch (_) {}
   }
 
   Future<void> _playFeedbackLoop(String assetPath) async {
@@ -448,7 +437,7 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     if (value.contains('@')) {
       value = value.split('@').first;
     }
-    return value;
+    return _restoreTajikPlusForDisplay(value);
   }
 
   String _callHint(SipUiState state) {
@@ -512,4 +501,23 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   Color _callGlassBorder(bool isDark) {
     return isDark ? _G.glassBorder : const Color(0xFFE1EAF6);
   }
+}
+
+String _restoreTajikPlusForDisplay(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty || trimmed.startsWith('+')) {
+    return trimmed;
+  }
+
+  final phoneFormattedOnly = RegExp(r'^[0-9\s().-]+$').hasMatch(trimmed);
+  if (!phoneFormattedOnly) {
+    return trimmed;
+  }
+
+  final digits = trimmed.replaceAll(RegExp(r'[\s().-]'), '');
+  if (RegExp(r'^992\d{9}$').hasMatch(digits)) {
+    return '+$digits';
+  }
+
+  return trimmed;
 }

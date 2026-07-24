@@ -6,6 +6,7 @@ import '../../../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/goods_card.dart';
 import '../details/goods_storages_details.dart';
+import '../widgets/pinned_report_total.dart';
 
 class GoodsContent extends StatefulWidget {
   const GoodsContent({super.key});
@@ -37,8 +38,8 @@ class _GoodsContentState extends State<GoodsContent> {
       if (state is SalesDashboardGoodsLoaded && !state.hasReachedMax) {
         setState(() => _isLoadingMore = true);
         context.read<SalesDashboardGoodsBloc>().add(
-          LoadGoodsReport(page: state.pagination.current_page + 1),
-        );
+              LoadGoodsReport(page: state.pagination.current_page + 1),
+            );
       }
     }
   }
@@ -51,11 +52,24 @@ class _GoodsContentState extends State<GoodsContent> {
   }
 
   Future<void> _onRefresh() async {
-    context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport(page: 1));
+    final state = context.read<SalesDashboardGoodsBloc>().state;
+    final filter = state is SalesDashboardGoodsLoaded ? state.filter : null;
+    final search = state is SalesDashboardGoodsLoaded ? state.search : null;
+
+    context.read<SalesDashboardGoodsBloc>().add(
+          LoadGoodsReport(
+            page: 1,
+            filter: filter,
+            search: search,
+          ),
+        );
     // Wait for the bloc to emit a new state
     await context.read<SalesDashboardGoodsBloc>().stream.firstWhere(
-          (state) => state is! SalesDashboardGoodsLoading || state is SalesDashboardGoodsLoaded || state is SalesDashboardGoodsError,
-    );
+          (state) =>
+              state is! SalesDashboardGoodsLoading ||
+              state is SalesDashboardGoodsLoaded ||
+              state is SalesDashboardGoodsError,
+        );
   }
 
   Widget _buildGoodsList(List<DashboardGoods> goods, bool hasReachedMax) {
@@ -72,13 +86,13 @@ class _GoodsContentState extends State<GoodsContent> {
           if (index >= goods.length) {
             return _isLoadingMore
                 ? Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xff1E2E52),
-                ),
-              ),
-            )
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xff1E2E52),
+                      ),
+                    ),
+                  )
                 : const SizedBox.shrink();
           }
 
@@ -92,9 +106,25 @@ class _GoodsContentState extends State<GoodsContent> {
     );
   }
 
+  Widget _buildContentWithTotal({
+    required Widget child,
+    required String totalSum,
+  }) {
+    return Column(
+      children: [
+        Expanded(child: child),
+        _buildPinnedTotal(totalSum),
+      ],
+    );
+  }
+
+  Widget _buildPinnedTotal(String totalSum) {
+    return PinnedReportTotal(total: totalSum);
+  }
+
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -132,7 +162,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -156,7 +186,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView(
@@ -209,13 +239,16 @@ class _GoodsContentState extends State<GoodsContent> {
                       SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<SalesDashboardGoodsBloc>().add(const LoadGoodsReport());
+                          context
+                              .read<SalesDashboardGoodsBloc>()
+                              .add(const LoadGoodsReport());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xff1E2E52),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -264,10 +297,12 @@ class _GoodsContentState extends State<GoodsContent> {
         } else if (state is SalesDashboardGoodsError) {
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardGoodsLoaded) {
-          if (state.goods.isEmpty) {
-            return _buildEmptyState();
-          }
-          return _buildGoodsList(state.goods, state.hasReachedMax);
+          return _buildContentWithTotal(
+            totalSum: state.totalSum,
+            child: state.goods.isEmpty
+                ? _buildEmptyState()
+                : _buildGoodsList(state.goods, state.hasReachedMax),
+          );
         }
 
         return _buildEmptyState();

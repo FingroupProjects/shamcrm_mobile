@@ -54,12 +54,32 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 
+class _PassportSeriesNumberFormatter extends TextInputFormatter {
+  static const String prefix = 'А';
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final formatted =
+        '$prefix${digits.length > 9 ? digits.substring(0, 9) : digits}';
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 class OrderAddScreen extends StatefulWidget {
   final Order? order;
   final int? organizationId;
   final int? leadId;
   final int? dealId;
   final String? clientPhone; // Телефон клиента для автозаполнения
+  final Map<String, dynamic>? initialGoodsItem;
 
   const OrderAddScreen(
       {this.order,
@@ -67,6 +87,7 @@ class OrderAddScreen extends StatefulWidget {
       this.leadId,
       this.dealId,
       this.clientPhone,
+      this.initialGoodsItem,
       super.key});
 
   @override
@@ -186,6 +207,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               updatedAt: '',
             )
           : null;
+    } else {
+      _initializeInitialGoodsItem();
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -202,6 +225,25 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         debugPrint('OrderAddScreen: Auto-filled phone: $selectedDialCode');
       }
     });
+  }
+
+  void _initializeInitialGoodsItem() {
+    final item = widget.initialGoodsItem;
+    if (item == null) return;
+
+    _items = [
+      {
+        'id': item['id'],
+        'name': item['name'] ?? '',
+        'price': (item['price'] as num?)?.toDouble() ??
+            double.tryParse('${item['price']}') ??
+            0.0,
+        'quantity': (item['quantity'] as num?)?.toInt() ??
+            int.tryParse('${item['quantity']}') ??
+            1,
+        'imagePath': item['imagePath'],
+      }
+    ];
   }
 
   Future<void> _loadTenantFlags() async {
@@ -385,6 +427,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     return normalized == 'инн' || normalized == 'inn';
   }
 
+  bool _isPassportSeriesNumberFieldName(String fieldName) {
+    final normalized = fieldName.trim().toLowerCase().replaceAll('ё', 'е');
+    return normalized == 'паспорт (серия и номер)' ||
+        normalized == 'паспорт серия и номер';
+  }
+
   String _normalizeTojsokhtmontjFieldName(String value) {
     return value.trim().toLowerCase().replaceAll('ё', 'е');
   }
@@ -401,6 +449,20 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       'срок рассрочки',
       'сумма рассрочки',
       'ежемесячная оплата',
+    }.contains(normalized);
+  }
+
+  bool _isTojsokhtmontjMixedPaymentField(String fieldName) {
+    final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
+    return <String>{
+      'имущество 1',
+      'имущества 1',
+      'характеристика 1',
+      'сумма 1',
+      'имущество 2',
+      'имущества 2',
+      'характеристика 2',
+      'сумма 2',
     }.contains(normalized);
   }
 
@@ -562,6 +624,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     return false;
   }
 
+  bool _shouldHideTojsokhtmontjMixedPaymentFields() {
+    if (!_isTojsokhtmontjTenant) return false;
+
+    for (final field in customFields) {
+      if (_isTojsokhtmontjDealTypeField(field.fieldName)) {
+        return _normalizeTojsokhtmontjFieldName(field.controller.text) !=
+            'смешанные';
+      }
+    }
+    return true;
+  }
+
   String? _validateTojsokhtmontjInn(String? value) {
     if (!_isTojsokhtmontjTenant) return null;
 
@@ -571,6 +645,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
     if (!RegExp(r'^\d{9}$').hasMatch(trimmed)) {
       return 'ИНН должен содержать ровно 9 цифр';
+    }
+    return null;
+  }
+
+  String? _validatePassportSeriesNumber(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty || trimmed == _PassportSeriesNumberFormatter.prefix) {
+      return AppLocalizations.of(context)!.translate('field_required');
+    }
+    if (!RegExp(r'^А\d{9}$').hasMatch(trimmed)) {
+      return 'Паспорт должен быть в формате А123456789';
     }
     return null;
   }
@@ -897,14 +982,27 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       return null;
     }
 
+    if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
+        _isTojsokhtmontjMixedPaymentField(config.fieldName)) {
+      return null;
+    }
+
     if (config.isCustomField) {
       final customField = _getOrCreateCustomField(config);
       final isTojsokhtmontjInnField =
           _isTojsokhtmontjTenant && _isInnFieldName(config.fieldName);
+      final isPassportSeriesNumberField =
+          _isPassportSeriesNumberFieldName(config.fieldName);
       final isTojsokhtmontjEditableCalculationSource = _isTojsokhtmontjTenant &&
           _isTojsokhtmontjEditableCalculationSource(config.fieldName);
       final isTojsokhtmontjReadOnlyCalculatedField = _isTojsokhtmontjTenant &&
           _isTojsokhtmontjReadOnlyCalculatedField(config.fieldName);
+      if (isPassportSeriesNumberField && customField.controller.text.isEmpty) {
+        customField.controller.text = _PassportSeriesNumberFormatter.prefix;
+        customField.controller.selection = TextSelection.collapsed(
+          offset: customField.controller.text.length,
+        );
+      }
       if (isTojsokhtmontjReadOnlyCalculatedField) {
         _recalculateTojsokhtmontjApartmentFields();
       }
@@ -917,27 +1015,43 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             ? 'number'
             : config.type,
         isDirectory: false,
-        keyboardTypeOverride: (isTojsokhtmontjInnField ||
-                isTojsokhtmontjEditableCalculationSource)
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : null,
-        inputFormattersOverride: isTojsokhtmontjInnField
+        keyboardTypeOverride:
+            (isPassportSeriesNumberField || isTojsokhtmontjInnField)
+                ? TextInputType.number
+                : isTojsokhtmontjEditableCalculationSource
+                    ? const TextInputType.numberWithOptions(decimal: true)
+                    : null,
+        inputFormattersOverride: isPassportSeriesNumberField
             ? [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(9),
+                _PassportSeriesNumberFormatter(),
               ]
-            : isTojsokhtmontjEditableCalculationSource
+            : isTojsokhtmontjInnField
                 ? [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'[0-9,.]'),
-                    ),
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(9),
                   ]
+                : isTojsokhtmontjEditableCalculationSource
+                    ? [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[0-9,.]'),
+                        ),
+                      ]
+                    : null,
+        maxLength: isPassportSeriesNumberField
+            ? 10
+            : isTojsokhtmontjInnField
+                ? 9
                 : null,
-        maxLength: isTojsokhtmontjInnField ? 9 : null,
-        validator: isTojsokhtmontjInnField ? _validateTojsokhtmontjInn : null,
-        showBorder: isTojsokhtmontjInnField,
+        validator: isPassportSeriesNumberField
+            ? _validatePassportSeriesNumber
+            : isTojsokhtmontjInnField
+                ? _validateTojsokhtmontjInn
+                : null,
+        showBorder: isPassportSeriesNumberField || isTojsokhtmontjInnField,
         autovalidateMode:
-            isTojsokhtmontjInnField ? AutovalidateMode.onUserInteraction : null,
+            (isPassportSeriesNumberField || isTojsokhtmontjInnField)
+                ? AutovalidateMode.onUserInteraction
+                : null,
         readOnlyOverride: isTojsokhtmontjReadOnlyCalculatedField,
         onChanged: isTojsokhtmontjEditableCalculationSource
             ? (_) {
@@ -2014,6 +2128,12 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   void _navigateToAddProduct() async {
+    int itemQuantityAsInt(Map<String, dynamic> item) {
+      final quantity = item['quantity'];
+      if (quantity is num) return quantity.toInt();
+      return int.tryParse('$quantity') ?? 1;
+    }
+
     final Order tempOrder = widget.order ??
         Order(
           id: 0,
@@ -2030,29 +2150,30 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             phone: selectedDialCode ?? _phoneController.text,
           ),
           orderStatus: OrderStatusName(id: 0, name: ''),
-          goods: _items
-              .map((item) => Good(
-                    good: GoodItem(
-                      id: item['id'],
-                      name: item['name'],
-                      description: '',
-                      quantity: item['quantity'],
-                      files: item['imagePath'] != null
-                          ? [
-                              GoodFile(
-                                id: 0,
-                                name: '',
-                                path: item['imagePath'],
-                              )
-                            ]
-                          : [],
-                    ),
-                    goodId: item['id'],
-                    goodName: item['name'],
-                    price: item['price'],
-                    quantity: item['quantity'],
-                  ))
-              .toList(),
+          goods: _items.map((item) {
+            final quantity = itemQuantityAsInt(item);
+            return Good(
+              good: GoodItem(
+                id: item['id'],
+                name: item['name'],
+                description: '',
+                quantity: quantity,
+                files: item['imagePath'] != null
+                    ? [
+                        GoodFile(
+                          id: 0,
+                          name: '',
+                          path: item['imagePath'],
+                        )
+                      ]
+                    : [],
+              ),
+              goodId: item['id'],
+              goodName: item['name'],
+              price: item['price'],
+              quantity: quantity,
+            );
+          }).toList(),
           organizationId: widget.organizationId,
         );
 
@@ -3242,6 +3363,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
                   if (_shouldHideTojsokhtmontjInstallmentFields() &&
                       _isTojsokhtmontjInstallmentField(fieldName)) {
+                    continue;
+                  }
+
+                  if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
+                      _isTojsokhtmontjMixedPaymentField(fieldName)) {
                     continue;
                   }
 

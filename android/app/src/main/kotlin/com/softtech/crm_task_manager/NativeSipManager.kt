@@ -122,13 +122,13 @@ class NativeSipManager(
             sipCore.setDefaultAccount(account)
             currentAccount = account
 
-            emitRegistration("registering", "Starting native SIP registration")
+            emitRegistration("registering", "Подключение телефонии")
             sipCore.start()
             Log.d(TAG, "register invoked core.start()")
             true
         } catch (error: Throwable) {
             Log.e(TAG, "register failed: ${error.message}", error)
-            emitRegistration("failed", error.message ?: "Native SIP registration failed")
+            emitRegistration("failed", error.message ?: "Не удалось подключить телефонию")
             false
         }
     }
@@ -150,7 +150,7 @@ class NativeSipManager(
         } catch (_: Throwable) {
         }
 
-        emitRegistration("disconnected", "Native SIP disconnected")
+        emitRegistration("disconnected", "Телефония отключена")
         emitCallState("ended", null, "Call ended")
     }
 
@@ -194,15 +194,15 @@ class NativeSipManager(
             currentCall = call
 
             if (call == null) {
-                emitCallState("failed", target, "Failed to start native SIP call")
+                emitCallState("failed", target, "Не удалось начать звонок через телефонию")
                 false
             } else {
-                emitCallState("calling", remoteIdentityFor(call), "Native SIP call started")
+                emitCallState("calling", remoteIdentityFor(call), "Звонок начат")
                 true
             }
         } catch (error: Throwable) {
             Log.e(TAG, "makeCall failed: ${error.message}", error)
-            emitCallState("failed", target, error.message ?: "Native SIP call failed")
+            emitCallState("failed", target, error.message ?: "Не удалось выполнить звонок")
             false
         }
     }
@@ -222,6 +222,15 @@ class NativeSipManager(
             params.setMicEnabled(true)
             params.setMediaEncryption(MediaEncryption.None)
             call.acceptWithParams(params)
+            currentCall = call
+            lastCallState = "in_call"
+            emitCallState(
+                state = "in_call",
+                remoteIdentity = remoteIdentityFor(call),
+                message = "Call accepted",
+                muted = call.getMicrophoneMuted(),
+                speakerOn = isSpeakerOn,
+            )
             true
         } catch (error: Throwable) {
             Log.e(TAG, "acceptCall failed: ${error.message}", error)
@@ -409,7 +418,9 @@ class NativeSipManager(
         createdCore.setMediaEncryption(MediaEncryption.None)
         createdCore.setMediaEncryptionMandatory(false)
         createdCore.setNativeRingingEnabled(false)
-        createdCore.disableCallRinging(false)
+        // Incoming ringtone is owned by NativeSipForegroundService.
+        // Keeping Linphone ringing enabled creates a second simultaneous melody.
+        createdCore.disableCallRinging(true)
         markNetworkReachable(createdCore)
 
         val natPolicy = createdCore.createNatPolicy()
@@ -432,7 +443,7 @@ class NativeSipManager(
                     else -> mapRegistrationState(rawState)
                 }
                 val effectiveMessage = when {
-                    rawState == "Cleared" && desiredRegistrationEnabled -> "Refreshing SIP registration"
+                    rawState == "Cleared" && desiredRegistrationEnabled -> "Обновляем подключение телефонии"
                     else -> message.ifEmpty { mappedState }
                 }
                 Log.d(

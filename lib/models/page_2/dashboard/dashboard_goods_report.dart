@@ -18,7 +18,20 @@ class ResultDashboardGoodsReport {
             ),
           )
           .toList(),
-      pagination: Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
+      pagination:
+          Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class DashboardGoodsReportTotal {
+  final String totalSum;
+
+  DashboardGoodsReportTotal({required this.totalSum});
+
+  factory DashboardGoodsReportTotal.fromJson(Map<String, dynamic> json) {
+    return DashboardGoodsReportTotal(
+      totalSum: parseNumberToString(json['total_sum'], nullValue: '0'),
     );
   }
 }

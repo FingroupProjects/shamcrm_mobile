@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' hide TextDirection;
+import 'dart:ui' as ui show TextDirection;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -86,7 +87,6 @@ class _SipScreenState extends State<SipScreen>
   final ScrollController _contactsListController = ScrollController();
   final ScrollController _journalListController = ScrollController();
 
-  static const String _operatorConnectingAsset = 'audio/operator_1.mp3';
   static const String _connectingBeepAsset = 'audio/get.mp3';
 
   SipTransportUi _selectedTransport = SipTransportUi.ws;
@@ -121,6 +121,7 @@ class _SipScreenState extends State<SipScreen>
   Timer? _journalSearchDebounce;
   bool _suspendDraftAutosave = false;
   bool _isDialPanelCollapsed = false;
+  bool _isDialActionsSheetVisible = false;
   String _contactsViewQuery = '';
   _SipContactsTabSource _contactsTabSource = _SipContactsTabSource.contacts;
   String _searchViewQuery = '';

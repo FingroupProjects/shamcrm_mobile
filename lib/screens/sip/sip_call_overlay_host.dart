@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,6 +25,25 @@ class SipCallOverlayHost extends StatefulWidget {
   State<SipCallOverlayHost> createState() => _SipCallOverlayHostState();
 }
 
+String _restoreTajikPlusForDisplay(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty || trimmed.startsWith('+')) {
+    return trimmed;
+  }
+
+  final phoneFormattedOnly = RegExp(r'^[0-9\s().-]+$').hasMatch(trimmed);
+  if (!phoneFormattedOnly) {
+    return trimmed;
+  }
+
+  final digits = trimmed.replaceAll(RegExp(r'[\s().-]'), '');
+  if (RegExp(r'^992\d{9}$').hasMatch(digits)) {
+    return '+$digits';
+  }
+
+  return trimmed;
+}
+
 class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     with SingleTickerProviderStateMixin {
   static const String _sipPinRequiredAfterCallKey =
@@ -32,7 +52,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   final SipService _sipService = SipService();
   final AudioPlayer _overlayPlayer = AudioPlayer();
 
-  static const String _operatorConnectingAsset = 'audio/operator_1.mp3';
   static const String _connectingBeepAsset = 'audio/get.mp3';
 
   late final AnimationController _pulseController;
@@ -112,12 +131,20 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     switch (state.callStatus) {
       case SipCallUiStatus.incoming:
         _stopDurationTicker();
-        unawaited(_playFeedbackLoop(_connectingBeepAsset));
+        if (_shouldPlayFlutterCallFeedback) {
+          unawaited(_playFeedbackLoop(_connectingBeepAsset));
+        } else {
+          unawaited(_stopFeedbackLoop());
+        }
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopDurationTicker();
-        unawaited(_playOperatorThenBeep());
+        if (_shouldPlayFlutterCallFeedback) {
+          unawaited(_playFeedbackLoop(_connectingBeepAsset));
+        } else {
+          unawaited(_stopFeedbackLoop());
+        }
         break;
       case SipCallUiStatus.inCall:
         _startDurationTicker();
@@ -132,22 +159,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     }
   }
 
-  Future<void> _playOperatorThenBeep() async {
-    if (_activeFeedbackAsset == _operatorConnectingAsset) return;
-    _activeFeedbackAsset = _operatorConnectingAsset;
-
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = _overlayPlayer.onPlayerComplete.listen((_) {
-        if (_activeFeedbackAsset != _operatorConnectingAsset) return;
-        unawaited(_playFeedbackLoop(_connectingBeepAsset));
-      });
-
-      await _overlayPlayer.stop();
-      await _overlayPlayer.setReleaseMode(ReleaseMode.stop);
-      await _overlayPlayer.play(AssetSource(_operatorConnectingAsset));
-    } catch (_) {}
-  }
+  bool get _shouldPlayFlutterCallFeedback =>
+      defaultTargetPlatform != TargetPlatform.android;
 
   Future<void> _playFeedbackLoop(String assetPath) async {
     if (_activeFeedbackAsset == assetPath) return;
@@ -205,7 +218,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     if (normalized.contains('@')) {
       normalized = normalized.split('@').first;
     }
-    return normalized.isEmpty ? 'Неизвестный номер' : normalized;
+    return normalized.isEmpty
+        ? 'Неизвестный номер'
+        : _restoreTajikPlusForDisplay(normalized);
   }
 
   String _callLabel(SipCallUiStatus status) {

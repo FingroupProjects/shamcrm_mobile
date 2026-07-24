@@ -210,6 +210,8 @@ class Goods {
   final List<RelatedGood>? relatedGoods;
   final String? availabilityStatus;
   final int? sortOrder;
+  final int? orderId;
+  final String? orderNumber;
 
   Goods({
     required this.id,
@@ -244,6 +246,8 @@ class Goods {
     this.relatedGoods,
     this.availabilityStatus,
     this.sortOrder,
+    this.orderId,
+    this.orderNumber,
   });
 
   factory Goods.fromJson(Map<String, dynamic> json) {
@@ -380,6 +384,20 @@ class Goods {
         return null;
       }
 
+      int? parseInt(dynamic value) {
+        if (value == null) return null;
+        if (value is int) return value;
+        if (value is num) return value.toInt();
+        if (value is String) return int.tryParse(value.trim());
+        return null;
+      }
+
+      String? parseString(dynamic value) {
+        if (value == null) return null;
+        final text = value.toString().trim();
+        return text.isEmpty ? null : text;
+      }
+
       final availabilityStatus = parseStatus(data['status']) ??
           parseStatus(json['status']) ??
           parseStatus(data['status_name']) ??
@@ -463,6 +481,9 @@ class Goods {
             parseSortOrder(json['sort_order']) ??
             parseSortOrder(data['order']) ??
             parseSortOrder(json['order']),
+        orderId: parseInt(data['order_id']) ?? parseInt(json['order_id']),
+        orderNumber: parseString(data['order_number']) ??
+            parseString(json['order_number']),
       );
     } catch (e, stackTrace) {
       //print('GoodsModel: Ошибка парсинга товара: $e');
