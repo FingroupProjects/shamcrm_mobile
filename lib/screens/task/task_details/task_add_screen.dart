@@ -43,8 +43,15 @@ import '../../../page_2/warehouse/openings/cash_register/cash_register_content.d
 
 class TaskAddScreen extends StatefulWidget {
   final int statusId;
+  final int? initialProjectId;
+  final bool lockProject;
 
-  const TaskAddScreen({Key? key, required this.statusId}) : super(key: key);
+  const TaskAddScreen({
+    Key? key,
+    required this.statusId,
+    this.initialProjectId,
+    this.lockProject = false,
+  }) : super(key: key);
 
   @override
   _TaskAddScreenState createState() => _TaskAddScreenState();
@@ -104,6 +111,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
     selectedStatus = widget.statusId.toString();
+    if (widget.initialProjectId != null) {
+      selectedProject = widget.initialProjectId.toString();
+    }
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -280,6 +290,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         }
 
       case 'project':
+        if (widget.lockProject && widget.initialProjectId != null) {
+          return const SizedBox.shrink();
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

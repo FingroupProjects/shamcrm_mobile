@@ -268,19 +268,6 @@ class SipService extends ChangeNotifier
           'SipService.initialize native snapshot skipped: bridge unavailable',
         );
       }
-      unawaited(_syncCurrentIosVoipPushTokenIfAvailable()
-          .timeout(_iosVoipTokenSyncTimeout)
-          .catchError((error, stackTrace) {
-        debugPrint('SipService iOS VoIP token sync skipped: $error');
-      }));
-      if (Platform.isIOS) {
-        unawaited(_apiService
-            .sendPendingVoipTokenIfNeeded()
-            .timeout(_iosVoipTokenSyncTimeout)
-            .catchError((error, stackTrace) {
-          debugPrint('SipService pending VoIP token sync skipped: $error');
-        }));
-      }
       _startConnectivityMonitoring();
       _startRegistrationWatchdog();
       _configLoaded = true;
@@ -811,24 +798,6 @@ class SipService extends ChangeNotifier
         false;
   }
 
-  Future<void> _syncCurrentIosVoipPushTokenIfAvailable({
-    bool force = false,
-  }) async {
-    if (!Platform.isIOS) {
-      return;
-    }
-
-    final token = await getVoipPushToken();
-    if (token == null || token.trim().isEmpty) {
-      debugPrint(
-        'SipService: iOS VoIP token is not available yet, backend sync skipped',
-      );
-      return;
-    }
-
-    await _syncIosVoipPushTokenWithBackend(token, force: force);
-  }
-
   Future<void> _restoreNativeRegistrationIfNeeded(String reason) async {
     if (!await _ensureNativeSipBridgeInitialized()) {
       return;
@@ -1278,8 +1247,9 @@ class SipService extends ChangeNotifier
     await _storage.write(key: _enabledKey, value: 'true');
     unawaited(_syncIncomingCallPushPreference(true));
     if (Platform.isIOS) {
-      unawaited(_syncCurrentIosVoipPushTokenIfAvailable(force: true));
-      unawaited(_apiService.sendPendingVoipTokenIfNeeded());
+      // VoIP token belongs to an active SIP connection. Do not register it
+      // merely because the app started or SipService was initialized.
+      unawaited(_syncVoipTokenAfterSipConnect());
     }
     _logSipConfig('connect');
     await _startSipRegistration();
@@ -1385,6 +1355,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'false');
     unawaited(_syncIncomingCallPushPreference(false));
+    unawaited(_apiService.clearPendingVoipToken());
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1423,6 +1394,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
     unawaited(_syncIncomingCallPushPreference(false));
+    unawaited(_apiService.clearPendingVoipToken());
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1932,7 +1904,37 @@ class SipService extends ChangeNotifier
       'SipService native push token event -> provider=${payload['provider']}, token=${normalizedToken.length > 20 ? '${normalizedToken.substring(0, 20)}...' : normalizedToken}',
     );
     unawaited(_storage.write(key: _voipPushTokenKey, value: normalizedToken));
-    unawaited(_syncIosVoipPushTokenWithBackend(normalizedToken));
+    // PushKit can issue a token even for users who never enabled SIP. Keep it
+    // locally and sync it only after the user explicitly connects SIP.
+    if (_shouldStayConnected && _sipEnabled) {
+      unawaited(_syncIosVoipPushTokenWithBackend(normalizedToken));
+    }
+  }
+
+  Future<void> _syncVoipTokenAfterSipConnect() async {
+    if (!Platform.isIOS || !_shouldStayConnected || !_sipEnabled) {
+      return;
+    }
+
+    try {
+      final token = await getVoipPushToken();
+      if (token != null && token.trim().isNotEmpty) {
+        await _syncIosVoipPushTokenWithBackend(token, force: true)
+            .timeout(_iosVoipTokenSyncTimeout);
+      } else {
+        // This covers a token that was received before authorization or while
+        // the backend was unavailable. Do not send an old pending token when
+        // a newer current token is already available.
+        await _apiService
+            .sendPendingVoipTokenIfNeeded()
+            .timeout(_iosVoipTokenSyncTimeout);
+      }
+    } catch (error) {
+      // sendVoipToken keeps the token pending; it will be retried on the next
+      // explicit SIP connect, never during ordinary app startup.
+      debugPrint(
+          'SipService VoIP token sync after SIP connect skipped: $error');
+    }
   }
 
   void _handleNativePushTokenInvalidatedEvent() {
@@ -2761,10 +2763,6 @@ class SipService extends ChangeNotifier
         _persistentSipEnabled = true;
         _shouldStayConnected = true;
         unawaited(_storage.write(key: _enabledKey, value: 'true'));
-        if (Platform.isIOS) {
-          unawaited(_syncCurrentIosVoipPushTokenIfAvailable());
-          unawaited(_apiService.sendPendingVoipTokenIfNeeded());
-        }
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,
@@ -3773,9 +3771,6 @@ class SipService extends ChangeNotifier
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_shouldStayConnected) return;
     if (state == AppLifecycleState.resumed) {
-      if (Platform.isIOS) {
-        unawaited(_apiService.sendPendingVoipTokenIfNeeded());
-      }
       if (_shouldUseNativeSip()) {
         unawaited(_restoreNativeRegistrationIfNeeded('app-resumed'));
       } else {

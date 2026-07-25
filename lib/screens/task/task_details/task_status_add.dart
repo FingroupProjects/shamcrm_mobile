@@ -20,7 +20,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateStatusDialog extends StatefulWidget {
-  const CreateStatusDialog({Key? key}) : super(key: key);
+  final int? projectId;
+
+  const CreateStatusDialog({Key? key, this.projectId}) : super(key: key);
 
   @override
   _CreateStatusDialogState createState() => _CreateStatusDialogState();
@@ -40,7 +42,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   void initState() {
     super.initState();
     context.read<TaskStatusNameBloc>().add(FetchStatusNames());
-    context.read<GetAllProjectBloc>().add(GetAllProjectEv());
+    if (widget.projectId == null) {
+      context.read<GetAllProjectBloc>().add(GetAllProjectEv());
+    }
     context.read<RoleBloc>().add(FetchRoles());
   }
 
@@ -73,16 +77,17 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
               errorText: _statusNameError,
             ),
             const SizedBox(height: 4),
-            ProjectTaskGroupWidget(
-              selectedProject: selectedProjectId,
-              onSelectProject: (ProjectTask selectedProjectData) {
-                setState(() {
-                  selectedProjectId = selectedProjectData.id.toString();
-                  _projectError = null; // Сбрасываем ошибку при выборе
-                });
-              },
-              errorText: _projectError,
-            ),
+            if (widget.projectId == null)
+              ProjectTaskGroupWidget(
+                selectedProject: selectedProjectId,
+                onSelectProject: (ProjectTask selectedProjectData) {
+                  setState(() {
+                    selectedProjectId = selectedProjectData.id.toString();
+                    _projectError = null; // Сбрасываем ошибку при выборе
+                  });
+                },
+                errorText: _projectError,
+              ),
             Container(
               padding: EdgeInsets.symmetric(vertical: 0),
               child: Column(
@@ -274,7 +279,10 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
       hasError = true;
     }
 
-    if (selectedProjectId == null) {
+    final effectiveProjectId =
+        widget.projectId ?? int.tryParse(selectedProjectId ?? '');
+
+    if (effectiveProjectId == null) {
       setState(() {
         _projectError =
             AppLocalizations.of(context)!.translate('field_required');
@@ -294,7 +302,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     context.read<task_status_add.TaskStatusBloc>().add(
           task_status_add.CreateTaskStatusAdd(
             taskStatusNameId: selectedStatusNameId!,
-            projectId: int.tryParse(selectedProjectId!) ?? 0,
+            projectId: effectiveProjectId!,
             needsPermission: needsPermission,
             roleIds: needsPermission ? selectedRoleIds : null,
             finalStep: isFinalStage,
@@ -328,7 +336,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     Navigator.pop(context, true);
 
     Future.delayed(Duration(milliseconds: 0), () {
-      context.read<TaskBloc>().add(FetchTaskStatuses());
+      context
+          .read<TaskBloc>()
+          .add(FetchTaskStatuses(projectId: widget.projectId));
     });
   }
 }

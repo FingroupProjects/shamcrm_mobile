@@ -6,7 +6,8 @@ abstract class TaskEvent {}
 
 class FetchTaskStatuses extends TaskEvent {
   final bool forceRefresh;
-  FetchTaskStatuses({this.forceRefresh = false});
+  final int? projectId;
+  FetchTaskStatuses({this.forceRefresh = false, this.projectId});
 }
 
 class FetchTaskStatusesWithFilters extends TaskEvent {
@@ -24,6 +25,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final int? projectId;
   final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
@@ -44,6 +46,7 @@ class FetchTaskStatusesWithFilters extends TaskEvent {
     this.completedFromDate,
     this.completedToDate,
     this.projectIds,
+    this.projectId,
     this.reasonForRefusalIds,
     this.authors,
     this.department,
@@ -67,6 +70,7 @@ class FetchTasks extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final int? projectId;
   final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
@@ -89,6 +93,7 @@ class FetchTasks extends TaskEvent {
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.projectId,
     this.reasonForRefusalIds,
     this.authors,
     this.department,
@@ -118,6 +123,7 @@ class FetchMoreTasks extends TaskEvent {
   final DateTime? completedFromDate;
   final DateTime? completedToDate;
   final List<int>? projectIds;
+  final int? projectId;
   final List<int>? reasonForRefusalIds;
   final List<String>? authors;
   final String? department;
@@ -141,6 +147,7 @@ class FetchMoreTasks extends TaskEvent {
     this.hasDeal,
     this.urgent,
     this.projectIds,
+    this.projectId,
     this.reasonForRefusalIds,
     this.authors,
     this.department,

@@ -5,6 +5,7 @@ import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
+import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/category/category_screen.dart';
@@ -530,7 +531,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found dashboard at index $i');
         break;
-      } else if (screenIdentifier == 'tasks' && widget is TaskScreen) {
+      } else if (screenIdentifier == 'tasks' &&
+          (widget is TaskScreen ||
+              widget.key == const ValueKey<String>('home_task_screen'))) {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found tasks at index $i');
         break;
@@ -975,6 +978,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     List<String> activeIconsGroup2 = [];
     List<String> inactiveIconsGroup1 = [];
     List<String> inactiveIconsGroup2 = [];
+    final apiService = context.read<ApiService>();
 
     // Дашборд
     if (hasPermission('section.dashboard')) {
@@ -991,7 +995,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Задачи
     if (hasPermission('task.read')) {
-      widgetsGroup1.add(TaskScreen());
+      widgetsGroup1.add(
+        BlocProvider<TaskBloc>(
+          key: const ValueKey<String>('home_task_screen'),
+          create: (_) => TaskBloc(apiService),
+          child: TaskScreen(),
+        ),
+      );
       titleKeysGroup1.add('appbar_tasks');
       navBarTitleKeysGroup1.add('appbar_tasks');
       activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');

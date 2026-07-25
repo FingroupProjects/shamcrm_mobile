@@ -122,6 +122,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   bool isManagerManuallySelected = false;
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
+  final Map<int, TextEditingController> _priceControllers = {};
   Country? _initialCountry; // Для автоопределения страны из телефона клиента
   final TextEditingController _totalController = TextEditingController();
   bool _isTotalEdited = false;
@@ -136,6 +137,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
   bool _isTojsokhtmontjTenant = false;
+  bool _isStomatradeTenant = false;
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -247,16 +249,23 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Future<void> _loadTenantFlags() async {
-    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    final flags = await Future.wait([
+      _apiService.isTojsokhtmontjTenant(),
+      _apiService.isStomatradeTenant(),
+    ]);
     if (!mounted) return;
     setState(() {
-      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+      _isTojsokhtmontjTenant = flags[0];
+      _isStomatradeTenant = flags[1];
     });
   }
 
   @override
   void dispose() {
     for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _priceControllers.values) {
       controller.dispose();
     }
     for (final field in customFields) {
@@ -2209,6 +2218,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             controller.dispose();
           }
           _quantityControllers.clear();
+          for (final controller in _priceControllers.values) {
+            controller.dispose();
+          }
+          _priceControllers.clear();
           _items = addedItems.take(1).toList();
         } else {
           _items.addAll(addedItems);
@@ -2260,6 +2273,45 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
     );
+  }
+
+  String _priceInputText(dynamic value) {
+    final price = (value as num?)?.toDouble() ?? double.tryParse('$value') ?? 0;
+    return price == price.roundToDouble()
+        ? price.toStringAsFixed(0)
+        : price.toString();
+  }
+
+  TextEditingController _getPriceController(int index) {
+    assert(index >= 0 && index < _items.length,
+        'Index вне диапазона списка товаров');
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final existingController = _priceControllers[key];
+    if (existingController != null) return existingController;
+    final controller =
+        TextEditingController(text: _priceInputText(item['price']));
+    _priceControllers[key] = controller;
+    return controller;
+  }
+
+  void _handlePriceInput(int index, String value) {
+    if (!mounted || index < 0 || index >= _items.length) return;
+    final input = value.replaceAll(' ', '').replaceAll(',', '.');
+    final normalized = input.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    final cleaned = normalized.isEmpty ? '0' : normalized;
+    final parsed = double.tryParse(cleaned);
+    if (parsed == null) return;
+    final controller = _getPriceController(index);
+    if (controller.text != cleaned) {
+      controller.value = TextEditingValue(
+        text: cleaned,
+        selection: TextSelection.collapsed(offset: cleaned.length),
+      );
+    }
+    setState(() {
+      _items[index]['price'] = parsed;
+    });
   }
 
   void _handleQuantityInput(int index, String value) {
@@ -2316,6 +2368,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     final key = identityHashCode(_items[index]);
     final controller = _quantityControllers.remove(key);
     controller?.dispose();
+    final priceController = _priceControllers.remove(key);
+    priceController?.dispose();
 
     setState(() {
       _items.removeAt(index);
@@ -3116,32 +3170,78 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
                               color: Color(0xff99A4BA))),
-                      Text(_formatPrice(item['price']),
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
+                      _isStomatradeTenant
+                          ? Container(
+                              width: 106,
+                              height: 36,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF4F7FD),
+                                borderRadius: BorderRadius.circular(8),
+                                // border:
+                                //     Border.all(color: const Color(0xffB9C8E2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _getPriceController(index),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xff1E2E52)),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.,]')),
+                                      ],
+                                      onChanged: (value) =>
+                                          _handlePriceInput(index, value),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Text(_formatPrice(item['price']),
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52))),
                     ],
                   ),
                   const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(AppLocalizations.of(context)!.translate('summ'),
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff99A4BA))),
-                      Text(
-                          _formatPrice(item['price'] * (item['quantity'] ?? 1)),
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff1E2E52))),
-                    ],
+                  Transform.translate(
+                    offset: const Offset(0, -5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(AppLocalizations.of(context)!.translate('summ'),
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff99A4BA))),
+                        Text(
+                            _formatPrice(
+                                item['price'] * (item['quantity'] ?? 1)),
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xff1E2E52))),
+                      ],
+                    ),
                   ),
                 ],
               ),

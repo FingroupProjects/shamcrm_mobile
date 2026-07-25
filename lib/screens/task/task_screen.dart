@@ -30,8 +30,10 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class TaskScreen extends StatefulWidget {
   final int? initialStatusId;
+  final int? projectId;
+  final String? projectName;
 
-  TaskScreen({this.initialStatusId});
+  TaskScreen({this.initialStatusId, this.projectId, this.projectName});
 
   @override
   _TaskScreenState createState() => _TaskScreenState();
@@ -42,6 +44,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   late ScrollController _tabScrollController;
   late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
+  final Map<int, int> _projectTaskCounts = {};
+  final Set<int> _validatedProjectStatusIds = <int>{};
   int _currentTabIndex = 0;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
@@ -73,6 +77,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   int? _pendingStatusIdAfterHardRefresh;
 
   String _lastSearchQuery = "";
+  int? get _projectContextId => widget.projectId;
+  bool get _isProjectContext => _projectContextId != null;
+
+  List<int>? _projectFilterIds() {
+    if (_selectedProjects.isNotEmpty) {
+      return _selectedProjects.map((id) => int.parse(id)).toList();
+    }
+    if (_selectedProject != null) {
+      return [int.parse(_selectedProject!)];
+    }
+    return null;
+  }
 
   List<UserData> _selectedUsers = [];
   int? _selectedStatuses;
@@ -152,7 +168,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
 
     // Запускаем загрузку статусов
-    BlocProvider.of<TaskBloc>(context).add(FetchTaskStatuses());
+    BlocProvider.of<TaskBloc>(context)
+        .add(FetchTaskStatuses(
+          forceRefresh: _isProjectContext,
+          projectId: _projectContextId,
+        ));
   }
 
   void _onScroll() {
@@ -173,10 +193,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             _tabTitles.isNotEmpty &&
             _currentTabIndex < _tabTitles.length) {
           final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-          // Преобразуем project_ids в List<int>
-          List<int>? projectIdsList = _selectedProjects.isNotEmpty
-              ? _selectedProjects.map((id) => int.parse(id)).toList()
-              : null;
           taskBloc.add(FetchMoreTasks(
             currentStatusId,
             state.currentPage,
@@ -193,7 +209,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             deadlinetoDate: _deadlinetoDate,
             completedFromDate: _completedFromDate,
             completedToDate: _completedToDate,
-            projectIds: projectIdsList,
+            projectIds: _projectFilterIds(),
+            projectId: _projectContextId,
             authors: _selectedAuthors,
             department: _selectedDepartment,
             directoryValues:
@@ -226,9 +243,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           taskBloc.isFetching) {
         return;
       }
-      List<int>? projectIdsList = _selectedProjects.isNotEmpty
-          ? _selectedProjects.map((id) => int.parse(id)).toList()
-          : null;
       taskBloc.add(FetchMoreTasks(
         currentStatusId,
         currentState.currentPage,
@@ -247,11 +261,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         deadlinetoDate: _deadlinetoDate,
         completedFromDate: _completedFromDate,
         completedToDate: _completedToDate,
-        projectIds: projectIdsList,
+        projectIds: _projectFilterIds(),
+        projectId: _projectContextId,
         authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
         department: _selectedDepartment,
-        directoryValues:
-            _selectedDirectoryValues.isNotEmpty ? _selectedDirectoryValues : null,
+        directoryValues: _selectedDirectoryValues.isNotEmpty
+            ? _selectedDirectoryValues
+            : null,
       ));
     });
   }
@@ -359,10 +375,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
         // Если права пришли позже статусов, повторно запрашиваем статусы,
         // даже если bloc уже успел уйти из TaskLoaded в другое состояние.
-        if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
+        if (mounted &&
+            !_isProjectContext &&
+            _canReadTaskStatus &&
+            _tabTitles.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              context.read<TaskBloc>().add(FetchTaskStatuses());
+              context
+                  .read<TaskBloc>()
+                  .add(FetchTaskStatuses(
+                    forceRefresh: _isProjectContext,
+                    projectId: _projectContextId,
+                  ));
             }
           });
         }
@@ -427,10 +451,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
       // Если права пришли позже статусов, повторно запрашиваем статусы,
       // даже если bloc уже успел переключиться в TaskLoading/TaskDataLoaded.
-      if (mounted && _canReadTaskStatus && _tabTitles.isEmpty) {
+      if (mounted &&
+          !_isProjectContext &&
+          _canReadTaskStatus &&
+          _tabTitles.isEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            context.read<TaskBloc>().add(FetchTaskStatuses());
+            context
+                .read<TaskBloc>()
+                .add(FetchTaskStatuses(
+                  forceRefresh: _isProjectContext,
+                  projectId: _projectContextId,
+                ));
           }
         });
       }
@@ -540,8 +572,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Future<void> _onRefresh(int currentStatusId) async {
     try {
-      await TaskCache.clearAllData();
-      await TaskCache.clearPersistentCounts();
+      if (!_isProjectContext) {
+        await TaskCache.clearAllData();
+        await TaskCache.clearPersistentCounts();
+      }
 
       if (mounted) {
         setState(() {
@@ -599,16 +633,22 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
 
       final taskBloc = BlocProvider.of<TaskBloc>(context);
-      await taskBloc.clearAllCountsAndCache();
+      await taskBloc.clearAllCountsAndCache(
+        clearPersistentCache: !_isProjectContext,
+      );
       ApiService.clearAnalyticsResponseCache();
-      taskBloc.add(FetchTaskStatuses(forceRefresh: true));
+      taskBloc.add(
+        FetchTaskStatuses(forceRefresh: true, projectId: _projectContextId),
+      );
     } catch (e) {
       // ✅ УБРАНО: Не показываем SnackBar с кнопкой "Повторить"
       debugPrint('TaskScreen: Ошибка при обновлении данных: $e');
 
       if (mounted) {
         final taskBloc = BlocProvider.of<TaskBloc>(context);
-        taskBloc.add(FetchTaskStatuses(forceRefresh: false));
+        taskBloc.add(
+          FetchTaskStatuses(forceRefresh: false, projectId: _projectContextId),
+        );
       }
     }
   }
@@ -631,13 +671,22 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
 
       final taskBloc = context.read<TaskBloc>();
-      await taskBloc.clearAllCountsAndCache();
+      await taskBloc.clearAllCountsAndCache(
+        clearPersistentCache: !_isProjectContext,
+      );
       ApiService.clearAnalyticsResponseCache();
-      taskBloc.add(FetchTaskStatuses(forceRefresh: true));
+      taskBloc.add(
+        FetchTaskStatuses(forceRefresh: true, projectId: _projectContextId),
+      );
     } catch (e) {
       debugPrint('TaskScreen: hard refresh after task change failed: $e');
       if (mounted) {
-        context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+        context.read<TaskBloc>().add(
+              FetchTaskStatuses(
+                forceRefresh: true,
+                projectId: _projectContextId,
+              ),
+            );
       }
     }
   }
@@ -652,11 +701,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     await TaskCache.clearTasksForStatus(currentStatusId);
-
-    // Преобразуем project_ids в List<int>
-    List<int>? projectIdsList = _selectedProjects.isNotEmpty
-        ? _selectedProjects.map((id) => int.parse(id)).toList()
-        : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
 
     taskBloc.add(FetchTasks(
       currentStatusId,
@@ -676,7 +720,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           : null,
       deadlinefromDate: _deadlinefromDate,
       deadlinetoDate: _deadlinetoDate,
-      projectIds: projectIdsList,
+      projectIds: _projectFilterIds(),
+      projectId: _projectContextId,
       authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
       department: _selectedDepartment,
       directoryValues:
@@ -777,19 +822,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final taskBloc = BlocProvider.of<TaskBloc>(context);
     debugPrint(
         'TaskScreen: _handleUserSelected - clearing TaskBloc cache and ApiService cache before filtering');
-    await taskBloc.clearAllCountsAndCache();
+    await taskBloc.clearAllCountsAndCache(
+      clearPersistentCache: !_isProjectContext,
+    );
     await _apiService.clearTaskStatusesPersistentCache();
     ApiService.clearAnalyticsResponseCache();
     debugPrint(
         'TaskScreen: _handleUserSelected - cache cleared, dispatching filtered statuses request');
 
-    // Преобразуем project_ids в List<int>
-    List<int>? projectIdsList = _selectedProjects.isNotEmpty
-        ? _selectedProjects.map((id) => int.parse(id)).toList()
-        : (_selectedProject != null ? [int.parse(_selectedProject!)] : null);
-
     debugPrint(
-        'TaskScreen: _handleUserSelected - normalized filters: users=${_selectedUsers.map((e) => e.id).toList()}, selectedStatuses=$_selectedStatuses, projectIds=$projectIdsList, authors=$_selectedAuthors, department=$_selectedDepartment, directoryValues=$_selectedDirectoryValues');
+        'TaskScreen: _handleUserSelected - normalized filters: users=${_selectedUsers.map((e) => e.id).toList()}, selectedStatuses=$_selectedStatuses, projectIds=${_projectFilterIds()}, projectId=$_projectContextId, authors=$_selectedAuthors, department=$_selectedDepartment, directoryValues=$_selectedDirectoryValues');
 
     taskBloc.add(FetchTaskStatusesWithFilters(
       preferredStatusId: currentStatusIdBeforeFilter,
@@ -810,7 +852,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       deadlinetoDate: _deadlinetoDate,
       completedFromDate: _completedFromDate,
       completedToDate: _completedToDate,
-      projectIds: projectIdsList,
+      projectIds: _projectFilterIds(),
+      projectId: _projectContextId,
       authors: _selectedAuthors.isNotEmpty ? _selectedAuthors : null,
       department: _selectedDepartment,
       directoryValues:
@@ -860,6 +903,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
           ? _selectedReasonForRefusalIds
           : null,
+      projectIds: _projectFilterIds(),
+      projectId: _projectContextId,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
@@ -884,6 +929,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
           ? _selectedReasonForRefusalIds
           : null,
+      projectIds: _projectFilterIds(),
+      projectId: _projectContextId,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
@@ -912,6 +959,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
           ? _selectedReasonForRefusalIds
           : null,
+      projectIds: _projectFilterIds(),
+      projectId: _projectContextId,
       directoryValues: _selectedDirectoryValues, // Передаем directoryValues
     ));
   }
@@ -959,7 +1008,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     });
 
     final taskBloc = BlocProvider.of<TaskBloc>(context);
-    taskBloc.add(FetchTaskStatuses());
+    taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
   }
 
   void _onSearch(String query) {
@@ -1014,7 +1063,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             menuIconKey: keyMenuIcon,
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
-                : localizations!.translate('appbar_tasks'),
+                : widget.projectName ??
+                    localizations!.translate('appbar_tasks'),
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
@@ -1059,6 +1109,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             showFilterIcon: false,
             showCallCenter: true,
             showMyTaskIcon: true,
+            showProjectsMenuItem: !_isProjectContext,
             showFilterIconDeal: false,
             showEvent: false,
             showFilterTaskIcon: showFilter,
@@ -1087,7 +1138,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       _showCustomTabBar = true;
                     });
                     final taskBloc = BlocProvider.of<TaskBloc>(context);
-                    taskBloc.add(FetchTaskStatuses());
+                    taskBloc.add(
+                      FetchTaskStatuses(projectId: _projectContextId),
+                    );
                   } else {
                     //print("IF SEARCH EMPTY BUT FILTERS EXIST");
                     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
@@ -1172,20 +1225,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TaskAddScreen(statusId: statusId),
+        builder: (context) => TaskAddScreen(
+          statusId: statusId,
+          initialProjectId: _projectContextId,
+          lockProject: false,
+        ),
       ),
     ).then((_) {
       if (!mounted) return;
       final taskBloc = context.read<TaskBloc>();
 
       if (_isSearching || _hasActiveFilters()) {
-        // Преобразуем project_ids в List<int>
-        List<int>? projectIdsList = _selectedProjects.isNotEmpty
-            ? _selectedProjects.map((id) => int.parse(id)).toList()
-            : (_selectedProject != null
-                ? [int.parse(_selectedProject!)]
-                : null);
-
         taskBloc.add(FetchTasks(
           statusId,
           query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
@@ -1206,7 +1256,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           deadlinetoDate: _deadlinetoDate,
           completedFromDate: _completedFromDate,
           completedToDate: _completedToDate,
-          projectIds: projectIdsList,
+          projectIds: _projectFilterIds(),
+          projectId: _projectContextId,
           authors: _selectedAuthors,
           department: _selectedDepartment,
           directoryValues: _selectedDirectoryValues,
@@ -1217,6 +1268,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
               ? _selectedReasonForRefusalIds
               : null,
+          projectIds: _projectFilterIds(),
+          projectId: _projectContextId,
         ));
       }
     });
@@ -1280,7 +1333,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       color: const Color(0xff1E2E52),
       backgroundColor: Colors.white,
       child: ListView.builder(
-                controller: _listScrollController,
+        controller: _listScrollController,
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
@@ -1320,6 +1373,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         }
 
         if (state is TaskDataLoaded) {
+          if (_isProjectContext && _tabTitles.isNotEmpty) {
+            final statusId = _tabTitles[_tabController.index]['id'] as int;
+            final hasChangedCount = state.taskCounts.entries.any(
+                  (entry) => _projectTaskCounts[entry.key] != entry.value,
+                ) ||
+                !_validatedProjectStatusIds.contains(statusId);
+            if (mounted && hasChangedCount) {
+              setState(() {
+                _projectTaskCounts.addAll(state.taskCounts);
+                _validatedProjectStatusIds.add(statusId);
+              });
+            }
+          }
           _ensureFilteredPaginationCanContinue(state);
         }
       },
@@ -1391,7 +1457,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: filteredTasks.length + (showPaginationLoader ? 1 : 0),
+                itemCount:
+                    filteredTasks.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredTasks.length) {
                     return const Padding(
@@ -1474,13 +1541,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void _addNewTab() async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) => CreateStatusDialog(),
+      builder: (BuildContext context) =>
+          CreateStatusDialog(projectId: _projectContextId),
     );
 
     if (result == true) {
       // ОПТИМИЗАЦИЯ: Убираем дублирование вызова FetchTaskStatuses
       final taskBloc = BlocProvider.of<TaskBloc>(context);
-      taskBloc.add(FetchTaskStatuses());
+      taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
 
       setState(() {
         navigateToEnd = true;
@@ -1490,6 +1558,17 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Widget _buildTabButton(int index) {
     bool isActive = _tabController.index == index;
+
+    if (_isProjectContext) {
+      final statusId = _tabTitles[index]['id'] as int;
+      return _buildTabButtonUI(
+        index,
+        isActive,
+        _validatedProjectStatusIds.contains(statusId)
+            ? (_projectTaskCounts[statusId] ?? 0)
+            : 0,
+      );
+    }
 
     return FutureBuilder<int>(
       future: TaskCache.getPersistentTaskCount(_tabTitles[index]['id']),
@@ -1504,30 +1583,36 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               // Используем данные из состояния только если нет постоянного счетчика
               if (state is TaskLoaded) {
                 final statusId = _tabTitles[index]['id'];
-                final taskStatus = state.taskStatuses.firstWhere(
-                  (status) => status.id == statusId,
-                  orElse: () => TaskStatus(
-                    id: 0,
-                    tasksCount: "0",
-                    color: '#000000',
-                    needsPermission: false,
-                    finalStep: false,
-                    checkingStep: false,
-                    isUnassembled: false,
-                    roles: [],
-                  ),
-                );
-                taskCount = int.tryParse(taskStatus.tasksCount) ?? 0;
+                if (!_isProjectContext) {
+                  final taskStatus = state.taskStatuses.firstWhere(
+                    (status) => status.id == statusId,
+                    orElse: () => TaskStatus(
+                      id: 0,
+                      tasksCount: "0",
+                      color: '#000000',
+                      needsPermission: false,
+                      finalStep: false,
+                      checkingStep: false,
+                      isUnassembled: false,
+                      roles: [],
+                    ),
+                  );
+                  taskCount = int.tryParse(taskStatus.tasksCount) ?? 0;
+                }
 
-                // Сразу сохраняем в постоянный кэш
-                TaskCache.setPersistentTaskCount(statusId, taskCount);
+                // Проектные счётчики нельзя сохранять в общий кэш.
+                if (!_isProjectContext) {
+                  TaskCache.setPersistentTaskCount(statusId, taskCount);
+                }
               } else if (state is TaskDataLoaded &&
                   state.taskCounts.containsKey(_tabTitles[index]['id'])) {
                 taskCount = state.taskCounts[_tabTitles[index]['id']] ?? 0;
 
                 // Сразу сохраняем в постоянный кэш
-                TaskCache.setPersistentTaskCount(
-                    _tabTitles[index]['id'], taskCount);
+                if (!_isProjectContext) {
+                  TaskCache.setPersistentTaskCount(
+                      _tabTitles[index]['id'], taskCount);
+                }
               }
 
               return _buildTabButtonUI(index, isActive, taskCount);
@@ -1673,7 +1758,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     ).then((_) {
       // Обновляем статусы после редактирования
-      context.read<TaskBloc>().add(FetchTaskStatuses());
+      context
+          .read<TaskBloc>()
+          .add(FetchTaskStatuses(projectId: _projectContextId));
     });
   }
 
@@ -1707,6 +1794,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 reasonForRefusalIds: _selectedReasonForRefusalIds.isNotEmpty
                     ? _selectedReasonForRefusalIds
                     : null,
+                projectIds: _projectFilterIds(),
+                projectId: _projectContextId,
               ));
         }
       });
@@ -1717,7 +1806,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
 
       final taskBloc = BlocProvider.of<TaskBloc>(context);
-      taskBloc.add(FetchTaskStatuses());
+      taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
     }
   }
 
@@ -1740,13 +1829,24 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         }
 
         if (state is TaskLoaded) {
-          await TaskCache.cacheTaskStatuses(state.taskStatuses
-              .map((status) => {
-                    'id': status.id,
-                    'title': status.taskStatus?.name ?? "",
-                    'is_unassembled': status.isUnassembled,
-                  })
-              .toList());
+          // Статусы проекта нельзя сохранять в общий кэш: у другого проекта
+          // может быть другой набор статусов.
+          if (_isProjectContext) {
+            for (final status in state.taskStatuses) {
+              _projectTaskCounts[status.id] =
+                  int.tryParse(status.tasksCount) ?? 0;
+            }
+          }
+
+          if (!_isProjectContext) {
+            await TaskCache.cacheTaskStatuses(state.taskStatuses
+                .map((status) => {
+                      'id': status.id,
+                      'title': status.taskStatus?.name ?? "",
+                      'is_unassembled': status.isUnassembled,
+                    })
+                .toList());
+          }
 
           if (mounted) {
             setState(() {
@@ -1812,13 +1912,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                         _scrollToActiveTab();
                       }
 
-                      // Преобразуем project_ids в List<int>
-                      List<int>? projectIdsList = _selectedProjects.isNotEmpty
-                          ? _selectedProjects
-                              .map((id) => int.parse(id))
-                              .toList()
-                          : null;
-
                       context.read<TaskBloc>().add(FetchTasks(
                             currentStatusId,
                             query: _lastSearchQuery.isNotEmpty
@@ -1848,8 +1941,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                                 hasActiveFilters ? _completedFromDate : null,
                             completedToDate:
                                 hasActiveFilters ? _completedToDate : null,
-                            projectIds:
-                                hasActiveFilters ? projectIdsList : null,
+                            projectIds: _projectFilterIds(),
+                            projectId: _projectContextId,
                             authors:
                                 hasActiveFilters && _selectedAuthors.isNotEmpty
                                     ? _selectedAuthors
@@ -1971,6 +2064,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                           _selectedReasonForRefusalIds.isNotEmpty
                               ? _selectedReasonForRefusalIds
                               : null,
+                      projectIds: _projectFilterIds(),
+                      projectId: _projectContextId,
                     ));
                   });
                 }

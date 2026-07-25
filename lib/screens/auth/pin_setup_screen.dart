@@ -592,7 +592,6 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           debugPrint('PinSetupScreen: 📤 Проверка отложенных push токенов...');
           await apiService.ensureInitialized();
           await apiService.sendPendingFCMTokenIfNeeded();
-          await apiService.sendPendingVoipTokenIfNeeded();
           debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
         } catch (e) {
           debugPrint(

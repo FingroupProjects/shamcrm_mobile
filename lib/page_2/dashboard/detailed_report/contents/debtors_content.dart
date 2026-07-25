@@ -106,14 +106,23 @@ class _DebtorsContentState extends State<DebtorsContent> {
 
   Widget _buildContentWithTotal({
     required Widget child,
-    required num? totalDebt,
+    required DebtorsResult? result,
   }) {
     return Column(
       children: [
         Expanded(child: child),
         PinnedReportTotal(
-          total: parseNumberToString(totalDebt, nullValue: '0'),
+          total: parseNumberToString(result?.totalDebt, nullValue: '0'),
           icon: Icons.account_balance_wallet_outlined,
+          showPrimaryTotal: false,
+          currencyTotals: (result?.totalDebtByCurrency ?? [])
+              .map(
+                (item) => PinnedReportCurrencyTotal(
+                  currency: item.currency,
+                  total: parseNumberToString(item.totalDebt, nullValue: '0'),
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -270,7 +279,7 @@ class _DebtorsContentState extends State<DebtorsContent> {
         } else if (state is SalesDashboardDebtorsLoaded) {
           _isLoadingMore = false;
           return _buildContentWithTotal(
-            totalDebt: state.result.result?.totalDebt,
+            result: state.result.result,
             child: state.result.result == null
                 ? _buildEmptyState()
                 : _buildDebtorsList(state.result),

@@ -50,6 +50,7 @@ class _PinScreenState extends State<PinScreen>
   final BiometricService _biometricService = BiometricService();
   BiometricAvailability? _biometricAvailability;
   bool _isBiometricEnabled = false;
+  bool _isBiometricAuthInFlight = false;
   String _userName = '';
   String _userNameProfile = '';
   String _userImage = '';
@@ -146,6 +147,15 @@ class _PinScreenState extends State<PinScreen>
       if (mounted) {
         setState(() => _isLoading = false);
         debugPrint('PinScreen: loading finished');
+
+        // local_auth must be started after the PIN screen has been rendered.
+        // Starting it while the startup loader is still on screen can leave
+        // the app on PIN after Face ID/Touch ID succeeds.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _isBiometricEnabled && !_isPinVerified) {
+            unawaited(_authenticate());
+          }
+        });
       }
     }
   }
@@ -321,15 +331,18 @@ class _PinScreenState extends State<PinScreen>
           _biometricAvailability ?? await _biometricService.getAvailability();
       _biometricAvailability = availability;
 
-      if (availability.hasAnyBiometric) {
-        _authenticate();
-      }
+      // Authentication is scheduled after the first PIN frame is rendered in
+      // _initializeMinimal's finally block. Do not open local_auth while the
+      // startup loader is still active.
     } catch (e) {
       //print('PinScreen: Неожиданная ошибка биометрии: $e');
     }
   }
 
   Future<void> _authenticate() async {
+    if (_isBiometricAuthInFlight || _isPinVerified || !mounted) return;
+
+    _isBiometricAuthInFlight = true;
     try {
       final localizations = AppLocalizations.of(context);
       if (localizations == null) return;
@@ -354,6 +367,8 @@ class _PinScreenState extends State<PinScreen>
       }
     } catch (e) {
       //print('PinScreen: Неожиданная ошибка аутентификации: $e');
+    } finally {
+      _isBiometricAuthInFlight = false;
     }
   }
 

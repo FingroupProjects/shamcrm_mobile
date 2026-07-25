@@ -48,6 +48,7 @@ class SalesDashboardDebtorsBloc
                 ? currentState.result.result
                 : DebtorsResult(
                     totalDebt: response.result!.totalDebt,
+                    totalDebtByCurrency: response.result!.totalDebtByCurrency,
                     debtors: [...currentDebtors, ...newDebtors],
                     period: response.result!.period,
                     percentageChange: response.result!.percentageChange,

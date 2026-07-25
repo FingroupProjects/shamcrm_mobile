@@ -22,6 +22,7 @@ import 'package:crm_task_manager/screens/gps/background_location_service.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+import 'package:crm_task_manager/screens/task/project_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -187,6 +188,7 @@ class CustomAppBar extends StatefulWidget {
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
+  final bool showProjectsMenuItem;
   final VoidCallback? onDashboardPressed; // Обработчик для Dashboard
 
   final Widget? titleWidget; // Новый параметр для кастомного заголовка
@@ -248,6 +250,7 @@ class CustomAppBar extends StatefulWidget {
         false, // Добавлено: по умолчанию false
 
     this.showDashboardIcon = false,
+    this.showProjectsMenuItem = false,
     this.onDashboardPressed,
     this.onChatTaskFiltersReset,
 
@@ -383,6 +386,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadGps = false; // Новая переменная для GPS®
   bool _canReadSip = false;
   bool _canOpenTimesheet = false;
+  bool _canReadProject = false;
   // DEAL custom fields were moved to filter screen
 
   Color _iconColor = const Color.fromARGB(255, 0, 0, 0);
@@ -667,6 +671,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadCalendar = await _apiService.hasPermission('calendar');
     final canReadCallCenter =
         await _apiService.hasPermission('call-center'); // Исправлено
+    final canReadProject = await _apiService.hasPermission('project.read');
     final canReadGps =
         await _apiService.hasPermission('call-center'); // Проверка прав для GPS
     final permissions = await _apiService.getPermissions();
@@ -693,6 +698,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadGps = canReadGps;
       _canReadSip = kShowSip && canReadSip;
       _canOpenTimesheet = isAdmin && workdayEnabled;
+      _canReadProject = canReadProject;
     });
   }
 
@@ -1611,6 +1617,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                             ),
                           );
                           break;
+                        case 'projects':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProjectScreen(),
+                            ),
+                          );
+                          break;
                         case 'calendar':
                           Navigator.push(
                             context,
@@ -1766,6 +1780,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   SizedBox(width: 8),
                                   Text(AppLocalizations.of(context)!
                                       .translate('filtr')),
+                                ],
+                              ),
+                            ),
+                          if (widget.showProjectsMenuItem && _canReadProject)
+                            PopupMenuItem<String>(
+                              value: 'projects',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.folder_copy_outlined,
+                                      color: _iconColor),
+                                  SizedBox(width: 8),
+                                  Text('Проекты'),
                                 ],
                               ),
                             ),

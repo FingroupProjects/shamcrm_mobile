@@ -86,6 +86,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
+  final Map<int, TextEditingController> _priceControllers = {};
   final TextEditingController _totalController = TextEditingController();
   bool _isTotalEdited = false;
   bool _isLoadingInternetStores = false;
@@ -100,6 +101,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
   bool _isTojsokhtmontjTenant = false;
+  bool _isStomatradeTenant = false;
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -215,10 +217,14 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Future<void> _loadTenantFlags() async {
-    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    final flags = await Future.wait([
+      _apiService.isTojsokhtmontjTenant(),
+      _apiService.isStomatradeTenant(),
+    ]);
     if (!mounted) return;
     setState(() {
-      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+      _isTojsokhtmontjTenant = flags[0];
+      _isStomatradeTenant = flags[1];
     });
   }
 
@@ -344,6 +350,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _phoneController.dispose();
     _commentController.dispose();
     for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _priceControllers.values) {
       controller.dispose();
     }
     for (final field in customFields) {
@@ -511,6 +520,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
             controller.dispose();
           }
           _quantityControllers.clear();
+          for (final controller in _priceControllers.values) {
+            controller.dispose();
+          }
+          _priceControllers.clear();
           _items = addedItems.take(1).toList();
         } else {
           _items.addAll(addedItems);
@@ -2172,6 +2185,45 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     );
   }
 
+  String _priceInputText(dynamic value) {
+    final price = (value as num?)?.toDouble() ?? double.tryParse('$value') ?? 0;
+    return price == price.roundToDouble()
+        ? price.toStringAsFixed(0)
+        : price.toString();
+  }
+
+  TextEditingController _getPriceController(int index) {
+    assert(index >= 0 && index < _items.length,
+        'Index вне диапазона списка товаров');
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final existingController = _priceControllers[key];
+    if (existingController != null) return existingController;
+    final controller =
+        TextEditingController(text: _priceInputText(item['price']));
+    _priceControllers[key] = controller;
+    return controller;
+  }
+
+  void _handlePriceInput(int index, String value) {
+    if (!mounted || index < 0 || index >= _items.length) return;
+    final input = value.replaceAll(' ', '').replaceAll(',', '.');
+    final normalized = input.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    final cleaned = normalized.isEmpty ? '0' : normalized;
+    final parsed = double.tryParse(cleaned);
+    if (parsed == null) return;
+    final controller = _getPriceController(index);
+    if (controller.text != cleaned) {
+      controller.value = TextEditingValue(
+        text: cleaned,
+        selection: TextSelection.collapsed(offset: cleaned.length),
+      );
+    }
+    setState(() {
+      _items[index]['price'] = parsed;
+    });
+  }
+
   void _handleQuantityInput(int index, String value) {
     if (value.isEmpty) {
       return;
@@ -2226,6 +2278,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     final key = identityHashCode(_items[index]);
     final controller = _quantityControllers.remove(key);
     controller?.dispose();
+    final priceController = _priceControllers.remove(key);
+    priceController?.dispose();
 
     setState(() {
       _items.removeAt(index);
@@ -2997,7 +3051,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (!_isTojsokhtmontjTenant)
+              if (!_isTojsokhtmontjTenant || _isStomatradeTenant)
                 Row(
                   children: [
                     Column(
@@ -3012,41 +3066,86 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             color: Color(0xff99A4BA),
                           ),
                         ),
-                        Text(
-                          _formatPrice(item['price']),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
-                          ),
-                        ),
+                        _isStomatradeTenant
+                            ? Container(
+                                width: 92,
+                                height: 32,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF4F7FD),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: const Color(0xffB9C8E2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _getPriceController(index),
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(decimal: true),
+                                        textAlign: TextAlign.right,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontFamily: 'Gilroy',
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xff1E2E52),
+                                        ),
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                              RegExp(r'[0-9.,]')),
+                                        ],
+                                        onChanged: (value) =>
+                                            _handlePriceInput(index, value),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Text(
+                                _formatPrice(item['price']),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xff1E2E52),
+                                ),
+                              ),
                       ],
                     ),
                     const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!
-                              .translate('total_amount'),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff99A4BA),
+                    Transform.translate(
+                      offset: const Offset(0, -5),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('summ'),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA),
+                            ),
                           ),
-                        ),
-                        Text(
-                          _formatPrice(item['price'] * (item['quantity'] ?? 1)),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xff1E2E52),
+                          Text(
+                            _formatPrice(
+                                item['price'] * (item['quantity'] ?? 1)),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff1E2E52),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
