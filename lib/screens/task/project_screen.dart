@@ -209,63 +209,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
     }
   }
 
-  Future<void> _confirmDeleteProject(Project project) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text(
-          'Удалить проект?',
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w700,
-            color: Color(0xff1E2E52),
-          ),
-        ),
-        content: Text(
-          'Проект «${project.name}» будет удален без возможности восстановления.',
-          style: const TextStyle(
-            fontFamily: 'Gilroy',
-            color: Color(0xff6D7586),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text(
-              'Отмена',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
-              'Удалить',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xffD92D20),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    final result = await _apiService.deleteProject(project.id);
-    if (!mounted) return;
-    if (result['success'] == true) {
-      _loadProjects(refresh: true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Не удалось удалить')),
-      );
-    }
-  }
-
   Widget _buildProjectCard(Project project) {
     return Material(
       color: const Color(0xffF4F7FD),
@@ -316,56 +259,27 @@ class _ProjectScreenState extends State<ProjectScreen> {
                       ),
                     ),
                   ),
-                  if (_canUpdate || _canDelete) const SizedBox(width: 8),
-                  if (_canUpdate || _canDelete)
-                    PopupMenuButton<String>(
-                      tooltip: 'Действия',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 32,
-                        height: 32,
-                      ),
-                      icon: const Icon(
-                        Icons.more_horiz,
-                        color: Color(0xff1E2E52),
-                        size: 20,
-                      ),
-                      shape: RoundedRectangleBorder(
+                  if (_canUpdate) const SizedBox(width: 8),
+                  if (_canUpdate)
+                    Tooltip(
+                      message: 'Редактировать',
+                      child: Material(
+                        color: const Color(0xffEEF2F7),
                         borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => _openProjectDialog(project: project),
+                          child: const SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: Icon(
+                              Icons.edit_outlined,
+                              color: Color(0xff1E2E52),
+                              size: 18,
+                            ),
+                          ),
+                        ),
                       ),
-                      onSelected: (value) {
-                        if (value == 'edit' && _canUpdate) {
-                          _openProjectDialog(project: project);
-                        } else if (value == 'delete' && _canDelete) {
-                          _confirmDeleteProject(project);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        if (_canUpdate)
-                          const PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined,
-                                    size: 18, color: Color(0xff1E2E52)),
-                                SizedBox(width: 10),
-                                Text('Редактировать'),
-                              ],
-                            ),
-                          ),
-                        if (_canDelete)
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline,
-                                    size: 18, color: Color(0xffD92D20)),
-                                SizedBox(width: 10),
-                                Text('Удалить'),
-                              ],
-                            ),
-                          ),
-                      ],
                     ),
                 ],
               ),

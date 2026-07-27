@@ -331,18 +331,28 @@ class NativeSipManager(
         }
     }
 
+    @Synchronized
     fun hangup(): Boolean {
-        val call = currentCall
-        if (call == null) {
-            val hasVisibleCall = lastCallState == "incoming" ||
-                lastCallState == "calling" ||
-                lastCallState == "ringing" ||
-                lastCallState == "in_call"
-            if (!hasVisibleCall) return false
+        val call = currentCall?.takeUnless { candidate ->
+            val state = candidate.getState().toString()
+            state == "End" || state == "Released" || state == "Error"
+        } ?: try {
+            core?.getCalls()?.firstOrNull { candidate ->
+                val state = candidate.getState().toString()
+                state != "End" && state != "Released" && state != "Error"
+            }
+        } catch (_: Throwable) {
+            null
+        }
 
+        if (call == null) {
+            // An already released call is a successful idempotent hangup.
+            // Flutter can still show "calling" when a terminal event races
+            // with the makeCall method result, so always converge to ended.
+            currentCall = null
             isSpeakerOn = false
             lastCallState = "ended"
-            emitCallState("ended", null, "Call ended locally")
+            emitCallState("ended", null, "Call already ended locally")
             return true
         }
 

@@ -386,9 +386,15 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   String _displayIdentity(SipUiState state) {
-    final raw = (state.remoteIdentity?.trim().isNotEmpty == true
-            ? state.remoteIdentity!.trim()
-            : _sipIdController.text.trim())
+    final callDisplayName = _sipRuntime.currentCallDisplayName?.trim();
+    final callTarget = _sipRuntime.currentCallTarget?.trim();
+    final raw = (callDisplayName?.isNotEmpty == true
+            ? callDisplayName!
+            : state.remoteIdentity?.trim().isNotEmpty == true
+                ? state.remoteIdentity!.trim()
+                : callTarget?.isNotEmpty == true
+                    ? callTarget!
+                    : _sipIdController.text.trim())
         .trim();
 
     if (raw.isEmpty) return 'Неизвестно';

@@ -150,6 +150,9 @@ class SipService extends ChangeNotifier
   String? get currentAudioRouteType => _currentAudioRouteType;
   String? get currentAudioRouteName => _currentAudioRouteName;
   String? _currentCallTarget;
+  String? _currentCallDisplayName;
+  String? get currentCallTarget => _currentCallTarget;
+  String? get currentCallDisplayName => _currentCallDisplayName;
   String? _currentInviteUri;
   final List<Map<String, dynamic>> _pendingIosCallActions =
       <Map<String, dynamic>>[];
@@ -1534,7 +1537,10 @@ class SipService extends ChangeNotifier
     await makeCallTo(_state.sipId);
   }
 
-  Future<void> makeCallTo(String dialTarget) async {
+  Future<void> makeCallTo(
+    String dialTarget, {
+    String? displayName,
+  }) async {
     if (_state.registrationStatus != SipRegistrationUiStatus.registered) {
       _setError('Телефония не подключена. Сначала подключите линию.');
       return;
@@ -1548,6 +1554,11 @@ class SipService extends ChangeNotifier
 
     _currentCallDirection = SipCallDirection.outgoing;
     _currentCallTarget = normalizedTarget;
+    final normalizedDisplayName = displayName?.trim() ?? '';
+    _currentCallDisplayName = normalizedDisplayName.isEmpty ||
+            normalizedDisplayName.toLowerCase() == 'неизвестно'
+        ? normalizedTarget
+        : normalizedDisplayName;
     _currentCallStartedAt = null;
 
     final target =
@@ -1567,21 +1578,35 @@ class SipService extends ChangeNotifier
           'dialed': normalizedTarget,
         },
       );
+
+      // Set the optimistic state before invoking Linphone. Native call events
+      // may synchronously report Error/End before the method result returns;
+      // writing "calling" afterwards would resurrect an already ended call.
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.calling,
+        remoteIdentity: normalizedTarget,
+        clearError: true,
+      );
+      _notifyListenersSafely();
+
       final success = await _invokeNativeSipMethod<bool>(
             'makeCall',
             <String, dynamic>{'target': target},
           ) ??
           false;
       if (!success) {
-        _setError('Не удалось начать звонок через телефонию.');
+        final status = _state.callStatus;
+        if (status == SipCallUiStatus.calling ||
+            status == SipCallUiStatus.ringing) {
+          _state = _state.copyWith(
+            callStatus: SipCallUiStatus.failed,
+            errorMessage: 'Не удалось начать звонок через телефонию.',
+            clearRemoteIdentity: true,
+          );
+          _notifyListenersSafely();
+        }
         return;
       }
-
-      _state = _state.copyWith(
-        callStatus: SipCallUiStatus.calling,
-        clearError: true,
-      );
-      _notifyListenersSafely();
       return;
     }
 
@@ -1664,22 +1689,32 @@ class SipService extends ChangeNotifier
 
   Future<void> hangup() async {
     if (_shouldUseNativeSip()) {
+      final uiWasActive = _state.callStatus == SipCallUiStatus.incoming ||
+          _state.callStatus == SipCallUiStatus.calling ||
+          _state.callStatus == SipCallUiStatus.ringing ||
+          _state.callStatus == SipCallUiStatus.inCall;
       final success = await _invokeNativeSipMethod<bool>('hangup') ?? false;
-      if (!success) {
+      if (!success && !uiWasActive) {
         _setError('Не удалось завершить звонок телефонии.');
-      } else {
-        _clearIncomingFingerprint();
-        _markTerminalNativeCallFingerprint();
-        _currentInviteUri = null;
-        _state = _state.copyWith(
-          callStatus: SipCallUiStatus.ended,
-          clearRemoteIdentity: true,
-          clearError: true,
-          isMuted: false,
-          isSpeakerOn: false,
-        );
-        _notifyListenersSafely();
+        return;
       }
+
+      // Hangup is idempotent from the UI perspective. If Linphone has already
+      // released a failed/unanswered call, the local screen must still close.
+      _clearIncomingFingerprint();
+      _markTerminalNativeCallFingerprint();
+      _currentInviteUri = null;
+      _currentCallStartedAt = null;
+      _currentCallTarget = null;
+      _currentCallDisplayName = null;
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.ended,
+        clearRemoteIdentity: true,
+        clearError: true,
+        isMuted: false,
+        isSpeakerOn: false,
+      );
+      _notifyListenersSafely();
       return;
     }
 
@@ -3090,6 +3125,7 @@ class SipService extends ChangeNotifier
 
     switch (nativeState) {
       case 'incoming':
+        _currentCallDisplayName = null;
         if (_isDuplicateIncomingEvent(
           callUUID: callUUID,
           callId: callId,
@@ -3835,6 +3871,9 @@ class SipService extends ChangeNotifier
         _currentCallDirection = call.direction == 'INCOMING'
             ? SipCallDirection.incoming
             : SipCallDirection.outgoing;
+        if (call.direction == 'INCOMING') {
+          _currentCallDisplayName = null;
+        }
         _currentCallTarget = remoteIdentity ?? _state.sipId;
         _state = _state.copyWith(
           callStatus: call.direction == 'INCOMING'
@@ -4040,6 +4079,7 @@ class SipService extends ChangeNotifier
     _state = _state.copyWith(callLogs: updated);
     _currentCallStartedAt = null;
     _currentCallTarget = null;
+    _currentCallDisplayName = null;
     unawaited(refreshRecentCallLogs(force: true));
   }
 }

@@ -148,9 +148,15 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   String _displayIdentity(SipUiState state) {
-    final raw = state.remoteIdentity?.trim().isNotEmpty == true
-        ? state.remoteIdentity!.trim()
-        : state.sipId.trim();
+    final callDisplayName = _sipService.currentCallDisplayName?.trim();
+    final callTarget = _sipService.currentCallTarget?.trim();
+    final raw = callDisplayName?.isNotEmpty == true
+        ? callDisplayName!
+        : state.remoteIdentity?.trim().isNotEmpty == true
+            ? state.remoteIdentity!.trim()
+            : callTarget?.isNotEmpty == true
+                ? callTarget!
+                : state.sipId.trim();
     if (raw.isEmpty) return 'Неизвестный номер';
 
     var normalized = raw;

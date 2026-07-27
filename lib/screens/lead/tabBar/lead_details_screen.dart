@@ -46,6 +46,9 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_edit_screen.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -2165,6 +2168,10 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   Future<void> _handlePhoneTap(String phoneNumber) async {
+    final sipService = SipService();
+    final canCallThroughTelephony = sipService.state.registrationStatus ==
+        SipRegistrationUiStatus.registered;
+
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -2191,13 +2198,28 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   const SizedBox(height: 20),
                   _buildPhoneActionTile(
                     icon: Icons.phone_in_talk_rounded,
-                    title: 'Позвонить',
+                    title: 'Через телефон',
                     subtitle: phoneNumber,
                     onTap: () async {
                       Navigator.pop(sheetContext);
                       await _makeSystemPhoneCall(phoneNumber);
                     },
                   ),
+                  if (canCallThroughTelephony) ...[
+                    const SizedBox(height: 12),
+                    _buildPhoneActionTile(
+                      icon: Icons.dialer_sip_rounded,
+                      title: 'Через телефонию',
+                      subtitle: 'Позвонить из shamCRM',
+                      onTap: () async {
+                        Navigator.pop(sheetContext);
+                        await _makeTelephonyCall(
+                          sipService,
+                          phoneNumber,
+                        );
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   _buildPhoneActionTile(
                     icon: Icons.sms_rounded,
@@ -2221,6 +2243,53 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         );
       },
     );
+  }
+
+  Future<void> _makeTelephonyCall(
+    SipService sipService,
+    String phoneNumber,
+  ) async {
+    final clientName = (currentLead?.name ?? widget.leadName).trim();
+    final displayName =
+        clientName.isEmpty || clientName.toLowerCase() == 'неизвестно'
+            ? phoneNumber
+            : clientName;
+
+    final ownsScreenClaim = sipService.claimSipScreenOpen();
+    await sipService.makeCallTo(
+      phoneNumber,
+      displayName: displayName,
+    );
+
+    if (!mounted) {
+      if (ownsScreenClaim) {
+        sipService.releaseSipScreenOpenClaim();
+      }
+      return;
+    }
+
+    final callStatus = sipService.state.callStatus;
+    final callStarted = callStatus == SipCallUiStatus.calling ||
+        callStatus == SipCallUiStatus.ringing ||
+        callStatus == SipCallUiStatus.inCall;
+    if (!callStarted || !ownsScreenClaim) {
+      if (ownsScreenClaim) {
+        sipService.releaseSipScreenOpenClaim();
+      }
+      return;
+    }
+
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const SipScreen(),
+          fullscreenDialog: true,
+          settings: const RouteSettings(name: '/sip_call'),
+        ),
+      );
+    } finally {
+      sipService.releaseSipScreenOpenClaim();
+    }
   }
 
   Widget _buildPhoneActionTile({
