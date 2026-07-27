@@ -5,7 +5,6 @@ import 'dart:math' as math;
 import 'dart:ui' hide TextDirection;
 import 'dart:ui' as ui show TextDirection;
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
@@ -68,6 +67,8 @@ class SipScreen extends StatefulWidget {
 class _SipScreenState extends State<SipScreen>
     with SingleTickerProviderStateMixin {
   static final SipService _sipService = SipService();
+  static const String _sipPinRequiredAfterCallKey =
+      'sip_pin_required_after_call_v1';
   static const String _iosForceQuitWarningPromptedKey =
       'sip_ios_force_quit_warning_prompted_v1';
 
@@ -83,23 +84,18 @@ class _SipScreenState extends State<SipScreen>
   final TextEditingController _searchViewController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
   final FocusNode _dialFocusNode = FocusNode();
-  final AudioPlayer _callFeedbackPlayer = AudioPlayer();
   final ScrollController _contactsListController = ScrollController();
   final ScrollController _journalListController = ScrollController();
-
-  static const String _connectingBeepAsset = 'audio/get.mp3';
 
   SipTransportUi _selectedTransport = SipTransportUi.ws;
 
   int _bottomTabIndex = 0;
   late final AnimationController _pulseController;
   Timer? _callDurationTimer;
-  StreamSubscription<void>? _feedbackCompletionSub;
   SipCallUiStatus? _lastObservedCallStatus;
   String? _lastShownSipNoticeKey;
   SipRegistrationUiStatus? _lastObservedRegistrationStatus;
   String? _lastShownRegistrationNoticeKey;
-  String? _activeFeedbackAsset;
   DateTime? _connectedAt;
   Duration _connectedDuration = Duration.zero;
   bool _contactsEnabled = false;
@@ -131,6 +127,8 @@ class _SipScreenState extends State<SipScreen>
   bool _isLeadCountLoading = false;
   int _leadTotalCount = 0;
   bool _isRefreshingContactsTabState = false;
+  bool _allowRoutePop = false;
+  bool _backNavigationInProgress = false;
   bool _isLeadSearchLoading = false;
   List<Lead> _searchLeadResults = const [];
   bool _isContactsLeadLoading = false;
@@ -180,6 +178,34 @@ class _SipScreenState extends State<SipScreen>
     });
   }
 
+  Future<void> _handleBackNavigation() async {
+    if (_backNavigationInProgress || !mounted) return;
+    _backNavigationInProgress = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final requiresPin = prefs.getBool(_sipPinRequiredAfterCallKey) ?? false;
+      final isColdCallRoute =
+          ModalRoute.of(context)?.settings.name == '/sip_call_only';
+      if (requiresPin || isColdCallRoute) {
+        await prefs.remove(_sipPinRequiredAfterCallKey);
+        _sipService.forcePinPrompt();
+        if (!mounted) return;
+        await Navigator.of(context).pushNamed('/pin_screen');
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() => _allowRoutePop = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
+      });
+    } finally {
+      _backNavigationInProgress = false;
+    }
+  }
+
   bool get _hasContactsTab => true;
 
   void _ensureValidBottomTabIndex() {
@@ -220,16 +246,7 @@ class _SipScreenState extends State<SipScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    _configureCallFeedbackPlayer();
     _initializeSip();
-  }
-
-  Future<void> _configureCallFeedbackPlayer() async {
-    try {
-      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.loop);
-      await _callFeedbackPlayer.setPlayerMode(PlayerMode.mediaPlayer);
-      await _callFeedbackPlayer.setVolume(1);
-    } catch (_) {}
   }
 
   Future<void> _initializeSip() async {
@@ -272,10 +289,7 @@ class _SipScreenState extends State<SipScreen>
     _contactsLeadSearchDebounce?.cancel();
     _contactsIndexOverlayTimer?.cancel();
     _journalDateRailOverlayTimer?.cancel();
-    _feedbackCompletionSub?.cancel();
     _pulseController.dispose();
-    unawaited(_callFeedbackPlayer.stop());
-    _callFeedbackPlayer.dispose();
     _sipIdController.removeListener(_handleDialChanged);
     _serverController.removeListener(_handleDraftChanged);
     _loginController.removeListener(_handleDraftChanged);
@@ -297,111 +311,120 @@ class _SipScreenState extends State<SipScreen>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _sipService,
-      builder: (context, child) {
-        if (!_sipService.isConfigLoaded) {
-          return const Scaffold(
+    return PopScope<void>(
+      canPop: _allowRoutePop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          unawaited(_handleBackNavigation());
+        }
+      },
+      child: AnimatedBuilder(
+        animation: _sipService,
+        builder: (context, child) {
+          if (!_sipService.isConfigLoaded) {
+            return const Scaffold(
+              backgroundColor: _G.lightBg,
+              body: Center(child: CircularProgressIndicator.adaptive()),
+            );
+          }
+
+          final state = _sipService.state;
+          final isActiveCall = _isActiveCallState(state.callStatus);
+          final visibleBottomTabIndex =
+              _hasContactsTab || _bottomTabIndex != 2 ? _bottomTabIndex : 1;
+
+          _syncCallEffects(state);
+          _syncSipNotifications(state);
+
+          if (!_hasCredentials(state)) {
+            return _buildAuthorizationView(context, state);
+          }
+
+          return Scaffold(
+            resizeToAvoidBottomInset: false,
             backgroundColor: _G.lightBg,
-            body: Center(child: CircularProgressIndicator.adaptive()),
-          );
-        }
-
-        final state = _sipService.state;
-        final isActiveCall = _isActiveCallState(state.callStatus);
-        final visibleBottomTabIndex =
-            _hasContactsTab || _bottomTabIndex != 2 ? _bottomTabIndex : 1;
-
-        _syncCallEffects(state);
-        _syncSipNotifications(state);
-
-        if (!_hasCredentials(state)) {
-          return _buildAuthorizationView(context, state);
-        }
-
-        return Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: _G.lightBg,
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFEFF4FF), Color(0xFFF8FAFF)],
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFEFF4FF), Color(0xFFF8FAFF)],
+                ),
               ),
-            ),
-            child: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: isActiveCall
-                      ? _activeCallView(context, state)
-                      : Column(
-                          children: [
-                            _buildTopBar(context, state),
-                            if (state.callStatus == SipCallUiStatus.incoming ||
-                                state.registrationStatus !=
-                                    SipRegistrationUiStatus.registered)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: _statusBanner(context, state),
-                              ),
-                            Expanded(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 280),
-                                switchInCurve: Curves.easeOutCubic,
-                                switchOutCurve: Curves.easeInCubic,
-                                transitionBuilder: (child, animation) {
-                                  final childIndex =
-                                      _resolveTabViewIndex(child.key);
-                                  final slidesFromLeft =
-                                      childIndex < visibleBottomTabIndex;
-                                  final slideAnimation = Tween<Offset>(
-                                    begin: Offset(
-                                      slidesFromLeft ? -0.08 : 0.08,
-                                      0,
-                                    ),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
+              child: SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: isActiveCall
+                        ? _activeCallView(context, state)
+                        : Column(
+                            children: [
+                              _buildTopBar(context, state),
+                              if (state.callStatus ==
+                                      SipCallUiStatus.incoming ||
+                                  state.registrationStatus !=
+                                      SipRegistrationUiStatus.registered)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
+                                  child: _statusBanner(context, state),
+                                ),
+                              Expanded(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 280),
+                                  switchInCurve: Curves.easeOutCubic,
+                                  switchOutCurve: Curves.easeInCubic,
+                                  transitionBuilder: (child, animation) {
+                                    final childIndex =
+                                        _resolveTabViewIndex(child.key);
+                                    final slidesFromLeft =
+                                        childIndex < visibleBottomTabIndex;
+                                    final slideAnimation = Tween<Offset>(
+                                      begin: Offset(
+                                        slidesFromLeft ? -0.08 : 0.08,
+                                        0,
+                                      ),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                    );
+
+                                    final fadeAnimation = CurvedAnimation(
                                       parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                    ),
-                                  );
+                                      curve: Curves.easeOut,
+                                    );
 
-                                  final fadeAnimation = CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOut,
-                                  );
-
-                                  return FadeTransition(
-                                    opacity: fadeAnimation,
-                                    child: SlideTransition(
-                                      position: slideAnimation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: switch (visibleBottomTabIndex) {
-                                  0 => _dialPadView(context, state),
-                                  2 when _hasContactsTab => _contactsView(
-                                      context,
-                                    ),
-                                  3 => _searchView(context, state),
-                                  _ => _journalView(context, state),
-                                },
+                                    return FadeTransition(
+                                      opacity: fadeAnimation,
+                                      child: SlideTransition(
+                                        position: slideAnimation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: switch (visibleBottomTabIndex) {
+                                    0 => _dialPadView(context, state),
+                                    2 when _hasContactsTab => _contactsView(
+                                        context,
+                                      ),
+                                    3 => _searchView(context, state),
+                                    _ => _journalView(context, state),
+                                  },
+                                ),
                               ),
-                            ),
-                            _bottomSwitcher(context),
-                          ],
-                        ),
+                              _bottomSwitcher(context),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

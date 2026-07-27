@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -50,15 +48,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       'sip_pin_required_after_call_v1';
 
   final SipService _sipService = SipService();
-  final AudioPlayer _overlayPlayer = AudioPlayer();
-
-  static const String _connectingBeepAsset = 'audio/get.mp3';
-
   late final AnimationController _pulseController;
   Timer? _durationTimer;
-  StreamSubscription<void>? _feedbackCompletionSub;
   SipCallUiStatus? _lastObservedStatus;
-  String? _activeFeedbackAsset;
   DateTime? _connectedAt;
   Duration _connectedDuration = Duration.zero;
   double _incomingAnswerDrag = 0;
@@ -69,7 +61,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   bool _pinRedirectInProgress = false;
   bool _fullCallUiOpenInProgress = false;
   int _lastHandledCallUiRequestSerial = 0;
-  int _lastLoggedWaitingCallUiRequestSerial = 0;
 
   @override
   void initState() {
@@ -78,26 +69,14 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    _configurePlayer();
     unawaited(_sipService.initialize());
   }
 
   @override
   void dispose() {
     _durationTimer?.cancel();
-    _feedbackCompletionSub?.cancel();
     _pulseController.dispose();
-    unawaited(_overlayPlayer.stop());
-    _overlayPlayer.dispose();
     super.dispose();
-  }
-
-  Future<void> _configurePlayer() async {
-    try {
-      await _overlayPlayer.setReleaseMode(ReleaseMode.loop);
-      await _overlayPlayer.setPlayerMode(PlayerMode.mediaPlayer);
-      await _overlayPlayer.setVolume(1);
-    } catch (_) {}
   }
 
   bool _shouldShowOverlay(SipUiState state) {
@@ -113,7 +92,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     if (!visible) {
       _lastObservedStatus = null;
       _stopDurationTicker(reset: true);
-      unawaited(_stopFeedbackLoop());
       if (_hadVisibleCallOverlay) {
         _hadVisibleCallOverlay = false;
         unawaited(_redirectToPinIfDeferredBySipCall());
@@ -131,56 +109,20 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     switch (state.callStatus) {
       case SipCallUiStatus.incoming:
         _stopDurationTicker();
-        if (_shouldPlayFlutterCallFeedback) {
-          unawaited(_playFeedbackLoop(_connectingBeepAsset));
-        } else {
-          unawaited(_stopFeedbackLoop());
-        }
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopDurationTicker();
-        if (_shouldPlayFlutterCallFeedback) {
-          unawaited(_playFeedbackLoop(_connectingBeepAsset));
-        } else {
-          unawaited(_stopFeedbackLoop());
-        }
         break;
       case SipCallUiStatus.inCall:
         _startDurationTicker();
-        unawaited(_stopFeedbackLoop());
         break;
       case SipCallUiStatus.idle:
       case SipCallUiStatus.ended:
       case SipCallUiStatus.failed:
         _stopDurationTicker(reset: true);
-        unawaited(_stopFeedbackLoop());
         break;
     }
-  }
-
-  bool get _shouldPlayFlutterCallFeedback =>
-      defaultTargetPlatform != TargetPlatform.android;
-
-  Future<void> _playFeedbackLoop(String assetPath) async {
-    if (_activeFeedbackAsset == assetPath) return;
-    _activeFeedbackAsset = assetPath;
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = null;
-      await _overlayPlayer.stop();
-      await _overlayPlayer.setReleaseMode(ReleaseMode.loop);
-      await _overlayPlayer.play(AssetSource(assetPath));
-    } catch (_) {}
-  }
-
-  Future<void> _stopFeedbackLoop() async {
-    _activeFeedbackAsset = null;
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = null;
-      await _overlayPlayer.stop();
-    } catch (_) {}
   }
 
   void _startDurationTicker() {
@@ -271,28 +213,24 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     }
   }
 
-  Future<void> _openSipScreen() async {
+  Future<bool> _openSipScreen() async {
     final navigator = navigatorKey.currentState;
-    if (navigator == null) return;
+    if (navigator == null || _sipService.isSipScreenVisible) return false;
+    if (!_sipService.claimSipScreenOpen()) return false;
 
-    if (_isProtectedSipCallActive()) {
-      navigator.pushAndRemoveUntil(
+    try {
+      unawaited(navigator.push(
         MaterialPageRoute<void>(
           builder: (_) => const SipScreen(),
           fullscreenDialog: true,
-          settings: const RouteSettings(name: '/sip_call_only'),
+          settings: const RouteSettings(name: '/sip_call'),
         ),
-        (route) => false,
-      );
-      return;
+      ));
+      return true;
+    } catch (_) {
+      _sipService.releaseSipScreenOpenClaim();
+      rethrow;
     }
-
-    await navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => const SipScreen(),
-        fullscreenDialog: true,
-      ),
-    );
   }
 
   void _handleNativeCallUiRequest(SipUiState state) {
@@ -304,21 +242,21 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
         state.callStatus == SipCallUiStatus.ringing ||
         state.callStatus == SipCallUiStatus.inCall;
     if (!active) {
-      if (_lastLoggedWaitingCallUiRequestSerial != serial) {
-        _lastLoggedWaitingCallUiRequestSerial = serial;
-        unawaited(_sipService.recordUiDiagnostic(
-          'CALL_UI_WAITING_ACTIVE_STATE',
-          <String, Object?>{
-            'serial': serial,
-            'call_state': state.callStatus.name,
-            'registration_state': state.registrationStatus.name,
-          },
-        ));
-      }
+      _lastHandledCallUiRequestSerial = serial;
+      unawaited(_sipService.recordUiDiagnostic(
+        'CALL_UI_IGNORED_INACTIVE_STATE',
+        <String, Object?>{
+          'serial': serial,
+          'call_state': state.callStatus.name,
+          'registration_state': state.registrationStatus.name,
+        },
+      ));
       return;
     }
     _lastHandledCallUiRequestSerial = serial;
-    if (_fullCallUiOpenInProgress) {
+    if (_fullCallUiOpenInProgress ||
+        _sipService.isSipScreenVisible ||
+        _sipService.isSipScreenOpenClaimed) {
       unawaited(_sipService.recordUiDiagnostic(
         'CALL_UI_ALREADY_VISIBLE',
         <String, Object?>{
@@ -352,9 +290,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
           );
           return;
         }
-        await _openSipScreen();
+        final opened = await _openSipScreen();
         await _sipService.recordUiDiagnostic(
-          'CALL_UI_OPENED',
+          opened ? 'CALL_UI_OPENED' : 'CALL_UI_OPEN_SKIPPED_CLAIMED',
           <String, Object?>{'serial': serial},
         );
       } catch (error) {
@@ -871,6 +809,10 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
         final knobOffset = (_incomingAnswerDrag * maxDrag).clamp(0.0, maxDrag);
 
         return GestureDetector(
+          onTap: () {
+            _incomingAnswerDrag = 0;
+            unawaited(_sipService.acceptCall());
+          },
           onHorizontalDragUpdate: (details) {
             if (maxDrag <= 0) return;
             setState(() {
@@ -880,9 +822,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
             });
           },
           onHorizontalDragEnd: (_) {
-            if (_incomingAnswerDrag >= 0.82) {
+            if (_incomingAnswerDrag >= 0.60) {
               _incomingAnswerDrag = 0;
-              _sipService.acceptCall();
+              unawaited(_sipService.acceptCall());
               return;
             }
             setState(() {

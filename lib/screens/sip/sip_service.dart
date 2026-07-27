@@ -16,6 +16,29 @@ import 'package:sip_ua/sip_ua.dart';
 
 import 'sip_state.dart';
 
+class SipAudioRoute {
+  const SipAudioRoute({
+    required this.id,
+    required this.type,
+    required this.name,
+    required this.selected,
+  });
+
+  final String id;
+  final String type;
+  final String name;
+  final bool selected;
+
+  factory SipAudioRoute.fromMap(Map<dynamic, dynamic> map) {
+    return SipAudioRoute(
+      id: map['id']?.toString() ?? '',
+      type: map['type']?.toString() ?? 'other',
+      name: map['name']?.toString() ?? 'Аудиоустройство',
+      selected: map['selected'] == true,
+    );
+  }
+}
+
 class SipService extends ChangeNotifier
     with WidgetsBindingObserver
     implements SipUaHelperListener {
@@ -37,6 +60,8 @@ class SipService extends ChangeNotifier
       'sip_pending_incoming_call_push_payload_v1';
   static const String _backgroundReliabilityPromptedKey =
       'sip_background_reliability_prompted_v2';
+  static const String _fullScreenIncomingCallPromptedKey =
+      'sip_full_screen_incoming_call_prompted_v1';
   static const String _xiaomiAutoStartPromptedKey =
       'sip_xiaomi_autostart_prompted_v1';
   static const List<String> _sipSecureStorageKeys = <String>[
@@ -79,6 +104,10 @@ class SipService extends ChangeNotifier
   bool get isConfigLoaded => _configLoaded;
   int _sipScreenVisibilityCount = 0;
   bool get isSipScreenVisible => _sipScreenVisibilityCount > 0;
+  bool _sipScreenOpenClaimed = false;
+  bool get isSipScreenOpenClaimed => _sipScreenOpenClaimed;
+  bool _forcePinPrompt = false;
+  bool get isPinPromptForced => _forcePinPrompt;
   bool _shouldStayConnected = false;
   bool _persistentSipEnabled = false;
   bool _networkAvailable = true;
@@ -115,6 +144,11 @@ class SipService extends ChangeNotifier
   }
 
   bool _speakerToggleInProgress = false;
+  bool _audioRouteChangeInProgress = false;
+  String? _currentAudioRouteType;
+  String? _currentAudioRouteName;
+  String? get currentAudioRouteType => _currentAudioRouteType;
+  String? get currentAudioRouteName => _currentAudioRouteName;
   String? _currentCallTarget;
   String? _currentInviteUri;
   final List<Map<String, dynamic>> _pendingIosCallActions =
@@ -466,15 +500,40 @@ class SipService extends ChangeNotifier
     final wasVisible = isSipScreenVisible;
     if (visible) {
       _sipScreenVisibilityCount += 1;
+      _sipScreenOpenClaimed = true;
     } else if (_sipScreenVisibilityCount > 0) {
       _sipScreenVisibilityCount -= 1;
     }
     final nowVisible = isSipScreenVisible;
+    if (!nowVisible) {
+      _sipScreenOpenClaimed = false;
+    }
     if (wasVisible == nowVisible) return;
     if (visible) {
       unawaited(refreshRecentCallLogs());
     }
     _notifyListenersSafely();
+  }
+
+  bool claimSipScreenOpen() {
+    if (isSipScreenVisible || _sipScreenOpenClaimed) {
+      return false;
+    }
+    _sipScreenOpenClaimed = true;
+    return true;
+  }
+
+  void releaseSipScreenOpenClaim() {
+    if (isSipScreenVisible) return;
+    _sipScreenOpenClaimed = false;
+  }
+
+  void forcePinPrompt() {
+    _forcePinPrompt = true;
+  }
+
+  void clearForcedPinPrompt() {
+    _forcePinPrompt = false;
   }
 
   Future<void> refreshRecentCallLogs({
@@ -677,9 +736,17 @@ class SipService extends ChangeNotifier
     if (!_persistentSipEnabled || !_hasSipCredentials() || !_networkAvailable) {
       return;
     }
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      _shouldStayConnected = true;
+      return;
+    }
 
     if (_shouldUseNativeSip()) {
       await _restoreNativeRegistrationIfNeeded('cold-start');
+      if (_isActiveUiCallStatus(_state.callStatus)) {
+        _shouldStayConnected = true;
+        return;
+      }
       final registration = _state.registrationStatus;
       if (registration == SipRegistrationUiStatus.registered ||
           registration == SipRegistrationUiStatus.registering) {
@@ -799,6 +866,12 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> _restoreNativeRegistrationIfNeeded(String reason) async {
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      debugPrint(
+        'SipService native restore skipped during active call -> reason=$reason, callState=${_state.callStatus.name}',
+      );
+      return;
+    }
     if (!await _ensureNativeSipBridgeInitialized()) {
       return;
     }
@@ -1170,6 +1243,27 @@ class SipService extends ChangeNotifier
     } catch (_) {}
 
     if (_shouldUseNativeSip()) {
+      final promptedFullScreenIncomingCall =
+          await _storage.read(key: _fullScreenIncomingCallPromptedKey);
+      if (promptedFullScreenIncomingCall != 'true') {
+        final opened = await _invokeNativeSipMethod<bool>(
+              'requestIncomingCallFullScreenSettings',
+              null,
+              false,
+            ) ??
+            false;
+        if (opened) {
+          await _storage.write(
+            key: _fullScreenIncomingCallPromptedKey,
+            value: 'true',
+          );
+          // Do not immediately cover the full-screen-call permission page with
+          // the battery/OEM settings screens below. They can be offered on the
+          // next permissions preparation pass.
+          return;
+        }
+      }
+
       final promptedBackgroundReliability =
           await _storage.read(key: _backgroundReliabilityPromptedKey);
       if (promptedBackgroundReliability != 'true') {
@@ -1207,6 +1301,10 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> connect() async {
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      _shouldStayConnected = true;
+      return;
+    }
     if (!_hasSipCredentials()) {
       _setError('Заполните сервер телефонии, логин и пароль.');
       return;
@@ -1256,6 +1354,10 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> _startSipRegistration({bool clearError = true}) async {
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      _shouldStayConnected = true;
+      return;
+    }
     if (_state.registrationStatus == SipRegistrationUiStatus.registering ||
         _helper.connecting) {
       return;
@@ -1668,6 +1770,72 @@ class SipService extends ChangeNotifier
       _setError('Не удалось изменить аудиовыход звонка: $error');
     } finally {
       _speakerToggleInProgress = false;
+    }
+  }
+
+  Future<List<SipAudioRoute>> getAvailableAudioRoutes() async {
+    if (!_shouldUseNativeSip()) {
+      return const <SipAudioRoute>[];
+    }
+
+    final rawRoutes = await _invokeNativeSipMethod<List<dynamic>>(
+          'getAudioRoutes',
+          null,
+          false,
+        ) ??
+        const <dynamic>[];
+    final routes = rawRoutes
+        .whereType<Map<dynamic, dynamic>>()
+        .map(SipAudioRoute.fromMap)
+        .where((route) => route.id.isNotEmpty && route.type != 'microphone')
+        .toList(growable: false);
+    final selectedRoute = routes.where((route) => route.selected).firstOrNull;
+    if (selectedRoute != null) {
+      _currentAudioRouteType = selectedRoute.type;
+      _currentAudioRouteName = selectedRoute.name;
+    }
+    return routes;
+  }
+
+  Future<bool> selectAudioRoute(SipAudioRoute route) async {
+    if (_audioRouteChangeInProgress ||
+        !_isActiveUiCallStatus(_state.callStatus)) {
+      return false;
+    }
+
+    _audioRouteChangeInProgress = true;
+    final previousSpeaker = _state.isSpeakerOn;
+    final previousRouteType = _currentAudioRouteType;
+    final previousRouteName = _currentAudioRouteName;
+    _currentAudioRouteType = route.type;
+    _currentAudioRouteName = route.name;
+    _state = _state.copyWith(isSpeakerOn: route.type == 'speaker');
+    _notifyListenersSafely();
+
+    try {
+      final success = await _invokeNativeSipMethod<bool>(
+            'setAudioRoute',
+            <String, dynamic>{'deviceId': route.id},
+            false,
+          ) ??
+          false;
+      if (!success) {
+        _currentAudioRouteType = previousRouteType;
+        _currentAudioRouteName = previousRouteName;
+        _state = _state.copyWith(isSpeakerOn: previousSpeaker);
+        _notifyListenersSafely();
+        _setError('Не удалось переключить аудиовыход звонка.');
+      }
+      return success;
+    } catch (error) {
+      _currentAudioRouteType = previousRouteType;
+      _currentAudioRouteName = previousRouteName;
+      _state = _state.copyWith(isSpeakerOn: previousSpeaker);
+      _notifyListenersSafely();
+      _setError('Не удалось переключить аудиовыход звонка: $error');
+      return false;
+    } finally {
+      _audioRouteChangeInProgress = false;
     }
   }
 
@@ -2386,6 +2554,7 @@ class SipService extends ChangeNotifier
   void _handleNativeAudioSessionEvent(Map<String, dynamic> payload) {
     final state = payload['state']?.toString();
     final output = payload['output']?.toString();
+    final outputDeviceName = payload['outputDeviceName']?.toString();
     final speakerOn = payload['speakerOn'] as bool?;
     final reason = payload['reason']?.toString();
     final callState = payload['callState']?.toString();
@@ -2405,6 +2574,12 @@ class SipService extends ChangeNotifier
     }
 
     if (speakerOn != null || output != null) {
+      if (output != null && output.trim().isNotEmpty) {
+        _currentAudioRouteType = _normalizeAudioRouteType(output);
+      }
+      if (outputDeviceName != null && outputDeviceName.trim().isNotEmpty) {
+        _currentAudioRouteName = outputDeviceName.trim();
+      }
       final resolvedSpeakerOn = _state.callStatus == SipCallUiStatus.ended ||
               _state.callStatus == SipCallUiStatus.failed ||
               _state.callStatus == SipCallUiStatus.idle
@@ -2416,6 +2591,24 @@ class SipService extends ChangeNotifier
       _state = _state.copyWith(isSpeakerOn: resolvedSpeakerOn);
       _notifyListenersSafely();
     }
+  }
+
+  String _normalizeAudioRouteType(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.contains('bluetooth') || normalized.contains('hearingaid')) {
+      return 'bluetooth';
+    }
+    if (normalized.contains('speaker')) return 'speaker';
+    if (normalized.contains('earpiece') || normalized.contains('telephony')) {
+      return 'earpiece';
+    }
+    if (normalized.contains('headset') ||
+        normalized.contains('headphone') ||
+        normalized.contains('aux') ||
+        normalized.contains('usb')) {
+      return 'headset';
+    }
+    return normalized;
   }
 
   void _handlePendingIosCallActionsEvent(Map<String, dynamic> payload) {
@@ -2674,6 +2867,9 @@ class SipService extends ChangeNotifier
       'failed' => SipCallUiStatus.failed,
       _ => SipCallUiStatus.idle,
     };
+    final resolvedRegistration = _isActiveUiCallStatus(mappedCall)
+        ? SipRegistrationUiStatus.registered
+        : mappedRegistration;
 
     if (mappedCall == SipCallUiStatus.inCall) {
       _currentCallStartedAt ??= DateTime.now();
@@ -2720,14 +2916,14 @@ class SipService extends ChangeNotifier
         : speakerOn;
     final resolvedMessage = _sanitizeRegistrationMessage(
       message,
-      registrationStatus: mappedRegistration,
+      registrationStatus: resolvedRegistration,
     );
     debugPrint(
       'SipService applyNativeSnapshot -> callState=$callState, mappedCall=$mappedCall, snapshotSpeaker=$speakerOn, resolvedSpeaker=$resolvedSpeakerOn',
     );
 
     _state = _state.copyWith(
-      registrationStatus: mappedRegistration,
+      registrationStatus: resolvedRegistration,
       callStatus: mappedCall,
       errorMessage: resolvedMessage,
       remoteIdentity: remoteIdentity,
@@ -2748,6 +2944,18 @@ class SipService extends ChangeNotifier
     debugPrint(
       'SipService native registration event -> state=$nativeState, message=$message',
     );
+    if (_isActiveUiCallStatus(_state.callStatus) &&
+        nativeState != 'registered') {
+      unawaited(recordUiDiagnostic(
+        'REGISTRATION_EVENT_DEFERRED_DURING_CALL',
+        <String, Object?>{
+          'native_state': nativeState,
+          'call_state': _state.callStatus.name,
+          'message': message,
+        },
+      ));
+      return;
+    }
 
     switch (nativeState) {
       case 'registering':
@@ -3038,6 +3246,13 @@ class SipService extends ChangeNotifier
 
   void _onNetworkAvailabilityChanged(bool online) {
     _networkAvailable = online;
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      _cancelReconnect();
+      debugPrint(
+        'SipService connectivity update deferred during active call -> online=$online, callState=${_state.callStatus.name}',
+      );
+      return;
+    }
     if (!online) {
       _lastReconnectAttemptAt = null;
       _cancelReconnect();
@@ -3079,6 +3294,9 @@ class SipService extends ChangeNotifier
     if (!_shouldStayConnected || !_networkAvailable || !_hasSipCredentials()) {
       return;
     }
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      return;
+    }
 
     if (_shouldUseNativeSip()) {
       unawaited(_checkAndRecoverNativeRegistration(reason));
@@ -3100,6 +3318,9 @@ class SipService extends ChangeNotifier
     if (!_shouldStayConnected || !_networkAvailable || !_hasSipCredentials()) {
       return;
     }
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      return;
+    }
 
     await _restoreNativeRegistrationIfNeeded(reason);
     if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
@@ -3115,6 +3336,9 @@ class SipService extends ChangeNotifier
     if (!_shouldStayConnected || !_networkAvailable || !_hasSipCredentials()) {
       return;
     }
+    if (_isActiveUiCallStatus(_state.callStatus)) {
+      return;
+    }
 
     final lastAttempt = _lastReconnectAttemptAt;
     if (lastAttempt != null &&
@@ -3125,6 +3349,9 @@ class SipService extends ChangeNotifier
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () async {
       if (_reconnectInProgress || !_shouldStayConnected || !_networkAvailable) {
+        return;
+      }
+      if (_isActiveUiCallStatus(_state.callStatus)) {
         return;
       }
 

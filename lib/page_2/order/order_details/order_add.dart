@@ -3262,7 +3262,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             child: const Padding(
                               padding: EdgeInsets.all(8),
                               child: Icon(
-                                Icons.remove,
+                                Icons.remove, 
                                 size: 20,
                                 color: Color(0xff1E2E52),
                               ),

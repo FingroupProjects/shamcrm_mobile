@@ -83,36 +83,21 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     switch (status) {
       case SipCallUiStatus.incoming:
         _stopCallDurationTicker();
-        if (_shouldPlayFlutterCallFeedback) {
-          unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
-        } else {
-          unawaited(_stopFeedbackLoop());
-        }
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopCallDurationTicker();
-        if (_shouldPlayFlutterCallFeedback) {
-          unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
-        } else {
-          unawaited(_stopFeedbackLoop());
-        }
         break;
       case SipCallUiStatus.inCall:
         _startCallDurationTicker();
-        unawaited(_stopFeedbackLoop());
         break;
       case SipCallUiStatus.idle:
       case SipCallUiStatus.ended:
       case SipCallUiStatus.failed:
         _stopCallDurationTicker(reset: true);
-        unawaited(_stopFeedbackLoop());
         break;
     }
   }
-
-  bool get _shouldPlayFlutterCallFeedback =>
-      defaultTargetPlatform != TargetPlatform.android;
 
   void _syncSipNotifications(SipUiState state) {
     _syncRegistrationNotifications(state);
@@ -265,28 +250,6 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     }
 
     return null;
-  }
-
-  Future<void> _playFeedbackLoop(String assetPath) async {
-    if (_activeFeedbackAsset == assetPath) return;
-    _activeFeedbackAsset = assetPath;
-
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = null;
-      await _callFeedbackPlayer.stop();
-      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.loop);
-      await _callFeedbackPlayer.play(AssetSource(assetPath));
-    } catch (_) {}
-  }
-
-  Future<void> _stopFeedbackLoop() async {
-    _activeFeedbackAsset = null;
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = null;
-      await _callFeedbackPlayer.stop();
-    } catch (_) {}
   }
 
   void _startCallDurationTicker() {
