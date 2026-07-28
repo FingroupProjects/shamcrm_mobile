@@ -54,6 +54,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
   bool _showIntro = true;
+  bool _didNavigateToSipCall = false;
 
   @override
   void initState() {
@@ -111,6 +112,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
       await initFuture;
 
+      if (_didNavigateToSipCall || !mounted) return;
       await _loadBiometricSetting();
       await _initBiometrics();
     } catch (e) {
@@ -121,6 +123,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
         });
       }
       await _initializeMinimal();
+      if (_didNavigateToSipCall || !mounted) return;
       await _loadBiometricSetting();
       await _initBiometrics();
     }
@@ -146,6 +149,16 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
       // ШАГ 4: Проверка PIN
       await _checkSavedPin();
+
+      final shouldBypassPin = await _shouldBypassPinForActiveSipCall().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => false,
+      );
+      if (shouldBypassPin && mounted) {
+        await _markPinRequiredAfterSipCall();
+        _didNavigateToSipCall = true;
+        _navigateToSipCallOnly();
+      }
     } catch (e) {
       if (mounted) {
         _showErrorDialog(

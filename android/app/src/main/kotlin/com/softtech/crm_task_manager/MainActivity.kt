@@ -1,6 +1,5 @@
 package com.softtech.crm_task_manager
 
-import android.app.NotificationManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -167,6 +166,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         handleWidgetIntent(intent)
         updateIncomingCallWindowMode(intent)
+        handleSipNotificationAction(intent, "activity-create")
         handleSipCallIntent(intent, "activity-create")
         
         val screenIdentifier = intent?.getStringExtra("screen_identifier")
@@ -374,14 +374,22 @@ class MainActivity : FlutterFragmentActivity() {
                     val speakerOn = call.argument<Boolean>("speakerOn") ?: false
                     result.success(NativeSipBridge.setSpeaker(speakerOn))
                 }
-                "canUseFullScreenIntent" -> {
-                    result.success(canUseFullScreenIntent())
+                "getAudioRoutes" -> {
+                    result.success(NativeSipBridge.getAudioRoutes())
                 }
-                "requestFullScreenIntentPermission" -> {
-                    result.success(requestFullScreenIntentPermission())
+                "setAudioRoute" -> {
+                    val deviceId = call.argument<String>("deviceId")?.trim().orEmpty()
+                    if (deviceId.isEmpty()) {
+                        result.error("INVALID_AUDIO_ROUTE", "Audio device id is empty", null)
+                    } else {
+                        result.success(NativeSipBridge.setAudioRoute(deviceId))
+                    }
                 }
                 "requestBackgroundReliabilitySettings" -> {
                     result.success(requestBackgroundReliabilitySettings())
+                }
+                "requestIncomingCallFullScreenSettings" -> {
+                    result.success(requestIncomingCallFullScreenSettings())
                 }
                 "openXiaomiSettings" -> {
                     result.success(openXiaomiSettings())
@@ -437,6 +445,7 @@ class MainActivity : FlutterFragmentActivity() {
         setIntent(intent)
         handleWidgetIntent(intent)
         updateIncomingCallWindowMode(intent)
+        handleSipNotificationAction(intent, "activity-new-intent")
         handleSipCallIntent(intent, "activity-new-intent")
         
         val screenIdentifier = intent.getStringExtra("screen_identifier")
@@ -514,20 +523,14 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
-    private fun canUseFullScreenIntent(): Boolean {
+    private fun requestIncomingCallFullScreenSettings(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            return true
+            return false
         }
 
         val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        return notificationManager.canUseFullScreenIntent()
-    }
-
-    private fun requestFullScreenIntentPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
-            canUseFullScreenIntent()
-        ) {
+            getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        if (notificationManager.canUseFullScreenIntent()) {
             return false
         }
 
@@ -535,12 +538,15 @@ class MainActivity : FlutterFragmentActivity() {
             startActivity(
                 Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
                     data = Uri.parse("package:$packageName")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+                },
             )
             true
         } catch (error: Throwable) {
-            Log.e("MainActivity", "Failed to open full-screen intent settings", error)
+            Log.e(
+                "MainActivity",
+                "Failed to open full-screen incoming-call settings: ${error.message}",
+                error,
+            )
             false
         }
     }
@@ -612,15 +618,48 @@ class MainActivity : FlutterFragmentActivity() {
         if (intent?.getBooleanExtra("open_sip_call", false) != true) return
         intent.removeExtra("open_sip_call")
         val snapshot = NativeSipBridge.getStateSnapshot()
+        val callState = snapshot["callState"]?.toString()
         NativeSipBridge.recordDiagnosticEvent(
             event = "call_ui_intent_received",
             details = hashMapOf(
                 "source" to source,
-                "callState" to snapshot["callState"],
+                "callState" to callState,
                 "registrationState" to snapshot["registrationState"],
             ),
         )
-        NativeSipBridge.requestFlutterCallUi(source)
+        val activeCall = callState == "incoming" ||
+            callState == "calling" ||
+            callState == "ringing" ||
+            callState == "in_call"
+        if (activeCall) {
+            NativeSipBridge.requestFlutterCallUi(source)
+        } else {
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "call_ui_intent_ignored",
+                details = hashMapOf(
+                    "source" to source,
+                    "callState" to callState,
+                ),
+            )
+        }
+    }
+
+    private fun handleSipNotificationAction(intent: Intent?, source: String) {
+        if (intent?.getStringExtra("sip_notification_action") != "answer" &&
+            intent?.action != NativeSipActionReceiver.ACTION_ANSWER
+        ) {
+            return
+        }
+        intent.removeExtra("sip_notification_action")
+        intent.action = null
+        val accepted = NativeSipBridge.acceptCall()
+        NativeSipBridge.recordDiagnosticEvent(
+            event = if (accepted) "incoming_answered" else "incoming_answer_failed",
+            details = hashMapOf(
+                "source" to "notification-activity",
+                "activitySource" to source,
+            ),
+        )
     }
 
     private fun checkHasAnyNetwork(): Boolean {

@@ -599,6 +599,220 @@ extension _SipCallViewsExtension on _SipScreenState {
     );
   }
 
+  Future<void> _showAudioRoutePicker(BuildContext context) async {
+    final routes = await _sipRuntime.getAvailableAudioRoutes();
+    if (!context.mounted) return;
+
+    if (routes.isEmpty) {
+      await _sipRuntime.toggleSpeaker();
+      return;
+    }
+
+    if (Platform.isIOS) {
+      await _showIosAudioRoutePicker(context, routes);
+      return;
+    }
+    await _showAndroidAudioRoutePicker(context, routes);
+  }
+
+  IconData _audioRouteCupertinoIcon(String type) {
+    return switch (type) {
+      'bluetooth' => CupertinoIcons.headphones,
+      'speaker' => CupertinoIcons.speaker_3_fill,
+      'earpiece' => CupertinoIcons.device_phone_portrait,
+      'headset' => CupertinoIcons.headphones,
+      _ => CupertinoIcons.antenna_radiowaves_left_right,
+    };
+  }
+
+  IconData _audioRouteMaterialIcon(String type) {
+    return switch (type) {
+      'bluetooth' => Icons.bluetooth_audio_rounded,
+      'speaker' => Icons.volume_up_rounded,
+      'earpiece' => Icons.phone_android_rounded,
+      'headset' => Icons.headset_rounded,
+      _ => Icons.spatial_audio_off_rounded,
+    };
+  }
+
+  Future<void> _showIosAudioRoutePicker(
+    BuildContext context,
+    List<SipAudioRoute> routes,
+  ) async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) {
+        return CupertinoActionSheet(
+          title: const Text(
+            'Аудио',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          actions: routes.map((route) {
+            return CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                await _sipRuntime.selectAudioRoute(route);
+              },
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 34,
+                    child: Icon(
+                      _audioRouteCupertinoIcon(route.type),
+                      size: 22,
+                      color: CupertinoColors.label.resolveFrom(sheetContext),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      route.name,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        color: CupertinoColors.label.resolveFrom(sheetContext),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  if (route.selected)
+                    const Icon(
+                      CupertinoIcons.check_mark,
+                      size: 20,
+                      color: _G.accent,
+                    ),
+                ],
+              ),
+            );
+          }).toList(growable: false),
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(sheetContext).pop(),
+            child: const Text(
+              'Отмена',
+              style: TextStyle(
+                color: _G.accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showAndroidAudioRoutePicker(
+    BuildContext context,
+    List<SipAudioRoute> routes,
+  ) async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final sheetBackground = isDark ? const Color(0xFF111827) : Colors.white;
+    final selectedBackground =
+        isDark ? _G.accent.withValues(alpha: 0.16) : const Color(0xFFEAF2FF);
+    final selectedBorder = _G.accent.withValues(alpha: isDark ? 0.34 : 0.24);
+    final primaryText = isDark ? _G.textPrimary : _G.lightText;
+    final secondaryText = isDark ? _G.textSecondary : _G.lightSubtext;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: sheetBackground,
+      barrierColor: Colors.black.withValues(alpha: 0.32),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: secondaryText.withValues(alpha: 0.28),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 18, 10, 12),
+                child: Text(
+                  'Вывод звука',
+                  style: TextStyle(
+                    color: primaryText,
+                    fontFamily: 'Gilroy',
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ...routes.map((route) {
+                final selected = route.selected;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: ListTile(
+                    minTileHeight: 58,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                        color: selected ? selectedBorder : Colors.transparent,
+                        width: 0.8,
+                      ),
+                    ),
+                    tileColor:
+                        selected ? selectedBackground : Colors.transparent,
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? _G.accent.withValues(alpha: 0.12)
+                            : secondaryText.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _audioRouteMaterialIcon(route.type),
+                        size: 22,
+                        color: selected ? _G.accent : secondaryText,
+                      ),
+                    ),
+                    title: Text(
+                      route.name,
+                      style: TextStyle(
+                        color: primaryText,
+                        fontFamily: 'Gilroy',
+                        fontSize: 17,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                    trailing: selected
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: _G.accent,
+                          )
+                        : null,
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      await _sipRuntime.selectAudioRoute(route);
+                    },
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _iosCallControls(
     BuildContext context,
     SipUiState state, {
@@ -611,6 +825,15 @@ extension _SipCallViewsExtension on _SipScreenState {
     final buttonSize = keypadVisible ? (compact ? 72.0 : 78.0) : 84.0;
     final iconSize = keypadVisible ? 28.0 : 30.0;
     final labelFontSize = keypadVisible ? 13.0 : 15.0;
+    final audioRouteType = _sipRuntime.currentAudioRouteType ??
+        (state.isSpeakerOn ? 'speaker' : 'other');
+    final audioRouteLabel = switch (audioRouteType) {
+      'bluetooth' => _sipRuntime.currentAudioRouteName ?? 'Bluetooth',
+      'speaker' => 'Динамик',
+      'earpiece' => Platform.isIOS ? 'iPhone' : 'Телефон',
+      'headset' => 'Наушники',
+      _ => 'Аудио',
+    };
 
     return Column(
       children: [
@@ -618,10 +841,12 @@ extension _SipCallViewsExtension on _SipScreenState {
           children: [
             Expanded(
               child: _iosCircleAction(
-                icon: CupertinoIcons.speaker_3_fill,
-                label: l10n.translate('sip_speaker'),
-                onTap: _sipRuntime.toggleSpeaker,
-                active: state.isSpeakerOn,
+                icon: _audioRouteCupertinoIcon(audioRouteType),
+                label: audioRouteLabel,
+                onTap: () => _showAudioRoutePicker(context),
+                active: audioRouteType == 'speaker' ||
+                    audioRouteType == 'bluetooth' ||
+                    audioRouteType == 'headset',
                 size: buttonSize,
                 iconSize: iconSize,
                 labelFontSize: labelFontSize,
@@ -783,6 +1008,10 @@ extension _SipCallViewsExtension on _SipScreenState {
         final knobOffset = (_incomingAnswerDrag * maxDrag).clamp(0.0, maxDrag);
 
         return GestureDetector(
+          onTap: () {
+            _incomingAnswerDrag = 0;
+            unawaited(_sipRuntime.acceptCall());
+          },
           onHorizontalDragUpdate: (details) {
             if (maxDrag <= 0) return;
             _updateView(() {
@@ -792,9 +1021,9 @@ extension _SipCallViewsExtension on _SipScreenState {
             });
           },
           onHorizontalDragEnd: (_) {
-            if (_incomingAnswerDrag >= 0.82) {
+            if (_incomingAnswerDrag >= 0.60) {
               _incomingAnswerDrag = 0;
-              _sipRuntime.acceptCall();
+              unawaited(_sipRuntime.acceptCall());
               return;
             }
             _updateView(() {

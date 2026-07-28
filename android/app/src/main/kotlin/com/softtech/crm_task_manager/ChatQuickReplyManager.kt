@@ -9,6 +9,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -18,28 +19,47 @@ import kotlin.math.abs
 
 object ChatQuickReplyManager {
     const val ACTION_REPLY = "com.softtech.crm_task_manager.CHAT_REPLY"
+    const val ACTION_MARK_READ = "com.softtech.crm_task_manager.CHAT_MARK_READ"
     const val EXTRA_CHAT_ID = "chat_id"
+    const val EXTRA_MESSAGE_ID = "message_id"
     const val EXTRA_NOTIFICATION_ID = "notification_id"
     const val KEY_TEXT_REPLY = "chat_reply_text"
 
     private const val TAG = "ChatQuickReply"
     private const val CHANNEL_ID = "chat_messages"
     private const val CHANNEL_NAME = "Сообщения чата"
+    private const val CHAT_HISTORY_PREFS = "chat_notification_history"
     private const val FLUTTER_PREFS = "FlutterSharedPreferences"
+    private const val MAX_HISTORY_MESSAGES = 5
 
     fun isChatMessagePush(data: Map<String, String>): Boolean {
         val type = pick(data, "type", "event")?.lowercase()
+        val explicitChatId = pick(data, "chat_id", "chatId")
         val chatId = resolveChatId(data)
-        return type == "message" && !chatId.isNullOrBlank()
+        val hasMessagePayload = !pick(
+            data,
+            "message_id",
+            "messageId",
+            "message_text",
+            "messageText",
+            "sender_name",
+            "senderName",
+        ).isNullOrBlank()
+        val isMessageType = type == "message" || type == "chat_message" || type == "new_message"
+
+        return !chatId.isNullOrBlank() && (isMessageType || (!explicitChatId.isNullOrBlank() && hasMessagePayload))
     }
 
     fun showNotification(context: Context, data: Map<String, String>) {
         val chatId = resolveChatId(data) ?: return
-        val notificationId = notificationIdFor(chatId, pick(data, "message_id", "messageId"))
+        val messageId = resolveMessageId(data)
+        val notificationId = notificationIdFor(chatId)
         val title = pick(data, "sender_name", "senderName", "title", "gcm.n.title")
             ?: "Новое сообщение"
         val body = pick(data, "message_text", "messageText", "body", "gcm.n.body")
             ?: "Сообщение"
+        val history = appendHistory(context, chatId, title, body, messageId)
+        val contentTitle = if (history.size > 1) "$title (${history.size})" else title
 
         ensureChannel(context)
 
@@ -81,18 +101,43 @@ object ChatQuickReplyManager {
             replyPendingIntent,
         ).addRemoteInput(remoteInput).setAllowGeneratedReplies(true).build()
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(context.applicationInfo.icon)
-            .setContentTitle(title)
+            .setContentTitle(contentTitle)
             .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setStyle(buildInboxStyle(contentTitle, history))
             .setContentIntent(openPendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setGroup("chat_$chatId")
+            .setShortcutId("chat_$chatId")
+            .setNumber(history.size)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .addAction(replyAction)
-            .build()
+
+        if (!messageId.isNullOrBlank()) {
+            val markReadIntent = Intent(context, ChatQuickReplyReceiver::class.java).apply {
+                action = ACTION_MARK_READ
+                putExtra(EXTRA_CHAT_ID, chatId)
+                putExtra(EXTRA_MESSAGE_ID, messageId)
+                putExtra(EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val markReadPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId + 10_000,
+                markReadIntent,
+                pendingIntentFlags(mutable = false),
+            )
+            val markReadAction = NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_agenda,
+                "Пометить прочитанным",
+                markReadPendingIntent,
+            ).build()
+            builder.addAction(markReadAction)
+        }
+
+        val notification = builder.build()
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(notificationId, notification)
@@ -102,7 +147,7 @@ object ChatQuickReplyManager {
         val results = RemoteInput.getResultsFromIntent(intent)
         val replyText = results?.getCharSequence(KEY_TEXT_REPLY)?.toString()?.trim().orEmpty()
         val chatId = intent.getStringExtra(EXTRA_CHAT_ID).orEmpty()
-        val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, notificationIdFor(chatId, null))
+        val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, notificationIdFor(chatId))
 
         if (replyText.isBlank() || chatId.isBlank()) {
             return
@@ -116,7 +161,7 @@ object ChatQuickReplyManager {
                 .isSuccess
 
             if (sent) {
-                showSentState(context.applicationContext, notificationId)
+                clearChatNotification(context.applicationContext, chatId, notificationId)
             } else {
                 showFailedState(context.applicationContext, notificationId, chatId)
             }
@@ -124,14 +169,54 @@ object ChatQuickReplyManager {
         }
     }
 
+    fun markReadAsync(receiver: android.content.BroadcastReceiver, context: Context, intent: Intent) {
+        val chatId = intent.getStringExtra(EXTRA_CHAT_ID).orEmpty()
+        val messageId = intent.getStringExtra(EXTRA_MESSAGE_ID).orEmpty()
+        val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, notificationIdFor(chatId))
+
+        if (chatId.isBlank() || messageId.isBlank()) {
+            return
+        }
+
+        val pendingResult = receiver.goAsync()
+        thread(name = "chat-mark-read") {
+            val marked = runCatching { markMessagesRead(context.applicationContext, chatId, messageId) }
+                .onFailure { Log.e(TAG, "Mark read failed", it) }
+                .isSuccess
+
+            if (marked) {
+                clearChatNotification(context.applicationContext, chatId, notificationId)
+            } else {
+                showMarkReadFailedState(context.applicationContext, notificationId, chatId)
+            }
+            pendingResult.finish()
+        }
+    }
+
     private fun sendMessage(context: Context, chatId: String, message: String) {
+        postJson(
+            context = context,
+            path = "/v2/chat/sendMessage/$chatId",
+            body = JSONObject().put("message", message),
+        )
+    }
+
+    private fun markMessagesRead(context: Context, chatId: String, messageId: String) {
+        val parsedMessageId = messageId.toLongOrNull() ?: messageId
+        postJson(
+            context = context,
+            path = "/v2/chat/readMessages/$chatId",
+            body = JSONObject().put("up_to_message_id", parsedMessageId),
+        )
+    }
+
+    private fun postJson(context: Context, path: String, body: JSONObject) {
         val baseUrl = resolveBaseUrl(context)
             ?: throw IllegalStateException("Base URL is not available")
         val token = readPref(context, "token")
             ?: throw IllegalStateException("Auth token is not available")
         val query = buildQuery(context)
-        val url = URL("$baseUrl/v2/chat/sendMessage/$chatId$query")
-        val body = JSONObject().put("message", message).toString()
+        val url = URL("$baseUrl$path$query")
 
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -145,7 +230,7 @@ object ChatQuickReplyManager {
         }
 
         OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
-            writer.write(body)
+            writer.write(body.toString())
         }
 
         val statusCode = connection.responseCode
@@ -238,6 +323,11 @@ object ChatQuickReplyManager {
         manager.cancel(notificationId)
     }
 
+    private fun clearChatNotification(context: Context, chatId: String, notificationId: Int) {
+        clearHistory(context, chatId)
+        showSentState(context, notificationId)
+    }
+
     private fun showFailedState(context: Context, notificationId: Int, chatId: String) {
         ensureChannel(context)
         val openIntent = Intent(context, MainActivity::class.java).apply {
@@ -263,8 +353,104 @@ object ChatQuickReplyManager {
             .notify(notificationId, notification)
     }
 
+    private fun showMarkReadFailedState(context: Context, notificationId: Int, chatId: String) {
+        ensureChannel(context)
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("type", "message")
+            putExtra("id", chatId)
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId + 2,
+            openIntent,
+            pendingIntentFlags(mutable = false),
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(context.applicationInfo.icon)
+            .setContentTitle("Не удалось отметить прочитанным")
+            .setContentText("Откройте чат и попробуйте ещё раз")
+            .setContentIntent(openPendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(notificationId, notification)
+    }
+
     private fun resolveChatId(data: Map<String, String>): String? =
         pick(data, "chat_id", "chatId", "id")
+
+    private fun resolveMessageId(data: Map<String, String>): String? =
+        pick(data, "message_id", "messageId", "notification_message_id", "up_to_message_id")
+
+    private fun buildInboxStyle(
+        contentTitle: String,
+        history: List<ChatNotificationMessage>,
+    ): NotificationCompat.InboxStyle {
+        val style = NotificationCompat.InboxStyle().setBigContentTitle(contentTitle)
+        history.forEach { message ->
+            val senderPrefix = if (message.sender.isNotBlank()) "${message.sender}: " else ""
+            style.addLine("$senderPrefix${message.text}")
+        }
+        return style
+    }
+
+    private fun appendHistory(
+        context: Context,
+        chatId: String,
+        sender: String,
+        text: String,
+        messageId: String?,
+    ): List<ChatNotificationMessage> {
+        val prefs = context.getSharedPreferences(CHAT_HISTORY_PREFS, Context.MODE_PRIVATE)
+        val history = readHistory(prefs.getString(chatId, null)).toMutableList()
+        if (!messageId.isNullOrBlank()) {
+            history.removeAll { it.messageId == messageId }
+        }
+        history.add(ChatNotificationMessage(sender = sender, text = text, messageId = messageId))
+
+        val trimmed = history.takeLast(MAX_HISTORY_MESSAGES)
+        val json = JSONArray()
+        trimmed.forEach { message ->
+            json.put(
+                JSONObject()
+                    .put("sender", message.sender)
+                    .put("text", message.text)
+                    .put("message_id", message.messageId),
+            )
+        }
+        prefs.edit().putString(chatId, json.toString()).apply()
+        return trimmed
+    }
+
+    private fun readHistory(raw: String?): List<ChatNotificationMessage> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val item = array.optJSONObject(index) ?: continue
+                    val text = item.optString("text").trim()
+                    if (text.isBlank()) continue
+                    add(
+                        ChatNotificationMessage(
+                            sender = item.optString("sender").trim(),
+                            text = text,
+                            messageId = item.optString("message_id").trim().takeIf { it.isNotBlank() },
+                        ),
+                    )
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun clearHistory(context: Context, chatId: String) {
+        context.getSharedPreferences(CHAT_HISTORY_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .remove(chatId)
+            .apply()
+    }
 
     private fun pick(data: Map<String, String>, vararg keys: String): String? {
         for (key in keys) {
@@ -276,8 +462,8 @@ object ChatQuickReplyManager {
         return null
     }
 
-    private fun notificationIdFor(chatId: String, messageId: String?): Int {
-        val seed = "${chatId}_${messageId.orEmpty()}".hashCode()
+    private fun notificationIdFor(chatId: String): Int {
+        val seed = "chat_$chatId".hashCode()
         return abs(seed.takeIf { it != Int.MIN_VALUE } ?: 1)
     }
 
@@ -288,4 +474,10 @@ object ChatQuickReplyManager {
         }
         return flags
     }
+
+    private data class ChatNotificationMessage(
+        val sender: String,
+        val text: String,
+        val messageId: String?,
+    )
 }

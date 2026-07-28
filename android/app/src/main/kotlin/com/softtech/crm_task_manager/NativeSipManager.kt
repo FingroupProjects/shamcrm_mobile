@@ -7,6 +7,7 @@ import android.util.Log
 import org.linphone.core.Account
 import org.linphone.core.AccountParams
 import org.linphone.core.AVPFMode
+import org.linphone.core.AudioDevice
 import org.linphone.core.Call
 import org.linphone.core.CallParams
 import org.linphone.core.Core
@@ -22,6 +23,7 @@ class NativeSipManager(
 ) {
     companion object {
         private const val TAG = "NativeSipManager"
+        private const val DUPLICATE_INCOMING_WINDOW_MS = 5_000L
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -32,9 +34,15 @@ class NativeSipManager(
     private var currentAccount: Account? = null
     private var currentCall: Call? = null
     private var isSpeakerOn = false
+    private var selectedAudioDeviceId: String? = null
     private var currentDomain: String = ""
     private var desiredRegistrationEnabled = false
     private var lastCallState: String = "idle"
+    private var currentIncomingRemote: String? = null
+    private var currentIncomingConnected = false
+    private var lastUnansweredIncomingRemote: String? = null
+    private var lastUnansweredIncomingEndedAtMs = 0L
+    private var answerInProgress = false
 
     fun setEventListener(listener: ((HashMap<String, Any?>) -> Unit)?) {
         eventListener = listener
@@ -122,13 +130,13 @@ class NativeSipManager(
             sipCore.setDefaultAccount(account)
             currentAccount = account
 
-            emitRegistration("registering", "Starting native SIP registration")
+            emitRegistration("registering", "Подключение телефонии")
             sipCore.start()
             Log.d(TAG, "register invoked core.start()")
             true
         } catch (error: Throwable) {
             Log.e(TAG, "register failed: ${error.message}", error)
-            emitRegistration("failed", error.message ?: "Native SIP registration failed")
+            emitRegistration("failed", error.message ?: "Не удалось подключить телефонию")
             false
         }
     }
@@ -150,7 +158,7 @@ class NativeSipManager(
         } catch (_: Throwable) {
         }
 
-        emitRegistration("disconnected", "Native SIP disconnected")
+        emitRegistration("disconnected", "Телефония отключена")
         emitCallState("ended", null, "Call ended")
     }
 
@@ -187,6 +195,7 @@ class NativeSipManager(
             params.setCapabilityNegotiationsEnabled(false)
             params.setCapabilityNegotiationReinviteEnabled(false)
             params.setEarlyMediaSendingEnabled(false)
+            params.setToneIndicationsEnabled(true)
             params.setMicEnabled(true)
             params.setMediaEncryption(MediaEncryption.None)
 
@@ -194,22 +203,45 @@ class NativeSipManager(
             currentCall = call
 
             if (call == null) {
-                emitCallState("failed", target, "Failed to start native SIP call")
+                emitCallState("failed", target, "Не удалось начать звонок через телефонию")
                 false
             } else {
-                emitCallState("calling", remoteIdentityFor(call), "Native SIP call started")
+                emitCallState("calling", remoteIdentityFor(call), "Звонок начат")
                 true
             }
         } catch (error: Throwable) {
             Log.e(TAG, "makeCall failed: ${error.message}", error)
-            emitCallState("failed", target, error.message ?: "Native SIP call failed")
+            emitCallState("failed", target, error.message ?: "Не удалось выполнить звонок")
             false
         }
     }
 
+    @Synchronized
     fun acceptCall(): Boolean {
-        val call = currentCall ?: return false
+        if (answerInProgress) {
+            Log.d(TAG, "acceptCall coalesced: answer already in progress")
+            return true
+        }
+        val call = currentCall ?: try {
+            core?.getCalls()?.firstOrNull { candidate ->
+                candidate.getState().toString() == "IncomingReceived"
+            }
+        } catch (_: Throwable) {
+            null
+        } ?: return false
         return try {
+            val stateBeforeAccept = call.getState().toString()
+            if (stateBeforeAccept == "Connected" ||
+                stateBeforeAccept == "StreamsRunning"
+            ) {
+                currentCall = call
+                return true
+            }
+            if (stateBeforeAccept != "IncomingReceived") {
+                Log.w(TAG, "acceptCall ignored for state=$stateBeforeAccept")
+                return false
+            }
+            answerInProgress = true
             val params = requireNotNull(core?.createCallParams(call)) {
                 "Failed to create accept params"
             }
@@ -221,9 +253,67 @@ class NativeSipManager(
             params.setEarlyMediaSendingEnabled(false)
             params.setMicEnabled(true)
             params.setMediaEncryption(MediaEncryption.None)
-            call.acceptWithParams(params)
+            val acceptStatus = call.acceptWithParams(params)
+            if (acceptStatus != 0) {
+                answerInProgress = false
+                Log.e(TAG, "acceptCall rejected by Linphone: status=$acceptStatus")
+                emit(
+                    type = "answer_action",
+                    payload = hashMapOf(
+                        "result" to "rejected",
+                        "status" to acceptStatus,
+                        "callState" to call.getState().toString(),
+                        "remoteIdentity" to remoteIdentityFor(call),
+                    ),
+                )
+                emitCallState(
+                    state = "failed",
+                    remoteIdentity = remoteIdentityFor(call),
+                    message = "Accept call failed (status=$acceptStatus)",
+                    muted = call.getMicrophoneMuted(),
+                    speakerOn = isSpeakerOn,
+                )
+                return false
+            }
+
+            // acceptWithParams() may synchronously deliver Connected, Error or
+            // End through onCallStateChanged(). Never overwrite that callback
+            // with a synthetic in_call state: the UI must open the conversation
+            // only after Linphone confirms Connected/StreamsRunning.
+            val stateAfterAccept = call.getState().toString()
+            if (stateAfterAccept == "End" ||
+                stateAfterAccept == "Released" ||
+                stateAfterAccept == "Error"
+            ) {
+                Log.w(
+                    TAG,
+                    "acceptCall completed after terminal callback: state=$stateAfterAccept",
+                )
+                emit(
+                    type = "answer_action",
+                    payload = hashMapOf(
+                        "result" to "terminal",
+                        "status" to acceptStatus,
+                        "callState" to stateAfterAccept,
+                        "remoteIdentity" to remoteIdentityFor(call),
+                    ),
+                )
+                answerInProgress = false
+                return false
+            }
+            Log.d(TAG, "acceptCall requested successfully: state=$stateAfterAccept")
+            emit(
+                type = "answer_action",
+                payload = hashMapOf(
+                    "result" to "requested",
+                    "status" to acceptStatus,
+                    "callState" to stateAfterAccept,
+                    "remoteIdentity" to remoteIdentityFor(call),
+                ),
+            )
             true
         } catch (error: Throwable) {
+            answerInProgress = false
             Log.e(TAG, "acceptCall failed: ${error.message}", error)
             emitCallState("failed", remoteIdentityFor(call), error.message ?: "Accept call failed")
             false
@@ -241,18 +331,28 @@ class NativeSipManager(
         }
     }
 
+    @Synchronized
     fun hangup(): Boolean {
-        val call = currentCall
-        if (call == null) {
-            val hasVisibleCall = lastCallState == "incoming" ||
-                lastCallState == "calling" ||
-                lastCallState == "ringing" ||
-                lastCallState == "in_call"
-            if (!hasVisibleCall) return false
+        val call = currentCall?.takeUnless { candidate ->
+            val state = candidate.getState().toString()
+            state == "End" || state == "Released" || state == "Error"
+        } ?: try {
+            core?.getCalls()?.firstOrNull { candidate ->
+                val state = candidate.getState().toString()
+                state != "End" && state != "Released" && state != "Error"
+            }
+        } catch (_: Throwable) {
+            null
+        }
 
+        if (call == null) {
+            // An already released call is a successful idempotent hangup.
+            // Flutter can still show "calling" when a terminal event races
+            // with the makeCall method result, so always converge to ended.
+            currentCall = null
             isSpeakerOn = false
             lastCallState = "ended"
-            emitCallState("ended", null, "Call ended locally")
+            emitCallState("ended", null, "Call already ended locally")
             return true
         }
 
@@ -310,6 +410,7 @@ class NativeSipManager(
     }
 
     fun setSpeaker(enabled: Boolean): Boolean {
+        selectedAudioDeviceId = null
         isSpeakerOn = enabled
         val sipCore = core
         if (sipCore == null) {
@@ -326,7 +427,7 @@ class NativeSipManager(
             val desired = preferredAudioDevice(sipCore, speakerEnabled = enabled)
 
             if (desired != null) {
-                sipCore.setOutputAudioDevice(desired)
+                applyAudioDevicePair(sipCore, desired)
                 emitAudioRouteState(
                     state = "audio_device_selected",
                     reason = if (enabled) "speaker_enabled" else "speaker_disabled",
@@ -356,6 +457,72 @@ class NativeSipManager(
         }
     }
 
+    fun getAudioRoutes(): ArrayList<HashMap<String, Any?>> {
+        val sipCore = core ?: return arrayListOf()
+        val selectedId = try {
+            sipCore.getOutputAudioDevice()?.getId()
+        } catch (_: Throwable) {
+            null
+        }
+
+        return sipCore.getAudioDevices()
+            .filter { device ->
+                try {
+                    device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+                } catch (_: Throwable) {
+                    audioRouteTypeKey(device) != "microphone"
+                }
+            }
+            .distinctBy { it.getId() }
+            .sortedByDescending { audioRoutePriority(it) }
+            .mapTo(arrayListOf()) { device ->
+                hashMapOf<String, Any?>(
+                    "id" to device.getId(),
+                    "type" to audioRouteTypeKey(device),
+                    "name" to audioRouteDisplayName(device),
+                    "selected" to (device.getId() == selectedId),
+                )
+            }
+    }
+
+    fun setAudioRoute(deviceId: String): Boolean {
+        val sipCore = core ?: return false
+        val normalizedId = deviceId.trim()
+        if (normalizedId.isEmpty()) return false
+
+        return try {
+            val devices = sipCore.getAudioDevices().toList()
+            val outputDevice = devices.firstOrNull { device ->
+                device.getId() == normalizedId &&
+                    device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+            } ?: return false
+
+            applyAudioDevicePair(sipCore, outputDevice)
+            val routeType = audioRouteTypeKey(outputDevice)
+
+            selectedAudioDeviceId = outputDevice.getId()
+            isSpeakerOn = routeType == "speaker"
+            emitAudioRouteState(
+                state = "audio_device_selected",
+                reason = "user_selected",
+                deviceType = audioDeviceTypeName(outputDevice),
+                deviceId = outputDevice.getId(),
+                deviceName = audioRouteDisplayName(outputDevice),
+            )
+            emitCallState(
+                state = lastCallState,
+                remoteIdentity = remoteIdentityFor(currentCall),
+                message = "Audio route changed",
+                muted = currentCall?.getMicrophoneMuted() ?: false,
+                speakerOn = isSpeakerOn,
+            )
+            true
+        } catch (error: Throwable) {
+            Log.e(TAG, "setAudioRoute failed: ${error.message}", error)
+            false
+        }
+    }
+
     fun dispose() {
         desiredRegistrationEnabled = false
         try {
@@ -381,9 +548,15 @@ class NativeSipManager(
             core?.let { sipCore ->
                 markNetworkReachable(sipCore)
                 sipCore.enterForeground()
-                if (desiredRegistrationEnabled) {
+                val hasActiveCall = lastCallState == "incoming" ||
+                    lastCallState == "calling" ||
+                    lastCallState == "ringing" ||
+                    lastCallState == "in_call"
+                if (desiredRegistrationEnabled && !hasActiveCall) {
                     sipCore.ensureRegistered()
                     Log.d(TAG, "onAppForeground: core.ensureRegistered()")
+                } else if (hasActiveCall) {
+                    Log.d(TAG, "onAppForeground: registration refresh skipped during $lastCallState")
                 }
             }
         } catch (_: Throwable) {
@@ -409,7 +582,9 @@ class NativeSipManager(
         createdCore.setMediaEncryption(MediaEncryption.None)
         createdCore.setMediaEncryptionMandatory(false)
         createdCore.setNativeRingingEnabled(false)
-        createdCore.disableCallRinging(false)
+        // Incoming ringtone is owned by NativeSipForegroundService.
+        // Keeping Linphone ringing enabled creates a second simultaneous melody.
+        createdCore.disableCallRinging(true)
         markNetworkReachable(createdCore)
 
         val natPolicy = createdCore.createNatPolicy()
@@ -432,7 +607,7 @@ class NativeSipManager(
                     else -> mapRegistrationState(rawState)
                 }
                 val effectiveMessage = when {
-                    rawState == "Cleared" && desiredRegistrationEnabled -> "Refreshing SIP registration"
+                    rawState == "Cleared" && desiredRegistrationEnabled -> "Обновляем подключение телефонии"
                     else -> message.ifEmpty { mappedState }
                 }
                 Log.d(
@@ -452,7 +627,53 @@ class NativeSipManager(
                 state: Call.State,
                 message: String,
             ) {
-                val mappedState = mapCallState(state.toString(), message)
+                val rawState = state.toString()
+                val rawMessage = message.ifEmpty { rawState }
+                val remoteIdentity = remoteIdentityFor(call)
+                if (rawState == "IncomingReceived") {
+                    val now = System.currentTimeMillis()
+                    val elapsedSinceUnanswered =
+                        now - lastUnansweredIncomingEndedAtMs
+                    val duplicateBurst =
+                        lastUnansweredIncomingEndedAtMs > 0L &&
+                            elapsedSinceUnanswered in 0..DUPLICATE_INCOMING_WINDOW_MS &&
+                            normalizedRemoteIdentity(remoteIdentity) ==
+                            normalizedRemoteIdentity(lastUnansweredIncomingRemote)
+                    if (duplicateBurst) {
+                        lastUnansweredIncomingEndedAtMs = now
+                        Log.w(
+                            TAG,
+                            "Suppressing duplicate incoming burst: remote=$remoteIdentity, elapsedMs=$elapsedSinceUnanswered",
+                        )
+                        emit(
+                            type = "incoming_duplicate_suppressed",
+                            payload = hashMapOf(
+                                "remoteIdentity" to remoteIdentity,
+                                "elapsedMs" to elapsedSinceUnanswered,
+                                "windowMs" to DUPLICATE_INCOMING_WINDOW_MS,
+                            ),
+                        )
+                        try {
+                            call.terminate()
+                        } catch (error: Throwable) {
+                            Log.w(TAG, "Failed to terminate duplicate incoming call: ${error.message}")
+                        }
+                        return
+                    }
+                    currentIncomingRemote = remoteIdentity
+                    currentIncomingConnected = false
+                }
+                val callReason = try {
+                    call.getReason().toString()
+                } catch (_: Throwable) {
+                    null
+                }
+                val errorInfo = try {
+                    call.getErrorInfo()
+                } catch (_: Throwable) {
+                    null
+                }
+                val mappedState = mapCallState(rawState, message)
                 val previousCallState = lastCallState
                 val effectiveMappedState =
                     if (shouldTreatEarlyTerminationAsEnded(mappedState, previousCallState)) {
@@ -470,16 +691,40 @@ class NativeSipManager(
                     }
                 Log.d(
                     TAG,
-                    "onCallStateChanged: rawState=${state.toString()}, mappedState=$mappedState, effectiveMappedState=$effectiveMappedState, previousCallState=$previousCallState, remote=${remoteIdentityFor(call)}, message=$effectiveMessage",
+                    "onCallStateChanged: rawState=$rawState, mappedState=$mappedState, effectiveMappedState=$effectiveMappedState, previousCallState=$previousCallState, remote=$remoteIdentity, rawMessage=$rawMessage, effectiveMessage=$effectiveMessage, reason=$callReason, protocol=${errorInfo?.getProtocol()}, protocolCode=${errorInfo?.getProtocolCode()}, phrase=${errorInfo?.getPhrase()}",
                 )
                 currentCall = when (effectiveMappedState) {
                     "ended", "failed", "idle" -> null
                     else -> call
                 }
 
-                val remoteIdentity = remoteIdentityFor(call)
+                if (effectiveMappedState == "ended" ||
+                    effectiveMappedState == "failed"
+                ) {
+                    answerInProgress = false
+                }
+                if (effectiveMappedState == "in_call") {
+                    answerInProgress = false
+                    currentIncomingConnected = true
+                } else if ((effectiveMappedState == "ended" ||
+                        effectiveMappedState == "failed") &&
+                    previousCallState == "incoming" &&
+                    !currentIncomingConnected
+                ) {
+                    lastUnansweredIncomingRemote =
+                        currentIncomingRemote ?: remoteIdentity
+                    lastUnansweredIncomingEndedAtMs = System.currentTimeMillis()
+                    currentIncomingRemote = null
+                    currentIncomingConnected = false
+                } else if (effectiveMappedState == "ended" ||
+                    effectiveMappedState == "failed"
+                ) {
+                    currentIncomingRemote = null
+                    currentIncomingConnected = false
+                }
                 if (state.toString() == "End" || state.toString() == "Released") {
                     isSpeakerOn = false
+                    selectedAudioDeviceId = null
                 }
 
                 lastCallState = effectiveMappedState
@@ -496,7 +741,53 @@ class NativeSipManager(
                     message = effectiveMessage,
                     muted = call.getMicrophoneMuted(),
                     speakerOn = isSpeakerOn,
+                    diagnostics = hashMapOf(
+                        "rawState" to rawState,
+                        "rawMessage" to rawMessage,
+                        "previousCallState" to previousCallState,
+                        "reason" to callReason,
+                        "protocol" to errorInfo?.getProtocol(),
+                        "protocolCode" to errorInfo?.getProtocolCode(),
+                        "phrase" to errorInfo?.getPhrase(),
+                        "warnings" to errorInfo?.getWarnings(),
+                    ),
                 )
+            }
+
+            override fun onAudioDeviceChanged(core: Core, audioDevice: AudioDevice) {
+                // Linphone reports input and output device changes through the
+                // same callback. A Bluetooth capture endpoint is a microphone,
+                // not a valid playback route. Treating it as the output caused
+                // ringback and speech to be routed through the wrong endpoint.
+                if (!audioDevice.hasCapability(
+                        AudioDevice.Capabilities.CapabilityPlay,
+                    )
+                ) {
+                    return
+                }
+                val routeType = audioRouteTypeKey(audioDevice)
+                isSpeakerOn = routeType == "speaker"
+                emitAudioRouteState(
+                    state = "audio_device_selected",
+                    reason = "device_changed",
+                    deviceType = audioDeviceTypeName(audioDevice),
+                    deviceId = audioDevice.getId(),
+                    deviceName = audioRouteDisplayName(audioDevice),
+                )
+            }
+
+            override fun onAudioDevicesListUpdated(core: Core) {
+                if (!isEarlyCallState(lastCallState) && lastCallState != "in_call") {
+                    return
+                }
+                val selectedStillAvailable = selectedAudioDeviceId?.let { selectedId ->
+                    core.getAudioDevices().any { it.getId() == selectedId }
+                } ?: true
+                if (!selectedStillAvailable) {
+                    selectedAudioDeviceId = null
+                    isSpeakerOn = false
+                }
+                tryApplySpeakerPreference(core)
             }
         }
 
@@ -508,9 +799,11 @@ class NativeSipManager(
 
     private fun tryApplySpeakerPreference(sipCore: Core) {
         try {
-            val desired = preferredAudioDevice(sipCore, speakerEnabled = isSpeakerOn)
+            val desired = selectedAudioDeviceId?.let { selectedId ->
+                sipCore.getAudioDevices().firstOrNull { it.getId() == selectedId }
+            } ?: preferredAudioDevice(sipCore, speakerEnabled = isSpeakerOn)
             if (desired != null) {
-                sipCore.setOutputAudioDevice(desired)
+                applyAudioDevicePair(sipCore, desired)
                 emitAudioRouteState(
                     state = "audio_device_selected",
                     reason = "call_state_$lastCallState",
@@ -522,10 +815,32 @@ class NativeSipManager(
         }
     }
 
+    private fun applyAudioDevicePair(sipCore: Core, outputDevice: AudioDevice) {
+        sipCore.setOutputAudioDevice(outputDevice)
+        val devices = sipCore.getAudioDevices()
+        val routeType = audioRouteTypeKey(outputDevice)
+        val inputDevice = devices.firstOrNull { device ->
+            device.getId() == outputDevice.getId() &&
+                device.hasCapability(AudioDevice.Capabilities.CapabilityRecord)
+        } ?: devices.firstOrNull { device ->
+            audioRouteTypeKey(device) == routeType &&
+                device.hasCapability(AudioDevice.Capabilities.CapabilityRecord)
+        } ?: devices.firstOrNull { device ->
+            audioRouteTypeKey(device) == "microphone" &&
+                device.hasCapability(AudioDevice.Capabilities.CapabilityRecord)
+        }
+        if (inputDevice != null) {
+            sipCore.setInputAudioDevice(inputDevice)
+        }
+    }
+
     private fun preferredAudioDevice(
         sipCore: Core,
         speakerEnabled: Boolean,
     ) = sipCore.getAudioDevices()
+        .filter { device ->
+            device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+        }
         .map { device -> device to audioDevicePriority(device, speakerEnabled) }
         .filter { (_, priority) -> priority > 0 }
         .maxByOrNull { (_, priority) -> priority }
@@ -552,10 +867,44 @@ class NativeSipManager(
         return device.getType().toString()
     }
 
+    private fun audioRouteTypeKey(device: AudioDevice): String {
+        return when (device.getType().toString().lowercase()) {
+            "bluetooth", "bluetootha2dp", "hearingaid" -> "bluetooth"
+            "earpiece", "telephony" -> "earpiece"
+            "speaker" -> "speaker"
+            "headset", "headphones", "auxline", "genericusb" -> "headset"
+            "microphone" -> "microphone"
+            else -> "other"
+        }
+    }
+
+    private fun audioRouteDisplayName(device: AudioDevice): String {
+        val deviceName = device.getDeviceName().trim()
+        return when (audioRouteTypeKey(device)) {
+            "bluetooth" -> deviceName.ifEmpty { "Bluetooth-наушники" }
+            "earpiece" -> "Телефон"
+            "speaker" -> "Громкая связь"
+            "headset" -> deviceName.ifEmpty { "Проводные наушники" }
+            else -> deviceName.ifEmpty { "Аудиоустройство" }
+        }
+    }
+
+    private fun audioRoutePriority(device: AudioDevice): Int {
+        return when (audioRouteTypeKey(device)) {
+            "bluetooth" -> 50
+            "headset" -> 40
+            "earpiece" -> 30
+            "speaker" -> 20
+            else -> 10
+        }
+    }
+
     private fun emitAudioRouteState(
         state: String,
         reason: String,
         deviceType: String,
+        deviceId: String? = null,
+        deviceName: String? = null,
     ) {
         emit(
             type = "audio_session",
@@ -563,6 +912,8 @@ class NativeSipManager(
                 "state" to state,
                 "reason" to reason,
                 "output" to deviceType.lowercase(),
+                "outputDeviceId" to deviceId,
+                "outputDeviceName" to deviceName,
                 "speakerOn" to isSpeakerOn,
                 "callState" to lastCallState,
             ),
@@ -585,17 +936,17 @@ class NativeSipManager(
         message: String,
         muted: Boolean = false,
         speakerOn: Boolean = false,
+        diagnostics: HashMap<String, Any?> = hashMapOf(),
     ) {
-        emit(
-            type = "call",
-            payload = hashMapOf(
+        val payload = hashMapOf<String, Any?>(
                 "state" to state,
                 "remoteIdentity" to remoteIdentity,
                 "message" to message,
                 "muted" to muted,
                 "speakerOn" to speakerOn,
-            ),
         )
+        payload.putAll(diagnostics)
+        emit(type = "call", payload = payload)
     }
 
     private fun emit(type: String, payload: HashMap<String, Any?>) {
@@ -679,5 +1030,9 @@ class NativeSipManager(
         } catch (_: Throwable) {
             null
         }
+    }
+
+    private fun normalizedRemoteIdentity(value: String?): String {
+        return value?.trim()?.lowercase().orEmpty()
     }
 }

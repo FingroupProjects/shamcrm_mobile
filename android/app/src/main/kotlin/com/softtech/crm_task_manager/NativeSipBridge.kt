@@ -34,6 +34,7 @@ object NativeSipBridge {
     private const val KEY_ENABLED = "enabled"
     private const val KEY_PENDING_CALL_UI_OPEN = "pending_call_ui_open"
     private const val KEY_PENDING_CALL_UI_REQUEST_ID = "pending_call_ui_request_id"
+    private const val KEY_ACTIVE_CALL_UI_REQUEST_ID = "active_call_ui_request_id"
     private const val DIAGNOSTIC_PREFS = "native_sip_diagnostics"
     private const val KEY_DIAGNOSTIC_LOGS = "logs"
     private const val MAX_DIAGNOSTIC_LOGS = 500
@@ -71,7 +72,7 @@ object NativeSipBridge {
         val context = appContext ?: return
         val started = NativeSipForegroundService.start(context)
         if (!started) {
-            currentSnapshot["message"] = "Foreground SIP service was not started: $reason"
+            currentSnapshot["message"] = "Сервис телефонии не был запущен: $reason"
             Log.w(TAG, "Foreground SIP service was not started: $reason")
         }
     }
@@ -121,18 +122,36 @@ object NativeSipBridge {
         }
     }
 
-    fun requestFlutterCallUi(source: String) {
-        val context = appContext ?: return
-        val requestId = System.currentTimeMillis()
-        context.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+    @Synchronized
+    fun requestFlutterCallUi(source: String): Boolean {
+        val context = appContext ?: return false
+        val callState = currentSnapshot["callState"]?.toString()
+        if (!isActiveCallState(callState)) {
+            recordDiagnosticEvent(
+                event = "call_ui_request_ignored",
+                details = hashMapOf(
+                    "source" to source,
+                    "callState" to callState,
+                ),
+            )
+            clearCallUiRequestState(clearActiveRequest = true)
+            return false
+        }
+
+        val flags = context.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+        val existingRequestId = flags.getLong(KEY_ACTIVE_CALL_UI_REQUEST_ID, 0L)
+        val requestId = existingRequestId.takeIf { it > 0L } ?: newCallUiRequestId()
+        flags
             .edit()
             .putBoolean(KEY_PENDING_CALL_UI_OPEN, true)
             .putLong(KEY_PENDING_CALL_UI_REQUEST_ID, requestId)
+            .putLong(KEY_ACTIVE_CALL_UI_REQUEST_ID, requestId)
             .apply()
 
         if (flutterEventSink != null) {
             dispatchBridgeEvent(buildCallUiRequestEvent(source))
         }
+        return true
     }
 
     private fun buildCallUiRequestEvent(source: String): HashMap<String, Any?> {
@@ -212,6 +231,11 @@ object NativeSipBridge {
             enabled = true,
         )
         val currentState = currentSnapshot["registrationState"]?.toString()
+        val callState = currentSnapshot["callState"]?.toString()
+        if (isActiveCallState(callState)) {
+            Log.d(TAG, "register skipped: active call state=$callState")
+            return true
+        }
 
         if (
             (currentState == "registering" || currentState == "registered") &&
@@ -224,7 +248,7 @@ object NativeSipBridge {
         }
 
         persistConfig(requestedConfig)
-        markRegistrationStarting("Starting native SIP registration")
+        markRegistrationStarting("Подключение телефонии")
 
         val success = ensureManager().register(
             server = trimmedServer,
@@ -254,6 +278,12 @@ object NativeSipBridge {
             return false
         }
 
+        val callState = currentSnapshot["callState"]?.toString()
+        if (isActiveCallState(callState)) {
+            Log.d(TAG, "restoreRegistrationIfNeeded skipped: active call state=$callState")
+            return true
+        }
+
         val registrationState = currentSnapshot["registrationState"]?.toString()
         if (registrationState == "registered" || registrationState == "registering") {
             Log.d(TAG, "restoreRegistrationIfNeeded skipped: registrationState=$registrationState")
@@ -264,7 +294,7 @@ object NativeSipBridge {
             return true
         }
 
-        markRegistrationStarting("Restoring native SIP registration")
+        markRegistrationStarting("Восстанавливаем подключение телефонии")
         val success = ensureManager().register(
             server = config.server,
             login = config.login,
@@ -329,6 +359,14 @@ object NativeSipBridge {
 
     fun setSpeaker(enabled: Boolean): Boolean {
         return ensureManager().setSpeaker(enabled)
+    }
+
+    fun getAudioRoutes(): ArrayList<HashMap<String, Any?>> {
+        return ensureManager().getAudioRoutes()
+    }
+
+    fun setAudioRoute(deviceId: String): Boolean {
+        return ensureManager().setAudioRoute(deviceId)
     }
 
     fun onAppForeground() {
@@ -554,6 +592,11 @@ object NativeSipBridge {
             "call" -> {
                 val callState = event["state"]?.toString() ?: "idle"
                 val previousCallState = currentSnapshot["callState"]?.toString()
+                if (isActiveCallState(callState) && !isActiveCallState(previousCallState)) {
+                    ensureActiveCallUiRequestId()
+                } else if (!isActiveCallState(callState)) {
+                    clearCallUiRequestState(clearActiveRequest = true)
+                }
                 if (callState == "incoming" && previousCallState != "incoming") {
                     incomingAnswerPending = false
                 } else if (callState == "in_call" || callState == "ended" ||
@@ -582,6 +625,42 @@ object NativeSipBridge {
         }
 
         currentSnapshot["persistentEnabled"] = isPersistentEnabled()
+    }
+
+    private fun isActiveCallState(callState: String?): Boolean {
+        return callState == "incoming" ||
+            callState == "calling" ||
+            callState == "ringing" ||
+            callState == "in_call"
+    }
+
+    private fun newCallUiRequestId(): Long {
+        val now = System.currentTimeMillis()
+        return if (now > 0L) now else 1L
+    }
+
+    private fun ensureActiveCallUiRequestId(): Long {
+        val context = appContext ?: return 0L
+        val flags = context.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+        val existing = flags.getLong(KEY_ACTIVE_CALL_UI_REQUEST_ID, 0L)
+        if (existing > 0L) return existing
+
+        val requestId = newCallUiRequestId()
+        flags.edit().putLong(KEY_ACTIVE_CALL_UI_REQUEST_ID, requestId).apply()
+        return requestId
+    }
+
+    private fun clearCallUiRequestState(clearActiveRequest: Boolean) {
+        val flags = appContext
+            ?.getSharedPreferences(PLAIN_FLAGS_PREFS, Context.MODE_PRIVATE)
+            ?: return
+        flags.edit().apply {
+            remove(KEY_PENDING_CALL_UI_OPEN)
+            remove(KEY_PENDING_CALL_UI_REQUEST_ID)
+            if (clearActiveRequest) {
+                remove(KEY_ACTIVE_CALL_UI_REQUEST_ID)
+            }
+        }.apply()
     }
 
     private fun persistConfig(config: NativeSipStoredConfig) {

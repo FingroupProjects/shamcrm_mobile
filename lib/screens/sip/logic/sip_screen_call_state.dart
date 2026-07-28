@@ -83,22 +83,18 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     switch (status) {
       case SipCallUiStatus.incoming:
         _stopCallDurationTicker();
-        unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
         break;
       case SipCallUiStatus.calling:
       case SipCallUiStatus.ringing:
         _stopCallDurationTicker();
-        unawaited(_playOperatorThenBeep());
         break;
       case SipCallUiStatus.inCall:
         _startCallDurationTicker();
-        unawaited(_stopFeedbackLoop());
         break;
       case SipCallUiStatus.idle:
       case SipCallUiStatus.ended:
       case SipCallUiStatus.failed:
         _stopCallDurationTicker(reset: true);
-        unawaited(_stopFeedbackLoop());
         break;
     }
   }
@@ -257,50 +253,6 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     return null;
   }
 
-  Future<void> _playOperatorThenBeep() async {
-    if (_activeFeedbackAsset == _SipScreenState._operatorConnectingAsset) {
-      return;
-    }
-    _activeFeedbackAsset = _SipScreenState._operatorConnectingAsset;
-
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = _callFeedbackPlayer.onPlayerComplete.listen((_) {
-        if (_activeFeedbackAsset != _SipScreenState._operatorConnectingAsset) {
-          return;
-        }
-        unawaited(_playFeedbackLoop(_SipScreenState._connectingBeepAsset));
-      });
-
-      await _callFeedbackPlayer.stop();
-      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.stop);
-      await _callFeedbackPlayer
-          .play(AssetSource(_SipScreenState._operatorConnectingAsset));
-    } catch (_) {}
-  }
-
-  Future<void> _playFeedbackLoop(String assetPath) async {
-    if (_activeFeedbackAsset == assetPath) return;
-    _activeFeedbackAsset = assetPath;
-
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = null;
-      await _callFeedbackPlayer.stop();
-      await _callFeedbackPlayer.setReleaseMode(ReleaseMode.loop);
-      await _callFeedbackPlayer.play(AssetSource(assetPath));
-    } catch (_) {}
-  }
-
-  Future<void> _stopFeedbackLoop() async {
-    _activeFeedbackAsset = null;
-    try {
-      await _feedbackCompletionSub?.cancel();
-      _feedbackCompletionSub = null;
-      await _callFeedbackPlayer.stop();
-    } catch (_) {}
-  }
-
   void _startCallDurationTicker() {
     _connectedAt =
         _sipRuntime.currentCallStartedAt ?? _connectedAt ?? DateTime.now();
@@ -438,9 +390,15 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   String _displayIdentity(SipUiState state) {
-    final raw = (state.remoteIdentity?.trim().isNotEmpty == true
-            ? state.remoteIdentity!.trim()
-            : _sipIdController.text.trim())
+    final callDisplayName = _sipRuntime.currentCallDisplayName?.trim();
+    final callTarget = _sipRuntime.currentCallTarget?.trim();
+    final raw = (callDisplayName?.isNotEmpty == true
+            ? callDisplayName!
+            : state.remoteIdentity?.trim().isNotEmpty == true
+                ? state.remoteIdentity!.trim()
+                : callTarget?.isNotEmpty == true
+                    ? callTarget!
+                    : _sipIdController.text.trim())
         .trim();
 
     if (raw.isEmpty) return 'Неизвестно';
@@ -452,7 +410,7 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     if (value.contains('@')) {
       value = value.split('@').first;
     }
-    return value;
+    return _restoreTajikPlusForDisplay(value);
   }
 
   String _callHint(SipUiState state) {
@@ -516,4 +474,23 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   Color _callGlassBorder(bool isDark) {
     return isDark ? _G.glassBorder : const Color(0xFFE1EAF6);
   }
+}
+
+String _restoreTajikPlusForDisplay(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty || trimmed.startsWith('+')) {
+    return trimmed;
+  }
+
+  final phoneFormattedOnly = RegExp(r'^[0-9\s().-]+$').hasMatch(trimmed);
+  if (!phoneFormattedOnly) {
+    return trimmed;
+  }
+
+  final digits = trimmed.replaceAll(RegExp(r'[\s().-]'), '');
+  if (RegExp(r'^992\d{9}$').hasMatch(digits)) {
+    return '+$digits';
+  }
+
+  return trimmed;
 }

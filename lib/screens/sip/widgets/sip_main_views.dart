@@ -915,34 +915,73 @@ extension _SipMainViewsExtension on _SipScreenState {
   ) {
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
-    final isNarrow = constraints.maxWidth < 395;
-    final isTight = constraints.maxWidth < 370;
-    final horizontalPadding = isTight ? 18.0 : (isNarrow ? 20.0 : 24.0);
-    final keyOuterSize =
-        ((constraints.maxWidth - (horizontalPadding * 2) - 12) / 3)
-            .clamp(80.0, 92.0);
-    final actionButtonSize = (keyOuterSize * 0.76).clamp(60.0, 68.0);
-    final actionIconSize = (actionButtonSize * 0.42).clamp(24.0, 32.0);
+    final maxWidth =
+        constraints.maxWidth.isFinite ? constraints.maxWidth : 390.0;
+    final maxHeight =
+        constraints.maxHeight.isFinite ? constraints.maxHeight : 680.0;
+    final isVeryCompact = maxHeight < 560 || maxWidth < 360;
+    final isCompact = isVeryCompact || maxHeight < 640 || maxWidth < 395;
+    final horizontalPadding = isVeryCompact
+        ? 14.0
+        : isCompact
+            ? 18.0
+            : 24.0;
+    final rowGap = isVeryCompact
+        ? 5.0
+        : isCompact
+            ? 8.0
+            : 12.0;
+    final headerHeight = isVeryCompact
+        ? 38.0
+        : isCompact
+            ? 44.0
+            : 52.0;
+    final suggestionHeight = isCompact ? 6.0 : 108.0;
+    final bottomPadding = isVeryCompact ? 4.0 : 10.0;
+    final widthKeySize =
+        ((maxWidth - (horizontalPadding * 2) - (rowGap * 2)) / 3)
+            .clamp(58.0, 92.0);
+    final reservedHeight =
+        headerHeight + suggestionHeight + bottomPadding + (rowGap * 4) + 52;
+    final heightKeySize = ((maxHeight - reservedHeight) / 4).clamp(58.0, 92.0);
+    final keyOuterSize = math.min(widthKeySize, heightKeySize);
+    final actionButtonSize = (keyOuterSize * 0.76).clamp(46.0, 68.0);
+    final actionIconSize = (actionButtonSize * 0.42).clamp(21.0, 32.0);
 
     return Container(
       decoration: const BoxDecoration(
         color: Colors.transparent,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 2, 20, 2),
-            child: _dialNumberHeader(constraints),
+          SizedBox(
+            height: headerHeight,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                isVeryCompact ? 0 : 2,
+                20,
+                isVeryCompact ? 0 : 2,
+              ),
+              child: _dialNumberHeader(
+                constraints,
+                isCompact: isCompact,
+                isVeryCompact: isVeryCompact,
+              ),
+            ),
           ),
-          if (isRegistered) _inlineDialSuggestion(constraints),
+          if (isRegistered && !isCompact)
+            _inlineDialSuggestion(constraints)
+          else
+            SizedBox(height: suggestionHeight),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             child: Column(
               children: List.generate(4, (row) {
                 final start = row * 3;
                 return Padding(
-                  padding: EdgeInsets.only(bottom: isTight ? 10 : 12),
+                  padding: EdgeInsets.only(bottom: rowGap),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: List.generate(3, (col) {
@@ -962,13 +1001,12 @@ extension _SipMainViewsExtension on _SipScreenState {
               }),
             ),
           ),
-          SizedBox(height: isTight ? 0 : 2),
           Padding(
             padding: EdgeInsets.fromLTRB(
               horizontalPadding + 2,
               0,
               horizontalPadding + 2,
-              isTight ? 10 : 12,
+              bottomPadding,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1041,12 +1079,52 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
-  Widget _dialNumberHeader(BoxConstraints constraints) {
-    final isNarrow = constraints.maxWidth < 395;
-    final isTight = constraints.maxWidth < 370;
-    final fontSize = isTight ? 36.0 : (isNarrow ? 40.0 : 44.0);
-    final placeholderSize = isTight ? 23.0 : (isNarrow ? 26.0 : 29.0);
-    final cursorHeight = isTight ? 36.0 : (isNarrow ? 40.0 : 44.0);
+  double _fitDialTextFontSize({
+    required String text,
+    required double maxWidth,
+    required double maxFontSize,
+    required double minFontSize,
+  }) {
+    if (text.isEmpty || maxWidth <= 0) return maxFontSize;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: maxFontSize,
+          fontWeight: FontWeight.w300,
+          letterSpacing: 0,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    if (painter.width <= maxWidth) return maxFontSize;
+    return (maxFontSize * maxWidth / painter.width)
+        .clamp(minFontSize, maxFontSize);
+  }
+
+  Widget _dialNumberHeader(
+    BoxConstraints constraints, {
+    required bool isCompact,
+    required bool isVeryCompact,
+  }) {
+    final typedNumber = _sipIdController.text.trim();
+    final maxFontSize = isVeryCompact
+        ? 28.0
+        : isCompact
+            ? 32.0
+            : 38.0;
+    final fontSize = _fitDialTextFontSize(
+      text: typedNumber,
+      maxWidth: constraints.maxWidth - 40,
+      maxFontSize: maxFontSize,
+      minFontSize: isVeryCompact ? 20.0 : 22.0,
+    );
+    final placeholderSize = isVeryCompact
+        ? 19.0
+        : isCompact
+            ? 22.0
+            : 27.0;
     return GestureDetector(
       onTap: _expandDialPanel,
       onLongPress: _showDialActions,
@@ -1057,8 +1135,9 @@ extension _SipMainViewsExtension on _SipScreenState {
         showCursor: true,
         cursorColor: context.appColors.textPrimary,
         cursorWidth: 2,
-        cursorHeight: cursorHeight,
+        cursorHeight: fontSize,
         textAlign: TextAlign.center,
+        maxLines: 1,
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w300,
@@ -1075,8 +1154,8 @@ extension _SipMainViewsExtension on _SipScreenState {
         ),
         magnifierConfiguration: TextMagnifierConfiguration.disabled,
         padding: EdgeInsets.symmetric(
-          horizontal: isTight ? 4 : 8,
-          vertical: isTight ? 2 : 4,
+          horizontal: isVeryCompact ? 2 : 6,
+          vertical: isVeryCompact ? 0 : 2,
         ),
         decoration: const BoxDecoration(),
       ),
@@ -1092,8 +1171,11 @@ extension _SipMainViewsExtension on _SipScreenState {
   }) {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final innerSize = (outerSize - 8).clamp(74.0, 88.0);
-    final isTight = outerSize < 90;
+    final isTight = outerSize < 84;
+    final innerInset = isTight ? 4.0 : 8.0;
+    final innerSize = (outerSize - innerInset).clamp(52.0, 88.0);
+    final digitSize = (outerSize * 0.37).clamp(24.0, 34.0);
+    final letterSize = (outerSize * 0.11).clamp(7.0, 10.0);
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -1135,7 +1217,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: isTight ? 32 : 36,
+                    fontSize: digitSize,
                     height: 1.0,
                     fontWeight: FontWeight.w300,
                     color: colors.textPrimary,
@@ -1147,7 +1229,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                     letters,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: isTight ? 10 : 11,
+                      fontSize: letterSize,
                       letterSpacing: 0,
                       fontWeight: FontWeight.w600,
                       color: colors.textSecondary,

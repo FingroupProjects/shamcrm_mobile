@@ -6,8 +6,13 @@ import android.content.Intent
 
 class ChatQuickReplyReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == ChatQuickReplyManager.ACTION_REPLY) {
-            ChatQuickReplyManager.sendReplyAsync(this, context, intent)
+        when (intent.action) {
+            ChatQuickReplyManager.ACTION_REPLY -> {
+                ChatQuickReplyManager.sendReplyAsync(this, context, intent)
+            }
+            ChatQuickReplyManager.ACTION_MARK_READ -> {
+                ChatQuickReplyManager.markReadAsync(this, context, intent)
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ import WidgetKit
     private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
     private let chatReplyCategoryId = "CHAT_MESSAGE_REPLY"
     private let chatReplyActionId = "CHAT_REPLY"
+    private let chatMarkReadActionId = "CHAT_MARK_READ"
     private let networkMonitor = NWPathMonitor()
     private let networkQueue = DispatchQueue(label: "NetworkMonitor")
 
@@ -99,10 +100,15 @@ import WidgetKit
             textInputButtonTitle: "Отправить",
             textInputPlaceholder: "Сообщение"
         )
+        let markReadAction = UNNotificationAction(
+            identifier: chatMarkReadActionId,
+            title: "Пометить прочитанным",
+            options: []
+        )
 
         let category = UNNotificationCategory(
             identifier: chatReplyCategoryId,
-            actions: [replyAction],
+            actions: [replyAction, markReadAction],
             intentIdentifiers: [],
             options: []
         )
@@ -174,15 +180,33 @@ import WidgetKit
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        guard
-            response.actionIdentifier == chatReplyActionId,
-            let textResponse = response as? UNTextInputNotificationResponse
-        else {
+        if response.actionIdentifier == chatMarkReadActionId {
+            let userInfo = response.notification.request.content.userInfo
+            guard
+                let chatId = resolveChatId(from: userInfo),
+                let messageId = resolveMessageId(from: userInfo)
+            else {
+                completionHandler()
+                return
+            }
+
+            markMessagesRead(chatId: chatId, messageId: messageId) {
+                completionHandler()
+            }
+            return
+        }
+
+        guard response.actionIdentifier == chatReplyActionId else {
             super.userNotificationCenter(
                 center,
                 didReceive: response,
                 withCompletionHandler: completionHandler
             )
+            return
+        }
+
+        guard let textResponse = response as? UNTextInputNotificationResponse else {
+            completionHandler()
             return
         }
 
@@ -199,6 +223,23 @@ import WidgetKit
     }
 
     private func sendQuickReply(chatId: String, message: String, completion: @escaping () -> Void) {
+        performChatPost(
+            path: "/v2/chat/sendMessage/\(chatId)",
+            body: ["message": message],
+            completion: completion
+        )
+    }
+
+    private func markMessagesRead(chatId: String, messageId: String, completion: @escaping () -> Void) {
+        let parsedMessageId: Any = Int(messageId) ?? messageId
+        performChatPost(
+            path: "/v2/chat/readMessages/\(chatId)",
+            body: ["up_to_message_id": parsedMessageId],
+            completion: completion
+        )
+    }
+
+    private func performChatPost(path: String, body: [String: Any], completion: @escaping () -> Void) {
         guard
             let baseUrl = resolveApiBaseUrl(),
             let token = readPreference("token"),
@@ -208,7 +249,7 @@ import WidgetKit
             return
         }
 
-        var components = URLComponents(string: "\(baseUrl)/v2/chat/sendMessage/\(chatId)")
+        var components = URLComponents(string: "\(baseUrl)\(path)")
         var queryItems: [URLQueryItem] = []
         if let organizationId = readPreference("selectedOrganization"), isUsablePreference(organizationId) {
             queryItems.append(URLQueryItem(name: "organization_id", value: organizationId))
@@ -230,7 +271,7 @@ import WidgetKit
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("mobile", forHTTPHeaderField: "Device")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: ["message": message])
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         URLSession.shared.dataTask(with: request) { _, _, _ in
             completion()
@@ -239,6 +280,18 @@ import WidgetKit
 
     private func resolveChatId(from userInfo: [AnyHashable: Any]) -> String? {
         for key in ["chat_id", "chatId", "id"] {
+            if let value = userInfo[key] {
+                let stringValue = "\(value)".trimmingCharacters(in: .whitespacesAndNewlines)
+                if isUsablePreference(stringValue) {
+                    return stringValue
+                }
+            }
+        }
+        return nil
+    }
+
+    private func resolveMessageId(from userInfo: [AnyHashable: Any]) -> String? {
+        for key in ["message_id", "messageId", "notification_message_id", "up_to_message_id"] {
             if let value = userInfo[key] {
                 let stringValue = "\(value)".trimmingCharacters(in: .whitespacesAndNewlines)
                 if isUsablePreference(stringValue) {
