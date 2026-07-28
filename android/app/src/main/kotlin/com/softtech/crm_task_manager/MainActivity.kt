@@ -213,6 +213,15 @@ class MainActivity : FlutterFragmentActivity() {
                         shareExportFile(path, title, text, mimeType, result)
                     }
                 }
+                "setLauncherIcon" -> {
+                    val mode = call.argument<String>("mode")
+                    if (mode == "light" || mode == "dark") {
+                        setLauncherIcon(mode)
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ICON_MODE", "Expected light or dark", null)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }
@@ -437,6 +446,31 @@ class MainActivity : FlutterFragmentActivity() {
         })
 
         Log.d("MainActivity", "✅ Channels configured")
+    }
+
+    private fun setLauncherIcon(mode: String) {
+        val lightComponent = ComponentName(
+            applicationContext,
+            "$packageName.MainActivityLight"
+        )
+        val darkComponent = ComponentName(
+            applicationContext,
+            "$packageName.MainActivityDark"
+        )
+        val desiredComponent = if (mode == "dark") darkComponent else lightComponent
+        val obsoleteComponent = if (mode == "dark") lightComponent else darkComponent
+
+        packageManager.setComponentEnabledSetting(
+            desiredComponent,
+            android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            android.content.pm.PackageManager.DONT_KILL_APP
+        )
+        packageManager.setComponentEnabledSetting(
+            obsoleteComponent,
+            android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            android.content.pm.PackageManager.DONT_KILL_APP
+        )
+        Log.d("MainActivity", "Launcher icon switched to $mode")
     }
 
     override fun onNewIntent(intent: Intent) {

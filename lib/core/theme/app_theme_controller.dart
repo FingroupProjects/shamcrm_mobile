@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette_presets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AppThemeController extends ChangeNotifier {
+class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
   AppThemeController._()
       : _themeMode = ThemeMode.system,
         _palettePreset = AppPalettePreset.analogous,
@@ -22,6 +24,8 @@ class AppThemeController extends ChangeNotifier {
   static const _backgroundAssetPathKey = 'app_background_asset_path_v1';
   static const _backgroundBlurKey = 'app_background_blur_v1';
   static const _loginIntroAnimationKey = 'app_login_intro_animation_v1';
+  static const _launcherIconChannel =
+      MethodChannel('com.softtech.crm_task_manager/widget');
 
   ThemeMode _themeMode;
   AppPalettePreset _palettePreset;
@@ -32,6 +36,7 @@ class AppThemeController extends ChangeNotifier {
   double _backgroundBlurPercent = 18;
   bool _loginIntroAnimationEnabled = true;
   bool _isInitialized = false;
+  bool _observesPlatformBrightness = false;
 
   ThemeMode get themeMode => _themeMode;
   AppPalettePreset get palettePreset => _palettePreset;
@@ -82,7 +87,12 @@ class AppThemeController extends ChangeNotifier {
         await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
       }
     }
+    if (!_observesPlatformBrightness) {
+      WidgetsBinding.instance.addObserver(this);
+      _observesPlatformBrightness = true;
+    }
     _isInitialized = true;
+    await _syncAndroidLauncherIcon();
     notifyListeners();
   }
 
@@ -99,7 +109,33 @@ class AppThemeController extends ChangeNotifier {
     _themeMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, _themeModeToStorage(mode));
+    await _syncAndroidLauncherIcon();
     notifyListeners();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    if (_themeMode == ThemeMode.system) {
+      unawaited(_syncAndroidLauncherIcon());
+    }
+  }
+
+  Future<void> _syncAndroidLauncherIcon() async {
+    if (!Platform.isAndroid) return;
+    final useDarkIcon = _themeMode == ThemeMode.dark ||
+        (_themeMode == ThemeMode.system &&
+            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                Brightness.dark);
+    try {
+      await _launcherIconChannel.invokeMethod<void>(
+        'setLauncherIcon',
+        <String, String>{'mode': useDarkIcon ? 'dark' : 'light'},
+      );
+    } on PlatformException {
+      // The app theme must still work if an OEM launcher rejects icon changes.
+    } on MissingPluginException {
+      // Native icon switching is unavailable in stale/debug hot-reload builds.
+    }
   }
 
   Future<void> setPalettePreset(AppPalettePreset preset) async {
@@ -186,6 +222,7 @@ class AppThemeController extends ChangeNotifier {
     await prefs.remove(_backgroundAssetPathKey);
     await prefs.setDouble(_backgroundBlurKey, _backgroundBlurPercent);
     await _deleteStoredBackgroundIfOwned(previousPath);
+    await _syncAndroidLauncherIcon();
     notifyListeners();
   }
 
