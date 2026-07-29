@@ -1985,10 +1985,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _resetLeadLoaderFlags();
         }
         if (state is LeadLoaded) {
-          if (!_permissionsInitialized) {
-            return;
-          }
-
           //print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
           await LeadCache.cacheLeadStatuses(state.leadStatuses);
 

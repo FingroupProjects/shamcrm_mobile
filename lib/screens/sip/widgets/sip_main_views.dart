@@ -723,7 +723,6 @@ extension _SipMainViewsExtension on _SipScreenState {
     final maxHeight = constraints.maxHeight.isFinite
         ? constraints.maxHeight
         : MediaQuery.sizeOf(context).height * 0.68;
-    final hasQuery = _sipIdController.text.trim().isNotEmpty;
     final isVeryCompact = maxHeight < 560 || maxWidth < 360;
     final isCompact = isVeryCompact || maxHeight < 620 || maxWidth < 395;
 
@@ -742,17 +741,14 @@ extension _SipMainViewsExtension on _SipScreenState {
         : isCompact
             ? 44.0
             : 52.0;
-    final suggestionHeight = hasQuery
-        ? isVeryCompact
-            ? 52.0
-            : isCompact
-                ? 62.0
-                : 104.0
-        : isVeryCompact
-            ? 2.0
-            : isCompact
-                ? 6.0
-                : 10.0;
+    // Keep this space reserved even before the first digit is entered.
+    // Otherwise the suggestion panel grows after typing and pushes the
+    // number header upward.
+    final suggestionHeight = isVeryCompact
+        ? 52.0
+        : isCompact
+            ? 62.0
+            : 104.0;
     final bottomPadding = isVeryCompact
         ? 4.0
         : isCompact

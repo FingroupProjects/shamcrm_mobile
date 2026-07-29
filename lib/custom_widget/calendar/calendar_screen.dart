@@ -352,6 +352,23 @@ void _changeView(String view) {
             return const Center(child: CircularProgressIndicator(color: Color(0xff1E2E52)));
           }
 
+          if (state is CalendarError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  state.message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xff1E2E52),
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+            );
+          }
+
           if (_isSearching && _searchController.text.isNotEmpty && _events.isEmpty) {
             return Center(
               child: Padding(

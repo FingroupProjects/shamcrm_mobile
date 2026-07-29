@@ -118,17 +118,6 @@ class _TaskCardState extends State<TaskCard> {
     }
   }
 
-  /// Получение инициалов пользователя из имени
-  String _getUserInitials(String name) {
-    final parts = name.split(' '); // Разделение имени на части
-    if (parts.length == 1) {
-      return parts[0][0]; // Если только одно слово, берем первую букву
-    } else if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'; // Если больше двух, берем первые буквы двух слов
-    }
-    return '';
-  }
-
   @override
   Widget build(BuildContext context) {
     String? extractImageUrlFromSvg(String svg) {
@@ -484,13 +473,10 @@ class _TaskCardState extends State<TaskCard> {
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
-                            child: Text(
-                              _getUserInitials(widget.task.user!.name),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            child: const Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Colors.white,
                             ),
                           ),
                         ],

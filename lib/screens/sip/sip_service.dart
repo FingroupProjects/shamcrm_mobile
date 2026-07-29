@@ -2979,6 +2979,21 @@ class SipService extends ChangeNotifier
     debugPrint(
       'SipService native registration event -> state=$nativeState, message=$message',
     );
+    if (nativeState == 'registering' &&
+        _state.registrationStatus == SipRegistrationUiStatus.registered) {
+      // Linphone emits Progress/Refresh registration during its periodic
+      // REGISTER renewal. The existing registration remains usable while the
+      // refresh is in flight, so do not flash "Подключение..." in the UI.
+      unawaited(recordUiDiagnostic(
+        'REGISTRATION_REFRESH_HIDDEN',
+        <String, Object?>{
+          'native_state': nativeState,
+          'ui_state': _state.registrationStatus.name,
+          'message': message,
+        },
+      ));
+      return;
+    }
     if (_isActiveUiCallStatus(_state.callStatus) &&
         nativeState != 'registered') {
       unawaited(recordUiDiagnostic(
