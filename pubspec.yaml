@@ -132,6 +132,9 @@ flutter:
 
   uses-material-design: true
 
+  shaders:
+    - shaders/liquid_glass.frag
+
   assets:
     - assets/icons/MyNavBar/
     - assets/icons/AppBar/

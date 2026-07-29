@@ -882,8 +882,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
         adaptivePalette.accentFor(adaptivePalette.headerLuminance);
     final keypadForeground =
         adaptivePalette.foregroundFor(adaptivePalette.keypadLuminance);
-    final keypadAccent =
-        adaptivePalette.accentFor(adaptivePalette.keypadLuminance);
     final actionForeground =
         adaptivePalette.foregroundFor(adaptivePalette.bottomLuminance);
     final keypadShadow =
@@ -1076,7 +1074,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                               ][i - 1],
                               onPressed: () => _onNumberPressed(i.toString()),
                               textColor: keypadForeground,
-                              accentColor: keypadAccent,
                               isDark: keypadOnDarkBackground,
                             ),
                           _PinPlainAction(
@@ -1096,7 +1093,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                             digit: '0',
                             onPressed: () => _onNumberPressed('0'),
                             textColor: keypadForeground,
-                            accentColor: keypadAccent,
                             isDark: keypadOnDarkBackground,
                           ),
                           if (_isBiometricEnabled &&
@@ -1285,19 +1281,98 @@ class _PinPlainActionState extends State<_PinPlainAction> {
   }
 }
 
+class _LiquidBackdropLens extends StatefulWidget {
+  final bool isPressed;
+  final bool isDarkBackground;
+  final Widget child;
+
+  const _LiquidBackdropLens({
+    required this.isPressed,
+    required this.isDarkBackground,
+    required this.child,
+  });
+
+  @override
+  State<_LiquidBackdropLens> createState() => _LiquidBackdropLensState();
+}
+
+class _LiquidBackdropLensState extends State<_LiquidBackdropLens> {
+  static Future<FragmentProgram?>? _programFuture;
+  FragmentShader? _shader;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_initializeShader());
+  }
+
+  Future<void> _initializeShader() async {
+    if (!ImageFilter.isShaderFilterSupported) return;
+    final program = await (_programFuture ??= _loadProgram());
+    if (!mounted || program == null) return;
+    setState(() {
+      _shader = program.fragmentShader();
+    });
+  }
+
+  static Future<FragmentProgram?> _loadProgram() async {
+    try {
+      return await FragmentProgram.fromAsset('shaders/liquid_glass.frag');
+    } catch (error) {
+      debugPrint('PinScreen: Liquid Glass shader unavailable: $error');
+      return null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _shader?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: widget.isPressed ? 1 : 0),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: widget.child,
+      builder: (context, progress, child) {
+        ImageFilter filter = ImageFilter.blur(
+          sigmaX: widget.isPressed ? 11 : 15,
+          sigmaY: widget.isPressed ? 11 : 15,
+        );
+
+        final shader = _shader;
+        if (shader != null && ImageFilter.isShaderFilterSupported) {
+          shader
+            ..setFloat(2, progress)
+            ..setFloat(3, 0.12)
+            ..setFloat(4, 2.2)
+            ..setFloat(5, widget.isDarkBackground ? 1 : 0);
+          filter = ImageFilter.shader(shader);
+        }
+
+        return BackdropFilter(
+          filter: filter,
+          child: child,
+        );
+      },
+    );
+  }
+}
+
 class _LiquidPinKey extends StatefulWidget {
   final String digit;
   final String letters;
   final VoidCallback onPressed;
   final Color textColor;
-  final Color accentColor;
   final bool isDark;
 
   const _LiquidPinKey({
     required this.digit,
     required this.onPressed,
     required this.textColor,
-    required this.accentColor,
     required this.isDark,
     this.letters = '',
   });
@@ -1316,9 +1391,10 @@ class _LiquidPinKeyState extends State<_LiquidPinKey> {
 
   @override
   Widget build(BuildContext context) {
+    final edgeColor = widget.isDark ? Colors.white : const Color(0xFF596970);
     final borderColor = widget.isDark
         ? Colors.white.withValues(alpha: _isPressed ? 0.68 : 0.38)
-        : widget.accentColor.withValues(alpha: _isPressed ? 0.58 : 0.38);
+        : edgeColor.withValues(alpha: _isPressed ? 0.58 : 0.36);
 
     return Semantics(
       button: true,
@@ -1343,16 +1419,17 @@ class _LiquidPinKeyState extends State<_LiquidPinKey> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: (widget.isDark ? Colors.black : widget.accentColor)
-                        .withValues(
+                    color: Colors.black.withValues(
                       alpha: _isPressed ? 0.10 : 0.22,
                     ),
                     blurRadius: _isPressed ? 9 : 22,
                     offset: Offset(0, _isPressed ? 3 : 10),
                   ),
                   BoxShadow(
-                    color: widget.accentColor.withValues(
-                      alpha: _isPressed ? 0.08 : 0.14,
+                    color: Colors.white.withValues(
+                      alpha: widget.isDark
+                          ? (_isPressed ? 0.06 : 0.10)
+                          : (_isPressed ? 0.18 : 0.28),
                     ),
                     blurRadius: _isPressed ? 8 : 16,
                     spreadRadius: _isPressed ? 0 : 1,
@@ -1360,11 +1437,9 @@ class _LiquidPinKeyState extends State<_LiquidPinKey> {
                 ],
               ),
               child: ClipOval(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: _isPressed ? 11 : 18,
-                    sigmaY: _isPressed ? 11 : 18,
-                  ),
+                child: _LiquidBackdropLens(
+                  isPressed: _isPressed,
+                  isDarkBackground: widget.isDark,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeOutCubic,
@@ -1382,19 +1457,19 @@ class _LiquidPinKeyState extends State<_LiquidPinKey> {
                                 Colors.white.withValues(
                                   alpha: _isPressed ? 0.13 : 0.08,
                                 ),
-                                const Color(0xFF073B55).withValues(
+                                const Color(0xFF263238).withValues(
                                   alpha: _isPressed ? 0.10 : 0.04,
                                 ),
                               ]
                             : [
-                                const Color(0xFFE5F7FF).withValues(
-                                  alpha: _isPressed ? 0.94 : 0.82,
+                                Colors.white.withValues(
+                                  alpha: _isPressed ? 0.70 : 0.54,
                                 ),
-                                const Color(0xFF8FD5EF).withValues(
-                                  alpha: _isPressed ? 0.52 : 0.38,
+                                const Color(0xFFD8DDE0).withValues(
+                                  alpha: _isPressed ? 0.34 : 0.22,
                                 ),
-                                const Color(0xFF2788AF).withValues(
-                                  alpha: _isPressed ? 0.24 : 0.15,
+                                const Color(0xFF596970).withValues(
+                                  alpha: _isPressed ? 0.16 : 0.08,
                                 ),
                               ],
                         stops: const [0, 0.56, 1],
@@ -1430,7 +1505,7 @@ class _LiquidPinKeyState extends State<_LiquidPinKey> {
                           builder: (context, liquidProgress, child) {
                             return CustomPaint(
                               painter: _LiquidGlassRimPainter(
-                                accentColor: widget.accentColor,
+                                accentColor: edgeColor,
                                 isDark: widget.isDark,
                                 progress: liquidProgress,
                               ),
