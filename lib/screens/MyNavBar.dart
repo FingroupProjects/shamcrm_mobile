@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
@@ -133,18 +132,9 @@ class NavBarShimmerSkeleton extends StatelessWidget {
       ),
     );
 
-    if (Platform.isIOS) {
-      return SafeArea(
-        top: false,
-        bottom: true,
-        child: navBarContent,
-      );
-    }
-
-    return SafeArea(
-      top: false,
-      child: navBarContent,
-    );
+    // Нижний inset уже учтён в padding контейнера и во внешней высоте
+    // bottomNavigationBar. Повторный SafeArea сжимал кнопки skeleton до полосок.
+    return navBarContent;
   }
 }
 

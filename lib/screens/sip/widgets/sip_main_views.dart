@@ -10,6 +10,7 @@ extension _SipMainViewsExtension on _SipScreenState {
         isRegistered && state.callStatus != SipCallUiStatus.incoming;
     final isReconnectInProgress = _isReconnectInProgress(state);
     final isNetworkUnavailable = _isNetworkUnavailableState(state);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasActiveCall = state.callStatus == SipCallUiStatus.incoming ||
         state.callStatus == SipCallUiStatus.calling ||
         state.callStatus == SipCallUiStatus.ringing ||
@@ -58,9 +59,20 @@ extension _SipMainViewsExtension on _SipScreenState {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: colors.textSecondary,
-                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? colors.textPrimary.withValues(alpha: 0.96)
+                                  : colors.textSecondary,
+                              fontWeight: FontWeight.w600,
                               height: 1.1,
+                              shadows: isDark
+                                  ? [
+                                      Shadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.58),
+                                        blurRadius: 4,
+                                      ),
+                                    ]
+                                  : null,
                             ),
                           ),
                         ),
@@ -913,6 +925,8 @@ extension _SipMainViewsExtension on _SipScreenState {
     SipUiState state,
     BoxConstraints constraints,
   ) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final maxWidth =
@@ -1020,7 +1034,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                           onPressed: _showAddDialDestinationSheet,
                           child: Icon(
                             CupertinoIcons.person_crop_circle_badge_plus,
-                            color: Color(0xFF6B7280),
+                            color: isDark
+                                ? colors.textPrimary.withValues(alpha: 0.9)
+                                : const Color(0xFF6B7280),
                             size: actionIconSize,
                           ),
                         )
@@ -1065,7 +1081,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                           onLongPress: _clearDial,
                           child: Icon(
                             CupertinoIcons.delete_left_fill,
-                            color: Color(0xFF6B7280),
+                            color: isDark
+                                ? colors.textPrimary.withValues(alpha: 0.9)
+                                : const Color(0xFF6B7280),
                             size: actionIconSize - 1,
                           ),
                         )
@@ -1140,9 +1158,15 @@ extension _SipMainViewsExtension on _SipScreenState {
         maxLines: 1,
         style: TextStyle(
           fontSize: fontSize,
-          fontWeight: FontWeight.w300,
-          color: context.appColors.textPrimary,
+          fontWeight: FontWeight.w400,
+          color: context.appColors.textPrimary.withValues(alpha: 0.98),
           letterSpacing: 0,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 2,
+            ),
+          ],
         ),
         placeholder:
             AppLocalizations.of(context)!.translate('telephony_enter_number'),
@@ -1232,8 +1256,18 @@ extension _SipMainViewsExtension on _SipScreenState {
                       fontSize: letterSize,
                       letterSpacing: 0,
                       fontWeight: FontWeight.w600,
-                      color: colors.textSecondary,
+                      color: isDark
+                          ? colors.textPrimary.withValues(alpha: 0.92)
+                          : colors.textSecondary,
                       height: 1.2,
+                      shadows: isDark
+                          ? [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.38),
+                                blurRadius: 2,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
               ],
@@ -1597,6 +1631,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     required bool selected,
   }) {
     final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
@@ -1619,8 +1654,11 @@ extension _SipMainViewsExtension on _SipScreenState {
               height: 22,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.medium,
-              color:
-                  selected ? _TelephonyVisualColors.blue : colors.iconSecondary,
+              color: selected
+                  ? _TelephonyVisualColors.blue
+                  : (isDark
+                      ? colors.textPrimary.withValues(alpha: 0.84)
+                      : colors.iconSecondary),
               colorBlendMode: BlendMode.srcIn,
             ),
           ),
@@ -1638,8 +1676,18 @@ extension _SipMainViewsExtension on _SipScreenState {
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   color: selected
                       ? _TelephonyVisualColors.blue
-                      : colors.textSecondary,
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? colors.textPrimary.withValues(alpha: 0.88)
+                          : colors.textSecondary),
                   letterSpacing: 0,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.38),
+                            blurRadius: 2,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             ),
@@ -1743,8 +1791,11 @@ extension _SipMainViewsExtension on _SipScreenState {
               selected
                   ? CupertinoIcons.search_circle_fill
                   : CupertinoIcons.search,
-              color:
-                  selected ? _TelephonyVisualColors.blue : colors.iconSecondary,
+              color: selected
+                  ? _TelephonyVisualColors.blue
+                  : (isDark
+                      ? colors.textPrimary.withValues(alpha: 0.84)
+                      : colors.iconSecondary),
               size: selected ? 28 : 24,
             ),
           ),

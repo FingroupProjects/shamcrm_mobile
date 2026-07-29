@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/lead_list_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
@@ -105,6 +106,7 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     final maxHeight = MediaQuery.of(context).size.height * 0.9;
 
     return Dialog(
@@ -114,11 +116,11 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
         constraints: BoxConstraints(maxWidth: 560, maxHeight: maxHeight),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(28),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1A000000),
+                color: colors.shadow.withValues(alpha: 0.24),
                 blurRadius: 24,
                 offset: Offset(0, 12),
               ),
@@ -135,11 +137,11 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                     Expanded(
                       child: Text(
                         localizations.translate('lead_merge_title'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),
@@ -157,10 +159,9 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                     });
                   },
                 ),
-                 const SizedBox(height: 18),
-                const Divider(height: 1, color: Color(0xffE7EAF3)),
-                                const SizedBox(height: 18),
-
+                const SizedBox(height: 18),
+                Divider(height: 1, color: colors.borderSubtle),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     Expanded(
@@ -169,8 +170,8 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                         onPressed: _isSubmitting
                             ? null
                             : () => Navigator.of(context).pop(false),
-                        buttonColor: const Color(0xffF4F7FD),
-                        textColor: const Color(0xff1E2E52),
+                        buttonColor: colors.surfaceElevated,
+                        textColor: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -179,15 +180,13 @@ class _LeadUniteDialogState extends State<LeadUniteDialog> {
                         buttonText:
                             localizations.translate('lead_merge_button'),
                         onPressed: _isSubmitting ? null : _mergeLead,
-                        buttonColor: const Color(0xff3935E7),
-                        textColor: Colors.white,
+                        buttonColor: colors.buttonPrimaryBg,
+                        textColor: colors.buttonPrimaryFg,
                         isLoading: _isSubmitting,
                       ),
                     ),
                   ],
                 ),
-
-
                 const SizedBox(height: 4),
               ],
             ),

@@ -1342,14 +1342,83 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     );
   }
 
+  Future<void> _openLeadEdit() async {
+    if (currentLead == null) return;
+
+    final birthdayString =
+        currentLead!.birthday != null && currentLead!.birthday!.isNotEmpty
+            ? DateFormat('dd/MM/yyyy')
+                .format(DateTime.parse(currentLead!.birthday!))
+            : null;
+    final createdAtString =
+        currentLead!.createdAt != null && currentLead!.createdAt!.isNotEmpty
+            ? DateFormat('dd/MM/yyyy')
+                .format(DateTime.parse(currentLead!.createdAt!))
+            : null;
+    final shouldUpdate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LeadEditScreen(
+          leadId: currentLead!.id,
+          leadName: currentLead!.name,
+          statusId: currentLead!.statusId,
+          sourceId: currentLead!.source?.id.toString() ?? '',
+          salesFunnelId: currentLead!.salesFunnel?.id.toString() ?? '',
+          region: currentLead!.region?.id.toString() ?? '',
+          manager: currentLead!.manager?.id.toString() ?? '',
+          birthday: birthdayString,
+          cityId: currentLead!.cityId,
+          createAt: createdAtString,
+          instagram: currentLead!.instagram,
+          facebook: currentLead!.facebook,
+          telegram: currentLead!.telegram,
+          phone: currentLead!.phone,
+          whatsApp: currentLead!.whatsApp,
+          email: currentLead!.email,
+          description: currentLead!.description,
+          leadCustomFieldValues: currentLead!.leadCustomFieldValues,
+          directoryValues: currentLead!.directoryValues,
+          existedFiles: currentLead!.files,
+          priceTypeId: currentLead!.priceType?.id.toString(),
+          priceTypeName: currentLead!.priceType?.name,
+          currencyId: currentLead!.currencyId ?? widget.initialCurrencyId,
+          currencyName:
+              currentLead!.currency?.name ?? widget.initialCurrencyName,
+        ),
+      ),
+    );
+    if (shouldUpdate == true && mounted) {
+      setState(() => _statusChangedFromDetails = true);
+      _loadFieldConfiguration();
+      context.read<LeadByIdBloc>().add(
+            FetchLeadByIdEvent(leadId: int.parse(widget.leadId)),
+          );
+      context.read<LeadBloc>().add(FetchLeadStatuses());
+    }
+  }
+
+  Future<void> _deleteCurrentLead() async {
+    if (currentLead == null) return;
+
+    final deleted = await showDialog<bool>(
+      context: context,
+      builder: (context) => DeleteLeadDialog(leadId: currentLead!.id),
+    );
+    if (!mounted) return;
+
+    context.read<LeadBloc>().add(
+          FetchLeads(widget.statusId, ignoreCache: true),
+        );
+    if (deleted == true) {
+      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+      Navigator.pop(context, true);
+    }
+  }
+
   AppBar _buildAppBar(BuildContext context, String title) {
     final appBarGradient = [
       _screenSurfaceElevated(context),
       _screenFieldBackground(context),
-    ];
-    final backGradient = [
-      context.appColors.buttonPrimaryBg.withValues(alpha: 0.18),
-      context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
     ];
     final primaryText = _screenPrimaryText(context);
     final subtleBorder = _screenBorder(context);
@@ -1370,14 +1439,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           context,
           width: AppBarShell.orbSize,
           padding: EdgeInsets.zero,
-          gradientColors: backGradient,
+          gradientColors: appBarGradient,
           borderColor: subtleBorder,
           child: IconButton(
             onPressed: _handleBackNavigation,
             icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 18,
-              color: context.appColors.buttonPrimaryBg,
+              Icons.arrow_back_rounded,
+              size: 20,
+              color: primaryText,
             ),
           ),
         ),
@@ -1399,157 +1468,141 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             ),
           ),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBarShell.capsule(
-              context,
-              width: AppBarShell.orbSize,
-              padding: EdgeInsets.zero,
-              gradientColors: appBarGradient,
-              borderColor: subtleBorder,
-              child: IconButton(
-                key: keyLeadHistory,
-                onPressed: () {
+        trailing: AppBarShell.capsule(
+          context,
+          width: AppBarShell.orbSize,
+          padding: EdgeInsets.zero,
+          gradientColors: appBarGradient,
+          borderColor: subtleBorder,
+          child: PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            tooltip: '',
+            color: _screenFieldBackground(context),
+            surfaceTintColor: _screenFieldBackground(context),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            onSelected: (value) {
+              switch (value) {
+                case 'history':
                   showDialog(
                     context: context,
                     builder: (context) => HistoryDialog(
                       leadId: currentLead!.id,
                     ),
                   );
-                },
-                icon: Icon(
-                  Icons.history_rounded,
-                  color: primaryText,
-                  size: 20,
+                  break;
+                case 'edit':
+                  _openLeadEdit();
+                  break;
+                case 'merge':
+                  _openLeadUniteDialog();
+                  break;
+                case 'delete':
+                  _deleteCurrentLead();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                key: keyLeadHistory,
+                value: 'history',
+                enabled: currentLead != null,
+                height: 46,
+                child: Row(
+                  children: [
+                    Icon(Icons.history_rounded,
+                        size: 19, color: _screenSecondaryText(context)),
+                    const SizedBox(width: 12),
+                    Text(
+                      AppLocalizations.of(context)!.translate('history'),
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _screenPrimaryText(context),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              PopupMenuItem<String>(
+                value: 'merge',
+                enabled: currentLead != null,
+                height: 46,
+                child: Row(
+                  children: [
+                    Icon(Icons.call_merge,
+                        size: 19, color: _screenSecondaryText(context)),
+                    const SizedBox(width: 12),
+                    Text(
+                      AppLocalizations.of(context)!
+                          .translate('lead_merge_button'),
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _screenPrimaryText(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_canEditLead)
+                PopupMenuItem<String>(
+                  key: keyLeadEdit,
+                  value: 'edit',
+                  enabled: currentLead != null,
+                  height: 46,
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_rounded,
+                          size: 19, color: _screenSecondaryText(context)),
+                      const SizedBox(width: 12),
+                      Text(
+                        AppLocalizations.of(context)!.translate('edit_lead'),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _screenPrimaryText(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_canDeleteLead)
+                PopupMenuItem<String>(
+                  key: keyLeadDelete,
+                  value: 'delete',
+                  enabled: currentLead != null,
+                  height: 46,
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline_rounded,
+                          size: 19, color: context.appColors.error),
+                      const SizedBox(width: 12),
+                      Text(
+                        AppLocalizations.of(context)!.translate('delete_lead'),
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            child: Center(
+              child: Icon(
+                Icons.more_vert_rounded,
+                color: primaryText,
+                size: 20,
               ),
             ),
-            if (_canEditLead) ...[
-              const SizedBox(width: 8),
-              AppBarShell.capsule(
-                context,
-                width: AppBarShell.orbSize,
-                padding: EdgeInsets.zero,
-                gradientColors: appBarGradient,
-                borderColor: subtleBorder,
-                child: IconButton(
-                  key: keyLeadEdit,
-                  onPressed: () async {
-                    if (currentLead != null) {
-                      final birthdayString = currentLead!.birthday != null &&
-                              currentLead!.birthday!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentLead!.birthday!))
-                          : null;
-                      final createdAtString = currentLead!.createdAt != null &&
-                              currentLead!.createdAt!.isNotEmpty
-                          ? DateFormat('dd/MM/yyyy')
-                              .format(DateTime.parse(currentLead!.createdAt!))
-                          : null;
-                      final shouldUpdate = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LeadEditScreen(
-                            leadId: currentLead!.id,
-                            leadName: currentLead!.name,
-                            statusId: currentLead!.statusId,
-                            sourceId: currentLead!.source != null
-                                ? currentLead!.source!.id.toString()
-                                : '',
-                            salesFunnelId: currentLead!.salesFunnel != null
-                                ? currentLead!.salesFunnel!.id.toString()
-                                : '',
-                            region: currentLead!.region != null
-                                ? currentLead!.region!.id.toString()
-                                : '',
-                            manager: currentLead!.manager != null
-                                ? currentLead!.manager!.id.toString()
-                                : '',
-                            birthday: birthdayString,
-                            cityId: currentLead!.cityId,
-                            createAt: createdAtString,
-                            instagram: currentLead!.instagram,
-                            facebook: currentLead!.facebook,
-                            telegram: currentLead!.telegram,
-                            phone: currentLead!.phone,
-                            whatsApp: currentLead!.whatsApp,
-                            email: currentLead!.email,
-                            description: currentLead!.description,
-                            leadCustomFieldValues:
-                                currentLead!.leadCustomFieldValues,
-                            directoryValues: currentLead!.directoryValues,
-                            existedFiles: currentLead!.files,
-                            priceTypeId: currentLead!.priceType?.id.toString(),
-                            priceTypeName: currentLead!.priceType?.name,
-                            currencyId: currentLead!.currencyId ??
-                                widget.initialCurrencyId,
-                            currencyName: currentLead!.currency?.name ??
-                                widget.initialCurrencyName,
-                          ),
-                        ),
-                      );
-                      if (shouldUpdate == true) {
-                        setState(() {
-                          _statusChangedFromDetails = true;
-                        });
-                        _loadFieldConfiguration();
-                        context.read<LeadByIdBloc>().add(
-                              FetchLeadByIdEvent(
-                                leadId: int.parse(widget.leadId),
-                              ),
-                            );
-                        context.read<LeadBloc>().add(FetchLeadStatuses());
-                      }
-                    }
-                  },
-                  icon: Icon(
-                    Icons.edit_rounded,
-                    color: primaryText,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-            if (_canDeleteLead) ...[
-              const SizedBox(width: 8),
-              AppBarShell.capsule(
-                context,
-                width: AppBarShell.orbSize,
-                padding: EdgeInsets.zero,
-                gradientColors: appBarGradient,
-                borderColor: subtleBorder,
-                child: IconButton(
-                  key: keyLeadDelete,
-                  onPressed: () {
-                    showDialog<bool>(
-                      context: context,
-                      builder: (context) =>
-                          DeleteLeadDialog(leadId: currentLead!.id),
-                    ).then((deleted) {
-                      if (!mounted) return;
-
-                      context.read<LeadBloc>().add(
-                            FetchLeads(widget.statusId, ignoreCache: true),
-                          );
-
-                      if (deleted == true) {
-                        context
-                            .read<LeadBloc>()
-                            .add(FetchLeadStatuses(forceRefresh: true));
-                        Navigator.pop(context, true);
-                      }
-                    });
-                  },
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: context.appColors.error,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
