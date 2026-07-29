@@ -703,6 +703,11 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     final localizations = AppLocalizations.of(context);
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pinLogo = Image.asset(
+      'assets/icons/playstore.png',
+      fit: BoxFit.contain,
+    );
 
     if (localizations == null) {
       return Scaffold(
@@ -776,9 +781,18 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset(
-                        'assets/icons/playstore.png',
-                        height: 124,
+                      SizedBox(
+                        width: 96,
+                        height: 96,
+                        child: isDark
+                            ? ColorFiltered(
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
+                                child: pinLogo,
+                              )
+                            : pinLogo,
                       ),
                       const SizedBox(height: 20),
                       Text(

@@ -731,6 +731,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     deinit {
         incomingInviteTimeoutTimer?.invalidate()
         audioRouteSyncWorkItem?.cancel()
+        if Thread.isMainThread {
+            UIDevice.current.isProximityMonitoringEnabled = false
+        } else {
+            DispatchQueue.main.async {
+                UIDevice.current.isProximityMonitoringEnabled = false
+            }
+        }
         teardownAudioSessionObservers()
         teardownLinphoneCore()
     }
@@ -2097,6 +2104,31 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         return outputs.first?.rawValue ?? "unknown"
     }
 
+    private func updateProximityMonitoring(callState: String, reason: String) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in
+                self?.updateProximityMonitoring(callState: callState, reason: reason)
+            }
+            return
+        }
+
+        let output = currentAudioOutputKind(
+            route: AVAudioSession.sharedInstance().currentRoute
+        )
+        let shouldEnable = callState == "in_call" && output == "earpiece"
+        guard UIDevice.current.isProximityMonitoringEnabled != shouldEnable else {
+            return
+        }
+
+        UIDevice.current.isProximityMonitoringEnabled = shouldEnable
+        appendDiagnosticLog("proximity_monitoring", [
+            "enabled": shouldEnable ? "true" : "false",
+            "reason": reason,
+            "call_state": callState,
+            "output": output,
+        ])
+    }
+
     private func audioRouteDescription(_ route: AVAudioSessionRouteDescription) -> String {
         route.outputs
             .map { "\($0.portType.rawValue):\($0.portName)" }
@@ -2966,6 +2998,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         message: String? = nil,
         extra: [String: Any] = [:]
     ) {
+        updateProximityMonitoring(callState: state, reason: "call_event")
         print("IOSNativeSipManager emitCallEvent -> state=\(state), speakerOn=\(snapshot.speakerOn), remote=\(remoteIdentity ?? snapshot.remoteIdentity ?? "nil"), message=\(message ?? snapshot.message ?? "nil")")
         var event: [String: Any] = [
             "type": "call",

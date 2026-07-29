@@ -490,10 +490,12 @@ class _OrderScreenState extends State<OrderScreen>
                   BlocListener<OrderBloc, OrderState>(
                     listener: (context, state) async {
                       if (state is OrderLoaded || state is OrderError) {
-                        if (mounted && _isFilterLoading) {
+                        if (mounted &&
+                            (_isFilterLoading || _isInitialLoad)) {
                           setState(() {
                             _isFilterLoading = false;
                             _shouldShowLoader = false;
+                            _isInitialLoad = false;
                           });
                         }
                       }
@@ -916,10 +918,10 @@ class _OrderScreenState extends State<OrderScreen>
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: colors.surfacePrimary.withValues(alpha: 0.34),
+        color: colors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.28),
+          color: colors.borderSubtle.withValues(alpha: 0.48),
         ),
         boxShadow: [
           BoxShadow(
@@ -960,10 +962,10 @@ class _OrderScreenState extends State<OrderScreen>
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: colors.surfacePrimary.withValues(alpha: 0.72),
+                        color: colors.surfacePrimary,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: colors.borderSubtle.withValues(alpha: 0.35),
+                          color: colors.borderSubtle.withValues(alpha: 0.52),
                         ),
                       ),
                       child: Icon(
@@ -1037,13 +1039,13 @@ class _OrderScreenState extends State<OrderScreen>
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
           color: isActive
-              ? colors.buttonPrimaryBg.withValues(alpha: 0.16)
-              : colors.surfacePrimary.withValues(alpha: 0.68),
+              ? colors.buttonPrimaryBg
+              : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
-                ? colors.buttonPrimaryBg.withValues(alpha: 0.55)
-                : colors.borderSubtle.withValues(alpha: 0.35),
+                ? colors.buttonPrimaryBg
+                : colors.borderSubtle.withValues(alpha: 0.58),
           ),
           boxShadow: isActive
               ? [
@@ -1065,8 +1067,8 @@ class _OrderScreenState extends State<OrderScreen>
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isActive
-                      ? colors.textPrimary
-                      : colors.textSecondary,
+                      ? colors.buttonPrimaryFg
+                      : colors.textPrimary,
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
@@ -1078,8 +1080,8 @@ class _OrderScreenState extends State<OrderScreen>
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: isActive
-                    ? colors.buttonPrimaryBg.withValues(alpha: 0.18)
-                    : colors.surfaceElevated.withValues(alpha: 0.9),
+                    ? colors.buttonPrimaryFg.withValues(alpha: 0.18)
+                    : colors.buttonPrimaryBg.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isActive
@@ -1092,7 +1094,7 @@ class _OrderScreenState extends State<OrderScreen>
                 orderCount.toString(),
                 style: TextStyle(
                   color: isActive
-                      ? colors.buttonPrimaryBg
+                      ? colors.buttonPrimaryFg
                       : colors.textPrimary,
                   fontSize: 12,
                   fontFamily: 'Gilroy',

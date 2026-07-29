@@ -25,8 +25,8 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -82,7 +82,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
   List<String> userRoles = [];
-  bool isLoading = true;
   bool isRefreshing = false;
 
   DashboardType _activeDashboard = DashboardType.crm;
@@ -105,6 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? tutorialProgress;
   bool _hasDashboardIndexPermission = false;
   bool _isPermissionsChecked = false;
+  bool _isDashboardReady = false;
   int _analyticsFilterTrigger = 0;
   int _analyticsChartSettingsTrigger = 0;
 
@@ -119,10 +119,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initializeData() async {
     try {
-      setState(() {
-        isLoading = true;
-      });
-
       // КРИТИЧНО: при первом входе в Dashboard гарантируем сохранённую воронку.
       await _apiService.ensureSelectedSalesFunnelInitialized();
 
@@ -140,19 +136,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await _checkAccountingDashboardPermission(); // НОВОЕ: Проверяем право
       }
 
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-
       // Не держим главный loader из-за tutorial/progress-проверок:
       // дашборд должен появляться сразу, а это можно догрузить в фоне.
       await _checkPermissionsAndTutorial();
-    } catch (e) {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          _isDashboardReady = true;
+        });
+      }
+    } catch (_) {
+      // Dashboard continues with the available chart/cache states.
+      if (mounted) {
+        setState(() {
+          _isDashboardReady = true;
         });
       }
     }
@@ -753,16 +749,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-                if (isLoading)
-                  Container(
-                    color: context.appColors.overlay.withValues(alpha: 0.16),
-                    child: const Center(
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
-                      ),
+                IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _isDashboardReady ? 0 : 1,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Закрываем готовящиеся графики тем же фоном проекта.
+                        // Пользователь видит только фон и loader до полной
+                        // готовности dashboard.
+                        const Positioned.fill(
+                          child: AppBackgroundOverlay(
+                            preset: AppBackgroundPreset.aurora,
+                            forceRender: true,
+                          ),
+                        ),
+                        Center(
+                          child: PlayStoreImageLoading(
+                            size: 64,
+                            duration: const Duration(milliseconds: 1050),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
               ],
             ),
     );

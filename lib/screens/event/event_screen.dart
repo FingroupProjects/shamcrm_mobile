@@ -614,6 +614,12 @@ class _EventScreenState extends State<EventScreen>
   }
 
   void _loadEvents() {
+    // Не отправляем первый запрос без выбранной воронки: didChangeDependencies
+    // вызывается раньше, чем SalesFunnelBloc успевает восстановить её из API.
+    // Иначе следующий запрос при получении воронки может быть пропущен EventBloc
+    // из-за уже выполняющегося запроса.
+    if (_selectedFunnel == null) return;
+
     final bool isCompleted = _currentTabIndex == 1;
     context.read<EventBloc>().add(FetchEvents(
           statusIds: isCompleted ? 2 : 1,
@@ -1084,10 +1090,10 @@ class _EventScreenState extends State<EventScreen>
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.34),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+          color: context.appColors.borderSubtle.withValues(alpha: 0.48),
         ),
         boxShadow: [
           BoxShadow(
@@ -1127,13 +1133,13 @@ class _EventScreenState extends State<EventScreen>
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
           color: isActive
-              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
-              : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+              ? context.appColors.buttonPrimaryBg
+              : context.appColors.surfacePrimary,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
-                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.55)
-                : context.appColors.borderSubtle.withValues(alpha: 0.35),
+                ? context.appColors.buttonPrimaryBg
+                : context.appColors.borderSubtle.withValues(alpha: 0.58),
           ),
           boxShadow: isActive
               ? [
@@ -1156,8 +1162,8 @@ class _EventScreenState extends State<EventScreen>
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isActive
-                      ? context.appColors.textPrimary
-                      : context.appColors.textSecondary,
+                      ? context.appColors.buttonPrimaryFg
+                      : context.appColors.textPrimary,
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,

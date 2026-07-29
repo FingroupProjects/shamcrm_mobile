@@ -136,6 +136,10 @@ class _AuthScreenState extends State<AuthScreen> {
     final localizations = AppLocalizations.of(context);
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final qrLogoAsset = isDark
+        ? 'assets/fon/icon_shamCRM_dark.jpg'
+        : 'assets/fon/icon_shamCRM_light.jpg';
 
     if (localizations == null) {
       return const Scaffold(
@@ -218,7 +222,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Column(
                     children: [
                       Image.asset(
-                        'assets/images/new_icon_shamCRM.jpg',
+                        qrLogoAsset,
                         height: 84,
                       ),
                       const SizedBox(height: 24),

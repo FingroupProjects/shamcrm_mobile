@@ -608,6 +608,29 @@ extension _SipCallViewsExtension on _SipScreenState {
       return;
     }
 
+    if (routes.length < 3) {
+      final selectedIndex = routes.indexWhere((route) => route.selected);
+      SipAudioRoute targetRoute;
+      if (routes.length == 1) {
+        targetRoute = routes.first;
+      } else if (selectedIndex >= 0) {
+        targetRoute = routes[selectedIndex == 0 ? 1 : 0];
+      } else {
+        final currentType = _sipRuntime.currentAudioRouteType;
+        targetRoute = routes.firstWhere(
+          (route) => currentType != null
+              ? route.type != currentType
+              : route.type !=
+                  (_sipRuntime.state.isSpeakerOn ? 'speaker' : 'earpiece'),
+          orElse: () => routes.last,
+        );
+      }
+      if (!targetRoute.selected) {
+        await _sipRuntime.selectAudioRoute(targetRoute);
+      }
+      return;
+    }
+
     if (Platform.isIOS) {
       await _showIosAudioRoutePicker(context, routes);
       return;

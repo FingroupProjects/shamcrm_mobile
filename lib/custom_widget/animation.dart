@@ -30,7 +30,8 @@ class _PlayStoreImageLoadingState extends State<PlayStoreImageLoading>
     // Создаём анимацию с кривой для эффекта ускорения/замедления
     _animation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeInOut, // Можно попробовать: fastOutSlowIn, easeInOutCubic
+      curve:
+          Curves.easeInOut, // Можно попробовать: fastOutSlowIn, easeInOutCubic
     );
 
     _controller.repeat();
@@ -44,6 +45,8 @@ class _PlayStoreImageLoadingState extends State<PlayStoreImageLoading>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -52,10 +55,21 @@ class _PlayStoreImageLoadingState extends State<PlayStoreImageLoading>
           child: SizedBox(
             width: widget.size,
             height: widget.size,
-            child: Image.asset(
-              'assets/icons/playstore.png',
-              fit: BoxFit.contain,
-            ),
+            child: isDark
+                ? ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/icons/playstore.png',
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : Image.asset(
+                    'assets/icons/playstore.png',
+                    fit: BoxFit.contain,
+                  ),
           ),
         );
       },

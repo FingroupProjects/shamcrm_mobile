@@ -169,11 +169,9 @@ class FirebaseApi {
         return;
       }
 
-      await _apiService.initialize();
-      debugPrint(
-          'FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
-
-      // Запрашиваем разрешение на уведомления
+      // Запрашиваем разрешение только после того, как основной экран уже
+      // показан. Если делать это во время старта MyApp, системный диалог
+      // может потеряться при переходе с PIN/авторизации.
       NotificationSettings settings =
           await _firebaseMessaging.requestPermission(
         alert: true,
@@ -185,6 +183,10 @@ class FirebaseApi {
         debugPrint('User declined or has not accepted notification permission');
         return;
       }
+
+      await _apiService.initialize();
+      debugPrint(
+          'FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
 
       await syncCurrentTokenWithServer();
       if (_isInitialized) {

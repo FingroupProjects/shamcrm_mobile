@@ -21,6 +21,7 @@ import 'package:crm_task_manager/screens/analytics/charts/telephony_by_hour_char
 import 'package:crm_task_manager/screens/analytics/charts/telephony_events_chart.dart';
 import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
+import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -398,10 +399,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  Widget _buildStableChartPlaceholder() {
+    final responsive = ResponsiveHelper(context);
+    final height = responsive.chartHeight + (responsive.cardPadding * 2) + 44;
+
+    // Не показываем отдельный loader, но заранее резервируем размер первого
+    // графика. После загрузки настроек содержимое появляется внутри того же
+    // места и dashboard больше не пересчитывает высоту рывком.
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(responsive.borderRadius),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildChartWidgets() {
     if (_isLoadingChartSettings || _isLoadingLocalChartPrefs) {
       if (!widget.showInitialLoader) {
-        return const <Widget>[];
+        return [_buildStableChartPlaceholder()];
       }
       return [
         Padding(

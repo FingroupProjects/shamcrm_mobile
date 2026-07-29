@@ -308,6 +308,19 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     _checkPermissions();
     _setupLeadSocket();
+
+    // Первый FetchLeadStatuses запускается из initState/события воронки.
+    // В этот момент BlocListener ниже ещё не подписан и может пропустить
+    // LeadLoaded, оставив _tabTitles пустым навсегда. После первого кадра
+    // повторяем синхронизацию только если вкладки ещё не построены.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tabTitles.isNotEmpty) return;
+
+      final leadState = context.read<LeadBloc>().state;
+      if (leadState is! LeadLoading) {
+        context.read<LeadBloc>().add(FetchLeadStatuses());
+      }
+    });
   }
 
   Future<void> _initializeSalesFunnel() async {
@@ -1815,10 +1828,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.34),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+          color: context.appColors.borderSubtle.withValues(alpha: 0.48),
         ),
         boxShadow: [
           BoxShadow(
@@ -1853,12 +1866,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: context.appColors.surfacePrimary
-                            .withValues(alpha: 0.72),
+                        color: context.appColors.surfacePrimary,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: context.appColors.borderSubtle
-                              .withValues(alpha: 0.35),
+                              .withValues(alpha: 0.52),
                         ),
                       ),
                       child: Image.asset(
@@ -2023,13 +2035,13 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
           color: isActive
-              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.16)
-              : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+              ? context.appColors.buttonPrimaryBg
+              : context.appColors.surfacePrimary,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
-                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.55)
-                : context.appColors.borderSubtle.withValues(alpha: 0.35),
+                ? context.appColors.buttonPrimaryBg
+                : context.appColors.borderSubtle.withValues(alpha: 0.58),
           ),
           boxShadow: isActive
               ? [
@@ -2052,8 +2064,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isActive
-                      ? context.appColors.textPrimary
-                      : context.appColors.textSecondary,
+                      ? context.appColors.buttonPrimaryFg
+                      : context.appColors.textPrimary,
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
@@ -2065,12 +2077,12 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: isActive
-                    ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.18)
-                    : context.appColors.surfaceElevated.withValues(alpha: 0.9),
+                    ? context.appColors.buttonPrimaryFg.withValues(alpha: 0.18)
+                    : context.appColors.buttonPrimaryBg.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isActive
-                      ? context.appColors.buttonPrimaryBg
+                      ? context.appColors.buttonPrimaryFg
                           .withValues(alpha: 0.85)
                       : context.appColors.textInverse.withValues(alpha: 0.22),
                   width: 1,
@@ -2080,7 +2092,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 leadCount.toString(),
                 style: TextStyle(
                   color: isActive
-                      ? context.appColors.buttonPrimaryBg
+                      ? context.appColors.buttonPrimaryFg
                       : context.appColors.textPrimary,
                   fontSize: 12,
                   fontFamily: 'Gilroy',
@@ -2174,10 +2186,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           _resetLeadLoaderFlags();
         }
         if (state is LeadLoaded) {
-          if (!_permissionsInitialized) {
-            return;
-          }
-
           //print('LeadScreen: LeadLoaded state, caching lead statuses: ${state.leadStatuses}');
           await LeadCache.cacheLeadStatuses(state.leadStatuses);
 

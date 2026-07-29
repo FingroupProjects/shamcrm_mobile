@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
@@ -123,6 +125,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isBackgroundLoading) {
         ChatUnreadCounterService.instance.initialize();
+        // Запрашиваем permission после появления HomeScreen, а не во время
+        // перехода с PIN/авторизации — так системный диалог показывается уже
+        // при первом входе и не теряется между маршрутами.
+        unawaited(FirebaseApi().initNotifications());
         _loadDataInBackground();
         _handleInitialMessage();
         _checkPendingWidgetNavigation();
@@ -1250,22 +1256,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             extendBody: true,
             bottomNavigationBar: currentWidget is NoAccessScreen
                 ? const SizedBox.shrink()
-                : ValueListenableBuilder<ChatUnreadCounts>(
-                    valueListenable: ChatUnreadCounterService.instance.counts,
-                    builder: (context, chatCounts, _) {
-                      final unreadCountsGroup1 = _navBarTitleKeysGroup1
-                          .map((key) =>
-                              key == 'appbar_chats' ? chatCounts.total : 0)
-                          .toList();
-                      final unreadCountsGroup2 =
-                          _navBarTitleKeysGroup2.map((_) => 0).toList();
+                : SizedBox(
+                    // Skeleton и MyNavBar имеют одинаковую внутреннюю
+                    // высоту. Фиксируем внешний размер вместе с safe-area,
+                    // чтобы загрузка графика не двигала верхний край панели.
+                    height: 60 + MediaQuery.of(context).viewPadding.bottom,
+                    child: ValueListenableBuilder<ChatUnreadCounts>(
+                      valueListenable:
+                          ChatUnreadCounterService.instance.counts,
+                      builder: (context, chatCounts, _) {
+                        final unreadCountsGroup1 = _navBarTitleKeysGroup1
+                            .map((key) =>
+                                key == 'appbar_chats' ? chatCounts.total : 0)
+                            .toList();
+                        final unreadCountsGroup2 =
+                            _navBarTitleKeysGroup2.map((_) => 0).toList();
 
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        child: _isInitialized && hasNavBarItems
-                            ? MyNavBar(
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 260),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: _isInitialized && hasNavBarItems
+                              ? MyNavBar(
                                 key: const ValueKey('main_nav_bar'),
                                 currentIndexGroup1: _selectedIndexGroup1,
                                 currentIndexGroup2: _selectedIndexGroup2,
@@ -1321,11 +1333,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 unreadCountsGroup1: unreadCountsGroup1,
                                 unreadCountsGroup2: unreadCountsGroup2,
                               )
-                            : const NavBarShimmerSkeleton(
-                                key: ValueKey('nav_bar_skeleton'),
-                              ),
-                      );
-                    },
+                              : const NavBarShimmerSkeleton(
+                                  key: ValueKey('nav_bar_skeleton'),
+                                ),
+                        );
+                      },
+                    ),
                   ),
           );
         },

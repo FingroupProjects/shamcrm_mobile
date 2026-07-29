@@ -1054,46 +1054,6 @@ Future<void> _recordFatalError(
   } catch (_) {}
 }
 
-Future<void> _initializeFirebaseMessaging() async {
-  try {
-    if (Firebase.apps.isEmpty) return;
-
-    try {
-      Firebase.app();
-    } catch (e) {
-      return;
-    }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    try {
-      FirebaseApi firebaseApi = FirebaseApi();
-      await firebaseApi.initNotifications();
-    } catch (e) {
-      debugPrint('Firebase Messaging: Ошибка: $e');
-      await _recordNonFatalError(
-        e,
-        StackTrace.current,
-        reason: 'startup.firebase_messaging.init',
-        screenHint: 'firebase',
-      );
-    }
-  } catch (e) {
-    final errorString = e.toString();
-
-    if (!errorString.contains('already exists') &&
-        !errorString.contains('duplicate')) {
-      debugPrint('Firebase Messaging: Ошибка: $e');
-    }
-    await _recordNonFatalError(
-      e,
-      StackTrace.current,
-      reason: 'startup.firebase_messaging',
-      screenHint: 'startup',
-    );
-  }
-}
-
 // // ✅ НОВЫЙ МЕТОД: Обработка initial message
 // Future<void> _handleInitialMessage(RemoteMessage message) async {
 //   debugPrint('_handleInitialMessage: ${message.data}');
@@ -1306,7 +1266,6 @@ class _MyAppState extends State<MyApp> {
     }
     _deferredStartupInitialized = true;
 
-    unawaited(_initializeFirebaseMessaging());
     if (widget.isDomainChecked && widget.sessionValid) {
       unawaited(widget.apiService.ensureSelectedSalesFunnelInitialized());
     }

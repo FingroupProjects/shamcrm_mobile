@@ -586,8 +586,14 @@ object NativeSipBridge {
     private fun updateSnapshotFromEvent(event: HashMap<String, Any?>) {
         when (event["type"]?.toString()) {
             "registration" -> {
-                currentSnapshot["registrationState"] = event["state"]?.toString() ?: "disconnected"
-                currentSnapshot["message"] = event["message"]
+                val previousState = currentSnapshot["registrationState"]?.toString()
+                val incomingState = event["state"]?.toString() ?: "disconnected"
+                val isRegisteredRefresh =
+                    previousState == "registered" && incomingState == "registering"
+                if (!isRegisteredRefresh) {
+                    currentSnapshot["registrationState"] = incomingState
+                    currentSnapshot["message"] = event["message"]
+                }
             }
             "call" -> {
                 val callState = event["state"]?.toString() ?: "idle"

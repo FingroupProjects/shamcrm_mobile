@@ -956,6 +956,12 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   Future<bool?> _showBiometricPromptDialog(BiometricAvailability availability) {
     final localizations = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogSurface = isDark ? colors.surface : Colors.white;
+    final dialogText = isDark ? colors.onSurface : const Color(0xFF1E1E1E);
+    final dialogSecondaryText =
+        isDark ? colors.onSurfaceVariant : const Color(0xFF667085);
     final title = localizations == null
         ? 'Enable biometric sign-in?'
         : biometricEnableTitle(localizations, availability);
@@ -973,7 +979,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: dialogSurface,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             child: Column(
@@ -998,23 +1004,23 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                    color: dialogText,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.45,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF667085),
+                    color: dialogSecondaryText,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -1024,8 +1030,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(dialogContext).pop(false),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF475467),
-                          side: const BorderSide(color: Color(0xFFD0D5DD)),
+                          foregroundColor: dialogText,
+                          side: BorderSide(color: colors.outline),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1095,6 +1101,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pinLogo = Image.asset(
+      'assets/icons/playstore.png',
+      fit: BoxFit.contain,
+    );
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       body: Stack(
@@ -1119,9 +1130,18 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset(
-                        'assets/icons/playstore.png',
-                        height: 132,
+                      SizedBox(
+                        width: 96,
+                        height: 96,
+                        child: isDark
+                            ? ColorFiltered(
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
+                                child: pinLogo,
+                              )
+                            : pinLogo,
                       ),
                       const SizedBox(height: 16),
                       Text(

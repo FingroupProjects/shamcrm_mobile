@@ -261,6 +261,11 @@ class _PinChangeScreenState extends State<PinChangeScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pinLogo = Image.asset(
+      'assets/icons/playstore.png',
+      fit: BoxFit.contain,
+    );
     
     return Scaffold(
       backgroundColor: Colors.white,
@@ -290,9 +295,18 @@ class _PinChangeScreenState extends State<PinChangeScreen>
               const Spacer(),
               
               // Иконка
-              Image.asset(
-                'assets/icons/playstore.png',
-                height: 120,
+              SizedBox(
+                width: 96,
+                height: 96,
+                child: isDark
+                    ? ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                        child: pinLogo,
+                      )
+                    : pinLogo,
               ),
               const SizedBox(height: 32),
               

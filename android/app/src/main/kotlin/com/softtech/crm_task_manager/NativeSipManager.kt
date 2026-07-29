@@ -3,6 +3,7 @@ package com.softtech.crm_task_manager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.util.Log
 import org.linphone.core.Account
 import org.linphone.core.AccountParams
@@ -43,6 +44,7 @@ class NativeSipManager(
     private var lastUnansweredIncomingRemote: String? = null
     private var lastUnansweredIncomingEndedAtMs = 0L
     private var answerInProgress = false
+    private var proximityWakeLock: PowerManager.WakeLock? = null
 
     fun setEventListener(listener: ((HashMap<String, Any?>) -> Unit)?) {
         eventListener = listener
@@ -525,6 +527,7 @@ class NativeSipManager(
 
     fun dispose() {
         desiredRegistrationEnabled = false
+        updateProximityScreenOff(callState = "ended", reason = "dispose")
         try {
             currentCall?.terminate()
         } catch (_: Throwable) {
@@ -767,6 +770,10 @@ class NativeSipManager(
                 }
                 val routeType = audioRouteTypeKey(audioDevice)
                 isSpeakerOn = routeType == "speaker"
+                updateProximityScreenOff(
+                    callState = lastCallState,
+                    reason = "audio_device_changed",
+                )
                 emitAudioRouteState(
                     state = "audio_device_selected",
                     reason = "device_changed",
@@ -938,6 +945,7 @@ class NativeSipManager(
         speakerOn: Boolean = false,
         diagnostics: HashMap<String, Any?> = hashMapOf(),
     ) {
+        updateProximityScreenOff(callState = state, reason = "call_state_changed")
         val payload = hashMapOf<String, Any?>(
                 "state" to state,
                 "remoteIdentity" to remoteIdentity,
@@ -947,6 +955,61 @@ class NativeSipManager(
         )
         payload.putAll(diagnostics)
         emit(type = "call", payload = payload)
+    }
+
+    private fun updateProximityScreenOff(callState: String, reason: String) {
+        val outputRoute = try {
+            core?.getOutputAudioDevice()?.let(::audioRouteTypeKey)
+        } catch (_: Throwable) {
+            null
+        }
+        val shouldEnable = callState == "in_call" && outputRoute == "earpiece"
+        val currentWakeLock = proximityWakeLock
+
+        if (shouldEnable) {
+            if (currentWakeLock?.isHeld == true) return
+            try {
+                val powerManager =
+                    context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                if (!powerManager.isWakeLockLevelSupported(
+                        PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK,
+                    )
+                ) {
+                    Log.d(TAG, "Proximity screen-off wake lock is not supported")
+                    return
+                }
+                val wakeLock = powerManager.newWakeLock(
+                    PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK,
+                    "$TAG:proximity",
+                )
+                wakeLock.setReferenceCounted(false)
+                wakeLock.acquire()
+                proximityWakeLock = wakeLock
+                Log.d(
+                    TAG,
+                    "Proximity screen-off enabled: reason=$reason, route=$outputRoute",
+                )
+            } catch (error: Throwable) {
+                Log.e(TAG, "Failed to enable proximity screen-off", error)
+            }
+            return
+        }
+
+        if (currentWakeLock?.isHeld != true) {
+            proximityWakeLock = null
+            return
+        }
+        try {
+            currentWakeLock.release()
+            Log.d(
+                TAG,
+                "Proximity screen-off disabled: reason=$reason, route=$outputRoute",
+            )
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to disable proximity screen-off", error)
+        } finally {
+            proximityWakeLock = null
+        }
     }
 
     private fun emit(type: String, payload: HashMap<String, Any?>) {

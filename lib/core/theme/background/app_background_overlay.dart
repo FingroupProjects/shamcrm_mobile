@@ -13,6 +13,7 @@ class AppBackgroundOverlay extends StatelessWidget {
   final String? assetPath;
   final double blurSigma;
   final bool followActiveTheme;
+  final bool forceRender;
 
   const AppBackgroundOverlay({
     super.key,
@@ -21,10 +22,20 @@ class AppBackgroundOverlay extends StatelessWidget {
     this.assetPath,
     this.blurSigma = 54,
     this.followActiveTheme = true,
+    this.forceRender = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // AppBackgroundOverlay используется и глобально, и внутри отдельных
+    // экранов. Не рисуем второй экземпляр поверх первого: именно он создавал
+    // эффект тени/двойного изображения.
+    if (!forceRender &&
+        context.dependOnInheritedWidgetOfExactType<_AppBackgroundScope>() !=
+            null) {
+      return const SizedBox.shrink();
+    }
+
     final themeController =
         followActiveTheme ? context.watch<AppThemeController>() : null;
     final resolvedPreset = themeController?.backgroundPreset ?? preset;
@@ -41,9 +52,8 @@ class AppBackgroundOverlay extends StatelessWidget {
         resolvedImagePath.isNotEmpty) {
       final file = File(resolvedImagePath);
       if (file.existsSync()) {
-        return IgnorePointer(
-          child: Opacity(
-            opacity: resolvedPreset.opacity,
+        return _AppBackgroundScope(
+          child: IgnorePointer(
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -63,22 +73,23 @@ class AppBackgroundOverlay extends StatelessWidget {
                     file,
                     fit: BoxFit.cover,
                   ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        context.appColors.backgroundPrimary
-                            .withValues(alpha: 0.16),
-                        context.appColors.surfacePrimary
-                            .withValues(alpha: 0.08),
-                        context.appColors.backgroundSecondary
-                            .withValues(alpha: 0.2),
-                      ],
+                if (resolvedBlurSigma > 0)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          context.appColors.backgroundPrimary
+                              .withValues(alpha: 0.16),
+                          context.appColors.surfacePrimary
+                              .withValues(alpha: 0.08),
+                          context.appColors.backgroundSecondary
+                              .withValues(alpha: 0.2),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -89,9 +100,8 @@ class AppBackgroundOverlay extends StatelessWidget {
     if (resolvedPreset == AppBackgroundPreset.custom &&
         resolvedAssetPath != null &&
         resolvedAssetPath.isNotEmpty) {
-      return IgnorePointer(
-        child: Opacity(
-          opacity: resolvedPreset.opacity,
+      return _AppBackgroundScope(
+        child: IgnorePointer(
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -111,31 +121,34 @@ class AppBackgroundOverlay extends StatelessWidget {
                   resolvedAssetPath,
                   fit: BoxFit.cover,
                 ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      context.appColors.backgroundPrimary
-                          .withValues(alpha: 0.16),
-                      context.appColors.surfacePrimary.withValues(alpha: 0.08),
-                      context.appColors.backgroundSecondary
-                          .withValues(alpha: 0.2),
-                    ],
+              if (resolvedBlurSigma > 0)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        context.appColors.backgroundPrimary
+                            .withValues(alpha: 0.16),
+                        context.appColors.surfacePrimary
+                            .withValues(alpha: 0.08),
+                        context.appColors.backgroundSecondary
+                            .withValues(alpha: 0.2),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
       );
     }
 
-    return IgnorePointer(
-      child: Opacity(
-        opacity: resolvedPreset.opacity,
-        child: DecoratedBox(
+    return _AppBackgroundScope(
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: resolvedPreset.opacity,
+          child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: _baseGradient(context, resolvedPreset),
           ),
@@ -167,6 +180,7 @@ class AppBackgroundOverlay extends StatelessWidget {
               if (resolvedPreset == AppBackgroundPreset.paper)
                 const _PaperPattern(),
             ],
+          ),
           ),
         ),
       ),
@@ -253,6 +267,13 @@ class AppBackgroundOverlay extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AppBackgroundScope extends InheritedWidget {
+  const _AppBackgroundScope({required super.child});
+
+  @override
+  bool updateShouldNotify(covariant _AppBackgroundScope oldWidget) => false;
 }
 
 class _PaperPattern extends StatelessWidget {

@@ -23,6 +23,9 @@ class _EmptyScreenState extends State<EmptyScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final themeController = context.watch<AppThemeController>();
+    final welcomeLogoAsset = Theme.of(context).brightness == Brightness.dark
+        ? 'assets/fon/icon_shamCRM_dark.jpg'
+        : 'assets/fon/icon_shamCRM_light.jpg';
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -89,7 +92,7 @@ class _EmptyScreenState extends State<EmptyScreen> {
                     ),
                     const SizedBox(height: 14),
                     Image.asset(
-                      'assets/icons/newLogo.png',
+                      welcomeLogoAsset,
                       height: 92,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
