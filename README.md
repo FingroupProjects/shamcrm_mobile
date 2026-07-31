@@ -1,594 +1,329 @@
 # ShamCRM Mobile
 
-Мобильное приложение ShamCRM на Flutter для CRM-процессов, задач, чатов,
-склада, финансов, аналитики, SIP/VoIP и push-уведомлений.
+Мобильный клиент ShamCRM на Flutter: CRM-процессы, продажи, склад, финансы,
+корпоративные чаты, уведомления и SIP/VoIP-звонки для Android и iOS.
 
-Последнее обновление README: 2026-05-25.
+> **Статус документации.** Этот README описывает функциональный baseline ветки
+> `color_schema_3` на август 2026. Он синхронизирован в `main`, чтобы описание
+> проекта было видно в Git. Перенос README **не означает**, что весь код
+> `color_schema_3` уже слит в `main`: перед задачей всегда проверяйте текущую
+> ветку и историю файла.
 
-## Кратко
-
-- Текущая версия приложения: `2.1.105+133`
-- Flutter SDK в локальной среде: `3.44.0`
-- Dart SDK в локальной среде: `3.12.0`
-- Минимальное ограничение SDK в проекте: `^3.5.3`
-- Основная ветка разработки в текущем checkout: `zoiper_2`
-- State management: `flutter_bloc`, `bloc`, `provider`
-- Backend integration: REST API, WebSocket/Pusher, Firebase Messaging
-- Offline layer: Drift/SQLite и outbox runtime
-- SIP/VoIP: кастомный `third_party/sip_ua`, `flutter_webrtc`, native bridges
-
-## Назначение
-
-ShamCRM Mobile закрывает основные мобильные сценарии CRM:
-
-- работа с лидами, сделками, задачами и событиями;
-- корпоративные чаты, файлы, голосовые сообщения и реакции;
-- push-уведомления через Firebase;
-- SIP/VoIP звонки и call-center функции;
-- складской учет, товары, заказы и документы;
-- финансы, кассы, доходы, расходы, дебиторы и кредиторы;
-- аналитика, dashboards и отчеты;
-- локализация и переключение языка;
-- offline-first инфраструктура для части пользовательских действий.
-
-## Технологии
-
-### Основной стек
-
-| Область | Используется |
+| Параметр | Значение |
 | --- | --- |
-| UI | Flutter, Material, кастомные widgets |
-| State management | `flutter_bloc`, `bloc`, `provider`, `equatable` |
-| HTTP | `http`, `dio` |
-| Realtime | `dart_pusher_channels` |
-| Push | `firebase_core`, `firebase_messaging` |
-| Storage | `shared_preferences`, `flutter_secure_storage`, Drift, SQLite |
-| Media | `just_audio`, `audioplayers`, `audio_service`, `file_picker`, `image_picker` |
-| SIP/VoIP | `sip_ua`, `flutter_webrtc`, native Android/iOS integration |
-| Maps/location | `geolocator`, `flutter_map`, `latlong2` |
-| QR/scanner | `mobile_scanner` |
-| Localization | `intl`, `flutter_localizations`, `flutter_localization` |
-| Code generation | `json_serializable`, `build_runner`, `drift_dev` |
+| Версия документации | `2.0` |
+| Последнее обновление | **Август 2026** |
+| Описываемая версия приложения | `2.1.160+220` (`color_schema_3`) |
+| Dart SDK в `pubspec.yaml` | `^3.5.3` |
+| Package ID Android | `com.softtech.crm_task_manager` |
+| Основной стек | Flutter/Dart, BLoC, REST, Firebase, SQLite/Drift, SIP/VoIP |
 
-### Локальные и fork-зависимости
+## Содержание
 
-Проект использует локальные пакеты:
+1. [Что умеет приложение](#что-умеет-приложение)
+2. [Ориентиры для нового разработчика](#ориентиры-для-нового-разработчика)
+3. [Архитектура и структура](#архитектура-и-структура)
+4. [Ключевые реализации 2026](#ключевые-реализации-2026)
+5. [SIP/VoIP и звонки](#sipvoip-и-звонки)
+6. [Уведомления и чат](#уведомления-и-чат)
+7. [Offline-first и данные](#offline-first-и-данные)
+8. [Локализация и темы](#локализация-и-темы)
+9. [Первый запуск](#первый-запуск)
+10. [Проверка и сборка](#проверка-и-сборка)
+11. [Правила разработки](#правила-разработки)
 
-- `third_party/animated_custom_dropdown`
-- `third_party/sip_ua`
+## Что умеет приложение
 
-Также используется git-зависимость:
+ShamCRM Mobile покрывает рабочие сценарии CRM, а не является только витриной
+данных.
 
-- `voice_message_package` из `https://github.com/noolfj/voice_message_playerCustom.git`
+- Лиды, сделки, воронки, контакты, комментарии и история изменений.
+- Задачи, события, календарь, проекты и уведомления о действиях.
+- Заказы, товары, склады, накладные, РМК и часть 1С-сценариев.
+- Кассы, доходы, расходы, дебиторы, кредиторы и аналитические экраны.
+- Личные и групповые чаты, файлы, изображения, голосовые сообщения, реакции
+  и push-уведомления.
+- Аутентификация по домену/учётной записи, PIN и биометрия.
+- SIP-телефония, журнал звонков, контакты, DTMF, mute, speaker/earpiece и
+  нативные входящие звонки.
+- Русский, английский и узбекский интерфейсы; светлая и тёмная темы.
+- Локальное хранение и outbox для поддерживаемых offline-сценариев.
 
-## Требования
+## Ориентиры для нового разработчика
 
-### Flutter и Dart
+Кодовая база крупная: в baseline `color_schema_3` около **450 тыс. физических
+строк исходного кода** без сгенерированных Dart-файлов и внешних исходников в
+`third_party`. Это ориентир масштаба, а не метрика качества: в число входят
+UI, модели, интеграции, пустые строки и комментарии.
 
-В `pubspec.yaml` задано:
+Перед первым изменением:
 
-```yaml
-environment:
-  sdk: ^3.5.3
-```
+1. Убедитесь, что открыли нужную ветку и worktree: `main` и `color_schema_3`
+   могут существенно отличаться.
+2. Посмотрите существующий BLoC, API-сервис и модель именно того модуля,
+   который меняете. Не создавайте параллельный паттерн без необходимости.
+3. Не смешивайте правки UI, API и нативного SIP в один широкий patch.
+4. Проверяйте состояния `Loading`, `Loaded` и `Error` отдельно. Данные не
+   должны зависеть от ещё не завершившейся проверки прав доступа.
+5. Для iOS и Android тестируйте звонки раздельно: успешный analyzer или build
+   не доказывает поведение на реальном устройстве.
 
-На момент обновления README проект проверялся локально на:
+## Архитектура и структура
 
 ```text
-Flutter 3.44.0
-Dart 3.12.0
+.
+├── android/                         # Android: Firebase, уведомления, SIP bridge
+├── ios/                             # iOS: AppDelegate, CallKit, native SIP
+├── assets/
+│   ├── icons/, images/, fonts/      # графика и шрифты
+│   └── langs/                       # ru.json, en.json, uz.json
+├── docs/                            # контракты offline и VoIP для backend/PBX
+├── lib/
+│   ├── api/service/                 # REST, Firebase, storage, network services
+│   ├── bloc/                        # события, состояния и BLoC по доменам
+│   ├── core/                        # тема и общие сервисы
+│   ├── models/                      # модели API и доменные DTO
+│   ├── offline/                     # Drift/SQLite, cache, outbox, scheduler
+│   ├── page_2/                      # склад, товары, заказы, деньги, РМК
+│   ├── screens/                     # CRM, чат, SIP, auth, аналитика
+│   ├── services/, utils/, widgets/  # общие сервисы и UI
+│   └── firebase_options.dart        # Firebase-конфигурация Flutter
+├── test/                            # unit/widget tests
+├── third_party/                     # локальные зависимости и SIP fork
+└── pubspec.yaml                     # SDK, зависимости, assets
 ```
 
-### Android
+### Основные технологии
 
-- Android Studio
-- Android SDK
-- Gradle/Android Gradle Plugin, совместимые с текущей Flutter stable
-- Устройство или эмулятор Android
-- Firebase config: `android/app/google-services.json`
+| Область | Решение |
+| --- | --- |
+| UI | Flutter, Material и переиспользуемые виджеты |
+| Управление состоянием | `flutter_bloc`, `bloc`, `equatable`, местами `provider` |
+| Сеть | `http`, `dio`, `dart_pusher_channels` |
+| Push | `firebase_core`, `firebase_messaging` |
+| Локальные данные | `shared_preferences`, `flutter_secure_storage`, Drift/SQLite |
+| Медиа | `just_audio`, `audioplayers`, `image_picker`, `file_picker` |
+| Звонки | локальный `third_party/sip_ua`, WebRTC, Kotlin и Swift bridges |
+| Интерфейс | `fl_chart`, dropdowns, calendar, pagination, slidable, SVG |
 
-### iOS
+## Ключевые реализации 2026
 
-- macOS
-- Xcode
-- CocoaPods
-- iOS Simulator или физическое устройство
-- Firebase config: `ios/Runner/GoogleService-Info.plist`
+### CRM и устойчивость экранов
 
-Для SIP/VoIP и push на iOS дополнительно важны provisioning profiles,
-capabilities, background modes и push/VoIP настройки.
+- Первый вход в **Leads**, **Events** и **Orders** не должен оставлять экран на
+  бесконечном loader. Экран обрабатывает успешные данные независимо от
+  асинхронной проверки разрешений, а запросы событий ждут выбранную воронку.
+- При ошибке загрузки заказов начальные loading-флаги также сбрасываются, чтобы
+  пользователь видел ошибку или мог повторить действие.
+- Календарь безопасно читает необязательные поля API: один `name: null` не
+  должен ломать преобразование всего списка. Ошибки загрузки отображаются, а
+  не превращаются в пустой экран.
+- Вложенные необязательные API-объекты нужно парсить defensive-способом.
+  Например, отсутствие `entry` в справочнике не является доказательством, что
+  сделка удалена.
+- Экран PIN ограничивает по времени критичные native/Firebase/SIP шаги запуска,
+  чтобы зависшая платформенная операция не оставляла приложение на splash.
 
-## Быстрый старт
+### UI и tenant-specific поведение
+
+- Светлая/тёмная тема использует общие токены `context.appColors`; не вводите
+  жёсткие цвета в новом виджете, если для элемента есть тематический токен.
+- Модальное объединение лидов и элементы управления лидами имеют
+  theme-aware оформление и переводы во всех трёх JSON-словарях.
+- Loading/skeleton состояния должны сохранять геометрию финального интерфейса,
+  особенно нижней навигации и основных карточек.
+- Изменения, нужные одному tenant, закрываются явной проверкой tenant. Пример:
+  редактирование цены позиции заказа для `stomatrade.shamcrm.com` реализуется
+  одинаково в создании и редактировании заказа и не меняет другие tenant.
+
+## SIP/VoIP и звонки
+
+SIP имеет Flutter-, Android-, iOS- и backend/PBX-части. Нельзя считать
+исправление завершённым, пока не пройден реальный входящий и исходящий звонок
+на целевой платформе.
+
+### Где искать код
+
+- Flutter UI и состояние: `lib/screens/sip/`.
+- Android: `NativeSipManager.kt`, `NativeSipForegroundService.kt`,
+  `NativeSipBridge.kt`, receivers и worker в `android/app/src/main/kotlin/`.
+- iOS: `ios/Runner/IOSNativeSipManager.swift` и `AppDelegate.swift`.
+- Контракты: `docs/ios_voip_backend_pbx_contract.md`,
+  `docs/backend_sip_ready_pbx_contract.md` (в `color_schema_3`).
+
+### Реализованное поведение
+
+- Android использует foreground-service/notification для входящего звонка,
+  нативные действия Answer/Decline и full-screen intent. На Android 14+
+  дополнительно нужно разрешение пользователя на full-screen notifications.
+- Рингтон Android принадлежит нативному notification/service пути; SIP-ядро не
+  должно одновременно запускать второй рингтон. Настройка звука канала Android
+  сохраняется системой, поэтому при смене стратегии звука требуется новый ID
+  канала или миграция существующего.
+- В Flutter доступны номеронабиратель, журнал, поиск/контакты, DTMF,
+  выключение микрофона и выбор speaker/earpiece. Визуальное `active`-состояние
+  mute не должно менять логику звонка.
+- iOS показывает входящие через CallKit. Системная клавиатура CallKit не должна
+  заявлять поддержку DTMF, если `CXPlayDTMFCallAction` не обработан; DTMF в
+  интерфейсе приложения отправляется существующим `sendDtmf` путём.
+
+### Защита от запоздалых звонков: обязательный backend-контракт
+
+Клиент умеет отбрасывать устаревший входящий push и обрабатывать отмену по
+`call_id`, но одного мобильного исправления недостаточно. Backend/PBX обязан:
+
+1. Передавать `call_started_at_ms` в каждом incoming-call push (UTC, миллисекунды).
+2. Выставлять короткий TTL/APNs expiration — обычно **30–60 секунд**.
+3. При завершении вызова отправлять `call_cancelled`/`call_ended` с тем же
+   `call_id` и прекращать retries.
+4. Создавать SIP INVITE после `sip_ready(call_id)` только если сервер всё ещё
+   считает вызов `ringing`; в ином случае возвращать `call_ended`.
+
+Получение push означает только доставку уведомления, а не наличие живого SIP
+INVITE. Для приёмки сопоставляйте логи backend/PBX, мобильного устройства и
+идентификатор `call_id`.
+
+## Уведомления и чат
+
+Firebase обрабатывает обычные CRM-уведомления и специальные chat/SIP payload.
+Не меняйте обработчик SIP так, чтобы он перехватывал или ломал остальные FCM
+уведомления.
+
+Для чатов реализованы нативные действия:
+
+- Android: быстрый ответ `RemoteInput`, отметка прочитанного, накопление
+  сообщений `InboxStyle` и стабильный notification ID для одного чата.
+- iOS: категории `CHAT_MESSAGE_REPLY`, `UNTextInputNotificationAction` и
+  группировка по `aps.thread-id`.
+
+Чтобы эти действия работали, backend должен передавать корректные `chat_id`,
+`message_id`, данные отправителя и текст, а для iOS — category/thread-id из
+согласованного push payload. Клиентские действия не заменяют авторизацию и
+проверку прав на backend.
+
+## Offline-first и данные
+
+Подсистема `lib/offline/` включает Drift/SQLite, локальный cache, outbox,
+планировщик запросов, сетевой профиль и telemetry. Она включается только для
+поддерживаемых операций — не обещайте offline-режим новому экрану, пока не
+добавлены его cache, executor, конфликтная стратегия и обработка retry.
+
+При работе с API:
+
+- модели должны выдерживать nullable/аномальные поля;
+- одна ошибка преобразования элемента не должна скрывать весь экран;
+- серверная правка не отменяет защитный parser на мобильной стороне;
+- причины 404 и ошибки parsing не следует объединять в один пользовательский
+  текст «объект удалён».
+
+## Локализация и темы
+
+- Пользовательские строки добавляются синхронно в `assets/langs/ru.json`,
+  `assets/langs/en.json` и `assets/langs/uz.json`.
+- Перед commit проверьте JSON: одна синтаксическая ошибка ломает загрузку языка.
+- Для темы используйте существующие context extensions и semantic-цвета,
+  включая surface, текст, border, shadow и active state.
+- Учитывайте светлые и тёмные asset-варианты только там, где их поддерживает
+  конкретный экран; не меняйте все логотипы из-за одного экрана.
+
+## Первый запуск
+
+### Требования
+
+- Flutter SDK, совместимый с ограничением Dart `^3.5.3`.
+- Android Studio/Android SDK для Android.
+- macOS, Xcode и CocoaPods для iOS.
+- Авторизованные Firebase-конфиги:
+  `android/app/google-services.json` и `ios/Runner/GoogleService-Info.plist`.
+- Для реальных SIP/VoIP вызовов — действующие SIP credentials, доступ к PBX и
+  нужные push/capabilities/provisioning profiles.
+
+### Команды
 
 ```bash
 git clone <repository-url>
 cd shamcrm_mobile
+git branch --show-current
 flutter doctor
 flutter pub get
-flutter run
-```
-
-Запуск на конкретном устройстве:
-
-```bash
 flutter devices
 flutter run -d <device-id>
 ```
 
-Запуск release-сборки локально:
+Для iOS после изменения Pod-конфигурации или при ошибке sandbox/Podfile.lock:
 
 ```bash
-flutter run --release -d <device-id>
+cd ios
+pod install
+cd ..
+flutter run -d <device-id>
 ```
 
-## Конфигурация Firebase
+## Проверка и сборка
 
-В проекте используются следующие файлы:
-
-- `android/app/google-services.json`
-- `ios/Runner/GoogleService-Info.plist`
-- `lib/firebase_options.dart`
-
-Если Firebase-проект меняется, обновите конфиги через FlutterFire CLI:
+Запускайте проверки из корня проекта, кроме Gradle:
 
 ```bash
-dart pub global activate flutterfire_cli
-flutterfire configure
-```
+# Проверить только затронутые Dart-файлы
+flutter analyze lib/path/to/touched_file.dart
 
-После обновления Firebase-конфигов проверьте:
-
-```bash
-flutter clean
-flutter pub get
-flutter run
-```
-
-## Структура проекта
-
-```text
-.
-├── android/                  # Android native project
-├── ios/                      # iOS native project
-├── assets/                   # изображения, иконки, аудио, шрифты, языки
-├── docs/                     # техническая документация
-├── lib/
-│   ├── api/service/          # API, Dio, Firebase, storage, network services
-│   ├── bloc/                 # BLoC/Cubit слои по доменам
-│   ├── custom_widget/        # переиспользуемые кастомные виджеты
-│   ├── data/                 # data helpers
-│   ├── generated/            # generated localization/code
-│   ├── l10n/                 # localization resources
-│   ├── models/               # DTO/domain models
-│   ├── offline/              # Drift DB, repositories, outbox
-│   ├── page_2/               # склад, заказы, товары, деньги, РМК
-│   ├── screens/              # экраны приложения
-│   ├── services/             # application services
-│   ├── utils/                # утилиты
-│   └── widgets/              # общие widgets
-├── test/                     # unit/widget tests
-├── third_party/              # локальные зависимости и forks
-├── pubspec.yaml              # зависимости и assets
-└── analysis_options.yaml     # настройки analyzer/lints
-```
-
-## Основные модули
-
-### Auth и профиль
-
-- вход по домену, логину и паролю;
-- PIN/biometric flow;
-- хранение токена и доменных настроек;
-- профиль, язык, настройки пользователя.
-
-Ключевые директории:
-
-- `lib/screens/auth`
-- `lib/screens/profile`
-- `lib/bloc/login`
-- `lib/bloc/auth_domain`
-- `lib/api/service/secure_storage_service.dart`
-
-### CRM
-
-- лиды;
-- сделки;
-- задачи;
-- события;
-- история;
-- статусы, фильтры, менеджеры, источники.
-
-Ключевые директории:
-
-- `lib/screens/lead`
-- `lib/screens/deal`
-- `lib/screens/task`
-- `lib/screens/event`
-- `lib/bloc/lead*`
-- `lib/bloc/deal*`
-- `lib/bloc/task*`
-
-### Чаты
-
-- список чатов;
-- сообщения;
-- файлы;
-- voice messages;
-- закрепление, редактирование, удаление;
-- реакции;
-- unread counters.
-
-Ключевые директории:
-
-- `lib/screens/chats`
-- `lib/bloc/chats`
-- `lib/bloc/messaging`
-- `lib/services/chat_unread_counter_service.dart`
-- `lib/api/service/message_reaction_api_service.dart`
-
-### SIP/VoIP
-
-- SIP service;
-- native Android bridge;
-- iOS VoIP integration;
-- call overlay;
-- call-center screens.
-
-Ключевые директории:
-
-- `lib/screens/sip`
-- `lib/bloc/call_bloc`
-- `android/app/src/main/kotlin`
-- `ios/`
-- `third_party/sip_ua`
-
-Дополнительная документация:
-
-- `SIP_IOS_ANDROID_AUDIT.md`
-- `docs/ios_voip_backend_pbx_contract.md`
-
-### Склад, товары, заказы и финансы
-
-Ключевые директории:
-
-- `lib/page_2/goods`
-- `lib/page_2/order`
-- `lib/page_2/warehouse`
-- `lib/page_2/money`
-- `lib/page_2/dashboard`
-- `lib/bloc/page_2_BLOC`
-
-### Offline layer
-
-Offline-инфраструктура находится в:
-
-- `lib/offline/core`
-- `lib/offline/db`
-- `lib/offline/repositories`
-
-Дополнительная документация:
-
-- `docs/offline_first_phase1.md`
-
-## API
-
-Основной API-клиент находится в:
-
-- `lib/api/service/api_service.dart`
-
-Важные связанные сервисы:
-
-- `lib/api/service/dio_client.dart`
-- `lib/api/service/firebase_api.dart`
-- `lib/api/service/http_logger.dart`
-- `lib/api/service/internet_monitor_service.dart`
-- `lib/api/service/localization_service.dart`
-- `lib/api/service/gps_tracker_service.dart`
-
-Базовые URL формируются динамически на основе домена пользователя.
-Токены и доменные настройки хранятся локально через `SharedPreferences` и
-secure storage.
-
-## Локализация
-
-В проекте используются:
-
-- `flutter_localizations`
-- `intl`
-- `flutter_localization`
-- локальные файлы в `assets/langs/`
-- generated-код в `lib/generated/`
-
-При изменении локалей проверьте:
-
-```bash
-flutter pub get
-flutter analyze
+# Тесты проекта
 flutter test
-```
 
-## Assets и шрифты
+# Android Kotlin после native-изменений
+cd android
+./gradlew :app:compileDebugKotlin
+cd ..
 
-Assets объявлены в `pubspec.yaml`.
-
-Основные директории:
-
-- `assets/icons`
-- `assets/images`
-- `assets/audio`
-- `assets/fonts`
-- `assets/langs`
-- `assets/page_2`
-
-Шрифты:
-
-- `Gilroy`
-- `Golos`
-
-После добавления assets обязательно проверьте отступы в `pubspec.yaml` и
-запустите:
-
-```bash
-flutter pub get
-```
-
-## Code generation
-
-Для JSON/Drift генерации:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-Для watch-режима:
-
-```bash
-dart run build_runner watch --delete-conflicting-outputs
-```
-
-## Проверки качества
-
-Рекомендуемый минимальный набор перед pull request:
-
-```bash
-flutter pub get
-dart format --set-exit-if-changed lib test
-flutter analyze
-flutter test
-```
-
-Дополнительно для dependency-аудита:
-
-```bash
-flutter pub outdated
-```
-
-## Текущее состояние проверок
-
-На момент обновления README:
-
-- `flutter pub get` проходит;
-- `flutter analyze` проходит без compile errors, но показывает много warnings/info;
-- `flutter test` не проходит.
-
-Известные проблемы тестов:
-
-- `test/widget_test.dart` не содержит рабочий `main`;
-- тест `mergeIncomingMessage replaces fresh local temp message when socket mislabels it`
-  падает из-за дедупликации optimistic chat message.
-
-Это нужно исправить до того, как считать CI здоровым.
-
-## Сборка
-
-### Android APK
-
-```bash
+# Сборка Android release
 flutter build apk --release
 ```
 
-Результат:
+`flutter analyze` в исторической кодовой базе может выводить старые
+warnings/info. В описании задачи разделяйте новые ошибки и уже существующий
+шум. После UI/SIP/auth/offline изменений отдельно проведите ручной сценарий на
+устройстве; build и analyzer не заменяют этот тест.
 
-```text
-build/app/outputs/flutter-apk/app-release.apk
-```
+### Release signing Android
 
-### Android App Bundle
-
-```bash
-flutter build appbundle --release
-```
-
-Результат:
-
-```text
-build/app/outputs/bundle/release/app-release.aab
-```
-
-### iOS
-
-```bash
-flutter build ios --release
-```
-
-Для публикации обычно используется Xcode Archive:
-
-```bash
-open ios/Runner.xcworkspace
-```
-
-## Работа с iOS Pods
-
-Если iOS-зависимости сломались:
-
-```bash
-cd ios
-pod install
-cd ..
-```
-
-Если нужен полный пересбор:
-
-```bash
-flutter clean
-flutter pub get
-cd ios
-pod deintegrate
-pod install
-cd ..
-```
-
-## Важные предупреждения по зависимостям
-
-`flutter pub get` сообщает, что часть пакетов имеет новые major/minor версии,
-несовместимые с текущими constraints. Также есть discontinued пакет:
-
-- `flutter_unfocuser`
-
-Flutter также предупреждает, что часть iOS/macOS plugins пока не поддерживает
-Swift Package Manager. Сейчас это warning, но в будущих версиях Flutter может
-стать ошибкой.
-
-Перед массовым обновлением зависимостей обязательно прогоняйте:
-
-```bash
-flutter test
-flutter analyze
-flutter build apk --release
-flutter build ios --release
-```
-
-## Git hygiene
-
-В репозитории не должны появляться:
-
-- `.DS_Store`
-- временные `.backup` файлы
-- zip-архивы исходников в `test/`
-- локальные IDE/cache артефакты
-- build outputs
-
-Если такие файлы уже tracked, их нужно удалить из индекса отдельным cleanup
-commit:
-
-```bash
-git rm --cached <file>
-```
-
-Не удаляйте пользовательские изменения без явного согласования.
-
-## Известные технические долги
-
-- `lib/api/service/api_service.dart` слишком большой и смешивает много зон
-  ответственности.
-- `lib/main.dart` содержит большой wiring BLoC/providers и startup logic.
-- Analyzer показывает много nullability/style предупреждений.
-- В `analysis_options.yaml` отключен `use_build_context_synchronously`.
-- Тестовое покрытие недостаточно для размера проекта.
-- В проекте есть устаревшие и потенциально проблемные зависимости.
-- Некоторые state/event классы объявляют `props`, но не наследуются от
-  `Equatable`, из-за чего analyzer показывает `override_on_non_overriding_member`.
-
-## Рекомендуемый порядок стабилизации
-
-1. Починить `flutter test`.
-2. Удалить tracked `.DS_Store`, `.backup`, `.zip` артефакты.
-3. Разобрать `override_on_non_overriding_member` в event/state классах.
-4. Разобрать nullability warnings: `dead_null_aware_expression`,
-   `invalid_null_aware_operator`, `unnecessary_null_comparison`.
-5. Вернуть контроль над `use_build_context_synchronously`.
-6. Постепенно декомпозировать `ApiService` по доменам.
-7. Добавить тесты на критичные сценарии: auth, chats, offline outbox, SIP state.
-
-## Troubleshooting
-
-### После pull не запускается проект
-
-```bash
-flutter clean
-flutter pub get
-flutter run
-```
-
-### iOS не собирается
-
-```bash
-flutter clean
-flutter pub get
-cd ios
-pod install
-cd ..
-flutter run
-```
-
-### Ошибка assets
-
-Проверьте:
-
-- путь существует;
-- файл объявлен в `pubspec.yaml`;
-- отступы YAML корректны;
-- регистр имени файла совпадает.
-
-Затем:
-
-```bash
-flutter pub get
-```
-
-### Ошибка generated files
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-### Push-уведомления не приходят
-
-Проверьте:
-
-- Firebase config для нужной платформы;
-- permissions;
-- APNs setup для iOS;
-- регистрацию FCM/VoIP token на backend;
-- логи `FirebaseApi`.
-
-### SIP/VoIP не работает
-
-Проверьте:
-
-- SIP credentials;
-- native permissions;
-- background modes;
-- PBX/backend contract;
-- `SIP_IOS_ANDROID_AUDIT.md`;
-- `docs/ios_voip_backend_pbx_contract.md`.
-
-## Документация в проекте
-
-- `ANALYTICS_API.md`
-- `LEAD_CHAT_LOGIC.md`
-- `SIP_IOS_ANDROID_AUDIT.md`
-- `city_region_fields_fix.md`
-- `inactive_fields_fix.md`
-- `task_status_loading_fix.md`
-- `validation_border_fix.md`
-- `docs/offline_first_phase1.md`
-- `docs/ios_voip_backend_pbx_contract.md`
-- `docs/shamcrm_ideal_tz_2026_04_08.md`
+Конфигурация release использует заданный проектом keystore. Если Gradle сообщает
+`validateSigningRelease` и отсутствие файла key store, не создавайте случайный
+новый ключ: приложение с другим signing key не обновит опубликованную версию.
+Сначала восстановите авторизованный keystore по действующей конфигурации и
+политике команды.
 
 ## Правила разработки
 
-- Перед изменениями изучайте существующий BLoC/API pattern в модуле.
-- Не добавляйте новый state manager без необходимости.
-- Не смешивайте UI, API и storage logic в одном новом классе.
-- Для новых API-ответов добавляйте модели и тестируйте parsing.
-- Для новых assets обновляйте `pubspec.yaml`.
-- Для новых offline-сценариев учитывайте sync/outbox behavior.
-- Для изменений SIP/VoIP проверяйте Android и iOS отдельно.
-- Перед PR запускайте `flutter analyze` и `flutter test`.
+1. Начинайте с маленького scoped diff; не очищайте чужие незакоммиченные
+   изменения и не переносите широкий merge из соседней ветки без проверки.
+2. Создание и редактирование одной сущности должны сохранять ожидаемую UI/API
+   паритетность. Tenant-логика всегда должна иметь явный gate.
+3. Состояние данных, действия пользователя и permissions — разные вещи. Не
+   скрывайте загруженные данные из-за разрешения на действие.
+4. Для SIP фиксируйте доказательства цепочки: push → native обработчик →
+   Flutter state → SIP INVITE/CallKit или Android UI → backend/PBX логи.
+5. Не обещайте device-поведение по одной компиляции. Укажите, что именно
+   проверено: analyzer, Kotlin/Swift build, Android-device или iPhone-device.
+6. Добавляйте или обновляйте тесты для моделей/парсеров и критичной новой
+   бизнес-логики, когда сценарий можно покрыть воспроизводимо.
+7. Перед PR выполните `git diff --check`, целевой analyzer и релевантные tests.
 
-## Поддержка
+## Полезные материалы
 
-Для внутренних вопросов по проекту используйте командные каналы ShamCRM/Softtech
-и профильных владельцев модулей: mobile, backend, SIP/VoIP, Firebase, warehouse,
-analytics.
+В ветке `color_schema_3` дополнительные технические контракты находятся в:
+
+- `docs/offline_first_phase1.md` — границы первого этапа offline-first.
+- `docs/ios_voip_backend_pbx_contract.md` — iOS VoIP/CallKit и PBX.
+- `docs/backend_sip_ready_pbx_contract.md` — жизненный цикл `sip_ready`.
+- `docs/backend_voip_short_tz.md` — краткое ТЗ для backend по VoIP.
+- `docs/theme_system_migration_tz.md` — правила миграции темы.
+
+---
+
+**Версия документации:** 2.0
+
+**Последнее обновление:** Август 2026
+
+**Актуально для функционального baseline:** `color_schema_3`, версия `2.1.160+220`
+
+**Статус в `main`:** README синхронизирован; код ветки проверяйте отдельно.
