@@ -125,8 +125,7 @@ class _DealCardState extends State<DealCard>
     final shouldBlink = _createTaskInDealEnabled && widget.deal.needsAttention;
     Color borderColor;
     if (widget.deal.dealStatus?.isSuccess == true &&
-        widget.deal.dealStatus?.isFailure == false &&
-        widget.deal.outDated == false) {
+        widget.deal.dealStatus?.isFailure == false) {
       borderColor = Colors.green;
     } else if (widget.deal.dealStatus?.isSuccess == false &&
         widget.deal.dealStatus?.isFailure == true) {
@@ -167,7 +166,8 @@ class _DealCardState extends State<DealCard>
           final needsRefresh = resultMap['refresh'] == true;
 
           if (needsRefresh) {
-            final oldStatusId = resultMap['statusId'] as int? ?? widget.statusId;
+            final oldStatusId =
+                resultMap['statusId'] as int? ?? widget.statusId;
             final newStatusId = resultMap['newStatusId'] as int? ?? oldStatusId;
 
             await DealCache.clearDealsForStatus(oldStatusId);
@@ -179,247 +179,264 @@ class _DealCardState extends State<DealCard>
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: shouldBlink
-                    ? Colors.red.withValues(alpha: _fadeAnimation.value)
-                    : borderColor,
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              color: const Color(0xffF4F7FD),
-              boxShadow: shouldBlink
-                  ? [
-                      BoxShadow(
-                        color: Colors.red.withValues(
-                          alpha: _fadeAnimation.value * 0.3,
-                        ),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    text: widget.deal.name,
-                    style: TaskCardStyles.titleStyle,
-                    children: const <TextSpan>[
-                      TextSpan(
-                        text: '\n\u200B',
-                        style: TaskCardStyles.titleStyle,
-                      ),
-                    ],
-                  ),
+          return Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: borderColor, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xffF4F7FD),
                 ),
-                const SizedBox(height: 5),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xff99A4BA),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        maxLines: 1,
-                      ),
-                    ),
-                    Text(
-                      widget.deal.lead?.phone ?? "",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
+                    Padding(
+                      padding: EdgeInsets.only(left: shouldBlink ? 12 : 0),
+                      child: RichText(
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                      ),
-                      maxLines: 1,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('column'),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                        text: TextSpan(
+                          text: widget.deal.name,
+                          style: TaskCardStyles.titleStyle,
+                          children: const <TextSpan>[
+                            TextSpan(
+                              text: '\n\u200B',
+                              style: TaskCardStyles.titleStyle,
                             ),
-                          ),
-                          Flexible(
-                            child: GestureDetector(
-                              onTap: () {
-                                // 🛡️ Блокируем повторные нажатия
-                                if (_isBottomSheetOpen) {
-                                  debugPrint(
-                                      '⚠️ BottomSheet уже открыт, игнорируем нажатие');
-                                  return;
-                                }
-
-                                // Устанавливаем флаг
-                                _isBottomSheetOpen = true;
-
-                                showDealStatusBottomSheet(
-                                  context,
-                                  dropdownValue,
-                                  (String newValue,
-                                      List<int> newStatusIds) async {
-                                    final oldStatusId = widget.statusId;
-                                    final newStatusId = newStatusIds.isNotEmpty
-                                        ? newStatusIds.first
-                                        : oldStatusId;
-
-                                    if (newStatusId != oldStatusId) {
-                                      await DealCache.clearDealsForStatus(
-                                          oldStatusId);
-                                      await DealCache.clearDealsForStatus(
-                                          newStatusId);
-                                      await DealCache.updateDealCountTemporary(
-                                        oldStatusId,
-                                        newStatusId,
-                                      );
-                                    }
-
-                                    setState(() {
-                                      dropdownValue = newValue;
-                                      statusId = newStatusId;
-                                    });
-                                    widget.onStatusId(oldStatusId, newStatusId);
-                                    widget.onStatusUpdated(
-                                      oldStatusId,
-                                      newStatusId,
-                                    );
-                                  },
-                                  widget.deal,
-                                  ApiService(),
-                                ).whenComplete(() {
-                                  // 🔓 Сбрасываем флаг после закрытия
-                                  _isBottomSheetOpen = false;
-                                  debugPrint(
-                                      '✅ BottomSheet закрыт, флаг сброшен');
-                                });
-                              },
-                              child: Container(
-                                key: widget.dropdownKey,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                child: Container(
-                                  decoration: _getStatusButtonDecoration(
-                                      statusId == widget.statusId),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          dropdownValue,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xff1E2E52),
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Image.asset(
-                                        'assets/icons/tabBar/dropdown.png',
-                                        width: 20,
-                                        height: 20,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Column(
-                  children: [
                     const SizedBox(height: 5),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Image.asset(
-                              'assets/icons/tabBar/date.png',
-                              width: 17,
-                              height: 17,
-                            ),
-                            // const SizedBox(width: 4),
-                            Text(
-                              ' ${formatDate(
-                                widget.deal.createdAt ??
-                                    AppLocalizations.of(context)!
-                                        .translate('unknow'),
-                              )}',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
-                              ),
-                              maxLines: 1,
+                        Expanded(
+                          child: Text(
+                            '${AppLocalizations.of(context)!.translate('lead_deal_card')}${widget.deal.lead?.name ?? ""}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xff99A4BA),
                               overflow: TextOverflow.ellipsis,
+                            ),
+                            maxLines: 1,
+                          ),
+                        ),
+                        Text(
+                          widget.deal.lead?.phone ?? "",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xff99A4BA),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 1,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Row(
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .translate('column'),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xff99A4BA),
+                                ),
+                              ),
+                              Flexible(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    // 🛡️ Блокируем повторные нажатия
+                                    if (_isBottomSheetOpen) {
+                                      debugPrint(
+                                          '⚠️ BottomSheet уже открыт, игнорируем нажатие');
+                                      return;
+                                    }
+
+                                    // Устанавливаем флаг
+                                    _isBottomSheetOpen = true;
+
+                                    showDealStatusBottomSheet(
+                                      context,
+                                      dropdownValue,
+                                      (String newValue,
+                                          List<int> newStatusIds) async {
+                                        final oldStatusId = widget.statusId;
+                                        final newStatusId =
+                                            newStatusIds.isNotEmpty
+                                                ? newStatusIds.first
+                                                : oldStatusId;
+
+                                        if (newStatusId != oldStatusId) {
+                                          await DealCache.clearDealsForStatus(
+                                              oldStatusId);
+                                          await DealCache.clearDealsForStatus(
+                                              newStatusId);
+                                          await DealCache
+                                              .updateDealCountTemporary(
+                                            oldStatusId,
+                                            newStatusId,
+                                          );
+                                        }
+
+                                        setState(() {
+                                          dropdownValue = newValue;
+                                          statusId = newStatusId;
+                                        });
+                                        widget.onStatusId(
+                                            oldStatusId, newStatusId);
+                                        widget.onStatusUpdated(
+                                          oldStatusId,
+                                          newStatusId,
+                                        );
+                                      },
+                                      widget.deal,
+                                      ApiService(),
+                                    ).whenComplete(() {
+                                      // 🔓 Сбрасываем флаг после закрытия
+                                      _isBottomSheetOpen = false;
+                                      debugPrint(
+                                          '✅ BottomSheet закрыт, флаг сброшен');
+                                    });
+                                  },
+                                  child: Container(
+                                    key: widget.dropdownKey,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    child: Container(
+                                      decoration: _getStatusButtonDecoration(
+                                          statusId == widget.statusId),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              dropdownValue,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontFamily: 'Gilroy',
+                                                fontWeight: FontWeight.w500,
+                                                color: Color(0xff1E2E52),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Image.asset(
+                                            'assets/icons/tabBar/dropdown.png',
+                                            width: 20,
+                                            height: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Column(
+                      children: [
+                        const SizedBox(height: 5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/icons/tabBar/date.png',
+                                  width: 17,
+                                  height: 17,
+                                ),
+                                // const SizedBox(width: 4),
+                                Text(
+                                  ' ${formatDate(
+                                    widget.deal.createdAt ??
+                                        AppLocalizations.of(context)!
+                                            .translate('unknow'),
+                                  )}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFE9EDF5),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${widget.deal.manager?.name ?? "Система"}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff99A4BA),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFE9EDF5),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '${widget.deal.manager?.name ?? "Система"}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Gilroy',
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff99A4BA),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              if (shouldBlink)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFA1AB)
+                          .withValues(alpha: _fadeAnimation.value),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFA1AB)
+                              .withValues(alpha: _fadeAnimation.value * 0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),

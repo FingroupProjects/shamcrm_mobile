@@ -928,6 +928,7 @@ extension _SipCallViewsExtension on _SipScreenState {
                     ? l10n.translate('sip_unmute')
                     : l10n.translate('sip_mute'),
                 onTap: _sipRuntime.toggleMute,
+                active: state.isMuted,
                 size: buttonSize,
                 iconSize: iconSize,
                 labelFontSize: labelFontSize,

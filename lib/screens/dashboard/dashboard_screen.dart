@@ -25,7 +25,6 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_skeleton.dart';
@@ -79,7 +78,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool isClickAvatarIcon = false;
   List<String> userRoles = [];
-  bool isLoading = true;
   bool isRefreshing = false;
 
   DashboardType _activeDashboard = DashboardType.crm;
@@ -116,10 +114,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initializeData() async {
     try {
-      setState(() {
-        isLoading = true;
-      });
-
       // КРИТИЧНО: при первом входе в Dashboard гарантируем сохранённую воронку.
       await _apiService.ensureSelectedSalesFunnelInitialized();
 
@@ -140,17 +134,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await _checkAccountingDashboardPermission(); // НОВОЕ: Проверяем право
       }
 
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+    } catch (_) {
+      // Dashboard continues with the available chart/cache states.
     }
   }
 
@@ -693,8 +678,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: isClickAvatarIcon
           ? ProfileScreen()
-          : Stack(
-              children: [
+          : ColoredBox(
+              color: Colors.white,
+              child: Stack(
+                children: [
                 Column(
                   children: [
                     // ИЗМЕНЕНО: Показываем переключатель только если есть право
@@ -733,17 +720,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-                if (isLoading)
-                  Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
-                      ),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
     );
   }

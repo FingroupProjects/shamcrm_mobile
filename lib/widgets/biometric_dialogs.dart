@@ -110,10 +110,21 @@ Future<bool?> showBiometricSetupRequiredDialog({
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) {
+      final colors = Theme.of(dialogContext).colorScheme;
+      final isDark = Theme.of(dialogContext).brightness == Brightness.dark ||
+          MediaQuery.platformBrightnessOf(dialogContext) == Brightness.dark;
+      final dialogSurface =
+          isDark ? const Color(0xFF151827) : colors.surface;
+      final dialogText = isDark ? Colors.white : colors.onSurface;
+      final dialogSecondaryText = isDark
+          ? const Color(0xFFB5B8C5)
+          : colors.onSurfaceVariant;
+      final dialogOutline =
+          isDark ? const Color(0xFF3A4054) : colors.outline;
       return Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
+        backgroundColor: dialogSurface,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
           child: Column(
@@ -123,7 +134,8 @@ Future<bool?> showBiometricSetupRequiredDialog({
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  color: const Color(0xFFF59E0B)
+                      .withValues(alpha: isDark ? 0.2 : 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -138,23 +150,23 @@ Future<bool?> showBiometricSetupRequiredDialog({
               Text(
                 localizations.translate('biometric_setup_required_title'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'Gilroy',
-                  color: Color(0xFF1E1E1E),
+                  color: dialogText,
                 ),
               ),
               const SizedBox(height: 10),
               Text(
                 localizations.translate(descriptionKey),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.45,
                   fontWeight: FontWeight.w400,
                   fontFamily: 'Gilroy',
-                  color: Color(0xFF667085),
+                  color: dialogSecondaryText,
                 ),
               ),
               const SizedBox(height: 24),
@@ -164,8 +176,8 @@ Future<bool?> showBiometricSetupRequiredDialog({
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(dialogContext).pop(false),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF475467),
-                        side: const BorderSide(color: Color(0xFFD0D5DD)),
+                        foregroundColor: dialogText,
+                        side: BorderSide(color: dialogOutline),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

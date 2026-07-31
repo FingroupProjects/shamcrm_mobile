@@ -6,6 +6,7 @@ import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
+import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
@@ -38,6 +39,7 @@ class PinScreen extends StatefulWidget {
 
 class _PinScreenState extends State<PinScreen>
     with SingleTickerProviderStateMixin {
+  static const double _pinLogoSize = 96;
   static const String _sipPinRequiredAfterCallKey =
       'sip_pin_required_after_call_v1';
   static const Duration _startupStepTimeout = Duration(seconds: 4);
@@ -392,19 +394,30 @@ class _PinScreenState extends State<PinScreen>
     SipService().clearForcedPinPrompt();
     unawaited(ChatUnreadCounterService.instance.initialize());
 
-    // ✅ ИСПРАВЛЕНИЕ: Передаем initialMessage через arguments
-    Future.delayed(Duration(milliseconds: 50), () {
+    // Переходим собственной мягкой анимацией: системный slide после PIN
+    // выглядел слишком резким вместе с последующей инициализацией HomeScreen.
+    Future.delayed(const Duration(milliseconds: 50), () {
       if (!mounted) return;
 
-      if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/home',
-          (route) => false,
-          arguments: {
-            'initialMessage': widget.initialMessage, // ⬅️ Передаем сообщение
+      Navigator.of(context).pushAndRemoveUntil(
+        PageRouteBuilder<void>(
+          settings: RouteSettings(
+            name: '/home',
+            arguments: {'initialMessage': widget.initialMessage},
+          ),
+          pageBuilder: (_, __, ___) => const HomeScreen(),
+          transitionDuration: const Duration(milliseconds: 620),
+          reverseTransitionDuration: const Duration(milliseconds: 320),
+          transitionsBuilder: (_, animation, __, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            );
+            return FadeTransition(opacity: curved, child: child);
           },
-        );
-      }
+        ),
+        (route) => false,
+      );
     });
   }
 
@@ -844,7 +857,9 @@ class _PinScreenState extends State<PinScreen>
                 ),
                 Image.asset(
                   'assets/icons/playstore.png',
-                  height: 150,
+                  width: _pinLogoSize,
+                  height: _pinLogoSize,
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 20),
                 Text(

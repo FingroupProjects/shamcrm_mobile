@@ -771,8 +771,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ==========================================================================
 
   void _initializeScreensSync() {
-    // ✅ Добавляем заглушку сразу, чтобы не было моргания
-    _widgetOptionsGroup1 = [EmptyScreen()];
+    // Permissions загружаются асинхронно. Не показываем промежуточный
+    // welcome-экран: он создавал лишний визуальный скачок перед Dashboard.
+    _widgetOptionsGroup1 = [];
     _isInitialized = false;
 
     // Запускаем асинхронную загрузку разрешений
@@ -1232,14 +1233,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           } else if (_widgetOptionsGroup2.isNotEmpty) {
             currentWidget = _widgetOptionsGroup2[0];
           } else {
-            currentWidget = EmptyScreen();
+            currentWidget = _isInitialized
+                ? const _HomeEmptyState()
+                : const _HomeStartupLoading();
           }
+
+          final animatedCurrentWidget = AnimatedSwitcher(
+            duration: const Duration(milliseconds: 560),
+            switchInCurve: Curves.easeInOutCubic,
+            switchOutCurve: Curves.easeInOutCubic,
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            ),
+            transitionBuilder: (child, animation) {
+              final curved = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+              );
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 0.012),
+                end: Offset.zero,
+              ).animate(curved);
+              return FadeTransition(
+                opacity: curved,
+                child: SlideTransition(
+                  position: slide,
+                  child: ScaleTransition(
+                    // При уходе startup-loader уменьшается к центру, поэтому
+                    // он не успевает попасть в уже открытый Dashboard.
+                    scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<String>(
+                'home_content_${_selectedIndexGroup1}_${_selectedIndexGroup2}_${currentWidget.runtimeType}',
+              ),
+              child: currentWidget,
+            ),
+          );
 
           Widget safeBody = Stack(
             children: [
-              SafeArea(
-                bottom: true,
-                child: currentWidget,
+              ColoredBox(
+                color: Colors.white,
+                child: SafeArea(
+                  bottom: true,
+                  child: animatedCurrentWidget,
+                ),
               ),
               if (_showProfileScreen) _buildEmbeddedProfileOverlay(context),
             ],
@@ -1331,5 +1378,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         },
       ),
     );
+  }
+}
+
+class _HomeStartupLoading extends StatelessWidget {
+  const _HomeStartupLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: Colors.white,
+      child: Center(
+        child: SizedBox(
+          width: 46,
+          height: 46,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeEmptyState extends StatelessWidget {
+  const _HomeEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(color: Colors.white);
   }
 }

@@ -84,9 +84,36 @@ Map<String, dynamic>? _normalizeIncomingCallPushData(
     'lead_name': pickString(<String>['lead_name']),
     'caller_name': callerName,
     'remote_identity': remoteIdentity,
+    'issued_at_ms': _incomingPushIssuedAtMs(rawData),
     'source': source,
     'received_at_ms': DateTime.now().millisecondsSinceEpoch,
   };
+}
+
+int? _incomingPushIssuedAtMs(Map<String, dynamic> data) {
+  const keys = <String>[
+    'call_started_at_ms',
+    'created_at_ms',
+    'sent_at_ms',
+    'issued_at_ms',
+    'timestamp_ms',
+    'call_started_at',
+    'created_at',
+    'sent_at',
+    'issued_at',
+    'timestamp',
+    'google.sent_time',
+  ];
+  for (final key in keys) {
+    final value = data[key];
+    final parsed = value is num
+        ? value.toInt()
+        : int.tryParse(value?.toString().trim() ?? '');
+    if (parsed != null && parsed > 0) {
+      return parsed < 10000000000 ? parsed * 1000 : parsed;
+    }
+  }
+  return null;
 }
 
 Future<void> _persistIncomingCallPushData(

@@ -12,6 +12,7 @@ class PinChangeScreen extends StatefulWidget {
 
 class _PinChangeScreenState extends State<PinChangeScreen>
     with SingleTickerProviderStateMixin {
+  static const double _pinLogoSize = 96;
   
   // Текущий шаг: 0 = ввод старого PIN, 1 = ввод нового, 2 = подтверждение
   int _currentStep = 0;
@@ -292,7 +293,9 @@ class _PinChangeScreenState extends State<PinChangeScreen>
               // Иконка
               Image.asset(
                 'assets/icons/playstore.png',
-                height: 120,
+                width: _pinLogoSize,
+                height: _pinLogoSize,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 32),
               

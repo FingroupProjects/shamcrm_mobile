@@ -51,8 +51,8 @@ class _SubCategoryDetailsScreenState extends State<SubCategoryDetailsScreen> {
   int _apartmentsPage = 1;
   static const int _apartmentsPerPage = 20;
   static const List<String> _apartmentStatuses = [
-    'Продано',
-    'Свободень',
+    'Продана',
+    'Свободно',
     'Бронь',
     'Резерв',
   ];

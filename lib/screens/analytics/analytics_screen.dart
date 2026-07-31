@@ -1072,7 +1072,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     if (!widget.showAppBar) {
       return Container(
-        color: const Color(0xffF8FAFC),
+        color: Colors.white,
         child: _buildAnalyticsBody(context),
       );
     }

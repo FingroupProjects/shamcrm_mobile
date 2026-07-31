@@ -674,9 +674,6 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadProject = await _apiService.hasPermission('project.read');
     final canReadGps =
         await _apiService.hasPermission('call-center'); // Проверка прав для GPS
-    final permissions = await _apiService.getPermissions();
-    final canReadSip = permissions.contains('sip.read') ||
-        !permissions.any((permission) => permission.startsWith('sip.'));
     final prefs = await SharedPreferences.getInstance();
     final rawRoles = (prefs.getString('userAllRoles') ??
             prefs.getString('userRoleName') ??
@@ -696,7 +693,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
       _canReadGps = canReadGps;
-      _canReadSip = kShowSip && canReadSip;
+      _canReadSip = kShowSip && canReadCallCenter;
       _canOpenTimesheet = isAdmin && workdayEnabled;
       _canReadProject = canReadProject;
     });
@@ -1650,7 +1647,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                           );
                           break;
                         case 'sip':
-                          if (kShowSip) {
+                          if (kShowSip && _canReadCallCenter) {
                             Navigator.push(
                               context,
                               MaterialPageRoute(

@@ -35,6 +35,7 @@ class PinSetupScreen extends StatefulWidget {
 
 class _PinSetupScreenState extends State<PinSetupScreen>
     with SingleTickerProviderStateMixin {
+  static const double _pinLogoSize = 96;
   // ═══════════════════════════════════════════════════════════════════════
   // ПЕРЕМЕННЫЕ СОСТОЯНИЯ
   // ═══════════════════════════════════════════════════════════════════════
@@ -822,6 +823,17 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   Future<bool?> _showBiometricPromptDialog(BiometricAvailability availability) {
     final localizations = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark ||
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final dialogSurface =
+        isDark ? const Color(0xFF151827) : colors.surface;
+    final dialogText = isDark ? Colors.white : colors.onSurface;
+    final dialogSecondaryText = isDark
+        ? const Color(0xFFB5B8C5)
+        : colors.onSurfaceVariant;
+    final dialogOutline =
+        isDark ? const Color(0xFF3A4054) : colors.outline;
     final title = localizations == null
         ? 'Enable biometric sign-in?'
         : biometricEnableTitle(localizations, availability);
@@ -839,7 +851,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: dialogSurface,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             child: Column(
@@ -849,7 +861,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E9E63).withValues(alpha: 0.12),
+                    color: const Color(0xFF1E9E63)
+                        .withValues(alpha: isDark ? 0.2 : 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -864,23 +877,23 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF1E1E1E),
+                    color: dialogText,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.45,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Gilroy',
-                    color: Color(0xFF667085),
+                    color: dialogSecondaryText,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -890,8 +903,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(dialogContext).pop(false),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF475467),
-                          side: const BorderSide(color: Color(0xFFD0D5DD)),
+                          foregroundColor: dialogText,
+                          side: BorderSide(color: dialogOutline),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -971,7 +984,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
               // Логотип
               Image.asset(
                 'assets/icons/playstore.png',
-                height: 160,
+                width: _pinLogoSize,
+                height: _pinLogoSize,
+                fit: BoxFit.contain,
               ),
 
               const SizedBox(height: 16),

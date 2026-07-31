@@ -1,14 +1,20 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/notification_cache.dart';
+import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/page_2/order/order_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/event/event_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
+import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +27,14 @@ class AppLogoutService {
   }) async {
     final apiService = ApiService();
     final authService = AuthService();
+
+    try {
+      await SipService().clearSavedCredentials(
+        revokeBackendVoipToken: notifyServer,
+      );
+    } catch (e) {
+      debugPrint('AppLogoutService: SIP cleanup error: $e');
+    }
 
     if (notifyServer) {
       try {
@@ -36,21 +50,38 @@ class AppLogoutService {
       await authService.clearAllAuthData();
 
       await Future.wait([
-        DealCache.clearEverything(),
-        LeadCache.clearEverything(),
-        TaskCache.clearEverything(),
-        EventCache.clearEverything(),
-        MyTaskCache.clearAllMyTasks(),
-        MyTaskCache.clearCache(),
-        OrderCache.clearAllData(),
-        NotificationCacheHandler.clearCache(),
-        MessageCacheService().clearAllCache(),
+        _runCleanup('deals', DealCache.clearEverything),
+        _runCleanup('leads', LeadCache.clearEverything),
+        _runCleanup('tasks', TaskCache.clearEverything),
+        _runCleanup('events', EventCache.clearEverything),
+        _runCleanup('my tasks', MyTaskCache.clearAllMyTasks),
+        _runCleanup('my task cache', MyTaskCache.clearCache),
+        _runCleanup('orders', OrderCache.clearAllData),
+        _runCleanup('notifications', NotificationCacheHandler.clearCache),
+        _runCleanup(
+          'chat messages',
+          MessageCacheService().clearAllCache,
+        ),
+        _runCleanup(
+          'chat media',
+          ChatMediaPersistentCache.instance.clearAll,
+        ),
+        if (OfflineRuntime.isInitialized)
+          _runCleanup(
+            'offline database',
+            OfflineRuntime.instance.database.clearAllData,
+          ),
       ]);
 
       ApiService.clearAnalyticsResponseCache();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
+      PaintingBinding.instance.imageCache
+        ..clear()
+        ..clearLiveImages();
+      await _clearDownloadedFileCache();
+      await _clearTemporaryFiles();
     } catch (e) {
       debugPrint('AppLogoutService: local cleanup error: $e');
     }
@@ -68,5 +99,53 @@ class AppLogoutService {
       '/local_auth',
       (route) => false,
     );
+  }
+
+  static Future<void> _runCleanup(
+    String label,
+    Future<void> Function() cleanup,
+  ) async {
+    try {
+      await cleanup();
+    } catch (error) {
+      debugPrint('AppLogoutService: $label cleanup error: $error');
+    }
+  }
+
+  static Future<void> _clearTemporaryFiles() async {
+    try {
+      final directory = await getTemporaryDirectory();
+      if (!await directory.exists()) return;
+
+      for (final entity in directory.listSync()) {
+        try {
+          if (entity is Directory) {
+            await entity.delete(recursive: true);
+          } else if (entity is File) {
+            await entity.delete();
+          }
+        } catch (error) {
+          debugPrint(
+            'AppLogoutService: temporary item cleanup error '
+            '(${entity.path}): $error',
+          );
+        }
+      }
+    } catch (error) {
+      debugPrint('AppLogoutService: temporary directory cleanup error: $error');
+    }
+  }
+
+  static Future<void> _clearDownloadedFileCache() async {
+    try {
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      final cachedFilesDirectory =
+          Directory('${documentsDirectory.path}/cached_files');
+      if (await cachedFilesDirectory.exists()) {
+        await cachedFilesDirectory.delete(recursive: true);
+      }
+    } catch (error) {
+      debugPrint('AppLogoutService: downloaded files cleanup error: $error');
+    }
   }
 }

@@ -72,6 +72,7 @@ class SipService extends ChangeNotifier
     _transportKey,
     _portKey,
     _enabledKey,
+    _voipPushTokenKey,
   ];
   static const MethodChannel _nativeSipMethodChannel =
       MethodChannel('com.shamcrm/native_sip/methods');
@@ -1022,6 +1023,13 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    if (_isExpiredIncomingCallPush(payload)) {
+      debugPrint(
+        'SipService incoming_call push expired -> call_id=${payload['call_id']}, issued_at_ms=${payload['issued_at_ms']}',
+      );
+      return;
+    }
+
     if (persist) {
       await _savePendingIncomingCallPushPayload(payload);
     }
@@ -1158,9 +1166,47 @@ class SipService extends ChangeNotifier
       'lead_name': pickString(<String>['lead_name']),
       'caller_name': callerName,
       'remote_identity': remoteIdentity,
+      'issued_at_ms': _incomingPushIssuedAtMs(rawPayload),
       'source': source,
       'received_at_ms': DateTime.now().millisecondsSinceEpoch,
     };
+  }
+
+  int? _incomingPushIssuedAtMs(Map<String, dynamic> payload) {
+    const keys = <String>[
+      'call_started_at_ms',
+      'created_at_ms',
+      'sent_at_ms',
+      'issued_at_ms',
+      'timestamp_ms',
+      'call_started_at',
+      'created_at',
+      'sent_at',
+      'issued_at',
+      'timestamp',
+      'google.sent_time',
+    ];
+    for (final key in keys) {
+      final value = payload[key];
+      final parsed = value is num
+          ? value.toInt()
+          : int.tryParse(value?.toString().trim() ?? '');
+      if (parsed != null && parsed > 0) {
+        return parsed < 10000000000 ? parsed * 1000 : parsed;
+      }
+    }
+    return null;
+  }
+
+  bool _isExpiredIncomingCallPush(Map<String, dynamic> payload) {
+    final issuedAtMs = payload['issued_at_ms'] as int?;
+    if (issuedAtMs == null) {
+      // Until every backend sender includes a creation timestamp, a client
+      // cannot distinguish a delayed delivery from a real new call.
+      return false;
+    }
+    return DateTime.now().millisecondsSinceEpoch - issuedAtMs >
+        const Duration(minutes: 2).inMilliseconds;
   }
 
   bool _isDuplicateIncomingCallPush(Map<String, dynamic> payload) {
@@ -1460,7 +1506,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'false');
     unawaited(_syncIncomingCallPushPreference(false));
-    unawaited(_apiService.clearPendingVoipToken());
+    unawaited(revokeVoipTokenAndClearLocal());
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1492,14 +1538,20 @@ class SipService extends ChangeNotifier
     _notifyListenersSafely();
   }
 
-  Future<void> clearSavedCredentials() async {
+  Future<void> clearSavedCredentials({
+    bool revokeBackendVoipToken = true,
+  }) async {
     _shouldStayConnected = false;
     _persistentSipEnabled = false;
     _sipEnabled = false;
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
-    unawaited(_syncIncomingCallPushPreference(false));
-    unawaited(_apiService.clearPendingVoipToken());
+    await _syncIncomingCallPushPreference(false);
+    if (revokeBackendVoipToken) {
+      await revokeVoipTokenAndClearLocal();
+    } else {
+      await _clearLocalVoipToken();
+    }
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1518,16 +1570,32 @@ class SipService extends ChangeNotifier
     }
     _releaseStreams();
 
-    await _storage.delete(key: _serverKey);
-    await _storage.delete(key: _loginKey);
-    await _storage.delete(key: _passwordKey);
-    await _storage.delete(key: _sipIdKey);
-    await _storage.delete(key: _transportKey);
-    await _storage.delete(key: _portKey);
-    await _storage.delete(key: _enabledKey);
+    for (final key in _sipSecureStorageKeys) {
+      await _storage.delete(key: key);
+    }
 
     _state = SipUiState.initial();
     _notifyListenersSafely();
+  }
+
+  Future<void> revokeVoipTokenAndClearLocal() async {
+    if (Platform.isIOS) {
+      try {
+        final token = await getVoipPushToken();
+        await _apiService
+            .deleteVoipToken(voipToken: token)
+            .timeout(_iosVoipTokenSyncTimeout);
+      } catch (error) {
+        debugPrint('SipService: VoIP token revoke skipped: $error');
+      }
+    }
+    await _clearLocalVoipToken();
+  }
+
+  Future<void> _clearLocalVoipToken() async {
+    _lastSyncedIosVoipPushToken = null;
+    await _storage.delete(key: _voipPushTokenKey);
+    await _apiService.clearPendingVoipToken();
   }
 
   bool get hasSavedCredentials => _hasSipCredentials();
@@ -2142,9 +2210,7 @@ class SipService extends ChangeNotifier
 
   void _handleNativePushTokenInvalidatedEvent() {
     debugPrint('SipService native push token invalidated');
-    _lastSyncedIosVoipPushToken = null;
-    unawaited(_storage.delete(key: _voipPushTokenKey));
-    unawaited(_apiService.clearPendingVoipToken());
+    unawaited(_clearLocalVoipToken());
   }
 
   void _handleNativeSipReadyEvent(Map<String, dynamic> payload) {
