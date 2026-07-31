@@ -30,6 +30,7 @@ class _ChatAppearanceSheet extends StatefulWidget {
 
 class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
   static const List<String> _projectWallpapers = [
+    'assets/fon/IMG_1548.JPG',
     'assets/fon/IMG_1614.JPG',
     'assets/fon/IMG_1615.JPG',
     'assets/fon/IMG_1617.JPG',
@@ -52,6 +53,15 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
     'assets/fon/IMG_1618.JPG',
     'assets/fon/IMG_1584.JPG',
     'assets/fon/IMG_1619.JPG',
+       'assets/fon/IMG_1500.png',
+    'assets/fon/IMG_1501.png',
+    'assets/fon/IMG_1502.png',
+    'assets/fon/IMG_1503.png',
+    'assets/fon/IMG_1504.png',
+    'assets/fon/IMG_1505.png',
+    'assets/fon/IMG_1506.png',
+    'assets/fon/IMG_1507.png',
+    'assets/fon/IMG_1508.png',
   ];
 
   late ChatAppearanceData _draft;

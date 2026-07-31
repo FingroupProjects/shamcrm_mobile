@@ -1,4 +1,8 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
@@ -12,28 +16,28 @@ class PinChangeScreen extends StatefulWidget {
 
 class _PinChangeScreenState extends State<PinChangeScreen>
     with SingleTickerProviderStateMixin {
-  
   // Текущий шаг: 0 = ввод старого PIN, 1 = ввод нового, 2 = подтверждение
   int _currentStep = 0;
-  
+
   String _oldPin = '';
   String _newPin = '';
   String _confirmPin = '';
-  
+
   bool _isError = false;
-  
+  bool _isPinChecking = false;
+
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    
+
     _shakeAnimation = Tween<double>(begin: 0, end: 10)
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_animationController);
@@ -56,8 +60,10 @@ class _PinChangeScreenState extends State<PinChangeScreen>
   // ==========================================================================
 
   void _onNumberPressed(String number) async {
+    if (_isPinChecking) return;
+
     String currentPin = _getCurrentPinInput();
-    
+
     if (currentPin.length < 4) {
       setState(() {
         _setCurrentPinInput(currentPin + number);
@@ -73,12 +79,21 @@ class _PinChangeScreenState extends State<PinChangeScreen>
 
       // Проверка после 4-й цифры
       if (_getCurrentPinInput().length == 4) {
-        await _handlePinComplete();
+        setState(() => _isPinChecking = true);
+        try {
+          await _handlePinComplete();
+        } finally {
+          if (mounted) {
+            setState(() => _isPinChecking = false);
+          }
+        }
       }
     }
   }
 
   void _onDelete() {
+    if (_isPinChecking) return;
+
     String currentPin = _getCurrentPinInput();
     if (currentPin.isNotEmpty) {
       setState(() {
@@ -89,6 +104,8 @@ class _PinChangeScreenState extends State<PinChangeScreen>
   }
 
   void _onClear() {
+    if (_isPinChecking) return;
+
     setState(() {
       _oldPin = '';
       _newPin = '';
@@ -149,13 +166,11 @@ class _PinChangeScreenState extends State<PinChangeScreen>
         // Неправильный старый PIN
         _triggerErrorEffect();
       }
-      
     } else if (_currentStep == 1) {
       // Ввели новый PIN → переходим к подтверждению
       setState(() {
         _currentStep = 2;
       });
-      
     } else if (_currentStep == 2) {
       // Проверяем совпадение нового PIN
       if (_newPin == _confirmPin) {
@@ -176,6 +191,7 @@ class _PinChangeScreenState extends State<PinChangeScreen>
 
     setState(() {
       _isError = true;
+      _isPinChecking = false;
       // Очищаем текущий ввод
       if (_currentStep == 0) {
         _oldPin = '';
@@ -204,8 +220,8 @@ class _PinChangeScreenState extends State<PinChangeScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            localizations?.translate('pin_changed_successfully') ?? 
-            'PIN успешно изменён',
+            localizations?.translate('pin_changed_successfully') ??
+                'PIN успешно изменён',
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
@@ -230,11 +246,13 @@ class _PinChangeScreenState extends State<PinChangeScreen>
 
     switch (_currentStep) {
       case 0:
-        return localizations.translate('enter_current_pin') ?? 'Введите текущий PIN';
+        return localizations.translate('enter_current_pin') ??
+            'Введите текущий PIN';
       case 1:
         return localizations.translate('enter_new_pin') ?? 'Введите новый PIN';
       case 2:
-        return localizations.translate('confirm_new_pin') ?? 'Подтвердите новый PIN';
+        return localizations.translate('confirm_new_pin') ??
+            'Подтвердите новый PIN';
       default:
         return '';
     }
@@ -246,9 +264,11 @@ class _PinChangeScreenState extends State<PinChangeScreen>
 
     switch (_currentStep) {
       case 0:
-        return localizations.translate('wrong_current_pin') ?? 'Неверный текущий PIN';
+        return localizations.translate('wrong_current_pin') ??
+            'Неверный текущий PIN';
       case 2:
-        return localizations.translate('pins_do_not_match') ?? 'PIN-коды не совпадают';
+        return localizations.translate('pins_do_not_match') ??
+            'PIN-коды не совпадают';
       default:
         return '';
     }
@@ -261,118 +281,139 @@ class _PinChangeScreenState extends State<PinChangeScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : colors.textPrimary;
+    final secondary =
+        isDark ? Colors.white.withValues(alpha: 0.76) : colors.textSecondary;
     final pinLogo = Image.asset(
       'assets/icons/playstore.png',
       fit: BoxFit.contain,
     );
-    
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          localizations?.translate('change_pin_code') ?? 'Изменить PIN',
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Gilroy',
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              
-              // Иконка
-              SizedBox(
-                width: 96,
-                height: 96,
-                child: isDark
-                    ? ColorFiltered(
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                        child: pinLogo,
-                      )
-                    : pinLogo,
-              ),
-              const SizedBox(height: 32),
-              
-              // Заголовок
-              Text(
-                _isError ? _getErrorMessage() : _getTitle(),
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: _isError ? Colors.red : Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              
-              // PIN индикаторы с анимацией
-              AnimatedBuilder(
-                animation: _shakeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_isError ? _shakeAnimation.value : 0, 0),
-                    child: _buildPinRow(_getCurrentPinInput()),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 48),
-              
-              // Клавиатура
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                childAspectRatio: 1.5,
-                physics: const NeverScrollableScrollPhysics(),
+      backgroundColor: colors.backgroundPrimary,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Stack(
                 children: [
-                  for (var i = 1; i <= 9; i++)
-                    _buildNumberButton(i.toString()),
-                  
-                  const SizedBox(), // Пустая ячейка
-                  
-                  _buildNumberButton('0'),
-                  
-                  _buildDeleteButton(),
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(Icons.chevron_left_rounded, color: foreground),
+                      tooltip: localizations?.translate('back') ?? 'Назад',
+                    ),
+                  ),
+                  Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      padding: const EdgeInsets.fromLTRB(4, 20, 4, 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Иконка
+                          SizedBox(
+                            width: 96,
+                            height: 96,
+                            child: isDark
+                                ? ColorFiltered(
+                                    colorFilter: const ColorFilter.mode(
+                                      Colors.white,
+                                      BlendMode.srcIn,
+                                    ),
+                                    child: pinLogo,
+                                  )
+                                : pinLogo,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Заголовок
+                          Text(
+                            _isError ? _getErrorMessage() : _getTitle(),
+                            style: textStyles.titleLg.copyWith(
+                              fontFamily: 'SF Pro Display',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: _isError ? Colors.red : foreground,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            localizations?.translate('change_pin_code') ??
+                                'Изменить PIN',
+                            style: textStyles.bodyMd.copyWith(
+                              fontFamily: 'SF Pro Display',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: _isError ? Colors.red : secondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // PIN индикаторы с анимацией
+                          AnimatedBuilder(
+                            animation: _shakeAnimation,
+                            builder: (context, child) {
+                              return Transform.translate(
+                                offset: Offset(
+                                    _isError ? _shakeAnimation.value : 0, 0),
+                                child: _buildPinRow(_getCurrentPinInput()),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Клавиатура
+                          GridView.count(
+                            crossAxisCount: 3,
+                            shrinkWrap: true,
+                            childAspectRatio: 1.14,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              for (var i = 1; i <= 9; i++)
+                                _buildNumberButton(i.toString()),
+
+                              const SizedBox(), // Пустая ячейка
+
+                              _buildNumberButton('0'),
+
+                              _buildDeleteButton(),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Кнопка "Очистить"
+                          TextButton(
+                            onPressed: _onClear,
+                            child: Text(
+                              localizations?.translate('clear') ?? 'Очистить',
+                              style: textStyles.labelLg.copyWith(
+                                fontFamily: 'SF Pro Display',
+                                color: foreground,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              
-              const SizedBox(height: 24),
-              
-              // Кнопка "Очистить"
-              TextButton(
-                onPressed: _onClear,
-                child: Text(
-                  localizations?.translate('clear') ?? 'Очистить',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-              
-              const Spacer(),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -382,48 +423,41 @@ class _PinChangeScreenState extends State<PinChangeScreen>
   // ==========================================================================
 
   Widget _buildPinRow(String pin) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        4,
-        (index) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8.0),
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: _isError
-                ? Colors.red
-                : (index < pin.length
-                    ? const Color.fromARGB(255, 33, 41, 188)
-                    : Colors.grey.shade300),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
+    return PinProgressDots(
+      filledCount: pin.length,
+      isLoading: _isPinChecking,
+      isError: _isError,
+      activeColor: Theme.of(context).brightness == Brightness.dark
+          ? Colors.white
+          : context.appColors.buttonPrimaryBg,
+      inactiveColor: Theme.of(context).brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.28)
+          : context.appColors.borderSubtle.withValues(alpha: 0.48),
+      errorColor: Colors.red,
+      size: 16,
+      spacing: 8,
     );
   }
 
   Widget _buildNumberButton(String number) {
-    return TextButton(
+    return LiquidPinKey(
+      digit: number,
       onPressed: () => _onNumberPressed(number),
-      child: Text(
-        number,
-        style: const TextStyle(
-          fontSize: 28,
-          color: Colors.black,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-        ),
-      ),
+      textColor: Theme.of(context).brightness == Brightness.dark
+          ? Colors.white
+          : context.appColors.textPrimary,
+      isDarkBackground: Theme.of(context).brightness == Brightness.dark,
     );
   }
 
   Widget _buildDeleteButton() {
     return TextButton(
       onPressed: _onDelete,
-      child: const Icon(
+      child: Icon(
         Icons.backspace_outlined,
-        color: Color.fromARGB(255, 33, 41, 188),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : context.appColors.textPrimary,
         size: 28,
       ),
     );

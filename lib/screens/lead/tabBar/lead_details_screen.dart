@@ -1654,7 +1654,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Row(
         children: [
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: SizedBox(
               height: 42,
               child: ElevatedButton(
@@ -2091,7 +2092,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     if (label == AppLocalizations.of(context)!.translate('phone_use')) {
       return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
             onTap: () => _handlePhoneTap(value),
@@ -2109,10 +2110,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                   ),
                   backgroundColor: context.appColors.success,
                   behavior: SnackBarBehavior.floating,
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -2123,6 +2127,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 color: _screenPrimaryText(context),
                 decoration: TextDecoration.underline,
               ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () => _handlePhoneTap(value),
+            child: Icon(
+              Icons.phone_in_talk_rounded,
+              size: 20,
+              color: context.appColors.buttonPrimaryBg,
             ),
           ),
         ],
@@ -2379,7 +2392,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     const SizedBox(height: 12),
                     _buildPhoneActionTile(
                       icon: Icons.dialer_sip_rounded,
-                      title: 'Через телефонию',
+                      title: 'Через CRM',
                       subtitle: 'Позвонить из shamCRM',
                       onTap: () async {
                         Navigator.pop(sheetContext);

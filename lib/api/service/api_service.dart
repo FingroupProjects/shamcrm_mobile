@@ -2231,6 +2231,79 @@ class ApiService {
     await _removePendingVoipToken();
   }
 
+  Future<bool> deleteVoipToken({String? voipToken}) async {
+    try {
+      await ensureInitialized();
+      if (baseUrl == null || baseUrl!.isEmpty) {
+        debugPrint('deleteVoipToken: baseUrl не готов');
+        return false;
+      }
+
+      final authToken = await getToken();
+      if (authToken == null || authToken.isEmpty) {
+        debugPrint('deleteVoipToken: отсутствует токен авторизации');
+        return false;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final userId =
+          prefs.getString('userID') ?? prefs.getString('user_id') ?? '';
+      if (userId.trim().isEmpty) {
+        debugPrint('deleteVoipToken: user_id не найден');
+        return false;
+      }
+
+      final organizationId = await getSelectedOrganization();
+      final url =
+          '$baseUrl/user/delete-voip-token/${userId.trim()}${organizationId != null ? '?organization_id=$organizationId' : ''}';
+      final normalizedToken = voipToken?.trim();
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $authToken',
+        'Device': 'mobile',
+      };
+      final body = json.encode({
+        'type': 'mobile',
+        'platform': 'ios',
+        'provider': 'apns_voip',
+        if (normalizedToken != null && normalizedToken.isNotEmpty)
+          'token': normalizedToken,
+        if (organizationId != null) 'organization_id': organizationId,
+        'user_id': userId.trim(),
+      });
+      var response = await http
+          .delete(Uri.parse(url), headers: headers, body: body)
+          .timeout(_defaultRequestTimeout);
+
+      // Support both DELETE and legacy POST route definitions during rollout.
+      if (response.statusCode == 404 || response.statusCode == 405) {
+        response = await http
+            .post(Uri.parse(url), headers: headers, body: body)
+            .timeout(_defaultRequestTimeout);
+      }
+
+      final succeeded = response.statusCode >= 200 && response.statusCode < 300;
+      debugPrint(
+        'deleteVoipToken: status=${response.statusCode}, success=$succeeded',
+      );
+      await _saveVoipSyncDiagnostics(
+        status: succeeded ? 'revoked' : 'revoke_failed',
+        httpCode: response.statusCode,
+        error: succeeded ? null : response.body,
+      );
+      return succeeded;
+    } catch (error, stackTrace) {
+      debugPrint('deleteVoipToken: error=$error');
+      debugPrint('deleteVoipToken: stackTrace=$stackTrace');
+      await _saveVoipSyncDiagnostics(
+        status: 'revoke_exception',
+        error: error.toString(),
+      );
+      return false;
+    }
+  }
+
   Future<void> _saveVoipSyncDiagnostics({
     required String status,
     int? httpCode,

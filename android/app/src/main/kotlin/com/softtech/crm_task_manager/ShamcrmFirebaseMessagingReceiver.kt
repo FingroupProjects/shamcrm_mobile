@@ -25,6 +25,20 @@ class ShamcrmFirebaseMessagingReceiver : FlutterFirebaseMessagingReceiver() {
                 if (isIncomingCallPush(data)) {
                     val applicationContext = context.applicationContext
                     NativeSipBridge.initialize(applicationContext)
+                    if (isExpiredIncomingCallPush(data)) {
+                        NativeSipBridge.recordDiagnosticEvent(
+                            event = "push_received_expired",
+                            details = hashMapOf(
+                                "source" to "android_native_fcm",
+                                "call_id" to pick(data, "call_id", "id"),
+                                "issued_at_ms" to incomingPushIssuedAtMs(data),
+                                "max_age_ms" to MAXIMUM_INCOMING_PUSH_AGE_MS,
+                            ),
+                        )
+                        // Regular CRM delivery remains owned by the superclass.
+                        super.onReceive(context, intent)
+                        return
+                    }
                     NativeSipBridge.recordDiagnosticEvent(
                         event = "push_received",
                         details = hashMapOf(
@@ -77,6 +91,21 @@ class ShamcrmFirebaseMessagingReceiver : FlutterFirebaseMessagingReceiver() {
             type == "sip_incoming_call"
     }
 
+    private fun isExpiredIncomingCallPush(data: Map<String, String>): Boolean {
+        val issuedAtMs = incomingPushIssuedAtMs(data) ?: return false
+        return System.currentTimeMillis() - issuedAtMs > MAXIMUM_INCOMING_PUSH_AGE_MS
+    }
+
+    private fun incomingPushIssuedAtMs(data: Map<String, String>): Long? {
+        val raw = pick(
+            data,
+            "call_started_at_ms", "created_at_ms", "sent_at_ms", "issued_at_ms", "timestamp_ms",
+            "call_started_at", "created_at", "sent_at", "issued_at", "timestamp",
+            "google.sent_time",
+        )?.toLongOrNull() ?: return null
+        return if (raw in 1..9_999_999_999L) raw * 1000 else raw
+    }
+
     private fun pick(data: Map<String, String>, vararg keys: String): String? {
         for (key in keys) {
             val value = data[key]?.trim()
@@ -89,5 +118,6 @@ class ShamcrmFirebaseMessagingReceiver : FlutterFirebaseMessagingReceiver() {
 
     companion object {
         private const val TAG = "ShamcrmFcmReceiver"
+        private const val MAXIMUM_INCOMING_PUSH_AGE_MS = 2 * 60 * 1000L
     }
 }

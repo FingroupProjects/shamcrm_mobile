@@ -174,6 +174,19 @@ class AppDatabase extends _$AppDatabase {
           }
         },
       );
+
+  Future<void> clearAllData() async {
+    await transaction(() async {
+      await delete(chatMessages).go();
+      await delete(outboxOperations).go();
+      await delete(syncStates).go();
+      await delete(cachedRecords).go();
+      await delete(rmkCartItems).go();
+      await delete(rmkOutboxSales).go();
+      await delete(rmkGoods).go();
+      await delete(rmkCategories).go();
+    });
+  }
 }
 
 LazyDatabase _openConnection() {

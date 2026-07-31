@@ -11,8 +11,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 class ChatMediaPersistentCache {
   ChatMediaPersistentCache._();
 
-  static final ChatMediaPersistentCache instance =
-      ChatMediaPersistentCache._();
+  static final ChatMediaPersistentCache instance = ChatMediaPersistentCache._();
 
   static const String _imagePrefix = 'chat_media_image_';
   static const String _thumbPrefix = 'chat_media_thumb_';
@@ -102,6 +101,17 @@ class ChatMediaPersistentCache {
     } catch (e) {
       debugPrint('ChatMediaPersistentCache thumbnail error: $e');
       return null;
+    }
+  }
+
+  Future<void> clearAll() async {
+    try {
+      final dir = await _cacheDir();
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+    } catch (error) {
+      debugPrint('ChatMediaPersistentCache clear error: $error');
     }
   }
 }

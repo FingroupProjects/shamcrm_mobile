@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 2.1.158+217
+version: 2.1.160+220
 
 
 
@@ -195,6 +195,16 @@ flutter:
       fonts:
         - asset: assets/fonts/Gilroy-Regular.ttf
         - asset: assets/fonts/Gilroy-Bold.ttf
+          weight: 700
+    - family: SF Pro Display
+      fonts:
+        - asset: assets/fonts/San Francisco Pro Display/SF-Pro-Display-Regular.otf
+          weight: 400
+        - asset: assets/fonts/San Francisco Pro Display/SF-Pro-Display-Medium.otf
+          weight: 500
+        - asset: assets/fonts/San Francisco Pro Display/SF-Pro-Display-Semibold.otf
+          weight: 600
+        - asset: assets/fonts/San Francisco Pro Display/SF-Pro-Display-Bold.otf
           weight: 700
     - family: Golos
       fonts:

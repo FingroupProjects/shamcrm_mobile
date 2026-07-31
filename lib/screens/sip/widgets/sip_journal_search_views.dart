@@ -687,58 +687,59 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
   Widget _searchView(BuildContext context, SipUiState state) {
     final colors = context.appColors;
     final l10n = AppLocalizations.of(context)!;
-    if (_contactsEnabled && !_contactsLoaded) {
-      unawaited(_loadContacts());
-    }
+    // Loading changes SipScreen state, so it must begin after this build frame.
+    // Calling it here synchronously causes "setState() called during build".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_contactsEnabled && !_contactsLoaded) {
+        unawaited(_loadContacts());
+      }
+      if (_searchSource == _SipSearchSource.calls &&
+          _unifiedCallSearchPage == 0 &&
+          !_isUnifiedCallSearchLoading) {
+        unawaited(_loadUnifiedCallResults(reset: true));
+      }
+      if (_searchSource == _SipSearchSource.leads &&
+          _unifiedLeadSearchPage == 0 &&
+          !_isLeadSearchLoading) {
+        unawaited(_loadUnifiedLeadResults(reset: true));
+      }
+    });
 
     final query = _searchViewQuery.trim();
     final lowerQuery = query.toLowerCase();
     final queryDigits = _digitsOnly(query);
     final availableSources = _availableSearchSources();
-    final callEntries =
-        state.serverCallLogs.isNotEmpty ? state.serverCallLogs : state.callLogs;
-    final recentCalls = callEntries.take(12).toList(growable: false);
+    final callEntries = _unifiedCallResults;
 
-    final contactResults = (query.isEmpty
-            ? const <_SipContactSuggestion>[]
-            : _displayContacts.where((contact) {
-                return contact.name.toLowerCase().contains(lowerQuery) ||
-                    (queryDigits.isNotEmpty &&
-                        (contact.normalizedPhone.contains(queryDigits) ||
-                            _nameToT9Digits(contact.name)
-                                .contains(queryDigits)));
-              }).toList(growable: false))
-        .take(8)
-        .toList(growable: false);
+    final contactResults = _displayContacts.where((contact) {
+      return query.isEmpty ||
+          contact.name.toLowerCase().contains(lowerQuery) ||
+          (queryDigits.isNotEmpty &&
+              (contact.normalizedPhone.contains(queryDigits) ||
+                  _nameToT9Digits(contact.name).contains(queryDigits)));
+    }).toList(growable: false);
 
-    final journalResults = query.isEmpty
-        ? const <SipCallLogEntry>[]
-        : callEntries
-            .where((item) {
-              final target = item.target.toLowerCase();
-              final targetDigits = _digitsOnly(item.dialTarget);
-              final phoneMatch =
-                  queryDigits.isNotEmpty && targetDigits.contains(queryDigits);
-              return target.contains(lowerQuery) || phoneMatch;
-            })
-            .take(10)
-            .toList(growable: false);
+    final journalResults = callEntries.where((item) {
+      final target = item.target.toLowerCase();
+      final targetDigits = _digitsOnly(item.dialTarget);
+      final phoneMatch =
+          queryDigits.isNotEmpty && targetDigits.contains(queryDigits);
+      return query.isEmpty || target.contains(lowerQuery) || phoneMatch;
+    }).toList(growable: false);
 
-    final leadResults = query.isEmpty
-        ? const <Lead>[]
-        : _searchLeadResults.where((lead) {
-            final name = lead.name.toLowerCase();
-            final phone = (lead.phone ?? '').trim();
-            final phoneDigits = _digitsOnly(phone);
-            return name.contains(lowerQuery) ||
-                (queryDigits.isNotEmpty && phoneDigits.contains(queryDigits));
-          }).toList(growable: false);
-
-    final isEmpty = query.isEmpty;
-    final noResults = !isEmpty &&
-        contactResults.isEmpty &&
-        journalResults.isEmpty &&
-        (!_leadSearchEnabled || (!_isLeadSearchLoading && leadResults.isEmpty));
+    final leadResults = _searchLeadResults;
+    final isSourceLoading = switch (_searchSource) {
+      _SipSearchSource.calls => _isUnifiedCallSearchLoading,
+      _SipSearchSource.contacts => _contactsEnabled && _isContactsLoading,
+      _SipSearchSource.leads => _isLeadSearchLoading,
+    };
+    final selectedResultsCount = switch (_searchSource) {
+      _SipSearchSource.calls => journalResults.length,
+      _SipSearchSource.contacts => contactResults.length,
+      _SipSearchSource.leads => leadResults.length,
+    };
+    final noResults = !isSourceLoading && selectedResultsCount == 0;
 
     return Column(
       key: const ValueKey('search'),
@@ -772,39 +773,41 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
             ),
           ),
         Expanded(
-          child: isEmpty
-              ? recentCalls.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Недавних звонков пока нет',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+          child: noResults
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Ничего не найдено',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                )
+              : NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.metrics.pixels >=
+                        notification.metrics.maxScrollExtent - 120) {
+                      _loadMoreUnifiedSearchResults();
+                    }
+                    return false;
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    children: [
+                      if (isSourceLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: Center(
+                            child: CircularProgressIndicator.adaptive(),
                           ),
                         ),
-                      ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Недавние звонки',
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ...recentCalls.map(
+                      if (_searchSource == _SipSearchSource.calls) ...[
+                        ...journalResults.map(
                           (item) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _journalLogCard(
@@ -824,98 +827,45 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                           ),
                         ),
                       ],
-                    )
-              : noResults
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'Ничего не найдено',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                      if (_searchSource == _SipSearchSource.contacts &&
+                          _contactsEnabled) ...[
+                        ...contactResults.map(
+                          (contact) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _contactTile(
+                              suggestion: contact,
+                              onTap: () {
+                                _fillContactNumber(contact);
+                                _updateView(() => _bottomTabIndex = 0);
+                              },
+                              onCallTap: () async {
+                                _updateView(() => _bottomTabIndex = 0);
+                                await _fillAndCallContact(contact);
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-                      children: [
-                        if (_searchSource == _SipSearchSource.calls) ...[
-                          _sectionHeader(
-                            l10n.translate('telephony_calls'),
-                            journalResults.length,
-                          ),
-                          const SizedBox(height: 10),
-                          ...journalResults.map(
-                            (item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _journalLogCard(
-                                context,
-                                item,
-                                compact: true,
-                                expanded: _expandedCallLogId == item.id,
-                                onTap: () {
-                                  _updateView(() {
-                                    _expandedCallLogId =
-                                        _expandedCallLogId == item.id
-                                            ? null
-                                            : item.id;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_searchSource == _SipSearchSource.contacts &&
-                            _contactsEnabled) ...[
-                          _sectionHeader(
-                            l10n.translate('telephony_contacts'),
-                            contactResults.length,
-                          ),
-                          const SizedBox(height: 10),
-                          ...contactResults.map(
-                            (contact) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _contactTile(
-                                suggestion: contact,
-                                onTap: () {
-                                  _fillContactNumber(contact);
-                                  _updateView(() => _bottomTabIndex = 0);
-                                },
-                                onCallTap: () async {
-                                  _updateView(() => _bottomTabIndex = 0);
-                                  await _fillAndCallContact(contact);
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_searchSource == _SipSearchSource.leads &&
-                            _leadSearchEnabled) ...[
-                          _sectionHeader(
-                            l10n.translate('telephony_leads'),
-                            leadResults.length,
-                          ),
-                          const SizedBox(height: 10),
-                          if (_isLeadSearchLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 12),
-                              child: Center(
-                                child: CircularProgressIndicator.adaptive(),
-                              ),
-                            ),
-                          ...leadResults.map(
-                            (lead) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _leadSearchTile(lead),
-                            ),
-                          ),
-                        ],
                       ],
-                    ),
+                      if (_searchSource == _SipSearchSource.leads &&
+                          _leadSearchEnabled) ...[
+                        ...leadResults.map(
+                          (lead) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _leadSearchTile(lead),
+                          ),
+                        ),
+                      ],
+                      if (_isUnifiedCallSearchLoadingMore ||
+                          _isUnifiedLeadSearchLoadingMore)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: CircularProgressIndicator.adaptive(),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
         ),
       ],
     );

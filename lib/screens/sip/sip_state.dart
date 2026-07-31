@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
+import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 
 enum SipRegistrationUiStatus {
   disconnected,
@@ -65,10 +66,12 @@ class SipCallLogEntry {
       id: 'server_${entry.id}',
       serverCallId: entry.id,
       serverLeadId: entry.leadId,
-      target: entry.leadName.trim().isNotEmpty && entry.leadName != 'Неизвестно'
-          ? entry.leadName
-          : entry.phoneNumber,
-      dialTarget: entry.phoneNumber,
+      target: sanitizeUtf16(
+        entry.leadName.trim().isNotEmpty && entry.leadName != 'Неизвестно'
+            ? entry.leadName
+            : entry.phoneNumber,
+      ),
+      dialTarget: sanitizeUtf16(entry.phoneNumber),
       direction: entry.callType == CallType.outgoing
           ? SipCallDirection.outgoing
           : SipCallDirection.incoming,

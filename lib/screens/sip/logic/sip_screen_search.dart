@@ -42,6 +42,7 @@ extension _SipScreenSearchExtension on _SipScreenState {
     _updateView(() {
       _searchSource = source;
     });
+    unawaited(_reloadUnifiedSearch());
   }
 
   void _openUnifiedSearchWithQuery(
@@ -70,25 +71,35 @@ extension _SipScreenSearchExtension on _SipScreenState {
   }
 
   void _handleUnifiedSearchChanged(String value) {
-    _leadSearchDebounce?.cancel();
-    _searchLeadRequestIdSafeBump();
+    _unifiedSearchDebounce?.cancel();
 
     _updateView(() {
       _searchViewQuery = value;
-      if (value.trim().isEmpty) {
-        _isLeadSearchLoading = false;
-        _searchLeadResults = const [];
-      }
     });
 
-    final query = value.trim();
-    if (query.isEmpty || !_leadSearchEnabled) {
+    if (_searchSource == _SipSearchSource.contacts) {
+      if (_contactsEnabled && !_contactsLoaded) {
+        unawaited(_loadContacts());
+      }
       return;
     }
 
-    _leadSearchDebounce = Timer(const Duration(milliseconds: 320), () async {
-      await _searchLeadsFromServer(query);
+    _unifiedSearchDebounce = Timer(const Duration(milliseconds: 320), () {
+      unawaited(_reloadUnifiedSearch());
     });
+  }
+
+  Future<void> _reloadUnifiedSearch() async {
+    switch (_searchSource) {
+      case _SipSearchSource.calls:
+        await _loadUnifiedCallResults(reset: true);
+      case _SipSearchSource.contacts:
+        if (_contactsEnabled && !_contactsLoaded) {
+          await _loadContacts();
+        }
+      case _SipSearchSource.leads:
+        await _loadUnifiedLeadResults(reset: true);
+    }
   }
 
   void _handleJournalSearchChanged(String value) {
@@ -229,47 +240,130 @@ extension _SipScreenSearchExtension on _SipScreenState {
     }
   }
 
-  void _searchLeadRequestIdSafeBump() {
-    _leadSearchRequestId += 1;
+  Future<void> _loadUnifiedCallResults({bool reset = false}) async {
+    if (!reset &&
+        (_isUnifiedCallSearchLoading ||
+            _isUnifiedCallSearchLoadingMore ||
+            !_unifiedCallSearchHasMore)) {
+      return;
+    }
+
+    const perPage = 20;
+    final query = _searchViewQuery.trim();
+    final page = reset ? 1 : _unifiedCallSearchPage + 1;
+    final requestId = ++_unifiedSearchRequestId;
+    _updateView(() {
+      if (reset) {
+        _isUnifiedCallSearchLoading = true;
+        _unifiedCallResults = const [];
+        _unifiedCallSearchPage = 0;
+        _unifiedCallSearchHasMore = true;
+      } else {
+        _isUnifiedCallSearchLoadingMore = true;
+      }
+    });
+
+    try {
+      final response = await _apiService.getAllCalls(
+        page: page,
+        perPage: perPage,
+        searchQuery: query.isEmpty ? null : query,
+      );
+      if (!mounted ||
+          requestId != _unifiedSearchRequestId ||
+          _searchSource != _SipSearchSource.calls ||
+          _searchViewQuery.trim() != query) {
+        return;
+      }
+
+      final calls = (response['calls'] as List<CallLogEntry>)
+          .map(SipCallLogEntry.fromServerCall)
+          .toList(growable: false);
+      final pagination = response['pagination'] as Map<String, dynamic>;
+      final currentPage = pagination['current_page'] as int? ?? page;
+      final totalPages = pagination['total_pages'] as int? ?? currentPage;
+      _updateView(() {
+        _unifiedCallResults =
+            reset ? calls : [..._unifiedCallResults, ...calls];
+        _unifiedCallSearchPage = currentPage;
+        _unifiedCallSearchHasMore = currentPage < totalPages;
+        _isUnifiedCallSearchLoading = false;
+        _isUnifiedCallSearchLoadingMore = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _unifiedSearchRequestId) return;
+      _updateView(() {
+        if (reset) _unifiedCallResults = const [];
+        _isUnifiedCallSearchLoading = false;
+        _isUnifiedCallSearchLoadingMore = false;
+      });
+    }
   }
 
-  Future<void> _searchLeadsFromServer(String query) async {
-    final requestId = _leadSearchRequestId;
+  Future<void> _loadUnifiedLeadResults({bool reset = false}) async {
+    if (!_leadSearchEnabled ||
+        (!reset &&
+            (_isLeadSearchLoading ||
+                _isUnifiedLeadSearchLoadingMore ||
+                !_unifiedLeadSearchHasMore))) {
+      return;
+    }
+
+    const perPage = 20;
+    final query = _searchViewQuery.trim();
+    final page = reset ? 1 : _unifiedLeadSearchPage + 1;
+    final requestId = ++_unifiedSearchRequestId;
     _updateView(() {
-      _isLeadSearchLoading = true;
+      if (reset) {
+        _isLeadSearchLoading = true;
+        _searchLeadResults = const [];
+        _unifiedLeadSearchPage = 0;
+        _unifiedLeadSearchHasMore = true;
+      } else {
+        _isUnifiedLeadSearchLoadingMore = true;
+      }
     });
 
     try {
       final leads = await _apiService.getLeads(
         null,
-        perPage: 8,
-        search: query,
+        page: page,
+        perPage: perPage,
+        search: query.isEmpty ? null : query,
         bypassAnalyticsCache: true,
       );
-
       if (!mounted ||
-          requestId != _leadSearchRequestId ||
+          requestId != _unifiedSearchRequestId ||
+          _searchSource != _SipSearchSource.leads ||
           _searchViewQuery.trim() != query) {
         return;
       }
 
       _updateView(() {
-        _searchLeadResults = leads
-            .where((lead) => (lead.phone ?? '').trim().isNotEmpty)
-            .toList(growable: false);
+        _searchLeadResults = reset ? leads : [..._searchLeadResults, ...leads];
+        _unifiedLeadSearchPage = page;
+        _unifiedLeadSearchHasMore = leads.length >= perPage;
         _isLeadSearchLoading = false;
+        _isUnifiedLeadSearchLoadingMore = false;
       });
     } catch (_) {
-      if (!mounted ||
-          requestId != _leadSearchRequestId ||
-          _searchViewQuery.trim() != query) {
-        return;
-      }
-
+      if (!mounted || requestId != _unifiedSearchRequestId) return;
       _updateView(() {
-        _searchLeadResults = const [];
+        if (reset) _searchLeadResults = const [];
         _isLeadSearchLoading = false;
+        _isUnifiedLeadSearchLoadingMore = false;
       });
+    }
+  }
+
+  void _loadMoreUnifiedSearchResults() {
+    switch (_searchSource) {
+      case _SipSearchSource.calls:
+        unawaited(_loadUnifiedCallResults());
+      case _SipSearchSource.contacts:
+        break;
+      case _SipSearchSource.leads:
+        unawaited(_loadUnifiedLeadResults());
     }
   }
 

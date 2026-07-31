@@ -21,6 +21,7 @@ import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
+import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
@@ -508,6 +509,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   // ═══════════════════════════════════════════════════════════════════════
 
   void _onNumberPressed(String number) {
+    if (_isValidatingPins) return;
+
+    var shouldValidate = false;
     setState(() {
       if (_pinsDoNotMatch) {
         _pinsDoNotMatch = false;
@@ -519,7 +523,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           _confirmPin += number;
         }
         if (_confirmPin.length == 4) {
-          _validatePins();
+          shouldValidate = true;
         }
       } else {
         if (_pin.length < 4) {
@@ -530,9 +534,15 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         }
       }
     });
+
+    if (shouldValidate) {
+      _validatePins();
+    }
   }
 
   void _onClear() {
+    if (_isValidatingPins) return;
+
     setState(() {
       _pin = '';
       _confirmPin = '';
@@ -542,6 +552,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   }
 
   void _onDelete() {
+    if (_isValidatingPins) return;
+
     setState(() {
       if (_isConfirming && _confirmPin.isNotEmpty) {
         _confirmPin = _confirmPin.substring(0, _confirmPin.length - 1);
@@ -556,7 +568,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       return;
     }
 
-    _isValidatingPins = true;
+    setState(() => _isValidatingPins = true);
     final apiService = context.read<ApiService>();
     try {
       if (_pin == _confirmPin) {
@@ -665,7 +677,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         _triggerErrorEffect();
       }
     } finally {
-      _isValidatingPins = false;
+      if (mounted) {
+        setState(() => _isValidatingPins = false);
+      }
     }
   }
 
@@ -1084,6 +1098,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   void _triggerErrorEffect() async {
     setState(() {
       _pinsDoNotMatch = true;
+      _isValidatingPins = false;
     });
     _animationController.forward(from: 0);
     await Future.delayed(const Duration(seconds: 2));
@@ -1102,6 +1117,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = isDark ? Colors.white : colors.textPrimary;
+    final secondary =
+        isDark ? Colors.white.withValues(alpha: 0.76) : colors.textSecondary;
     final pinLogo = Image.asset(
       'assets/icons/playstore.png',
       fit: BoxFit.contain,
@@ -1118,15 +1136,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                   const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary.withValues(alpha: 0.78),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: colors.borderSubtle.withValues(alpha: 0.42),
-                    ),
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  padding: const EdgeInsets.fromLTRB(4, 20, 4, 12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1143,7 +1154,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                               )
                             : pinLogo,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       Text(
                         _isConfirming
                             ? (_pinsDoNotMatch
@@ -1155,11 +1166,25 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                                 .translate('set_pin_title'),
                         textAlign: TextAlign.center,
                         style: textStyles.titleLg.copyWith(
+                          fontFamily: 'SF Pro Display',
                           fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: _pinsDoNotMatch
-                              ? colors.error
-                              : colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          color: _pinsDoNotMatch ? colors.error : foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _isConfirming
+                            ? AppLocalizations.of(context)!
+                                .translate('confirm_pin_title')
+                            : AppLocalizations.of(context)!
+                                .translate('set_pin_title'),
+                        textAlign: TextAlign.center,
+                        style: textStyles.bodyMd.copyWith(
+                          fontFamily: 'SF Pro Display',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: _pinsDoNotMatch ? colors.error : secondary,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -1171,12 +1196,39 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                               _pinsDoNotMatch ? _shakeAnimation.value : 0,
                               0,
                             ),
-                            child: Column(
-                              children: [
-                                _buildPinRow(_pin),
-                                if (_isConfirming) const SizedBox(height: 16),
-                                if (_isConfirming) _buildPinRow(_confirmPin),
-                              ],
+                            child: SizedBox(
+                              height: 48,
+                              child: Center(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 220),
+                                  switchInCurve: Curves.easeOutCubic,
+                                  switchOutCurve: Curves.easeInCubic,
+                                  child: _isValidatingPins
+                                      ? PinProgressDots(
+                                          key: const ValueKey('pin-loading'),
+                                          filledCount: 4,
+                                          isLoading: true,
+                                          isError: false,
+                                          activeColor: colors.buttonPrimaryBg,
+                                          inactiveColor: colors.borderSubtle
+                                              .withValues(alpha: 0.48),
+                                          errorColor: colors.error,
+                                          size: 16,
+                                          spacing: 8,
+                                        )
+                                      : Column(
+                                          key: const ValueKey('pin-entry'),
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _buildPinRow(_pin),
+                                            if (_isConfirming)
+                                              const SizedBox(height: 16),
+                                            if (_isConfirming)
+                                              _buildPinRow(_confirmPin),
+                                          ],
+                                        ),
+                                ),
+                              ),
                             ),
                           );
                         },
@@ -1186,57 +1238,39 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                         crossAxisCount: 3,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 1.45,
+                        childAspectRatio: 1.14,
                         children: [
                           for (var i = 1; i <= 9; i++)
-                            TextButton(
+                            LiquidPinKey(
+                              digit: i.toString(),
                               onPressed: () => _onNumberPressed(i.toString()),
-                              child: Text(
-                                i.toString(),
-                                style: textStyles.titleLg.copyWith(
-                                  fontSize: 24,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
+                              textColor: foreground,
+                              isDarkBackground: isDark,
                             ),
                           TextButton(
                             onPressed: _onDelete,
                             child: Icon(
                               Icons.backspace_outlined,
-                              color: colors.buttonPrimaryBg,
+                              color: foreground,
                             ),
                           ),
-                          TextButton(
+                          LiquidPinKey(
+                            digit: '0',
                             onPressed: () => _onNumberPressed('0'),
-                            child: Text(
-                              '0',
-                              style: textStyles.titleLg.copyWith(
-                                fontSize: 24,
-                                color: colors.textPrimary,
-                              ),
-                            ),
+                            textColor: foreground,
+                            isDarkBackground: isDark,
                           ),
                           const SizedBox(),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      ElevatedButton(
+                      TextButton(
                         onPressed: _onClear,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.buttonPrimaryBg,
-                          foregroundColor: colors.buttonPrimaryFg,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12.0,
-                            horizontal: 24.0,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
                         child: Text(
                           AppLocalizations.of(context)!.translate('clear'),
                           style: textStyles.labelLg.copyWith(
-                            color: colors.buttonPrimaryFg,
+                            fontFamily: 'SF Pro Display',
+                            color: foreground,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1252,25 +1286,17 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     );
   }
 
-  Widget _buildPinRow(String pin) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        4,
-        (index) => Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8.0),
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: _pinsDoNotMatch
-                ? context.appColors.error
-                : (index < pin.length
-                    ? context.appColors.buttonPrimaryBg
-                    : context.appColors.borderSubtle.withValues(alpha: 0.48)),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
+  Widget _buildPinRow(String pin, {bool isLoading = false}) {
+    final colors = context.appColors;
+    return PinProgressDots(
+      filledCount: pin.length,
+      isLoading: isLoading,
+      isError: _pinsDoNotMatch,
+      activeColor: colors.buttonPrimaryBg,
+      inactiveColor: colors.borderSubtle.withValues(alpha: 0.48),
+      errorColor: colors.error,
+      size: 16,
+      spacing: 8,
     );
   }
 }

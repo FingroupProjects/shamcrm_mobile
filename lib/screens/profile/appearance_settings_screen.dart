@@ -404,6 +404,7 @@ class _CustomBackgroundCard extends StatelessWidget {
   final AppThemeController controller;
 
   static const List<String> _projectBackgrounds = [
+    'assets/fon/IMG_1548.JPG',
     'assets/fon/IMG_1614.JPG',
     'assets/fon/IMG_1615.JPG',
     'assets/fon/IMG_1617.JPG',
@@ -426,6 +427,15 @@ class _CustomBackgroundCard extends StatelessWidget {
     'assets/fon/IMG_1618.JPG',
     'assets/fon/IMG_1584.JPG',
     'assets/fon/IMG_1619.JPG',
+        'assets/fon/IMG_1500.png',
+    'assets/fon/IMG_1501.png',
+    'assets/fon/IMG_1502.png',
+    'assets/fon/IMG_1503.png',
+    'assets/fon/IMG_1504.png',
+    'assets/fon/IMG_1505.png',
+    'assets/fon/IMG_1506.png',
+    'assets/fon/IMG_1507.png',
+    'assets/fon/IMG_1508.png',
   ];
 
   const _CustomBackgroundCard({required this.controller});

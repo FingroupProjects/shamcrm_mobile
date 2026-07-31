@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
+import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 
 class Lead {
   final int id;
@@ -48,7 +49,7 @@ class Lead {
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
     return Lead(
       id: json['id'] ?? 0,
-      name: json['name']?.toString() ?? 'Без имени',
+      name: sanitizeUtf16(json['name']?.toString() ?? 'Без имени'),
       source: json['source'] != null ? Source.fromJson(json['source']) : null,
       createdAt: json['created_at']?.toString(),
       statusId: leadStatusId,
@@ -63,7 +64,7 @@ class Lead {
       leadStatus: json['leadStatus'] != null
           ? LeadStatus.fromJson(json['leadStatus'])
           : null,
-      phone: json['phone']?.toString() ?? '',
+      phone: sanitizeUtf16(json['phone']?.toString() ?? ''),
       inProgressDealsCount: json['in_progress_deals_count'] != null
           ? int.tryParse(json['in_progress_deals_count'].toString())
           : null,

@@ -15,14 +15,14 @@ extension _SipMainViewsExtension on _SipScreenState {
         state.callStatus == SipCallUiStatus.calling ||
         state.callStatus == SipCallUiStatus.ringing ||
         state.callStatus == SipCallUiStatus.inCall;
-    final subtitle = hasActiveCall
+    final String? subtitle = hasActiveCall
         ? _resolvedCallLabel(context, state)
         : isReconnectInProgress
             ? 'Восстанавливаем телефонную линию...'
             : isNetworkUnavailable
                 ? 'Сеть потеряна. Ждём восстановление соединения'
                 : isRegistered
-                    ? 'Линия готова к звонкам'
+                    ? null
                     : 'Подключите линию для звонков в фоне';
 
     return Padding(
@@ -49,45 +49,45 @@ extension _SipMainViewsExtension on _SipScreenState {
                         letterSpacing: 0,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: isDark
-                                  ? colors.textPrimary.withValues(alpha: 0.96)
-                                  : colors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                              height: 1.1,
-                              shadows: isDark
-                                  ? [
-                                      Shadow(
-                                        color: Colors.black
-                                            .withValues(alpha: 0.58),
-                                        blurRadius: 4,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                          ),
+                    if (showCompactStatus) ...[
+                      const SizedBox(height: 4),
+                      _buildRegisteredIndicator(),
+                    ],
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDark
+                              ? colors.textPrimary.withValues(alpha: 0.96)
+                              : colors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          height: 1.1,
+                          shadows: isDark
+                              ? [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.58),
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                              : null,
                         ),
-                        if (showCompactStatus) ...[
-                          const SizedBox(width: 8),
-                          _buildRegisteredIndicator(),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               _buildTopIconButton(
-                icon: CupertinoIcons.gear_alt_fill,
-                onPressed: _showSettingsSheet,
+                icon: CupertinoIcons.search,
+                onPressed: () => _updateView(() => _bottomTabIndex = 3),
+              ),
+              const SizedBox(width: 8),
+              _buildTopIconButton(
+                icon: Icons.more_vert_rounded,
+                onPressed: () => _showTelephonyMenu(context),
               ),
             ],
           ),
@@ -146,6 +146,155 @@ extension _SipMainViewsExtension on _SipScreenState {
         ),
       ),
     );
+  }
+
+  Future<void> _showTelephonyMenu(BuildContext anchorContext) async {
+    final colors = anchorContext.appColors;
+    final overlay = Navigator.of(anchorContext).overlay;
+    if (overlay == null) return;
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return;
+
+    final selected = await showMenu<String>(
+      context: anchorContext,
+      position: RelativeRect.fromLTRB(
+        overlayBox.size.width - 222,
+        70,
+        14,
+        0,
+      ),
+      color: colors.surfacePrimary,
+      surfaceTintColor: colors.surfacePrimary,
+      elevation: 10,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      items: [
+        _telephonyMenuItem(
+          value: 'settings',
+          icon: CupertinoIcons.gear_alt_fill,
+          label: AppLocalizations.of(anchorContext)!.translate('sip_settings'),
+        ),
+        _telephonyMenuItem(
+          value: 'funnels',
+          icon: CupertinoIcons.chart_bar_alt_fill,
+          label: AppLocalizations.of(anchorContext)!.translate('sales_funnel'),
+        ),
+      ],
+    );
+
+    if (!mounted || selected == null) return;
+    if (selected == 'settings') {
+      await _showSettingsSheet();
+    } else if (selected == 'funnels') {
+      await _showSalesFunnelsMenu(anchorContext);
+    }
+  }
+
+  PopupMenuItem<String> _telephonyMenuItem({
+    required String value,
+    required IconData icon,
+    required String label,
+  }) {
+    final colors = context.appColors;
+    return PopupMenuItem<String>(
+      value: value,
+      height: 46,
+      child: Row(
+        children: [
+          Icon(icon, size: 19, color: colors.iconSecondary),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSalesFunnelsMenu(BuildContext anchorContext) async {
+    final colors = anchorContext.appColors;
+    final overlay = Navigator.of(anchorContext).overlay;
+    if (overlay == null) return;
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return;
+
+    try {
+      List<SalesFunnel> funnels;
+      try {
+        funnels = await _apiService.getSalesFunnels();
+      } catch (_) {
+        funnels = await _apiService.getCachedSalesFunnels();
+      }
+      if (!mounted || funnels.isEmpty) return;
+
+      final selectedId =
+          int.tryParse(await _apiService.getSelectedSalesFunnel() ?? '');
+      if (!mounted) return;
+      final selected = await showMenu<SalesFunnel>(
+        context: anchorContext,
+        position: RelativeRect.fromLTRB(
+          overlayBox.size.width - 278,
+          70,
+          14,
+          0,
+        ),
+        color: colors.surfacePrimary,
+        surfaceTintColor: colors.surfacePrimary,
+        elevation: 10,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        items: funnels
+            .map(
+              (funnel) => PopupMenuItem<SalesFunnel>(
+                value: funnel,
+                height: 46,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        funnel.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    if (selectedId == funnel.id)
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: colors.buttonPrimaryBg,
+                      ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      );
+
+      if (selected == null || selected.id == selectedId) return;
+      await _apiService.saveSelectedSalesFunnel(selected.id.toString());
+      await LeadCache.clearAllLeads();
+      await LeadCache.clearCache();
+      if (!mounted) return;
+      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(selected));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Не удалось загрузить список воронок'),
+          backgroundColor: context.appColors.error,
+        ),
+      );
+    }
   }
 
   Widget _buildRegisteredIndicator() {
@@ -1393,7 +1542,7 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   // ─── НОВЫЙ iOS 26 Liquid NavBar ─────────────────────────────────────────────
-  // Зеркальный стиль: таблетка с вкладками слева + кнопка поиска справа
+  // Три основные вкладки; поиск находится в верхней панели.
   Widget _ios26LiquidNavBar(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.appColors;
@@ -1430,195 +1579,189 @@ extension _SipMainViewsExtension on _SipScreenState {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const horizontalPadding = 5.0;
-                  const innerGap = 2.0;
-                  final maxIndex = segmentCount - 1;
-                  final currentNavPosition = navItems
-                      .indexWhere((item) => item.index == _bottomTabIndex);
-                  final fallbackNavPosition = navItems.indexWhere(
-                    (item) => item.index == 1,
-                  );
-                  final selectedIndex = (_liquidNavDragIndex ??
-                          (currentNavPosition >= 0
-                              ? currentNavPosition.toDouble()
-                              : math.max(0, fallbackNavPosition).toDouble()))
-                      .clamp(0.0, maxIndex.toDouble());
-                  final usableWidth =
-                      constraints.maxWidth - (horizontalPadding * 2);
-                  final segmentWidth =
-                      (usableWidth - innerGap * (segmentCount - 1)) /
-                          segmentCount;
-                  final thumbLeft = selectedIndex * (segmentWidth + innerGap);
-                  final highlightedIndex =
-                      selectedIndex.round().clamp(0, maxIndex);
-                  final thumbTop = _isLiquidNavPressed ? 2.0 : 4.0;
-                  final thumbHeight = _isLiquidNavPressed ? 66.0 : 62.0;
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const horizontalPadding = 5.0;
+            const innerGap = 2.0;
+            final maxIndex = segmentCount - 1;
+            final currentNavPosition =
+                navItems.indexWhere((item) => item.index == _bottomTabIndex);
+            final fallbackNavPosition = navItems.indexWhere(
+              (item) => item.index == 1,
+            );
+            int currentSelectedNavPosition() {
+              final position = navItems.indexWhere(
+                (item) => item.index == _bottomTabIndex,
+              );
+              return position >= 0
+                  ? position
+                  : math.max(0, fallbackNavPosition);
+            }
 
-                  Widget buildItemsRow(bool Function(int index) isSelected) {
-                    return Row(
-                      children: [
-                        for (var i = 0; i < navItems.length; i++) ...[
-                          if (i > 0) const SizedBox(width: innerGap),
-                          Expanded(
-                            child: _liquidNavItem(
-                              iconAsset: navItems[i].iconAsset,
-                              activeIconAsset: navItems[i].activeIconAsset,
-                              label: navItems[i].label,
-                              selected: isSelected(i),
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  }
+            final selectedIndex = (_liquidNavDragIndex ??
+                    (currentNavPosition >= 0
+                        ? currentNavPosition.toDouble()
+                        : math.max(0, fallbackNavPosition).toDouble()))
+                .clamp(0.0, maxIndex.toDouble());
+            final usableWidth = constraints.maxWidth - (horizontalPadding * 2);
+            final segmentWidth =
+                (usableWidth - innerGap * (segmentCount - 1)) / segmentCount;
+            final thumbLeft = selectedIndex * (segmentWidth + innerGap);
+            final highlightedIndex = selectedIndex.round().clamp(0, maxIndex);
+            final thumbTop = _isLiquidNavPressed ? 2.0 : 4.0;
+            final thumbHeight = _isLiquidNavPressed ? 66.0 : 62.0;
 
-                  void snapToLocalPosition(double localDx) {
-                    final safeDx = localDx.clamp(0.0, usableWidth);
-                    final nextPosition = (safeDx / (segmentWidth + innerGap))
-                        .round()
-                        .clamp(0, maxIndex);
-                    final nextIndex = navItems[nextPosition].index;
-                    _updateView(() {
-                      _bottomTabIndex = nextIndex;
-                      _liquidNavDragIndex = nextPosition.toDouble();
-                    });
-                  }
-
-                  return GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onHorizontalDragStart: (_) {
-                      final dragStartPosition = currentNavPosition >= 0
-                          ? currentNavPosition
-                          : math.max(0, fallbackNavPosition);
-                      _updateView(() {
-                        _isLiquidNavPressed = true;
-                        _liquidNavDragIndex = dragStartPosition.toDouble();
-                      });
-                    },
-                    onHorizontalDragUpdate: (details) {
-                      final safeDx =
-                          (details.localPosition.dx - horizontalPadding)
-                              .clamp(0.0, usableWidth);
-                      final dragIndex = safeDx / (segmentWidth + innerGap);
-                      _updateView(() {
-                        _liquidNavDragIndex =
-                            dragIndex.clamp(0.0, maxIndex.toDouble());
-                      });
-                    },
-                    onHorizontalDragEnd: (_) {
-                      final snappedPosition =
-                          (_liquidNavDragIndex ?? _bottomTabIndex.toDouble())
-                              .round()
-                              .clamp(0, maxIndex);
-                      final snappedIndex = navItems[snappedPosition].index;
-                      _updateView(() {
-                        _isLiquidNavPressed = false;
-                        _bottomTabIndex = snappedIndex;
-                        _liquidNavDragIndex = snappedPosition.toDouble();
-                      });
-                    },
-                    onHorizontalDragCancel: () {
-                      final resetPosition = currentNavPosition >= 0
-                          ? currentNavPosition
-                          : math.max(0, fallbackNavPosition);
-                      _updateView(() {
-                        _isLiquidNavPressed = false;
-                        _liquidNavDragIndex = resetPosition.toDouble();
-                      });
-                    },
-                    onTapDown: (details) {
-                      _updateView(() {
-                        _isLiquidNavPressed = true;
-                      });
-                      snapToLocalPosition(
-                        details.localPosition.dx - horizontalPadding,
-                      );
-                    },
-                    onTapUp: (_) {
-                      _updateView(() {
-                        _isLiquidNavPressed = false;
-                      });
-                    },
-                    onTapCancel: () {
-                      _updateView(() {
-                        _isLiquidNavPressed = false;
-                      });
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(42),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 34, sigmaY: 34),
-                        child: Container(
-                          height: 78,
-                          padding: const EdgeInsets.all(horizontalPadding),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                colors.surfacePrimary.withValues(
-                                  alpha: isDark ? 0.62 : 0.78,
-                                ),
-                                colors.surfaceElevated.withValues(
-                                  alpha: isDark ? 0.52 : 0.68,
-                                ),
-                                colors.surfaceAccent.withValues(alpha: 0.48),
-                              ],
-                              stops: const [0.0, 0.58, 1.0],
-                            ),
-                            borderRadius: BorderRadius.circular(42),
-                            border: Border.all(
-                              color: colors.borderSubtle.withValues(alpha: 0.8),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.shadow.withValues(
-                                  alpha: isDark ? 0.26 : 0.12,
-                                ),
-                                blurRadius: 24,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            children: [
-                              AnimatedPositioned(
-                                duration: const Duration(milliseconds: 120),
-                                curve: Curves.easeOutCubic,
-                                left: thumbLeft,
-                                top: thumbTop,
-                                width: segmentWidth,
-                                height: thumbHeight,
-                                child: _liquidMirrorThumb(
-                                  isPressed: _isLiquidNavPressed,
-                                ),
-                              ),
-                              IgnorePointer(
-                                child: buildItemsRow(
-                                  (index) => index == highlightedIndex,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+            Widget buildItemsRow(bool Function(int index) isSelected) {
+              return Row(
+                children: [
+                  for (var i = 0; i < navItems.length; i++) ...[
+                    if (i > 0) const SizedBox(width: innerGap),
+                    Expanded(
+                      child: _liquidNavItem(
+                        iconAsset: navItems[i].iconAsset,
+                        activeIconAsset: navItems[i].activeIconAsset,
+                        label: navItems[i].label,
+                        selected: isSelected(i),
                       ),
                     ),
-                  );
-                },
+                  ],
+                ],
+              );
+            }
+
+            void snapToLocalPosition(double localDx) {
+              final safeDx = localDx.clamp(0.0, usableWidth);
+              final nextPosition = (safeDx / (segmentWidth + innerGap))
+                  .round()
+                  .clamp(0, maxIndex);
+              final nextIndex = navItems[nextPosition].index;
+              _updateView(() {
+                _bottomTabIndex = nextIndex;
+                _liquidNavDragIndex = nextPosition.toDouble();
+              });
+            }
+
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (_) {
+                // onTapDown may have already selected another tab before
+                // Flutter recognizes the same touch as a short drag.
+                // Read the current state here, not the value captured by
+                // this build, otherwise the drag end can restore the old tab.
+                final dragStartPosition = currentSelectedNavPosition();
+                _updateView(() {
+                  _isLiquidNavPressed = true;
+                  _liquidNavDragIndex = dragStartPosition.toDouble();
+                });
+              },
+              onHorizontalDragUpdate: (details) {
+                final safeDx = (details.localPosition.dx - horizontalPadding)
+                    .clamp(0.0, usableWidth);
+                final dragIndex = safeDx / (segmentWidth + innerGap);
+                _updateView(() {
+                  _liquidNavDragIndex =
+                      dragIndex.clamp(0.0, maxIndex.toDouble());
+                });
+              },
+              onHorizontalDragEnd: (_) {
+                final snappedPosition =
+                    (_liquidNavDragIndex ?? _bottomTabIndex.toDouble())
+                        .round()
+                        .clamp(0, maxIndex);
+                final snappedIndex = navItems[snappedPosition].index;
+                _updateView(() {
+                  _isLiquidNavPressed = false;
+                  _bottomTabIndex = snappedIndex;
+                  _liquidNavDragIndex = snappedPosition.toDouble();
+                });
+              },
+              onHorizontalDragCancel: () {
+                final resetPosition = currentSelectedNavPosition();
+                _updateView(() {
+                  _isLiquidNavPressed = false;
+                  _liquidNavDragIndex = resetPosition.toDouble();
+                });
+              },
+              onTapDown: (details) {
+                _updateView(() {
+                  _isLiquidNavPressed = true;
+                });
+                snapToLocalPosition(
+                  details.localPosition.dx - horizontalPadding,
+                );
+              },
+              onTapUp: (_) {
+                _updateView(() {
+                  _isLiquidNavPressed = false;
+                });
+              },
+              onTapCancel: () {
+                _updateView(() {
+                  _isLiquidNavPressed = false;
+                });
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(42),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 34, sigmaY: 34),
+                  child: Container(
+                    height: 78,
+                    padding: const EdgeInsets.all(horizontalPadding),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          colors.surfacePrimary.withValues(
+                            alpha: isDark ? 0.62 : 0.78,
+                          ),
+                          colors.surfaceElevated.withValues(
+                            alpha: isDark ? 0.52 : 0.68,
+                          ),
+                          colors.surfaceAccent.withValues(alpha: 0.48),
+                        ],
+                        stops: const [0.0, 0.58, 1.0],
+                      ),
+                      borderRadius: BorderRadius.circular(42),
+                      border: Border.all(
+                        color: colors.borderSubtle.withValues(alpha: 0.8),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.shadow.withValues(
+                            alpha: isDark ? 0.26 : 0.12,
+                          ),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 120),
+                          curve: Curves.easeOutCubic,
+                          left: thumbLeft,
+                          top: thumbTop,
+                          width: segmentWidth,
+                          height: thumbHeight,
+                          child: _liquidMirrorThumb(
+                            isPressed: _isLiquidNavPressed,
+                          ),
+                        ),
+                        IgnorePointer(
+                          child: buildItemsRow(
+                            (index) => index == highlightedIndex,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            _liquidSearchButton(
-              selected: _bottomTabIndex == 3,
-              onTap: () => _updateView(() => _bottomTabIndex = 3),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -1669,7 +1812,7 @@ extension _SipMainViewsExtension on _SipScreenState {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                label,
+                sanitizeUtf16(label),
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: 11.5,
@@ -1730,74 +1873,6 @@ extension _SipMainViewsExtension on _SipScreenState {
                 offset: const Offset(0, 5),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _liquidSearchButton({
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(34),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            width: 64,
-            height: 78,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colors.surfaceElevated.withValues(
-                    alpha: isDark ? 0.70 : (selected ? 0.92 : 0.80),
-                  ),
-                  colors.surfacePrimary.withValues(alpha: 0.68),
-                  colors.surfaceAccent.withValues(alpha: 0.48),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(34),
-              border: Border.all(
-                color: colors.borderSubtle.withValues(alpha: 0.82),
-                width: 1.2,
-              ),
-              boxShadow: [
-                if (selected)
-                  BoxShadow(
-                    color: _TelephonyVisualColors.blue.withValues(alpha: 0.16),
-                    blurRadius: 18,
-                    offset: const Offset(-4, 8),
-                  ),
-                BoxShadow(
-                  color: colors.shadow.withValues(
-                    alpha: selected ? 0.14 : 0.10,
-                  ),
-                  blurRadius: 26,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: Icon(
-              selected
-                  ? CupertinoIcons.search_circle_fill
-                  : CupertinoIcons.search,
-              color: selected
-                  ? _TelephonyVisualColors.blue
-                  : (isDark
-                      ? colors.textPrimary.withValues(alpha: 0.84)
-                      : colors.iconSecondary),
-              size: selected ? 28 : 24,
-            ),
           ),
         ),
       ),

@@ -143,10 +143,10 @@ extension _SipScreenContactsExtension on _SipScreenState {
 
   (_SipContactSuggestion, List<_SipIndexedContact>)? _mapContact(
       Contact contact) {
-    final displayName = contact.displayName.trim();
+    final displayName = sanitizeUtf16(contact.displayName).trim();
     if (displayName.isEmpty || contact.phones.isEmpty) return null;
 
-    final primaryPhone = contact.phones.first.number;
+    final primaryPhone = sanitizeUtf16(contact.phones.first.number);
     final lowerName = displayName.toLowerCase();
     final t9Name = _nameToT9Digits(lowerName);
     final photo = contact.photo;
@@ -156,8 +156,8 @@ extension _SipScreenContactsExtension on _SipScreenState {
             name: displayName,
             lowerName: lowerName,
             t9Name: t9Name,
-            phone: phone.number,
-            normalizedPhone: _digitsOnly(phone.number),
+            phone: sanitizeUtf16(phone.number),
+            normalizedPhone: _digitsOnly(sanitizeUtf16(phone.number)),
             photo: photo,
           ),
         )
@@ -190,10 +190,11 @@ extension _SipScreenContactsExtension on _SipScreenState {
           .map((item) => item.cast<String, dynamic>())
           .map(
             (item) => _SipContactSuggestion(
-              name: (item['name'] as String? ?? '').trim(),
-              phone: (item['phone'] as String? ?? '').trim(),
+              name: sanitizeUtf16(item['name']?.toString() ?? '').trim(),
+              phone: sanitizeUtf16(item['phone']?.toString() ?? '').trim(),
               normalizedPhone:
-                  (item['normalizedPhone'] as String? ?? '').trim(),
+                  sanitizeUtf16(item['normalizedPhone']?.toString() ?? '')
+                      .trim(),
             ),
           )
           .where((item) => item.name.isNotEmpty && item.phone.isNotEmpty)
@@ -571,10 +572,8 @@ extension _SipScreenContactsExtension on _SipScreenState {
   }
 
   void _jumpToContactsLetter(
-    String letter,
-    List<_SipContactSuggestion> contacts,
-    {double? overlayTop}
-  ) {
+      String letter, List<_SipContactSuggestion> contacts,
+      {double? overlayTop}) {
     if (!_contactsListController.hasClients || contacts.isEmpty) return;
     final targetIndex = _contactIndexPositionForLetter(contacts, letter);
     final maxExtent = _contactsListController.position.maxScrollExtent;

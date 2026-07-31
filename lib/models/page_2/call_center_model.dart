@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
+
 enum CallType { incoming, outgoing, missed, outgoingMissed }
 
 class CallLogEntry {
@@ -73,17 +75,29 @@ class CallLogEntry {
       leadId: lead?['id'] is int
           ? lead!['id'] as int
           : int.tryParse(lead?['id']?.toString() ?? ''),
-      leadName:
-          lead != null && lead['name'] != null ? lead['name'] : 'Неизвестно',
-      phoneNumber: json['caller'] ?? json['destination_number'] ?? 'Неизвестно',
+      leadName: sanitizeUtf16(
+        lead != null && lead['name'] != null
+            ? lead['name'].toString()
+            : 'Неизвестно',
+      ),
+      phoneNumber: sanitizeUtf16(
+        (json['caller'] ?? json['destination_number'] ?? 'Неизвестно')
+            .toString(),
+      ),
       callDate: callDate,
       callType: callType,
       duration: json['call_duration'] != null
           ? Duration(seconds: json['call_duration'])
           : null,
-      operatorName: json['user'] != null ? json['user']['name'] : null,
-      rating: json['rating']?.toString(),
-      report: json['report']?.toString(),
+      operatorName: json['user']?['name'] == null
+          ? null
+          : sanitizeUtf16(json['user']['name'].toString()),
+      rating: json['rating'] == null
+          ? null
+          : sanitizeUtf16(json['rating'].toString()),
+      report: json['report'] == null
+          ? null
+          : sanitizeUtf16(json['report'].toString()),
     );
   }
 }

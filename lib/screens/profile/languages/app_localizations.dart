@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -65,16 +66,16 @@ class AppLocalizations {
 
   String translate(String keyOrRussianSource) {
     final directValue = _lookupByKey(keyOrRussianSource);
-    if (directValue != null) return directValue;
+    if (directValue != null) return sanitizeUtf16(directValue);
 
     final normalizedSource = _normalizeLookup(keyOrRussianSource);
     final mappedKey = _russianValueToKey[normalizedSource];
     if (mappedKey != null) {
       final translatedValue = _lookupByKey(mappedKey);
-      if (translatedValue != null) return translatedValue;
+      if (translatedValue != null) return sanitizeUtf16(translatedValue);
     }
 
-    return _humanizeKey(keyOrRussianSource);
+    return sanitizeUtf16(_humanizeKey(keyOrRussianSource));
   }
 
   String? _lookupByKey(String key) {

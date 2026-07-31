@@ -138,6 +138,10 @@ private struct NativeDiagnosticEntry: Codable {
 }
 
 struct VoIPIncomingPayload {
+    // Creation time from the telephony backend. APNs delivery can be delayed
+    // while a device is offline, so delivery time is not a call timestamp.
+    let issuedAt: Date?
+    let eventType: String
     let uuid: UUID
     let callId: String?
     let handle: String
@@ -150,6 +154,8 @@ struct VoIPIncomingPayload {
 
     func toFlutterDictionary() -> [String: Any] {
         [
+            "issuedAtMs": issuedAt.map { Int64($0.timeIntervalSince1970 * 1000) } ?? NSNull(),
+            "eventType": eventType,
             "callUUID": uuid.uuidString,
             "callId": callId ?? NSNull(),
             "remoteIdentity": handle,
@@ -174,6 +180,17 @@ struct VoIPIncomingPayload {
             nested: [dataDictionary, callDictionary, sipDictionary],
             keys: ["uuid", "call_uuid", "callUUID"]
         )
+
+        let issuedAt = firstDate(
+            in: userInfo,
+            nested: [dataDictionary, callDictionary, sipDictionary],
+            keys: ["call_started_at_ms", "created_at_ms", "sent_at_ms", "issued_at_ms", "timestamp_ms", "call_started_at", "created_at", "sent_at", "issued_at", "timestamp"]
+        )
+        let eventType = firstString(
+            in: userInfo,
+            nested: [dataDictionary, callDictionary, sipDictionary],
+            keys: ["type", "event"]
+        )?.lowercased() ?? "incoming_call"
 
         let callId = firstString(
             in: userInfo,
@@ -248,6 +265,8 @@ struct VoIPIncomingPayload {
         ) ?? false
 
         return VoIPIncomingPayload(
+            issuedAt: issuedAt,
+            eventType: eventType,
             uuid: uuid,
             callId: callId,
             handle: handle,
@@ -258,6 +277,41 @@ struct VoIPIncomingPayload {
             sipUri: sipUri,
             bridgeUri: bridgeUri
         )
+    }
+
+    var isTerminationEvent: Bool {
+        ["call_cancelled", "call_canceled", "call_ended", "call_end"].contains(eventType)
+    }
+
+    private static func firstDate(
+        in root: [AnyHashable: Any],
+        nested: [[String: Any]?],
+        keys: [String]
+    ) -> Date? {
+        for key in keys {
+            if let parsed = parseDate(root[key]) { return parsed }
+        }
+        for dictionary in nested {
+            guard let dictionary else { continue }
+            for key in keys {
+                if let parsed = parseDate(dictionary[key]) { return parsed }
+            }
+        }
+        return nil
+    }
+
+    private static func parseDate(_ value: Any?) -> Date? {
+        let numeric: Double?
+        switch value {
+        case let value as NSNumber: numeric = value.doubleValue
+        case let value as String: numeric = Double(value.trimmingCharacters(in: .whitespacesAndNewlines))
+        default: numeric = nil
+        }
+        if let numeric, numeric > 0 {
+            return Date(timeIntervalSince1970: numeric > 10_000_000_000 ? numeric / 1000 : numeric)
+        }
+        guard let string = value as? String else { return nil }
+        return ISO8601DateFormatter().date(from: string.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private static func firstString(
@@ -673,6 +727,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         static let registrationConfigKey = "ios_native_sip_registration_config_v1"
         static let diagnosticLogsKey = "ios_native_sip_diagnostic_logs_v1"
         static let diagnosticLogsLimit = 5000
+        static let maximumIncomingPushAge: TimeInterval = 120
     }
 
     private let defaults = UserDefaults.standard
@@ -863,6 +918,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 return
             }
             let payload = VoIPIncomingPayload(
+                issuedAt: nil,
+                eventType: "incoming_call",
                 uuid: UUID(uuidString: args["callUUID"] as? String ?? "") ?? UUID(),
                 callId: args["callId"] as? String,
                 handle: ((args["handle"] as? String) ?? "Unknown").trimmingCharacters(in: .whitespacesAndNewlines),
@@ -2414,6 +2471,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "sip_ready_to_invite_ms": sipReadyToInviteMilliseconds.map(String.init) ?? "",
             ])
             let invitePayload = VoIPIncomingPayload(
+                issuedAt: pendingIncomingPayload?.issuedAt,
+                eventType: "incoming_call",
                 uuid: resolvedCallUUID(from: nil) ?? pendingIncomingPayload?.uuid ?? UUID(),
                 // Test flow: preserve call_id from Push for backend mapping.
                 // Previous behavior for quick rollback: callId: linphoneCallId ?? pendingIncomingPayload?.callId
@@ -2637,6 +2696,35 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
     }
 
+    private func isExpiredIncomingPush(_ payload: VoIPIncomingPayload) -> Bool {
+        guard let issuedAt = payload.issuedAt else {
+            // Compatibility while the backend timestamp rollout is in progress.
+            return false
+        }
+        return Date().timeIntervalSince(issuedAt) > Constants.maximumIncomingPushAge
+    }
+
+    private func handleIncomingCallTerminationPush(_ payload: VoIPIncomingPayload) {
+        let cancelledCallId = payload.callId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let currentCallId = snapshot.callId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let cancelledCallId, !cancelledCallId.isEmpty, cancelledCallId == currentCallId else {
+            appendDiagnosticLog("push_call_end_ignored", [
+                "call_id": payload.callId ?? "",
+                "current_call_id": snapshot.callId ?? "",
+                "reason": "no_matching_active_call",
+            ])
+            return
+        }
+
+        let callUUID = snapshot.callUUID.flatMap(UUID.init(uuidString:)) ?? payload.uuid
+        appendDiagnosticLog("push_call_ended", [
+            "call_uuid": callUUID.uuidString,
+            "call_id": cancelledCallId,
+        ])
+        callKitManager?.reportCallEnded(callUUID: callUUID, reason: .remoteEnded)
+        handleCallEnded(reason: .remoteEnded, callUUID: callUUID, remoteIdentity: snapshot.remoteIdentity)
+    }
+
     private func reportIncomingCall(payload: VoIPIncomingPayload, completion: (() -> Void)? = nil) {
         let isActuallyForeground = UIApplication.shared.applicationState == .active
         // A registered foreground core can receive the SIP INVITE before the
@@ -2665,6 +2753,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         if isDuplicateIncomingPayload(payload) {
             let canonicalUUID = snapshot.callUUID.flatMap(UUID.init(uuidString:)) ?? payload.uuid
             let canonicalPayload = VoIPIncomingPayload(
+                issuedAt: payload.issuedAt,
+                eventType: payload.eventType,
                 uuid: canonicalUUID,
                 callId: payload.callId ?? snapshot.callId,
                 handle: payload.handle,
@@ -3430,6 +3520,21 @@ extension IOSNativeSipManager: IOSVoIPPushManagerDelegate {
         didReceiveIncoming payload: VoIPIncomingPayload,
         completion: @escaping () -> Void
     ) {
+        if payload.isTerminationEvent {
+            handleIncomingCallTerminationPush(payload)
+            completion()
+            return
+        }
+        guard !isExpiredIncomingPush(payload) else {
+            appendDiagnosticLog("push_received_expired", [
+                "call_uuid": payload.uuid.uuidString,
+                "call_id": payload.callId ?? "",
+                "issued_at_ms": payload.issuedAt.map { String(Int64($0.timeIntervalSince1970 * 1000)) } ?? "",
+                "max_age_seconds": String(Int(Constants.maximumIncomingPushAge)),
+            ])
+            completion()
+            return
+        }
         // Persist the Push/Linkedid identity before any REGISTER callback can fire.
         // This prevents a fast registration result from emitting sip-ready with
         // identifiers left over from the previous call.

@@ -29,6 +29,18 @@ bool _isIncomingCallPushData(Map<String, dynamic> data) {
   return data['type']?.toString().trim() == 'incoming_call';
 }
 
+bool _isIncomingCallTerminationPushData(Map<String, dynamic> data) {
+  switch (data['type']?.toString().trim().toLowerCase()) {
+    case 'call_cancelled':
+    case 'call_canceled':
+    case 'call_ended':
+    case 'call_end':
+      return true;
+    default:
+      return false;
+  }
+}
+
 Map<String, dynamic>? _normalizeIncomingCallPushData(
   Map<String, dynamic> rawData, {
   required String source,
@@ -84,9 +96,28 @@ Map<String, dynamic>? _normalizeIncomingCallPushData(
     'lead_name': pickString(<String>['lead_name']),
     'caller_name': callerName,
     'remote_identity': remoteIdentity,
+    'issued_at_ms': _incomingPushIssuedAtMs(rawData),
     'source': source,
     'received_at_ms': DateTime.now().millisecondsSinceEpoch,
   };
+}
+
+int? _incomingPushIssuedAtMs(Map<String, dynamic> data) {
+  const keys = <String>[
+    'call_started_at_ms', 'created_at_ms', 'sent_at_ms', 'issued_at_ms',
+    'timestamp_ms', 'call_started_at', 'created_at', 'sent_at', 'issued_at',
+    'timestamp', 'google.sent_time',
+  ];
+  for (final key in keys) {
+    final value = data[key];
+    final parsed = value is num
+        ? value.toInt()
+        : int.tryParse(value?.toString().trim() ?? '');
+    if (parsed != null && parsed > 0) {
+      return parsed < 10000000000 ? parsed * 1000 : parsed;
+    }
+  }
+  return null;
 }
 
 Future<void> _persistIncomingCallPushData(
@@ -288,6 +319,13 @@ class FirebaseApi {
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         debugPrint('Пользователь нажал на уведомление: ${message.messageId}');
+        if (_isIncomingCallTerminationPushData(message.data)) {
+          unawaited(SipService().handleIncomingCallTerminationPushPayload(
+            Map<String, dynamic>.from(message.data),
+            source: 'opened_app',
+          ));
+          return;
+        }
         if (_isIncomingCallPushData(message.data)) {
           unawaited(
             _handleIncomingCallPushMessage(
@@ -304,6 +342,13 @@ class FirebaseApi {
       FirebaseMessaging.onMessage.listen((message) {
         debugPrint(
             'Уведомление при активном приложении: ${message.notification?.title}');
+        if (_isIncomingCallTerminationPushData(message.data)) {
+          unawaited(SipService().handleIncomingCallTerminationPushPayload(
+            Map<String, dynamic>.from(message.data),
+            source: 'foreground',
+          ));
+          return;
+        }
         if (_isIncomingCallPushData(message.data)) {
           unawaited(
             _handleIncomingCallPushMessage(

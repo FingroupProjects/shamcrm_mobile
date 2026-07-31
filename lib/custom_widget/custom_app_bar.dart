@@ -381,7 +381,6 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadNotice = false;
   bool _canReadCalendar = false;
   bool _canReadGps = false; // Новая переменная для GPS®
-  bool _canReadSip = false;
   bool _canOpenTimesheet = false;
   // DEAL custom fields were moved to filter screen
 
@@ -667,9 +666,6 @@ class _CustomAppBarState extends State<CustomAppBar>
         await _apiService.hasPermission('call-center'); // Исправлено
     final canReadGps =
         await _apiService.hasPermission('call-center'); // Проверка прав для GPS
-    final permissions = await _apiService.getPermissions();
-    final canReadSip = permissions.contains('sip.read') ||
-        !permissions.any((permission) => permission.startsWith('sip.'));
     final prefs = await SharedPreferences.getInstance();
     final rawRoles = (prefs.getString('userAllRoles') ??
             prefs.getString('userRoleName') ??
@@ -689,7 +685,6 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
       _canReadGps = canReadGps;
-      _canReadSip = kShowSip && canReadSip;
       _canOpenTimesheet = isAdmin && workdayEnabled;
     });
   }
@@ -1804,7 +1799,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                         ],
                                       ),
                                     ),
-                                  if (kShowSip)
+                                  if (kShowSip && _canReadCallCenter)
                                     PopupMenuItem<String>(
                                       value: 'sip',
                                       child: Row(

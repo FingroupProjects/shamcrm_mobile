@@ -13,6 +13,7 @@ extension _SipCallViewsExtension on _SipScreenState {
       return _incomingCallView(
         context,
         target: target,
+        state: state,
       );
     }
 
@@ -363,6 +364,7 @@ extension _SipCallViewsExtension on _SipScreenState {
   Widget _incomingCallView(
     BuildContext context, {
     required String target,
+    required SipUiState state,
   }) {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -508,37 +510,48 @@ extension _SipCallViewsExtension on _SipScreenState {
                   const Spacer(),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(36),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: _isCreatingCallbackReminder
+                          ? null
+                          : () => _createCallbackReminder(state),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(36),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                            ),
+                            child: Center(
+                              child: _isCreatingCallbackReminder
+                                  ? const CupertinoActivityIndicator(
+                                      color: Color(0xCCFFFFFF),
+                                    )
+                                  : const Icon(
+                                      CupertinoIcons.alarm,
+                                      color: Color(0xCCFFFFFF),
+                                      size: 28,
+                                    ),
                             ),
                           ),
-                          child: const Center(
-                            child: Icon(
-                              CupertinoIcons.alarm,
+                          const SizedBox(height: 8),
+                          Text(
+                            AppLocalizations.of(context)!
+                                .translate('sip_remind'),
+                            style: const TextStyle(
                               color: Color(0xCCFFFFFF),
-                              size: 28,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Напомнить',
-                          style: const TextStyle(
-                            color: Color(0xCCFFFFFF),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -576,6 +589,86 @@ extension _SipCallViewsExtension on _SipScreenState {
         ],
       ),
     );
+  }
+
+  Future<void> _createCallbackReminder(SipUiState state) async {
+    if (_isCreatingCallbackReminder) return;
+    final l10n = AppLocalizations.of(context)!;
+    final callbackAt = DateTime.now().add(const Duration(minutes: 10));
+    final phone = _displayIdentity(state);
+
+    _updateView(() => _isCreatingCallbackReminder = true);
+    try {
+      final leadId = await _resolveOrCreateCallbackLead(phone);
+      if (leadId == null) {
+        _showSipSnackBar(
+          l10n.translate('sip_reminder_create_error'),
+          isError: true,
+        );
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = int.tryParse(prefs.getString('userID') ?? '');
+      final formattedTime = DateFormat('HH:mm').format(callbackAt);
+      final result = await _apiService.createNotice(
+        title: l10n
+            .translate('sip_callback_event_title')
+            .replaceAll('{time}', formattedTime),
+        body: l10n.translate('sip_callback_event_body'),
+        leadId: leadId,
+        date: callbackAt,
+        sendNotification: 1,
+        sendSms: 0,
+        users: currentUserId == null ? const [] : [currentUserId],
+      );
+      if (result['success'] != true) {
+        _showSipSnackBar(
+          l10n.translate('sip_reminder_create_error'),
+          isError: true,
+        );
+        return;
+      }
+
+      await _sipRuntime.decline();
+      _showSipSnackBar(
+        l10n
+            .translate('sip_reminder_created')
+            .replaceAll('{time}', formattedTime),
+      );
+    } catch (_) {
+      _showSipSnackBar(
+        l10n.translate('sip_reminder_create_error'),
+        isError: true,
+      );
+    } finally {
+      _updateView(() => _isCreatingCallbackReminder = false);
+    }
+  }
+
+  Future<int?> _resolveOrCreateCallbackLead(String rawNumber) async {
+    final existingLeadId = await _findLeadIdByNumber(rawNumber);
+    if (existingLeadId != null) return existingLeadId;
+
+    final phone = await _resolveFullDialPhone(rawNumber: rawNumber);
+    final statusId = await _resolveLeadStatusId();
+    if (phone == null || statusId == null) return null;
+
+    final result = await _apiService.createLeadWithData({
+      'name': phone,
+      'phone': phone,
+      'lead_status_id': statusId,
+      'lead_custom_fields': const [],
+      'directory_values': const [],
+    });
+    if (result['success'] != true &&
+        result['message'] != 'phone_already_exists') {
+      return null;
+    }
+
+    // A parallel call can create this lead first; in either case retrieve the
+    // canonical id from the backend before creating the reminder event.
+    return _findLeadIdByNumber(phone);
   }
 
   Widget _buildActiveCallTopBar(BuildContext context, {required bool isDark}) {
@@ -897,6 +990,7 @@ extension _SipCallViewsExtension on _SipScreenState {
                     ? l10n.translate('sip_unmute')
                     : l10n.translate('sip_mute'),
                 onTap: _sipRuntime.toggleMute,
+                active: state.isMuted,
                 size: buttonSize,
                 iconSize: iconSize,
                 labelFontSize: labelFontSize,

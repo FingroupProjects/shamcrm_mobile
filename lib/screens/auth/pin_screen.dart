@@ -17,6 +17,7 @@ import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
+import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
@@ -57,6 +58,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   String _userNameProfile = '';
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
+  bool _isPinChecking = false;
   bool _showIntro = true;
   bool _didNavigateToSipCall = false;
   _PinAdaptivePalette? _adaptivePalette;
@@ -383,6 +385,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _authenticate() async {
+    if (_isPinChecking || _isPinVerified) return;
+
     try {
       final localizations = AppLocalizations.of(context);
       if (localizations == null) return;
@@ -391,6 +395,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
           _biometricAvailability ?? await _biometricService.getAvailability();
       if (!availability.hasAnyBiometric) return;
 
+      // Face ID / отпечаток используют тот же визуальный статус, что и PIN:
+      // четыре заполненные точки идут волной, пока система проверяет личность.
+      setState(() => _isPinChecking = true);
       final bool didAuthenticate = await _biometricService.authenticate(
         reason: localizations.translate('confirm_identity'),
       );
@@ -404,9 +411,14 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
           _isPinVerified = true;
         });
         _navigateToHome();
+      } else if (mounted) {
+        _triggerErrorEffect();
       }
     } catch (e) {
-      //print('PinScreen: Неожиданная ошибка аутентификации: $e');
+      debugPrint('PinScreen: biometric authentication failed: $e');
+      if (mounted) {
+        _triggerErrorEffect();
+      }
     }
   }
 
@@ -463,6 +475,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   // ==========================================================================
 
   void _onNumberPressed(String number) async {
+    if (_isPinChecking) return;
+
     if (_pin.length < 4) {
       setState(() {
         _pin += number;
@@ -477,26 +491,33 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       }
 
       if (_pin.length == 4) {
-        final prefs = await SharedPreferences.getInstance();
-        final savedPin = prefs.getString('user_pin');
+        setState(() => _isPinChecking = true);
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final savedPin = prefs.getString('user_pin');
 
-        if (_pin == savedPin) {
-          debugPrint('PinScreen: PIN корректен');
+          if (_pin == savedPin) {
+            debugPrint('PinScreen: PIN корректен');
 
-          final hasAccess = await _checkAccountAccess();
-          if (!hasAccess) return;
+            final hasAccess = await _checkAccountAccess();
+            if (!hasAccess) return;
 
-          // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг ПЕРЕД навигацией
-          setState(() {
-            _isPinVerified = true;
-          });
+            // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг ПЕРЕД навигацией
+            setState(() {
+              _isPinVerified = true;
+            });
 
-          if (mounted) {
-            _navigateToHome();
+            if (mounted) {
+              _navigateToHome();
+            }
+          } else {
+            debugPrint('PinScreen: PIN некорректен');
+            _triggerErrorEffect();
           }
-        } else {
-          debugPrint('PinScreen: PIN некорректен');
-          _triggerErrorEffect();
+        } finally {
+          if (mounted && !_isPinVerified) {
+            setState(() => _isPinChecking = false);
+          }
         }
       }
     }
@@ -638,6 +659,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     setState(() {
       _isWrongPin = true;
       _pin = '';
+      _isPinChecking = false;
     });
 
     _animationController.forward();
@@ -651,6 +673,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   void _onDelete() {
+    if (_isPinChecking) return;
+
     if (_pin.isNotEmpty) {
       setState(() {
         _pin = _pin.substring(0, _pin.length - 1);
@@ -982,8 +1006,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                       Text(
                         getGreetingMessage(),
                         style: textStyles.titleLg.copyWith(
+                          fontFamily: 'SF Pro Display',
                           fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           color: pinForeground,
                           shadows: [pinTextShadow],
                         ),
@@ -995,8 +1020,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                             ? localizations.translate('wrong_pin')
                             : localizations.translate('enter_pin'),
                         style: textStyles.bodyMd.copyWith(
+                          fontFamily: 'SF Pro Display',
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: _isWrongPin ? pinErrorColor : pinSecondary,
                           shadows: [pinTextShadow],
                         ),
@@ -1009,44 +1035,16 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                           return Transform.translate(
                             offset: Offset(
                                 _isWrongPin ? _shakeAnimation.value : 0, 0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                4,
-                                (index) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
-                                  ),
-                                  width: 12,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    color: _isWrongPin
-                                        ? pinErrorColor
-                                        : (index < _pin.length
-                                            ? pinAccent
-                                            : pinForeground.withValues(
-                                                alpha: 0.24,
-                                              )),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: _isWrongPin
-                                          ? pinErrorColor
-                                          : pinForeground.withValues(
-                                              alpha: 0.34,
-                                            ),
-                                      width: 1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.white.withValues(
-                                          alpha: isDark ? 0.12 : 0.72,
-                                        ),
-                                        blurRadius: 6,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                            child: PinProgressDots(
+                              filledCount: _pin.length,
+                              isLoading: _isPinChecking,
+                              isError: _isWrongPin,
+                              activeColor: pinAccent,
+                              inactiveColor:
+                                  pinForeground.withValues(alpha: 0.24),
+                              errorColor: pinErrorColor,
+                              size: 12,
+                              spacing: 8,
                             ),
                           );
                         },
@@ -1059,22 +1057,11 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                         childAspectRatio: 1.14,
                         children: [
                           for (var i = 1; i <= 9; i++)
-                            _LiquidPinKey(
+                            LiquidPinKey(
                               digit: i.toString(),
-                              letters: const [
-                                '',
-                                'ABC',
-                                'DEF',
-                                'GHI',
-                                'JKL',
-                                'MNO',
-                                'PQRS',
-                                'TUV',
-                                'WXYZ',
-                              ][i - 1],
                               onPressed: () => _onNumberPressed(i.toString()),
                               textColor: keypadForeground,
-                              isDark: keypadOnDarkBackground,
+                              isDarkBackground: keypadOnDarkBackground,
                             ),
                           _PinPlainAction(
                             onPressed: _onExitPressed,
@@ -1082,18 +1069,19 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                             child: Text(
                               localizations.translate('exit'),
                               style: textStyles.bodyMd.copyWith(
+                                fontFamily: 'SF Pro Display',
                                 fontSize: 16,
                                 color: keypadForeground,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 shadows: [keypadShadow],
                               ),
                             ),
                           ),
-                          _LiquidPinKey(
+                          LiquidPinKey(
                             digit: '0',
                             onPressed: () => _onNumberPressed('0'),
                             textColor: keypadForeground,
-                            isDark: keypadOnDarkBackground,
+                            isDarkBackground: keypadOnDarkBackground,
                           ),
                           if (_isBiometricEnabled &&
                               (_biometricAvailability?.hasAnyBiometric ??
@@ -1143,8 +1131,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                         child: Text(
                           localizations.translate('forgot_pin'),
                           style: textStyles.bodyMd.copyWith(
+                            fontFamily: 'SF Pro Display',
                             color: actionForeground,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             shadows: [actionShadow],
                           ),
                         ),
@@ -1278,411 +1267,5 @@ class _PinPlainActionState extends State<_PinPlainAction> {
         ),
       ),
     );
-  }
-}
-
-class _LiquidBackdropLens extends StatefulWidget {
-  final bool isPressed;
-  final bool isDarkBackground;
-  final Widget child;
-
-  const _LiquidBackdropLens({
-    required this.isPressed,
-    required this.isDarkBackground,
-    required this.child,
-  });
-
-  @override
-  State<_LiquidBackdropLens> createState() => _LiquidBackdropLensState();
-}
-
-class _LiquidBackdropLensState extends State<_LiquidBackdropLens> {
-  static Future<FragmentProgram?>? _programFuture;
-  FragmentShader? _shader;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_initializeShader());
-  }
-
-  Future<void> _initializeShader() async {
-    if (!ImageFilter.isShaderFilterSupported) return;
-    final program = await (_programFuture ??= _loadProgram());
-    if (!mounted || program == null) return;
-    setState(() {
-      _shader = program.fragmentShader();
-    });
-  }
-
-  static Future<FragmentProgram?> _loadProgram() async {
-    try {
-      return await FragmentProgram.fromAsset('shaders/liquid_glass.frag');
-    } catch (error) {
-      debugPrint('PinScreen: Liquid Glass shader unavailable: $error');
-      return null;
-    }
-  }
-
-  @override
-  void dispose() {
-    _shader?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: widget.isPressed ? 1 : 0),
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      child: widget.child,
-      builder: (context, progress, child) {
-        ImageFilter filter = ImageFilter.blur(
-          sigmaX: widget.isPressed ? 11 : 15,
-          sigmaY: widget.isPressed ? 11 : 15,
-        );
-
-        final shader = _shader;
-        if (shader != null && ImageFilter.isShaderFilterSupported) {
-          shader
-            ..setFloat(2, progress)
-            ..setFloat(3, 0.12)
-            ..setFloat(4, 2.2)
-            ..setFloat(5, widget.isDarkBackground ? 1 : 0);
-          filter = ImageFilter.shader(shader);
-        }
-
-        return BackdropFilter(
-          filter: filter,
-          child: child,
-        );
-      },
-    );
-  }
-}
-
-class _LiquidPinKey extends StatefulWidget {
-  final String digit;
-  final String letters;
-  final VoidCallback onPressed;
-  final Color textColor;
-  final bool isDark;
-
-  const _LiquidPinKey({
-    required this.digit,
-    required this.onPressed,
-    required this.textColor,
-    required this.isDark,
-    this.letters = '',
-  });
-
-  @override
-  State<_LiquidPinKey> createState() => _LiquidPinKeyState();
-}
-
-class _LiquidPinKeyState extends State<_LiquidPinKey> {
-  bool _isPressed = false;
-
-  void _setPressed(bool value) {
-    if (_isPressed == value) return;
-    setState(() => _isPressed = value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final edgeColor = widget.isDark ? Colors.white : const Color(0xFF596970);
-    final borderColor = widget.isDark
-        ? Colors.white.withValues(alpha: _isPressed ? 0.68 : 0.38)
-        : edgeColor.withValues(alpha: _isPressed ? 0.58 : 0.36);
-
-    return Semantics(
-      button: true,
-      label: widget.digit,
-      child: Center(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (_) => _setPressed(true),
-          onTapUp: (_) => _setPressed(false),
-          onTapCancel: () => _setPressed(false),
-          onTap: widget.onPressed,
-          child: AnimatedScale(
-            scale: _isPressed ? 0.94 : 1,
-            duration: const Duration(milliseconds: 140),
-            curve: _isPressed ? Curves.easeOutCubic : Curves.easeOutBack,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              width: 86,
-              height: 86,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: _isPressed ? 0.10 : 0.22,
-                    ),
-                    blurRadius: _isPressed ? 9 : 22,
-                    offset: Offset(0, _isPressed ? 3 : 10),
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withValues(
-                      alpha: widget.isDark
-                          ? (_isPressed ? 0.06 : 0.10)
-                          : (_isPressed ? 0.18 : 0.28),
-                    ),
-                    blurRadius: _isPressed ? 8 : 16,
-                    spreadRadius: _isPressed ? 0 : 1,
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: _LiquidBackdropLens(
-                  isPressed: _isPressed,
-                  isDarkBackground: widget.isDark,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: borderColor, width: 1.1),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: widget.isDark
-                            ? [
-                                Colors.white.withValues(
-                                  alpha: _isPressed ? 0.24 : 0.18,
-                                ),
-                                Colors.white.withValues(
-                                  alpha: _isPressed ? 0.13 : 0.08,
-                                ),
-                                const Color(0xFF263238).withValues(
-                                  alpha: _isPressed ? 0.10 : 0.04,
-                                ),
-                              ]
-                            : [
-                                Colors.white.withValues(
-                                  alpha: _isPressed ? 0.70 : 0.54,
-                                ),
-                                const Color(0xFFD8DDE0).withValues(
-                                  alpha: _isPressed ? 0.34 : 0.22,
-                                ),
-                                const Color(0xFF596970).withValues(
-                                  alpha: _isPressed ? 0.16 : 0.08,
-                                ),
-                              ],
-                        stops: const [0, 0.56, 1],
-                      ),
-                    ),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              center: const Alignment(-0.46, -0.72),
-                              radius: _isPressed ? 0.72 : 0.92,
-                              colors: [
-                                Colors.white.withValues(
-                                  alpha: widget.isDark
-                                      ? (_isPressed ? 0.18 : 0.30)
-                                      : (_isPressed ? 0.34 : 0.52),
-                                ),
-                                Colors.white.withValues(alpha: 0),
-                              ],
-                              stops: const [0, 0.72],
-                            ),
-                          ),
-                        ),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween<double>(
-                            end: _isPressed ? 1 : 0,
-                          ),
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, liquidProgress, child) {
-                            return CustomPaint(
-                              painter: _LiquidGlassRimPainter(
-                                accentColor: edgeColor,
-                                isDark: widget.isDark,
-                                progress: liquidProgress,
-                              ),
-                            );
-                          },
-                        ),
-                        Center(
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              top: widget.letters.isEmpty ? 0 : 2,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  widget.digit,
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 31,
-                                    height: 0.94,
-                                    fontWeight: FontWeight.w400,
-                                    color: widget.textColor,
-                                    shadows: [
-                                      Shadow(
-                                        color: widget.isDark
-                                            ? Colors.black.withValues(
-                                                alpha: 0.42,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.92,
-                                              ),
-                                        blurRadius: widget.isDark ? 7 : 5,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (widget.letters.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.letters,
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 9,
-                                      height: 1,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.35,
-                                      color: widget.textColor.withValues(
-                                        alpha: 0.82,
-                                      ),
-                                      shadows: [
-                                        Shadow(
-                                          color: widget.isDark
-                                              ? Colors.black.withValues(
-                                                  alpha: 0.38,
-                                                )
-                                              : Colors.white.withValues(
-                                                  alpha: 0.88,
-                                                ),
-                                          blurRadius: widget.isDark ? 5 : 3,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LiquidGlassRimPainter extends CustomPainter {
-  final Color accentColor;
-  final bool isDark;
-  final double progress;
-
-  const _LiquidGlassRimPainter({
-    required this.accentColor,
-    required this.isDark,
-    required this.progress,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final outerRect = Rect.fromCircle(
-      center: center,
-      radius: size.shortestSide / 2 - 1.4,
-    );
-    final innerRect = outerRect.deflate(3.2);
-
-    final rimPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.45
-      ..shader = SweepGradient(
-        transform: const GradientRotation(-math.pi / 2),
-        colors: [
-          Colors.white.withValues(alpha: isDark ? 0.72 : 0.96),
-          accentColor.withValues(alpha: isDark ? 0.22 : 0.46),
-          Colors.white.withValues(alpha: 0.18),
-          accentColor.withValues(alpha: isDark ? 0.38 : 0.58),
-          Colors.white.withValues(alpha: isDark ? 0.72 : 0.96),
-        ],
-        stops: const [0, 0.24, 0.5, 0.76, 1],
-      ).createShader(outerRect);
-    canvas.drawOval(outerRect, rimPaint);
-
-    final innerRimPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
-      ..color = Colors.white.withValues(alpha: isDark ? 0.13 : 0.38);
-    canvas.drawOval(innerRect, innerRimPaint);
-
-    final causticCenter = Offset(
-      size.width * (0.28 + 0.24 * progress),
-      size.height * (0.22 + 0.10 * progress),
-    );
-    final causticRadius = size.shortestSide * (0.30 + 0.04 * progress);
-    final causticRect = Rect.fromCircle(
-      center: causticCenter,
-      radius: causticRadius,
-    );
-    final causticPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(
-            alpha: isDark ? 0.16 : 0.34,
-          ),
-          Colors.white.withValues(alpha: 0),
-        ],
-        stops: const [0, 1],
-      ).createShader(causticRect);
-    canvas.drawCircle(causticCenter, causticRadius, causticPaint);
-
-    final topRefractionPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round
-      ..color = Colors.white.withValues(alpha: isDark ? 0.54 : 0.86);
-    canvas.drawArc(
-      innerRect,
-      -2.72 + progress * 0.18,
-      1.18,
-      false,
-      topRefractionPaint,
-    );
-
-    final bottomRefractionPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.35
-      ..strokeCap = StrokeCap.round
-      ..color = accentColor.withValues(alpha: isDark ? 0.20 : 0.34);
-    canvas.drawArc(
-      innerRect,
-      0.32 - progress * 0.14,
-      1.28,
-      false,
-      bottomRefractionPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _LiquidGlassRimPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.accentColor != accentColor ||
-        oldDelegate.isDark != isDark;
   }
 }

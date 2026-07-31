@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
+import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
@@ -31,9 +32,9 @@ class SipAudioRoute {
 
   factory SipAudioRoute.fromMap(Map<dynamic, dynamic> map) {
     return SipAudioRoute(
-      id: map['id']?.toString() ?? '',
-      type: map['type']?.toString() ?? 'other',
-      name: map['name']?.toString() ?? 'Аудиоустройство',
+      id: sanitizeUtf16(map['id']?.toString() ?? ''),
+      type: sanitizeUtf16(map['type']?.toString() ?? 'other'),
+      name: sanitizeUtf16(map['name']?.toString() ?? 'Аудиоустройство'),
       selected: map['selected'] == true,
     );
   }
@@ -72,6 +73,7 @@ class SipService extends ChangeNotifier
     _transportKey,
     _portKey,
     _enabledKey,
+    _voipPushTokenKey,
   ];
   static const MethodChannel _nativeSipMethodChannel =
       MethodChannel('com.shamcrm/native_sip/methods');
@@ -557,6 +559,18 @@ class SipService extends ChangeNotifier
     final inFlight = _recentCallLogsRequest;
     if (inFlight != null) {
       await inFlight;
+
+      // A search can change while the previous request is still running.
+      // Do not lose the last typed value: once that request finishes, load the
+      // currently requested filter/query instead of treating its result as ours.
+      if (callType != _state.serverCallFilter ||
+          normalizedSearchQuery != _state.serverCallSearchQuery) {
+        await refreshRecentCallLogs(
+          callType: callType,
+          searchQuery: normalizedSearchQuery,
+          force: force,
+        );
+      }
       return;
     }
 
@@ -1022,6 +1036,13 @@ class SipService extends ChangeNotifier
       return;
     }
 
+    if (_isExpiredIncomingCallPush(payload)) {
+      debugPrint(
+        'SipService incoming_call push expired -> call_id=${payload['call_id']}, issued_at_ms=${payload['issued_at_ms']}',
+      );
+      return;
+    }
+
     if (persist) {
       await _savePendingIncomingCallPushPayload(payload);
     }
@@ -1074,6 +1095,45 @@ class SipService extends ChangeNotifier
       } else {
         unawaited(connect());
       }
+    }
+  }
+
+  Future<void> handleIncomingCallTerminationPushPayload(
+    Map<String, dynamic> rawPayload, {
+    String source = 'unknown',
+  }) async {
+    final callId = rawPayload['call_id']?.toString().trim().isNotEmpty == true
+        ? rawPayload['call_id'].toString().trim()
+        : rawPayload['id']?.toString().trim();
+    if (callId == null || callId.isEmpty) {
+      debugPrint('SipService call end push ignored: missing call_id from $source');
+      return;
+    }
+
+    final matchesIncoming = callId == _lastIncomingCallPushId ||
+        callId == _activeIncomingCallId ||
+        callId == _activeNativeCallId;
+    if (!matchesIncoming) {
+      debugPrint('SipService call end push ignored: no matching call_id=$callId');
+      return;
+    }
+
+    await _removePendingIncomingCallPushPayload(callId);
+    if (_state.callStatus == SipCallUiStatus.incoming ||
+        _state.callStatus == SipCallUiStatus.ringing) {
+      if (_activeNativeCallId == callId) {
+        unawaited(decline());
+      }
+      await _reportIosSystemCallEndedIfNeeded('remoteEnded');
+      _clearIncomingFingerprint();
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.ended,
+        clearRemoteIdentity: true,
+        clearError: true,
+        isMuted: false,
+        isSpeakerOn: false,
+      );
+      _notifyListenersSafely();
     }
   }
 
@@ -1158,9 +1218,35 @@ class SipService extends ChangeNotifier
       'lead_name': pickString(<String>['lead_name']),
       'caller_name': callerName,
       'remote_identity': remoteIdentity,
+      'issued_at_ms': _incomingPushIssuedAtMs(rawPayload),
       'source': source,
       'received_at_ms': DateTime.now().millisecondsSinceEpoch,
     };
+  }
+
+  int? _incomingPushIssuedAtMs(Map<String, dynamic> payload) {
+    const keys = <String>[
+      'call_started_at_ms', 'created_at_ms', 'sent_at_ms', 'issued_at_ms',
+      'timestamp_ms', 'call_started_at', 'created_at', 'sent_at', 'issued_at',
+      'timestamp', 'google.sent_time',
+    ];
+    for (final key in keys) {
+      final value = payload[key];
+      final parsed = value is num
+          ? value.toInt()
+          : int.tryParse(value?.toString().trim() ?? '');
+      if (parsed != null && parsed > 0) {
+        return parsed < 10000000000 ? parsed * 1000 : parsed;
+      }
+    }
+    return null;
+  }
+
+  bool _isExpiredIncomingCallPush(Map<String, dynamic> payload) {
+    final issuedAtMs = payload['issued_at_ms'] as int?;
+    if (issuedAtMs == null) return false;
+    return DateTime.now().millisecondsSinceEpoch - issuedAtMs >
+        const Duration(minutes: 2).inMilliseconds;
   }
 
   bool _isDuplicateIncomingCallPush(Map<String, dynamic> payload) {
@@ -1211,6 +1297,24 @@ class SipService extends ChangeNotifier
     }
 
     return null;
+  }
+
+  Future<void> _removePendingIncomingCallPushPayload(String callId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_pendingIncomingCallPushPayloadKey);
+    if (raw == null || raw.trim().isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      final savedCallId = decoded is Map
+          ? decoded['call_id']?.toString().trim()
+          : null;
+      if (savedCallId == callId) {
+        await prefs.remove(_pendingIncomingCallPushPayloadKey);
+      }
+    } catch (_) {
+      // An invalid pending payload cannot represent a reliable active call.
+      await prefs.remove(_pendingIncomingCallPushPayloadKey);
+    }
   }
 
   Future<void> prepareSipRuntimePermissions() async {
@@ -1460,7 +1564,7 @@ class SipService extends ChangeNotifier
     _hardTransportFailureEndpoint = null;
     await _storage.write(key: _enabledKey, value: 'false');
     unawaited(_syncIncomingCallPushPreference(false));
-    unawaited(_apiService.clearPendingVoipToken());
+    unawaited(revokeVoipTokenAndClearLocal());
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1492,14 +1596,20 @@ class SipService extends ChangeNotifier
     _notifyListenersSafely();
   }
 
-  Future<void> clearSavedCredentials() async {
+  Future<void> clearSavedCredentials({
+    bool revokeBackendVoipToken = true,
+  }) async {
     _shouldStayConnected = false;
     _persistentSipEnabled = false;
     _sipEnabled = false;
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
-    unawaited(_syncIncomingCallPushPreference(false));
-    unawaited(_apiService.clearPendingVoipToken());
+    await _syncIncomingCallPushPreference(false);
+    if (revokeBackendVoipToken) {
+      await revokeVoipTokenAndClearLocal();
+    } else {
+      await _clearLocalVoipToken();
+    }
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -1518,16 +1628,32 @@ class SipService extends ChangeNotifier
     }
     _releaseStreams();
 
-    await _storage.delete(key: _serverKey);
-    await _storage.delete(key: _loginKey);
-    await _storage.delete(key: _passwordKey);
-    await _storage.delete(key: _sipIdKey);
-    await _storage.delete(key: _transportKey);
-    await _storage.delete(key: _portKey);
-    await _storage.delete(key: _enabledKey);
+    for (final key in _sipSecureStorageKeys) {
+      await _storage.delete(key: key);
+    }
 
     _state = SipUiState.initial();
     _notifyListenersSafely();
+  }
+
+  Future<void> revokeVoipTokenAndClearLocal() async {
+    if (Platform.isIOS) {
+      try {
+        final token = await getVoipPushToken();
+        await _apiService
+            .deleteVoipToken(voipToken: token)
+            .timeout(_iosVoipTokenSyncTimeout);
+      } catch (error) {
+        debugPrint('SipService: VoIP token revoke skipped: $error');
+      }
+    }
+    await _clearLocalVoipToken();
+  }
+
+  Future<void> _clearLocalVoipToken() async {
+    _lastSyncedIosVoipPushToken = null;
+    await _storage.delete(key: _voipPushTokenKey);
+    await _apiService.clearPendingVoipToken();
   }
 
   bool get hasSavedCredentials => _hasSipCredentials();
@@ -2142,9 +2268,7 @@ class SipService extends ChangeNotifier
 
   void _handleNativePushTokenInvalidatedEvent() {
     debugPrint('SipService native push token invalidated');
-    _lastSyncedIosVoipPushToken = null;
-    unawaited(_storage.delete(key: _voipPushTokenKey));
-    unawaited(_apiService.clearPendingVoipToken());
+    unawaited(_clearLocalVoipToken());
   }
 
   void _handleNativeSipReadyEvent(Map<String, dynamic> payload) {
@@ -2276,7 +2400,7 @@ class SipService extends ChangeNotifier
       return null;
     }
 
-    var normalized = value.trim();
+    var normalized = sanitizeUtf16(value).trim();
     if (normalized.isEmpty) {
       return null;
     }
