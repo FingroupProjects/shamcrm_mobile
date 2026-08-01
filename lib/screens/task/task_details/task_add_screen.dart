@@ -47,8 +47,15 @@ import '../../../page_2/warehouse/openings/cash_register/cash_register_content.d
 
 class TaskAddScreen extends StatefulWidget {
   final int statusId;
+  final int? initialProjectId;
+  final bool lockProject;
 
-  const TaskAddScreen({Key? key, required this.statusId}) : super(key: key);
+  const TaskAddScreen({
+    Key? key,
+    required this.statusId,
+    this.initialProjectId,
+    this.lockProject = false,
+  }) : super(key: key);
 
   @override
   _TaskAddScreenState createState() => _TaskAddScreenState();
@@ -91,10 +98,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       context.appColors.textPrimary;
   Color _screenSecondaryText(BuildContext context) =>
       context.appColors.textSecondary;
-  Color _screenHintText(BuildContext context) =>
-      context.appColors.fieldHint;
-  Color _screenBorder(BuildContext context) =>
-      context.appColors.borderSubtle;
+  Color _screenHintText(BuildContext context) => context.appColors.fieldHint;
+  Color _screenBorder(BuildContext context) => context.appColors.borderSubtle;
   Color _screenFocusBorder(BuildContext context) =>
       context.appColors.borderPrimary;
   Color _screenFieldBackground(BuildContext context) =>
@@ -124,10 +129,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
     selectedStatus = widget.statusId.toString();
+    if (widget.initialProjectId != null) {
+      selectedProject = widget.initialProjectId.toString();
+    }
   }
 
   Future<void> _loadFieldConfiguration() async {
-    context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+    context
+        .read<FieldConfigurationBloc>()
+        .add(FetchFieldConfiguration('tasks'));
   }
 
   Future<void> _saveFieldOrderToBackend() async {
@@ -161,7 +171,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
             ),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             backgroundColor: context.appColors.error,
             elevation: 3,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -265,7 +276,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       case 'description':
         return CustomTextField(
           controller: descriptionController,
-          hintText: AppLocalizations.of(context)!.translate('enter_description'),
+          hintText:
+              AppLocalizations.of(context)!.translate('enter_description'),
           label: AppLocalizations.of(context)!.translate('description_list'),
           maxLines: 5,
           keyboardType: TextInputType.multiline,
@@ -294,6 +306,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         return const SizedBox.shrink();
 
       case 'project':
+        if (widget.lockProject && widget.initialProjectId != null) {
+          return const SizedBox.shrink();
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -396,8 +411,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         selectedField: null,
         onSelectField: (MainField selectedField) {
           setState(() {
-            final index =
-                customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
                 entryId: selectedField.id,
@@ -409,8 +424,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         controller: directoryField.controller,
         onSelectEntryId: (int entryId) {
           setState(() {
-            final index =
-                customFields.indexWhere((f) => f.directoryId == config.directoryId);
+            final index = customFields
+                .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(entryId: entryId);
             }
@@ -447,9 +462,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   }
 
   List<Widget> _buildConfiguredFieldWidgets() {
-    final sorted = fieldConfigurations
-        .where((c) => c.isActive)
-        .toList()
+    final sorted = fieldConfigurations.where((c) => c.isActive).toList()
       ..sort((a, b) => a.position.compareTo(b.position));
 
     return sorted
@@ -490,7 +503,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           .any((f) => f.isDirectoryField && f.directoryId == directoryId);
       if (exists) {
         showCustomSnackBar(
-            context: context, message: 'Справочник уже добавлен', isSuccess: true);
+            context: context,
+            message: 'Справочник уже добавлен',
+            isSuccess: true);
         return;
       }
       try {
@@ -510,7 +525,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               type: null,
             ));
           });
-          context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+          context
+              .read<FieldConfigurationBloc>()
+              .add(FetchFieldConfiguration('tasks'));
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -525,7 +542,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               backgroundColor: context.appColors.success,
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -543,7 +561,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         fieldType: type ?? 'string',
       );
       if (mounted) {
-        context.read<FieldConfigurationBloc>().add(FetchFieldConfiguration('tasks'));
+        context
+            .read<FieldConfigurationBloc>()
+            .add(FetchFieldConfiguration('tasks'));
         setState(() {
           customFields.add(CustomField(
             fieldName: fieldName,
@@ -641,7 +661,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   bool _hasFieldChanges() {
     if (originalFieldConfigurations == null) return false;
-    if (originalFieldConfigurations!.length != fieldConfigurations.length) return true;
+    if (originalFieldConfigurations!.length != fieldConfigurations.length)
+      return true;
     for (int i = 0; i < fieldConfigurations.length; i++) {
       final current = fieldConfigurations[i];
       final original = originalFieldConfigurations!.firstWhere(
@@ -689,7 +710,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        buttonText: AppLocalizations.of(context)!.translate('cancel'),
+                        buttonText:
+                            AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
                         buttonColor: context.appColors.buttonSecondaryBg,
                         textColor: context.appColors.buttonSecondaryFg,
@@ -698,8 +720,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: CustomButton(
-                        buttonText:
-                            AppLocalizations.of(context)!.translate('dont_save'),
+                        buttonText: AppLocalizations.of(context)!
+                            .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
                         buttonColor: context.appColors.buttonDangerBg,
                         textColor: context.appColors.buttonDangerFg,
@@ -872,16 +894,19 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                   );
                                   final idx = fieldConfigurations
                                       .indexWhere((f) => f.id == config.id);
-                                  if (idx != -1) fieldConfigurations[idx] = updated;
+                                  if (idx != -1)
+                                    fieldConfigurations[idx] = updated;
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
+                                      duration:
+                                          const Duration(milliseconds: 200),
                                       curve: Curves.easeInOut,
                                       width: 24,
                                       height: 24,
@@ -892,14 +917,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                                 .withValues(alpha: 0),
                                         border: Border.all(
                                           color: config.isActive
-                                              ? context.appColors.buttonPrimaryBg
+                                              ? context
+                                                  .appColors.buttonPrimaryBg
                                               : cardBorder,
                                           width: 2,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: AnimatedOpacity(
-                                        duration: const Duration(milliseconds: 200),
+                                        duration:
+                                            const Duration(milliseconds: 200),
                                         opacity: config.isActive ? 1.0 : 0.0,
                                         child: Icon(
                                           Icons.check_rounded,
@@ -947,7 +974,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               ? Container(
                   height: 50,
                   decoration: BoxDecoration(
-                    color: context.appColors.buttonPrimaryBg.withValues(alpha: 0.7),
+                    color: context.appColors.buttonPrimaryBg
+                        .withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -1079,7 +1107,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       setState(() {
         for (var f in pickedFiles) {
-          files.add(FileHelper(id: 0, name: f.name, path: f.path, size: f.sizeKB));
+          files.add(
+              FileHelper(id: 0, name: f.name, path: f.path, size: f.sizeKB));
         }
       });
     }
@@ -1114,14 +1143,22 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           overlay: baseColors.overlay,
         ),
         baseTextStyles.copyWith(
-          titleLg: baseTextStyles.titleLg.copyWith(color: _screenPrimaryText(context)),
-          titleMd: baseTextStyles.titleMd.copyWith(color: _screenPrimaryText(context)),
-          bodyLg: baseTextStyles.bodyLg.copyWith(color: _screenPrimaryText(context)),
-          bodyMd: baseTextStyles.bodyMd.copyWith(color: _screenSecondaryText(context)),
-          bodySm: baseTextStyles.bodySm.copyWith(color: _screenSecondaryText(context)),
-          labelLg: baseTextStyles.labelLg.copyWith(color: _screenPrimaryText(context)),
-          labelMd: baseTextStyles.labelMd.copyWith(color: _screenSecondaryText(context)),
-          caption: baseTextStyles.caption.copyWith(color: _screenHintText(context)),
+          titleLg: baseTextStyles.titleLg
+              .copyWith(color: _screenPrimaryText(context)),
+          titleMd: baseTextStyles.titleMd
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyLg: baseTextStyles.bodyLg
+              .copyWith(color: _screenPrimaryText(context)),
+          bodyMd: baseTextStyles.bodyMd
+              .copyWith(color: _screenSecondaryText(context)),
+          bodySm: baseTextStyles.bodySm
+              .copyWith(color: _screenSecondaryText(context)),
+          labelLg: baseTextStyles.labelLg
+              .copyWith(color: _screenPrimaryText(context)),
+          labelMd: baseTextStyles.labelMd
+              .copyWith(color: _screenSecondaryText(context)),
+          caption:
+              baseTextStyles.caption.copyWith(color: _screenHintText(context)),
         ),
         baseShadows,
       ],
@@ -1211,7 +1248,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             return !originalFieldConfigurations!
                                 .any((o) => o.id == c.id);
                           }).toList();
-                          fieldConfigurations = [...originalFieldConfigurations!];
+                          fieldConfigurations = [
+                            ...originalFieldConfigurations!
+                          ];
                           if (newFields.isNotEmpty) {
                             int maxPos = fieldConfigurations.isEmpty
                                 ? 0
@@ -1251,8 +1290,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                     }
                   } else {
                     setState(() {
-                      originalFieldConfigurations =
-                          fieldConfigurations.map((c) => FieldConfiguration(
+                      originalFieldConfigurations = fieldConfigurations
+                          .map((c) => FieldConfiguration(
                                 id: c.id,
                                 tableName: c.tableName,
                                 fieldName: c.fieldName,
@@ -1268,7 +1307,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                 isDirectory: c.isDirectory,
                                 showOnTable: c.showOnTable,
                                 originalRequired: c.originalRequired,
-                              )).toList();
+                              ))
+                          .toList();
                       isSettingsMode = true;
                     });
                   }
@@ -1368,11 +1408,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                             child: GestureDetector(
                               onTap: () => FocusScope.of(context).unfocus(),
                               child: SingleChildScrollView(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
                                 child: Container(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      18, 18, 18, 22),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(18, 18, 18, 22),
                                   decoration: BoxDecoration(
                                     color: formSurface,
                                     borderRadius: BorderRadius.circular(30),
@@ -1413,9 +1453,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                                     onSelectField:
                                                         (MainField sf) {
                                                       setState(() {
-                                                        final idx =
-                                                            customFields
-                                                                .indexOf(field);
+                                                        final idx = customFields
+                                                            .indexOf(field);
                                                         customFields[idx] =
                                                             field.copyWith(
                                                           entryId: sf.id,
@@ -1431,9 +1470,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                                     onSelectEntryId:
                                                         (int entryId) {
                                                       setState(() {
-                                                        final idx =
-                                                            customFields
-                                                                .indexOf(field);
+                                                        final idx = customFields
+                                                            .indexOf(field);
                                                         customFields[idx] =
                                                             field.copyWith(
                                                                 entryId:
@@ -1476,10 +1514,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                   child: CustomButton(
                                     buttonText: AppLocalizations.of(context)!
                                         .translate('cancel'),
-                                    buttonColor: _screenFieldBackground(context),
+                                    buttonColor:
+                                        _screenFieldBackground(context),
                                     textColor: primaryText,
-                                    onPressed: () =>
-                                        Navigator.pop(context),
+                                    onPressed: () => Navigator.pop(context),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -1614,8 +1652,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                         children: [
                           Flexible(
                             child: Center(
-                              child: buildFileIcon(
-                                  files, fileName, fileExtension),
+                              child:
+                                  buildFileIcon(files, fileName, fileExtension),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1654,8 +1692,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                               ),
                             ],
                           ),
-                          child: Icon(Icons.close,
-                              size: 16, color: fileTextColor),
+                          child:
+                              Icon(Icons.close, size: 16, color: fileTextColor),
                         ),
                       ),
                     ),

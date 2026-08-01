@@ -440,9 +440,10 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   bool _isDarkSipTheme(BuildContext context) {
-    // Временно принудительно оставляем SIP только в светлой теме,
-    // чтобы пользователи не видели тёмный фон во время звонка.
-    return false;
+    // Экран разговора намеренно остаётся иммерсивным и тёмным, как системный
+    // экран звонка iOS. Это также гарантирует одинаковый контраст независимо
+    // от выбранной пользователем палитры приложения.
+    return true;
   }
 
   List<Color> _callGradient(bool isDark) {

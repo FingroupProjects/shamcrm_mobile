@@ -229,6 +229,10 @@ class ApiService {
     'tojsokhtmontj',
     'tojsokhtmontj-back',
   };
+  static const Set<String> _stomatradeSubdomains = {
+    'stomatrade',
+    'stomatrade-back',
+  };
 
   String? baseUrl;
   String? baseUrlSocket;
@@ -727,6 +731,11 @@ class ApiService {
   Future<bool> isTojsokhtmontjTenant() async {
     final subdomain = await getCurrentTenantSubdomain();
     return subdomain != null && _tojsokhtmontjSubdomains.contains(subdomain);
+  }
+
+  Future<bool> isStomatradeTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null && _stomatradeSubdomains.contains(subdomain);
   }
 
   Future<WorkdayStatusResponse?> getWorkdayStatus() async {
@@ -6455,13 +6464,16 @@ class ApiService {
     DateTime? completedFromDate,
     DateTime? completedToDate,
     List<int>? projectIds,
+    int? projectId,
     List<String>? authors,
     String? department,
     List<int>? reasonForRefusalIds,
     List<Map<String, dynamic>>? directoryValues, // Добавляем directoryValues
   }) async {
     // Формируем базовый путь
-    String path = '/task?page=$page&per_page=$perPage';
+    String path = projectId == null
+        ? '/task?page=$page&per_page=$perPage'
+        : '/task/get-by-project/$projectId?page=$page&per_page=$perPage';
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
     if (kDebugMode) {
@@ -6610,8 +6622,9 @@ class ApiService {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['result']['data'] != null) {
+        final effectiveTaskStatusId = taskStatusId ?? statuses ?? -1;
         return (data['result']['data'] as List)
-            .map((json) => Task.fromJson(json, taskStatusId ?? -1))
+            .map((json) => Task.fromJson(json, effectiveTaskStatusId))
             .toList();
       } else {
         throw Exception('Нет данных о задачах в ответе');
@@ -6637,6 +6650,7 @@ class ApiService {
     DateTime? completedFromDate,
     DateTime? completedToDate,
     List<int>? projectIds,
+    int? projectId,
     List<String>? authors,
     String? department,
     List<int>? reasonForRefusalIds,
@@ -6653,7 +6667,9 @@ class ApiService {
     }
 
     try {
-      String path = '/task-status';
+      String path = projectId == null
+          ? '/task-status'
+          : '/task-status/get-by-project/$projectId';
       path = await _appendQueryParams(path);
 
       // Добавляем фильтры к запросу статусов
@@ -6718,10 +6734,15 @@ class ApiService {
       }
 
       if (kDebugMode) {
-        debugPrint('📤 getTaskStatuses WITH FILTERS - Final path: $path');
+        debugPrint(
+            '📤 getTaskStatuses projectId=$projectId - Final path: $path');
       }
 
-      final response = await _analyticsRequest(path, bypassCache: bypassCache);
+      // Статусы конкретного проекта не должны смешиваться с аналитическим
+      // кэшем общего экрана задач.
+      final response = projectId != null
+          ? await _getRequest(path)
+          : await _analyticsRequest(path, bypassCache: bypassCache);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -6741,9 +6762,10 @@ class ApiService {
         }
 
         if (statusList != null && statusList.isNotEmpty) {
-          // Обновляем кэш новыми данными
-          await prefs.setString(
-              'cachedTaskStatuses_$organizationId', json.encode(statusList));
+          if (projectId == null) {
+            await prefs.setString(
+                'cachedTaskStatuses_$organizationId', json.encode(statusList));
+          }
 
           final statuses =
               statusList.map((status) => TaskStatus.fromJson(status)).toList();
@@ -6765,10 +6787,10 @@ class ApiService {
         debugPrint('❌ getTaskStatuses WITH FILTERS - request failed: $e');
       }
 
-      if (bypassCache) {
+      if (projectId != null || bypassCache) {
         if (kDebugMode) {
           debugPrint(
-              '🛑 getTaskStatuses WITH FILTERS - bypassCache=true, skip persistent fallback cache');
+              '🛑 getTaskStatuses - skip persistent fallback cache for project or bypass request');
         }
         rethrow;
       }
@@ -7606,6 +7628,51 @@ class ApiService {
     if (kDebugMode) {}
 
     return dataProject;
+  }
+
+  Future<Map<String, dynamic>> createProject({
+    required String name,
+    String? startDate,
+    String? endDate,
+    int? statusId,
+  }) async {
+    final response = await _postRequest('/project', {
+      'name': name,
+      if (startDate?.isNotEmpty ?? false) 'start_date': startDate,
+      if (endDate?.isNotEmpty ?? false) 'end_date': endDate,
+      if (statusId != null) 'status_id': statusId,
+    });
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'data': json.decode(response.body)};
+    }
+    return {'success': false, 'message': 'Ошибка создания проекта'};
+  }
+
+  Future<Map<String, dynamic>> updateProject({
+    required int projectId,
+    required String name,
+    String? startDate,
+    String? endDate,
+    int? statusId,
+  }) async {
+    final response = await _patchRequest('/project/$projectId', {
+      'name': name,
+      if (startDate?.isNotEmpty ?? false) 'start_date': startDate,
+      if (endDate?.isNotEmpty ?? false) 'end_date': endDate,
+      if (statusId != null) 'status_id': statusId,
+    });
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'data': json.decode(response.body)};
+    }
+    return {'success': false, 'message': 'Ошибка обновления проекта'};
+  }
+
+  Future<Map<String, dynamic>> deleteProject(int projectId) async {
+    final response = await _deleteRequest('/project/$projectId');
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return {'success': true};
+    }
+    return {'success': false, 'message': 'Ошибка удаления проекта'};
   }
 
   // Метод для получения Проекта

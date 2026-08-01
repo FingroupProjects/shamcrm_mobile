@@ -3,6 +3,7 @@ part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 extension _SipJournalSearchViewsExtension on _SipScreenState {
   Widget _journalView(BuildContext context, SipUiState state) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
     final entries =
         state.serverCallLogs.isNotEmpty ? state.serverCallLogs : state.callLogs;
     final items = _buildJournalItemsWithHeaders(entries);
@@ -69,8 +70,8 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                       child: Center(
                         child: Text(
                           l10n.translate('sip_journal_empty'),
-                          style: const TextStyle(
-                            color: Color(0xFF9CA3AF),
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
@@ -117,8 +118,8 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                                       children: [
                                         Text(
                                           item['date'] ?? '',
-                                          style: const TextStyle(
-                                            color: Color(0xFF6B7280),
+                                          style: TextStyle(
+                                            color: colors.textPrimary,
                                             fontFamily: 'Gilroy',
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
@@ -126,8 +127,8 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                                         ),
                                         Text(
                                           item['year'] ?? '',
-                                          style: const TextStyle(
-                                            color: Color(0xFF9CA3AF),
+                                          style: TextStyle(
+                                            color: colors.textMuted,
                                             fontFamily: 'Gilroy',
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
@@ -685,7 +686,6 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
   }
 
   Widget _searchView(BuildContext context, SipUiState state) {
-    final colors = context.appColors;
     final l10n = AppLocalizations.of(context)!;
     // Loading changes SipScreen state, so it must begin after this build frame.
     // Calling it here synchronously causes "setState() called during build".
@@ -921,38 +921,6 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _sectionHeader(String title, int count) {
-    final colors = context.appColors;
-    return Row(
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            '$count',
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

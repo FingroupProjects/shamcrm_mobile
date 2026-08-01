@@ -20,11 +20,10 @@ extension _SipCallViewsExtension on _SipScreenState {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: _callGradient(isDark)
-              .map((color) => color.withValues(alpha: isDark ? 0.42 : 0.16))
-              .toList(growable: false),
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0, 0.48, 1],
+          colors: _callGradient(isDark),
         ),
       ),
       child: SafeArea(
@@ -366,19 +365,13 @@ extension _SipCallViewsExtension on _SipScreenState {
     required String target,
     required SipUiState state,
   }) {
-    final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: const [0, 0.45, 1],
-          colors: [
-            colors.backgroundPrimary.withValues(alpha: isDark ? 0.62 : 0.24),
-            colors.surfaceAccent.withValues(alpha: isDark ? 0.48 : 0.18),
-            colors.backgroundSecondary.withValues(alpha: isDark ? 0.66 : 0.28),
-          ],
+          stops: [0, 0.45, 1],
+          colors: _G.activeBg,
         ),
       ),
       child: Stack(
@@ -1046,7 +1039,7 @@ extension _SipCallViewsExtension on _SipScreenState {
   }) {
     final activeBackground = isDark ? Colors.white : _G.lightText;
     final activeBorder = isDark ? Colors.white : _G.lightText;
-    final activeIconColor = Colors.white;
+    final activeIconColor = isDark ? _G.lightText : Colors.white;
     final inactiveBackground = isDark ? _G.glassFill : const Color(0xDFFFFFFF);
     final inactiveBorder = isDark ? _G.glassBorder : const Color(0xFFE1EAF6);
     final inactiveIconColor = isDark ? _G.textPrimary : _G.lightText;

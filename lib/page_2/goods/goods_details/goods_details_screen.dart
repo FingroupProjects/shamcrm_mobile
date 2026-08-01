@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/variant_details_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,6 +46,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   bool _isAutoScrollEnabled = true;
   final PageController _pageController = PageController();
   bool _canUpdateProduct = false;
+  bool _isTojsokhtmontjTenant = false;
 
   @override
   void initState() {
@@ -54,6 +56,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
         .add(FetchGoodsById(widget.id, isFromOrder: widget.isFromOrder));
     _initializeBaseUrl();
     _checkPermissions();
+    _loadTenantFlags();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final isTenant = await _apiService.isTojsokhtmontjTenant();
+    if (!mounted) return;
+    setState(() => _isTojsokhtmontjTenant = isTenant);
   }
 
   Future<void> _initializeBaseUrl() async {
@@ -461,13 +470,61 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             ),
           ),
         const SizedBox(height: 16),
-        _buildGoodsRelationsSection(goods),
+        _buildCreateOrderButton(goods),
+        if (!_isTojsokhtmontjTenant) _buildGoodsRelationsSection(goods),
         if (goods.variants != null &&
             goods.variants!.isNotEmpty &&
             !(goods.variants!.length == 1 &&
                 goods.variants!.first.attributeValues.isEmpty))
           _buildVariantsSection(goods),
       ],
+    );
+  }
+
+  bool _canCreateTojsokhtmontjOrder(Goods goods) {
+    if (!_isTojsokhtmontjTenant) return false;
+    final normalized = (goods.availabilityStatus ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('ё', 'е');
+    return normalized.isEmpty
+        ? goods.orderId == null
+        : normalized.contains('свобод');
+  }
+
+  Widget _buildCreateOrderButton(Goods goods) {
+    if (!_canCreateTojsokhtmontjOrder(goods)) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: CustomButton(
+        buttonText: 'Создать заказ',
+        onPressed: () => _navigateToCreateOrder(goods),
+        buttonColor: context.appColors.buttonPrimaryBg,
+        textColor: context.appColors.textInverse,
+      ),
+    );
+  }
+
+  double _goodsOrderPrice(Goods goods) =>
+      double.tryParse(goods.price ?? '') ??
+      goods.discountedPrice ??
+      goods.discountPrice ??
+      0;
+
+  void _navigateToCreateOrder(Goods goods) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderAddScreen(
+          initialGoodsItem: {
+            'id': goods.id,
+            'name': goods.name,
+            'price': _goodsOrderPrice(goods),
+            'quantity': 1,
+            'imagePath': goods.files.isNotEmpty ? goods.files.first.path : null,
+          },
+        ),
+      ),
     );
   }
 

@@ -159,6 +159,8 @@ class CustomAppBar extends StatefulWidget {
   final List<String>? initialDealNames; // Новый параметр
   final bool showMyTaskIcon;
   final bool showMenuIcon;
+  final bool showProjectsMenuItem;
+  final VoidCallback? onProjectsPressed;
   final bool showSeparateFilter;
 
   final bool? initialTaskIsOverdue;
@@ -321,6 +323,8 @@ class CustomAppBar extends StatefulWidget {
     this.showSeparateMyTasks = false,
     this.showMyTaskIcon = false,
     this.showMenuIcon = true,
+    this.showProjectsMenuItem = false,
+    this.onProjectsPressed,
     this.showNotification = true,
     this.showSeparateFilter = false,
     this.showCalendar = true,
@@ -1590,6 +1594,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     ),
                                   );
                                   break;
+                                case 'projects':
+                                  widget.onProjectsPressed?.call();
+                                  break;
                                 case 'filter_dashboard':
                                   widget.onDashboardFilterPressed?.call();
                                   break;
@@ -1720,6 +1727,19 @@ class _CustomAppBarState extends State<CustomAppBar>
                                         ],
                                       ),
                                     ),
+                                  if (widget.showProjectsMenuItem)
+                                    PopupMenuItem<String>(
+                                      value: 'projects',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.folder_outlined,
+                                              color: inactiveIconColor),
+                                          SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate('appbar_projects')),
+                                        ],
+                                      ),
+                                    ),
                                   if (widget.showMyTaskIcon)
                                     PopupMenuItem<String>(
                                       value: 'my_tasks',
@@ -1789,13 +1809,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                                       ),
                                     ),
                                   if (_canOpenTimesheet)
-                                    const PopupMenuItem<String>(
+                                    PopupMenuItem<String>(
                                       value: 'timesheet',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.badge_outlined),
-                                          SizedBox(width: 8),
-                                          Text('Табель'),
+                                          const Icon(Icons.badge_outlined),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate('appbar_timesheet')),
                                         ],
                                       ),
                                     ),

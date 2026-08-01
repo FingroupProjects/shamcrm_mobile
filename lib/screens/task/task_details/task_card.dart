@@ -127,6 +127,7 @@ class TaskCardState extends State<TaskCard> {
                 project: widget.task.project?.name ??
                     widget.project ??
                     AppLocalizations.of(context)!.translate('no_project'),
+                projectId: widget.projectId,
                 customFields: widget.task.customFields,
               ),
             ),
@@ -136,16 +137,21 @@ class TaskCardState extends State<TaskCard> {
             final oldStatusId = result['statusId'] as int? ?? widget.statusId;
             final newStatusId = result['newStatusId'] as int? ?? oldStatusId;
 
-            await TaskCache.clearEverything();
-            ApiService.clearAnalyticsResponseCache();
-            await TaskCache.clearTasksForStatus(oldStatusId);
-            if (newStatusId != oldStatusId) {
-              await TaskCache.clearTasksForStatus(newStatusId);
-              await TaskCache.updateTaskCountTemporary(
-                  oldStatusId, newStatusId);
+            if (widget.projectId == null) {
+              await TaskCache.clearEverything();
+              ApiService.clearAnalyticsResponseCache();
+              await TaskCache.clearTasksForStatus(oldStatusId);
+              if (newStatusId != oldStatusId) {
+                await TaskCache.clearTasksForStatus(newStatusId);
+                await TaskCache.updateTaskCountTemporary(
+                    oldStatusId, newStatusId);
+              }
             }
 
-            context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+            context.read<TaskBloc>().add(FetchTaskStatuses(
+                  forceRefresh: true,
+                  projectId: widget.projectId,
+                ));
 
             if (newStatusId == oldStatusId) {
               widget.onStatusUpdated();

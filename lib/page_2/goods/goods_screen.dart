@@ -426,6 +426,10 @@ class _GoodsScreenState extends State<GoodsScreen> {
             availabilityStatus: goods.availabilityStatus,
             characteristicsSummary: goods.characteristicsSummary,
             characteristics: goods.characteristicLabels,
+            goodsPrice: double.tryParse(goods.price ?? '') ??
+                goods.discountedPrice ??
+                goods.discountPrice,
+            orderId: goods.orderId,
           ),
         );
       },

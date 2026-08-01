@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -20,6 +21,8 @@ class GoodsCard extends StatefulWidget {
   final String? availabilityStatus;
   final String? characteristicsSummary;
   final List<String> characteristics;
+  final double? goodsPrice;
+  final int? orderId;
 
   const GoodsCard({
     Key? key,
@@ -35,6 +38,8 @@ class GoodsCard extends StatefulWidget {
     this.availabilityStatus,
     this.characteristicsSummary,
     this.characteristics = const [],
+    this.goodsPrice,
+    this.orderId,
   }) : super(key: key);
 
   @override
@@ -69,6 +74,48 @@ class _GoodsCardState extends State<GoodsCard> {
       context,
       MaterialPageRoute(
         builder: (context) => GoodsDetailsScreen(id: widget.goodsId),
+      ),
+    );
+  }
+
+  bool get _isFreeForTojsokhtmontjOrder {
+    if (!widget.isTojsokhtmontjTenant) return false;
+    return widget.orderId == null &&
+        (widget.availabilityStatus ?? '')
+            .trim()
+            .toLowerCase()
+            .replaceAll('ё', 'е')
+            .contains('свобод');
+  }
+
+  void _navigateToCreateOrder() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderAddScreen(
+          initialGoodsItem: {
+            'id': widget.goodsId,
+            'name': widget.goodsName,
+            'price': widget.goodsPrice ?? 0.0,
+            'quantity': 1,
+            'imagePath': _getMainImage()?.path,
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateOrderButton() {
+    if (!_isFreeForTojsokhtmontjOrder) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: SizedBox(
+        height: 34,
+        child: TextButton.icon(
+          onPressed: _navigateToCreateOrder,
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Создать заказ'),
+        ),
       ),
     );
   }
@@ -391,6 +438,7 @@ class _GoodsCardState extends State<GoodsCard> {
                       ],
                       const SizedBox(height: 4),
                       _buildStatusLabel(),
+                      _buildCreateOrderButton(),
                     ],
                   ),
                 ),

@@ -1307,15 +1307,9 @@ extension _SipMainViewsExtension on _SipScreenState {
         maxLines: 1,
         style: TextStyle(
           fontSize: fontSize,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w300,
           color: context.appColors.textPrimary.withValues(alpha: 0.98),
-          letterSpacing: 0,
-          shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.22),
-              blurRadius: 2,
-            ),
-          ],
+          letterSpacing: -0.8,
         ),
         placeholder:
             AppLocalizations.of(context)!.translate('telephony_enter_number'),
@@ -1349,38 +1343,46 @@ extension _SipMainViewsExtension on _SipScreenState {
     final innerSize = (outerSize - innerInset).clamp(52.0, 88.0);
     final digitSize = (outerSize * 0.37).clamp(24.0, 34.0);
     final letterSize = (outerSize * 0.11).clamp(7.0, 10.0);
-    return GestureDetector(
-      onTap: onTap,
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: Size.zero,
+      pressedOpacity: 0.72,
+      onPressed: onTap,
       onLongPress: onLongPress,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: outerSize,
         height: outerSize,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  width: innerSize,
-                  height: innerSize,
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary
-                        .withValues(alpha: isDark ? 0.48 : 0.62),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.shadow.withValues(alpha: 0.12),
-                        blurRadius: 22,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: colors.borderSubtle.withValues(alpha: 0.72),
-                      width: 1,
+            Container(
+              width: innerSize,
+              height: innerSize,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.surfaceElevated.withValues(alpha: 0.96)
+                    : const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.shadow.withValues(
+                      alpha: isDark ? 0.24 : 0.08,
                     ),
+                    blurRadius: isDark ? 14 : 18,
+                    offset: const Offset(0, 7),
                   ),
+                  if (!isDark)
+                    const BoxShadow(
+                      color: Color(0xB3FFFFFF),
+                      blurRadius: 1,
+                      offset: Offset(0, -1),
+                    ),
+                ],
+                border: Border.all(
+                  color: isDark
+                      ? colors.borderPrimary.withValues(alpha: 0.72)
+                      : const Color(0xFFE2E8F0),
+                  width: 0.8,
                 ),
               ),
             ),
@@ -1406,17 +1408,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                       letterSpacing: 0,
                       fontWeight: FontWeight.w600,
                       color: isDark
-                          ? colors.textPrimary.withValues(alpha: 0.92)
-                          : colors.textSecondary,
+                          ? colors.textSecondary
+                          : const Color(0xFF64748B),
                       height: 1.2,
-                      shadows: isDark
-                          ? [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.38),
-                                blurRadius: 2,
-                              ),
-                            ]
-                          : null,
                     ),
                   ),
               ],
@@ -1609,7 +1603,7 @@ extension _SipMainViewsExtension on _SipScreenState {
             final thumbLeft = selectedIndex * (segmentWidth + innerGap);
             final highlightedIndex = selectedIndex.round().clamp(0, maxIndex);
             final thumbTop = _isLiquidNavPressed ? 2.0 : 4.0;
-            final thumbHeight = _isLiquidNavPressed ? 66.0 : 62.0;
+            final thumbHeight = _isLiquidNavPressed ? 58.0 : 54.0;
 
             Widget buildItemsRow(bool Function(int index) isSelected) {
               return Row(
@@ -1705,7 +1699,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 34, sigmaY: 34),
                   child: Container(
-                    height: 78,
+                    height: 70,
                     padding: const EdgeInsets.all(horizontalPadding),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -1778,8 +1772,8 @@ extension _SipMainViewsExtension on _SipScreenState {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
-      height: 66,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(34),

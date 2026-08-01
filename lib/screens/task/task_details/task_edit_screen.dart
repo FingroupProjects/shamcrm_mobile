@@ -53,6 +53,7 @@ class TaskEditScreen extends StatefulWidget {
   final String taskStatus;
   final int statusId;
   final String? project;
+  final int? contextProjectId;
   final List<int>? user;
   final String? startDate;
   final String? endDate;
@@ -69,6 +70,7 @@ class TaskEditScreen extends StatefulWidget {
     required this.taskStatus,
     required this.statusId,
     this.project,
+    this.contextProjectId,
     this.user,
     this.startDate,
     this.endDate,
@@ -1783,7 +1785,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       );
                       if (context.mounted) {
                         Navigator.pop(context, true);
-                        context.read<TaskBloc>().add(FetchTaskStatuses());
+                        context.read<TaskBloc>().add(FetchTaskStatuses(
+                              projectId: widget.contextProjectId,
+                            ));
                       }
                     }
                   },

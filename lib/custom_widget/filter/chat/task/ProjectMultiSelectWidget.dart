@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -18,20 +19,14 @@ class ProjectMultiSelectWidget extends StatefulWidget {
   });
 
   @override
-  State<ProjectMultiSelectWidget> createState() => _ProjectMultiSelectWidgetState();
+  State<ProjectMultiSelectWidget> createState() =>
+      _ProjectMultiSelectWidgetState();
 }
 
 class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
   List<ProjectTask> projectsList = [];
   List<ProjectTask> selectedProjectsData = [];
   bool allSelected = false;
-
-  final TextStyle projectTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -54,10 +49,18 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final projectTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
     return FormField<List<ProjectTask>>(
       validator: (value) {
         if (selectedProjectsData.isEmpty) {
-          return AppLocalizations.of(context)!.translate('field_required_project');
+          return AppLocalizations.of(context)!
+              .translate('field_required_project');
         }
         return null;
       },
@@ -75,44 +78,83 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.fieldBorder,
                 ),
               ),
               child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
-                    if (widget.selectedProjects != null && projectsList.isNotEmpty) {
+                    if (widget.selectedProjects != null &&
+                        projectsList.isNotEmpty) {
                       selectedProjectsData = projectsList
                           .where((project) => widget.selectedProjects!
                               .contains(project.id.toString()))
                           .toList();
-                      allSelected = selectedProjectsData.length == projectsList.length;
+                      allSelected =
+                          selectedProjectsData.length == projectsList.length;
                     }
                   }
 
                   return CustomDropdown<ProjectTask>.multiSelectSearch(
                     items: projectsList,
                     initialItems: selectedProjectsData,
-                    searchHintText: AppLocalizations.of(context)!.translate('search'),
+                    searchHintText:
+                        AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: colors.fieldBg,
+                      expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: colors.fieldBorder,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: projectTextStyle.copyWith(
+                        fontSize: 14,
+                        color: colors.textSecondary,
+                      ),
+                      headerStyle: projectTextStyle,
+                      listItemStyle: projectTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                        highlightColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: colors.fieldBg,
+                        textStyle: projectTextStyle.copyWith(fontSize: 14),
+                        hintStyle: projectTextStyle.copyWith(
+                          fontSize: 14,
+                          color: colors.textSecondary,
+                        ),
+                        prefixIcon:
+                            Icon(Icons.search, color: colors.iconSecondary),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(Icons.close_rounded,
+                              color: colors.iconSecondary),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: colors.fieldBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       // Добавляем "Выделить всех" как первый элемент
@@ -133,11 +175,11 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
                                       height: 18,
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                            color: const Color(0xff1E2E52),
+                                            color: colors.buttonPrimaryBg,
                                             width: 1),
                                         borderRadius: BorderRadius.circular(4),
                                         color: allSelected
-                                            ? const Color(0xff1E2E52)
+                                            ? colors.buttonPrimaryBg
                                             : Colors.transparent,
                                       ),
                                       child: allSelected
@@ -151,7 +193,8 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        AppLocalizations.of(context)!.translate('select_all'),
+                                        AppLocalizations.of(context)!
+                                            .translate('select_all'),
                                         style: projectTextStyle,
                                       ),
                                     ),
@@ -161,7 +204,7 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
                             ),
                             Divider(
                                 height: 20,
-                                color: const Color(0xFFE5E7EB)), // Разделитель
+                                color: colors.fieldBorder), // Разделитель
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
@@ -170,8 +213,10 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
                       return _buildListItem(item, isSelected, onItemSelect);
                     },
                     headerListBuilder: (context, hint, enabled) {
-                      String selectedProjectsNames = selectedProjectsData.isEmpty
-                          ? AppLocalizations.of(context)!.translate('select_project')
+                      String selectedProjectsNames = selectedProjectsData
+                              .isEmpty
+                          ? AppLocalizations.of(context)!
+                              .translate('select_project')
                           : selectedProjectsData.map((e) => e.name).join(', ');
                       return Text(
                         selectedProjectsNames,
@@ -203,8 +248,8 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: colors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -216,7 +261,9 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
     );
   }
 
-  Widget _buildListItem(ProjectTask item, bool isSelected, Function() onItemSelect) {
+  Widget _buildListItem(
+      ProjectTask item, bool isSelected, Function() onItemSelect) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -228,11 +275,11 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
               height: 18,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(
@@ -246,7 +293,12 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
             Expanded(
               child: Text(
                 item.name,
-                style: projectTextStyle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: colors.textPrimary,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -30,13 +31,6 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
   List<AuthorData> _authorsList = <AuthorData>[];
   List<AuthorData> _selectedAuthorsData = <AuthorData>[];
   bool _allSelected = false;
-
-  final TextStyle _authorTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -116,6 +110,13 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final authorTextStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
 
     return FormField<List<AuthorData>>(
       initialValue: _selectedAuthorsData,
@@ -132,7 +133,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
           children: [
             Text(
               widget.title ?? localizations.translate('author'),
-              style: _authorTextStyle.copyWith(
+              style: authorTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
@@ -140,11 +141,11 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.fieldBorder,
                 ),
               ),
               child: BlocBuilder<GetAllAuthorBloc, GetAllAuthorState>(
@@ -161,18 +162,54 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                     searchHintText: localizations.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: colors.fieldBg,
+                      expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: colors.fieldBorder,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: authorTextStyle.copyWith(
+                        fontSize: 14,
+                        color: colors.textSecondary,
+                      ),
+                      headerStyle: authorTextStyle,
+                      listItemStyle: authorTextStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                        highlightColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: colors.fieldBg,
+                        textStyle: authorTextStyle.copyWith(fontSize: 14),
+                        hintStyle: authorTextStyle.copyWith(
+                          fontSize: 14,
+                          color: colors.textSecondary,
+                        ),
+                        prefixIcon:
+                            Icon(Icons.search, color: colors.iconSecondary),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(Icons.close_rounded,
+                              color: colors.iconSecondary),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: colors.fieldBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       final index = _authorsList.indexOf(item);
@@ -193,14 +230,14 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                                     Expanded(
                                       child: Text(
                                         localizations.translate('select_all'),
-                                        style: _authorTextStyle,
+                                        style: authorTextStyle,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                            const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                            Divider(height: 20, color: colors.fieldBorder),
                             _buildListItem(item, isSelected, onItemSelect),
                           ],
                         );
@@ -210,7 +247,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                     headerListBuilder: (context, hint, enabled) {
                       return Text(
                         _selectedAuthorsLabel(localizations),
-                        style: _authorTextStyle,
+                        style: authorTextStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
@@ -219,7 +256,10 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                       return Text(
                         widget.hintText ??
                             localizations.translate('select_author_list'),
-                        style: _authorTextStyle.copyWith(fontSize: 14),
+                        style: authorTextStyle.copyWith(
+                          fontSize: 14,
+                          color: colors.textSecondary,
+                        ),
                       );
                     },
                     onListChanged: (values) {
@@ -240,8 +280,8 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: colors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -258,6 +298,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
     bool isSelected,
     VoidCallback onItemSelect,
   ) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -269,7 +310,12 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
             Expanded(
               child: Text(
                 '${item.name} ${item.lastname}'.trim(),
-                style: _authorTextStyle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Gilroy',
+                  color: colors.textPrimary,
+                ),
               ),
             ),
           ],
@@ -291,11 +337,12 @@ class _SelectionBox extends StatelessWidget {
       height: 18,
       decoration: BoxDecoration(
         border: Border.all(
-          color: const Color(0xff1E2E52),
+          color: context.appColors.buttonPrimaryBg,
           width: 1,
         ),
         borderRadius: BorderRadius.circular(4),
-        color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+        color:
+            isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
       ),
       child: isSelected
           ? const Icon(

@@ -197,9 +197,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   bool _isDarkSipTheme(BuildContext context) {
-    // Временно скрываем тёмную SIP-тему и overlay от пользователей,
-    // даже если системная тема устройства тёмная.
-    return false;
+    return Theme.of(context).brightness == Brightness.dark;
   }
 
   Color _accent(SipCallUiStatus status) {
@@ -561,12 +559,11 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            stops: [0, 0.35, 0.65, 1],
+            stops: [0, 0.48, 1],
             colors: [
-              Color(0xFF6A676C),
-              Color(0xFF535D8F),
-              Color(0xFF3D6E82),
-              Color(0xFF2B7D88),
+              Color(0xFF080C18),
+              Color(0xFF0D1730),
+              Color(0xFF0A1A2E),
             ],
           ),
         ),

@@ -15,13 +15,17 @@ extension _SipContactsViewsExtension on _SipScreenState {
         vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
-        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.54 : 0.68),
-        borderRadius: BorderRadius.circular(22),
+        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.90 : 0.96),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colors.borderSubtle.withValues(alpha: isDark ? 0.72 : 0.88),
+          width: 0.8,
+        ),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: colors.shadow.withValues(alpha: isDark ? 0.18 : 0.055),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -84,8 +88,15 @@ extension _SipContactsViewsExtension on _SipScreenState {
               width: compact ? 38 : 44,
               height: compact ? 38 : 44,
               decoration: BoxDecoration(
-                color: const Color(0xFF22C55E),
-                borderRadius: BorderRadius.circular(15),
+                color: _G.green,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: _G.green.withValues(alpha: 0.20),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: const Icon(
                 CupertinoIcons.phone_fill,

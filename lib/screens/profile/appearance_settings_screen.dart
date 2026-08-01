@@ -427,7 +427,7 @@ class _CustomBackgroundCard extends StatelessWidget {
     'assets/fon/IMG_1618.JPG',
     'assets/fon/IMG_1584.JPG',
     'assets/fon/IMG_1619.JPG',
-        'assets/fon/IMG_1500.png',
+    'assets/fon/IMG_1500.png',
     'assets/fon/IMG_1501.png',
     'assets/fon/IMG_1502.png',
     'assets/fon/IMG_1503.png',

@@ -1,6 +1,8 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class ReasonForRefusalMultiSelectWidget extends StatefulWidget {
@@ -28,13 +30,6 @@ class _ReasonForRefusalMultiSelectWidgetState
   List<ReasonForRefusalData> _selectedReasons = [];
   bool _isLoading = true;
   bool _allSelected = false;
-
-  final TextStyle _textStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
 
   @override
   void initState() {
@@ -78,6 +73,13 @@ class _ReasonForRefusalMultiSelectWidgetState
     bool isSelected,
     VoidCallback onItemSelect,
   ) {
+    final colors = context.appColors;
+    final textStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
@@ -88,10 +90,9 @@ class _ReasonForRefusalMultiSelectWidgetState
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xff1E2E52), width: 1),
+                border: Border.all(color: colors.buttonPrimaryBg, width: 1),
                 borderRadius: BorderRadius.circular(4),
-                color:
-                    isSelected ? const Color(0xff1E2E52) : Colors.transparent,
+                color: isSelected ? colors.buttonPrimaryBg : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(Icons.check, color: Colors.white, size: 14)
@@ -99,7 +100,7 @@ class _ReasonForRefusalMultiSelectWidgetState
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(item.text, style: _textStyle),
+              child: Text(item.text, style: textStyle),
             ),
           ],
         ),
@@ -109,12 +110,20 @@ class _ReasonForRefusalMultiSelectWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final localizations = AppLocalizations.of(context)!;
+    final textStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      fontFamily: 'Gilroy',
+      color: colors.textPrimary,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Причина отказа',
-          style: _textStyle.copyWith(fontWeight: FontWeight.w400),
+          localizations.translate('reason_for_refusal'),
+          style: textStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),
         if (_isLoading)
@@ -125,25 +134,59 @@ class _ReasonForRefusalMultiSelectWidgetState
         else
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
+              color: colors.fieldBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+              border: Border.all(color: colors.fieldBorder, width: 1),
             ),
             child: CustomDropdown<ReasonForRefusalData>.multiSelectSearch(
               items: _reasons,
               initialItems: _selectedReasons,
-              searchHintText: 'Поиск',
+              searchHintText: localizations.translate('search'),
               overlayHeight: 400,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
+                closedFillColor: colors.fieldBg,
+                expandedFillColor: colors.surfacePrimary,
                 closedBorder: Border.all(color: Colors.transparent),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(
-                  color: const Color(0xFFE5E7EB),
+                  color: colors.fieldBorder,
                   width: 1,
                 ),
                 expandedBorderRadius: BorderRadius.circular(12),
+                hintStyle: textStyle.copyWith(
+                  fontSize: 14,
+                  color: colors.textSecondary,
+                ),
+                headerStyle: textStyle,
+                listItemStyle: textStyle,
+                listItemDecoration: ListItemDecoration(
+                  selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                  highlightColor:
+                      colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                  splashColor: Colors.transparent,
+                ),
+                searchFieldDecoration: SearchFieldDecoration(
+                  fillColor: colors.fieldBg,
+                  textStyle: textStyle.copyWith(fontSize: 14),
+                  hintStyle: textStyle.copyWith(
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                  ),
+                  prefixIcon: Icon(Icons.search, color: colors.iconSecondary),
+                  suffixIcon: (onClear) => IconButton(
+                    onPressed: onClear,
+                    icon:
+                        Icon(Icons.close_rounded, color: colors.iconSecondary),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.fieldBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                  ),
+                ),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 if (_reasons.isNotEmpty && _reasons.first.id == item.id) {
@@ -163,12 +206,12 @@ class _ReasonForRefusalMultiSelectWidgetState
                                 height: 18,
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: const Color(0xff1E2E52),
+                                    color: colors.buttonPrimaryBg,
                                     width: 1,
                                   ),
                                   borderRadius: BorderRadius.circular(4),
                                   color: _allSelected
-                                      ? const Color(0xff1E2E52)
+                                      ? colors.buttonPrimaryBg
                                       : Colors.transparent,
                                 ),
                                 child: _allSelected
@@ -182,15 +225,15 @@ class _ReasonForRefusalMultiSelectWidgetState
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Выделить всех',
-                                  style: _textStyle,
+                                  localizations.translate('select_all'),
+                                  style: textStyle,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                      Divider(height: 20, color: colors.fieldBorder),
                       _buildListItem(item, isSelected, onItemSelect),
                     ],
                   );
@@ -200,18 +243,21 @@ class _ReasonForRefusalMultiSelectWidgetState
               },
               headerListBuilder: (context, hint, enabled) {
                 final selectedText = _selectedReasons.isEmpty
-                    ? 'Выберите причину отказа'
+                    ? localizations.translate('select_reason_for_refusal')
                     : _selectedReasons.map((e) => e.text).join(', ');
                 return Text(
                   selectedText,
-                  style: _textStyle,
+                  style: textStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
-                'Выберите причину отказа',
-                style: _textStyle.copyWith(fontSize: 14),
+                localizations.translate('select_reason_for_refusal'),
+                style: textStyle.copyWith(
+                  fontSize: 14,
+                  color: colors.textSecondary,
+                ),
               ),
               onListChanged: (values) {
                 setState(() {

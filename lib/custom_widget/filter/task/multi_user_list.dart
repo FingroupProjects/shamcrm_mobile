@@ -120,6 +120,42 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: valueStyle.copyWith(
+                        fontSize: 14,
+                        color: colors.textSecondary,
+                      ),
+                      headerStyle: valueStyle,
+                      listItemStyle: valueStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                        highlightColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: colors.fieldBg,
+                        textStyle: valueStyle.copyWith(fontSize: 14),
+                        hintStyle: valueStyle.copyWith(
+                          fontSize: 14,
+                          color: colors.textSecondary,
+                        ),
+                        prefixIcon:
+                            Icon(Icons.search, color: colors.iconSecondary),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(Icons.close_rounded,
+                              color: colors.iconSecondary),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: colors.fieldBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       // Добавляем "Выделить всех" как первый элемент

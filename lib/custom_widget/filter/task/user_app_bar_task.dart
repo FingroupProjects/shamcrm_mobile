@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
-import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/author_data_response.dart';
 import 'package:crm_task_manager/models/directory_link_model.dart';
@@ -15,7 +16,6 @@ import 'package:crm_task_manager/models/field_configuration.dart';
 import 'package:crm_task_manager/models/main_field_model.dart';
 import 'package:crm_task_manager/models/project_task_model.dart';
 import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -125,22 +125,178 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             config.fieldName == 'author' || config.fieldName == 'author_id',
       );
 
-  Widget _buildAuthorFilterCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: AuthorMultiSelectWidget(
-          selectedAuthors: _selectedAuthors,
-          onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
-            setState(() {
-              _selectedAuthors = selectedAuthorsData
-                  .map((author) => author.id.toString())
-                  .toList();
-            });
-          },
+  Widget _filterSurface({required Widget child, EdgeInsets? padding}) {
+    final colors = context.appColors;
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderPrimary),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _dateFilter({
+    required String label,
+    required DateTime? from,
+    required DateTime? to,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.appColors;
+    final hasRange = from != null && to != null;
+    final value = hasRange
+        ? '${from.day.toString().padLeft(2, '0')}.${from.month.toString().padLeft(2, '0')}.${from.year} — ${to.day.toString().padLeft(2, '0')}.${to.month.toString().padLeft(2, '0')}.${to.year}'
+        : label;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: _filterSurface(
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.calendar_today_rounded,
+                    size: 19, color: colors.buttonPrimaryBg),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: hasRange ? colors.textPrimary : colors.textSecondary,
+                    fontSize: 14,
+                    fontWeight: hasRange ? FontWeight.w600 : FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.iconSecondary),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  DatePickerThemeData _datePickerTheme() {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? colors.surfaceElevated : const Color(0xFFF8FAFC);
+    final foreground = isDark ? Colors.white : const Color(0xFF172033);
+    final mutedForeground =
+        isDark ? Colors.white.withValues(alpha: 0.72) : const Color(0xFF64748B);
+    final selectedForeground =
+        ThemeData.estimateBrightnessForColor(colors.buttonPrimaryBg) ==
+                Brightness.dark
+            ? Colors.white
+            : const Color(0xFF172033);
+    return DatePickerThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      headerBackgroundColor: surface,
+      headerForegroundColor: foreground,
+      rangePickerBackgroundColor: surface,
+      rangePickerHeaderBackgroundColor: surface,
+      rangePickerHeaderForegroundColor: foreground,
+      rangePickerHeaderHeadlineStyle: TextStyle(
+        color: foreground,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+      ),
+      rangePickerHeaderHelpStyle: TextStyle(
+        color: mutedForeground,
+        fontFamily: 'Gilroy',
+      ),
+      weekdayStyle: TextStyle(
+        color: mutedForeground,
+        fontFamily: 'Gilroy',
+        fontWeight: FontWeight.w600,
+      ),
+      dayStyle: TextStyle(color: foreground, fontFamily: 'Gilroy'),
+      yearStyle: TextStyle(color: foreground, fontFamily: 'Gilroy'),
+      rangeSelectionBackgroundColor:
+          colors.buttonPrimaryBg.withValues(alpha: 0.30),
+      rangeSelectionOverlayColor: WidgetStatePropertyAll(
+        colors.buttonPrimaryBg.withValues(alpha: 0.18),
+      ),
+      dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return selectedForeground;
+        }
+        if (states.contains(WidgetState.disabled)) {
+          return mutedForeground.withValues(alpha: 0.45);
+        }
+        return foreground;
+      }),
+      todayForegroundColor: WidgetStatePropertyAll(colors.buttonPrimaryBg),
+      todayBorder: BorderSide(color: colors.buttonPrimaryBg, width: 1.5),
+    );
+  }
+
+  ThemeData _calendarTheme() {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? colors.surfaceElevated : const Color(0xFFF8FAFC);
+    final foreground = isDark ? Colors.white : const Color(0xFF172033);
+    final mutedForeground =
+        isDark ? Colors.white.withValues(alpha: 0.78) : const Color(0xFF64748B);
+    final baseTheme = isDark ? ThemeData.dark() : ThemeData.light();
+    return baseTheme.copyWith(
+      textTheme: baseTheme.textTheme.apply(
+        bodyColor: foreground,
+        displayColor: foreground,
+        fontFamily: 'Gilroy',
+      ),
+      scaffoldBackgroundColor: surface,
+      dialogTheme: DialogThemeData(backgroundColor: surface),
+      colorScheme:
+          (isDark ? const ColorScheme.dark() : const ColorScheme.light())
+              .copyWith(
+        primary: colors.buttonPrimaryBg,
+        onPrimary: colors.buttonPrimaryFg,
+        onSurface: foreground,
+        onSurfaceVariant: mutedForeground,
+        surface: surface,
+        secondary: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+      ),
+      datePickerTheme: _datePickerTheme(),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: colors.buttonPrimaryBg),
+      ),
+    );
+  }
+
+  Widget _buildAuthorFilterCard() {
+    return _filterSurface(
+      padding: const EdgeInsets.all(8),
+      child: AuthorMultiSelectWidget(
+        selectedAuthors: _selectedAuthors,
+        onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
+          setState(() {
+            _selectedAuthors = selectedAuthorsData
+                .map((author) => author.id.toString())
+                .toList();
+          });
+        },
       ),
     );
   }
@@ -343,28 +499,15 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   void _selectDateRange() async {
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
+      locale: Localizations.localeOf(context),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       initialDateRange: _fromDate != null && _toDate != null
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
-      builder: (BuildContext context, Widget? child) {
+      builder: (BuildContext dialogContext, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
-              ),
-            ),
-          ),
+          data: _calendarTheme(),
           child: child!,
         );
       },
@@ -380,28 +523,15 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   void _selectDeadline() async {
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
+      locale: Localizations.localeOf(context),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       initialDateRange: _deadlinefromDate != null && _deadlinetoDate != null
           ? DateTimeRange(start: _deadlinefromDate!, end: _deadlinetoDate!)
           : null,
-      builder: (BuildContext context, Widget? child) {
+      builder: (BuildContext dialogContext, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
-              ),
-            ),
-          ),
+          data: _calendarTheme(),
           child: child!,
         );
       },
@@ -417,6 +547,7 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   void _selectCompletedDateRange() async {
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
+      locale: Localizations.localeOf(context),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       initialDateRange: _completedFromDate != null && _completedToDate != null
@@ -425,23 +556,9 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               end: _completedToDate!,
             )
           : null,
-      builder: (BuildContext context, Widget? child) {
+      builder: (BuildContext dialogContext, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withValues(alpha: 0.1),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
-              ),
-            ),
-          ),
+          data: _calendarTheme(),
           child: child!,
         );
       },
@@ -457,40 +574,30 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   Widget? _buildFieldWidgetByConfig(FieldConfiguration config) {
     switch (config.fieldName) {
       case 'executor':
-        return Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: UserMultiSelectWidget(
-              selectedUsers:
-                  _selectedUsers.map((user) => user.id.toString()).toList(),
-              onSelectUsers: (List<UserData> selectedUsersData) {
-                setState(() => _selectedUsers = selectedUsersData);
-              },
-            ),
+        return _filterSurface(
+          padding: const EdgeInsets.all(8),
+          child: UserMultiSelectWidget(
+            selectedUsers:
+                _selectedUsers.map((user) => user.id.toString()).toList(),
+            onSelectUsers: (List<UserData> selectedUsersData) {
+              setState(() => _selectedUsers = selectedUsersData);
+            },
           ),
         );
 
       case 'author_id':
       case 'author':
-        return Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: AuthorMultiSelectWidget(
-              selectedAuthors: _selectedAuthors,
-              onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
-                setState(() {
-                  _selectedAuthors = selectedAuthorsData
-                      .map((author) => author.id.toString())
-                      .toList();
-                });
-              },
-            ),
+        return _filterSurface(
+          padding: const EdgeInsets.all(8),
+          child: AuthorMultiSelectWidget(
+            selectedAuthors: _selectedAuthors,
+            onSelectAuthors: (List<AuthorData> selectedAuthorsData) {
+              setState(() {
+                _selectedAuthors = selectedAuthorsData
+                    .map((author) => author.id.toString())
+                    .toList();
+              });
+            },
           ),
         );
 
@@ -512,44 +619,33 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
       //   );
 
       case 'project':
-        return Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: ProjectMultiSelectWidget(
-              selectedProjects: _selectedProjects,
-              onSelectProjects: (List<ProjectTask> selectedProjectsData) {
-                setState(() {
-                  _selectedProjects = selectedProjectsData
-                      .map((project) => project.id.toString())
-                      .toList();
-                });
-              },
-            ),
+        return _filterSurface(
+          padding: const EdgeInsets.all(8),
+          child: ProjectMultiSelectWidget(
+            selectedProjects: _selectedProjects,
+            onSelectProjects: (List<ProjectTask> selectedProjectsData) {
+              setState(() {
+                _selectedProjects = selectedProjectsData
+                    .map((project) => project.id.toString())
+                    .toList();
+              });
+            },
           ),
         );
       case 'reason_for_refusal':
       case 'reason_for_refusal_id':
         if (!_askReasonForRefusal) return null;
-        return Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: ReasonForRefusalMultiSelectWidget(
-              type: 'task',
-              selectedReasonIds: _selectedReasonForRefusals
-                  .map((reason) => reason.id)
-                  .toList(),
-              onSelectReasons: (selectedReasons) {
-                setState(() {
-                  _selectedReasonForRefusals = selectedReasons;
-                });
-              },
-            ),
+        return _filterSurface(
+          padding: const EdgeInsets.all(8),
+          child: ReasonForRefusalMultiSelectWidget(
+            type: 'task',
+            selectedReasonIds:
+                _selectedReasonForRefusals.map((reason) => reason.id).toList(),
+            onSelectReasons: (selectedReasons) {
+              setState(() {
+                _selectedReasonForRefusals = selectedReasons;
+              });
+            },
           ),
         );
       default:
@@ -558,26 +654,21 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
             _customFieldTitles.contains(config.fieldName)) {
           final isLoading = _customFieldLoadingStates[config.fieldName] == true;
 
-          return Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: CustomFieldMultiSelect(
-                title: config.fieldName,
-                items: List<String>.from(
-                    _customFieldValues[config.fieldName] ?? const []),
-                initialSelectedValues:
-                    _selectedCustomFieldValues[config.fieldName],
-                isLoading: isLoading,
-                onChanged: (values) {
-                  setState(() {
-                    _selectedCustomFieldValues[config.fieldName] =
-                        List<String>.from(values);
-                  });
-                },
-              ),
+          return _filterSurface(
+            padding: const EdgeInsets.all(8),
+            child: CustomFieldMultiSelect(
+              title: config.fieldName,
+              items: List<String>.from(
+                  _customFieldValues[config.fieldName] ?? const []),
+              initialSelectedValues:
+                  _selectedCustomFieldValues[config.fieldName],
+              isLoading: isLoading,
+              onChanged: (values) {
+                setState(() {
+                  _selectedCustomFieldValues[config.fieldName] =
+                      List<String>.from(values);
+                });
+              },
             ),
           );
         }
@@ -589,23 +680,18 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               (l) => l.directory.id == config.directoryId,
             );
 
-            return Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: MultiDirectoryDropdownWidget(
-                  directoryId: link.directory.id,
-                  directoryName: link.directory.name,
-                  onSelectField: (List<MainField> fields) {
-                    setState(() {
-                      _selectedDirectoryFields[link.id] =
-                          List<MainField>.from(fields);
-                    });
-                  },
-                  initialFields: _selectedDirectoryFields[link.id],
-                ),
+            return _filterSurface(
+              padding: const EdgeInsets.all(8),
+              child: MultiDirectoryDropdownWidget(
+                directoryId: link.directory.id,
+                directoryName: link.directory.name,
+                onSelectField: (List<MainField> fields) {
+                  setState(() {
+                    _selectedDirectoryFields[link.id] =
+                        List<MainField>.from(fields);
+                  });
+                },
+                initialFields: _selectedDirectoryFields[link.id],
               ),
             );
           } catch (e) {
@@ -619,42 +705,68 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
   }
 
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
-    return SwitchListTile(
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black54,
-          fontFamily: 'Gilroy',
-        ),
+    final colors = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeTrackColor: colors.buttonPrimaryBg,
+            activeThumbColor: colors.buttonPrimaryFg,
+            inactiveTrackColor: colors.surfaceAccent,
+            inactiveThumbColor: colors.iconSecondary,
+          ),
+        ],
       ),
-      value: value,
-      onChanged: onChanged,
-      activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:
-          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Color(0xffF4F7FD),
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
-          AppLocalizations.of(context)!.translate('filter'),
+          AppLocalizations.of(context)!.translate('task_filter'),
           style: TextStyle(
-              fontSize: 20,
+              fontSize: 19,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
               fontFamily: 'Gilroy'),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfaceElevated.withValues(alpha: 0.88),
         forceMaterialTransparency: true,
-        elevation: 1,
+        elevation: 0,
+        leading: IconButton(
+          tooltip: 'Назад',
+          onPressed: () => Navigator.maybePop(context),
+          icon: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: colors.surfaceAccent,
+              shape: BoxShape.circle,
+              border: Border.all(color: colors.borderPrimary),
+            ),
+            child: Icon(Icons.arrow_back_ios_new_rounded,
+                size: 17, color: colors.textPrimary),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -685,19 +797,19 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               });
             },
             style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              backgroundColor: colors.surfaceAccent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
+              side: BorderSide(color: colors.borderPrimary),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: colors.buttonSecondaryFg,
                 fontFamily: 'Gilroy',
               ),
             ),
@@ -782,19 +894,18 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
             ),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: colors.buttonPrimaryFg,
                 fontFamily: 'Gilroy',
               ),
             ),
@@ -802,258 +913,190 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
           SizedBox(width: 10),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
-        child: Column(
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectDateRange,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _fromDate != null && _toDate != null
-                            ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_date_range'),
-                        style: TextStyle(color: Colors.black54, fontSize: 14),
-                      ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Column(
+              children: [
+                _dateFilter(
+                  label: AppLocalizations.of(context)!
+                      .translate('select_date_range'),
+                  from: _fromDate,
+                  to: _toDate,
+                  onTap: _selectDateRange,
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectDeadline,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _deadlinefromDate != null && _deadlinetoDate != null
-                            ? "${_deadlinefromDate!.day.toString().padLeft(2, '0')}.${_deadlinefromDate!.month.toString().padLeft(2, '0')}.${_deadlinefromDate!.year} - ${_deadlinetoDate!.day.toString().padLeft(2, '0')}.${_deadlinetoDate!.month.toString().padLeft(2, '0')}.${_deadlinetoDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_deadline_range'),
-                        style: TextStyle(color: Colors.black54, fontSize: 14),
-                      ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                _dateFilter(
+                  label: AppLocalizations.of(context)!
+                      .translate('select_deadline_range'),
+                  from: _deadlinefromDate,
+                  to: _deadlinetoDate,
+                  onTap: _selectDeadline,
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
-              child: GestureDetector(
-                onTap: _selectCompletedDateRange,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _completedFromDate != null && _completedToDate != null
-                            ? "${_completedFromDate!.day.toString().padLeft(2, '0')}.${_completedFromDate!.month.toString().padLeft(2, '0')}.${_completedFromDate!.year} - ${_completedToDate!.day.toString().padLeft(2, '0')}.${_completedToDate!.month.toString().padLeft(2, '0')}.${_completedToDate!.year}"
-                            : AppLocalizations.of(context)!
-                                .translate('select_completed_date_range'),
-                        style: TextStyle(color: Colors.black54, fontSize: 14),
-                      ),
-                      Icon(Icons.calendar_today, color: Colors.black54),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                _dateFilter(
+                  label: AppLocalizations.of(context)!
+                      .translate('select_completed_date_range'),
+                  from: _completedFromDate,
+                  to: _completedToDate,
+                  onTap: _selectCompletedDateRange,
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Поля по position из field configuration
-                    if (_isConfigurationLoaded &&
-                        _fieldConfigurations.isNotEmpty)
-                      ..._fieldConfigurations.map((config) {
-                        final widget = _buildFieldWidgetByConfig(config);
-                        if (widget == null) return SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: widget,
-                        );
-                      }),
-                    if (_isConfigurationLoaded &&
-                        _fieldConfigurations.isNotEmpty &&
-                        _askReasonForRefusal &&
-                        !_fieldConfigurations.any(
-                          (config) =>
-                              config.fieldName == 'reason_for_refusal' ||
-                              config.fieldName == 'reason_for_refusal_id',
-                        ))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: Colors.white,
-                          child: Padding(
+                const SizedBox(height: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Поля по position из field configuration
+                        if (_isConfigurationLoaded &&
+                            _fieldConfigurations.isNotEmpty)
+                          ..._fieldConfigurations.map((config) {
+                            final widget = _buildFieldWidgetByConfig(config);
+                            if (widget == null) return SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: widget,
+                            );
+                          }),
+                        if (_isConfigurationLoaded &&
+                            _fieldConfigurations.isNotEmpty &&
+                            _askReasonForRefusal &&
+                            !_fieldConfigurations.any(
+                              (config) =>
+                                  config.fieldName == 'reason_for_refusal' ||
+                                  config.fieldName == 'reason_for_refusal_id',
+                            ))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _filterSurface(
+                              padding: const EdgeInsets.all(8),
+                              child: ReasonForRefusalMultiSelectWidget(
+                                type: 'task',
+                                selectedReasonIds: _selectedReasonForRefusals
+                                    .map((reason) => reason.id)
+                                    .toList(),
+                                onSelectReasons: (selectedReasons) {
+                                  setState(() {
+                                    _selectedReasonForRefusals =
+                                        selectedReasons;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        if (!_hasAuthorFieldInConfiguration)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _buildAuthorFilterCard(),
+                          )
+                        else if (!_isConfigurationLoaded)
+                          // Показываем loader пока грузится конфигурация
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else
+                          // Fallback: показываем поля в стандартном порядке если конфигурация пуста
+                          ...[
+                          _filterSurface(
                             padding: const EdgeInsets.all(8),
-                            child: ReasonForRefusalMultiSelectWidget(
-                              type: 'task',
-                              selectedReasonIds: _selectedReasonForRefusals
-                                  .map((reason) => reason.id)
+                            child: UserMultiSelectWidget(
+                              selectedUsers: _selectedUsers
+                                  .map((user) => user.id.toString())
                                   .toList(),
-                              onSelectReasons: (selectedReasons) {
+                              onSelectUsers:
+                                  (List<UserData> selectedUsersData) {
                                 setState(() {
-                                  _selectedReasonForRefusals = selectedReasons;
+                                  _selectedUsers = selectedUsersData;
                                 });
                               },
                             ),
                           ),
-                        ),
-                      ),
-                    if (!_hasAuthorFieldInConfiguration)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _buildAuthorFilterCard(),
-                      )
-                    else if (!_isConfigurationLoaded)
-                      // Показываем loader пока грузится конфигурация
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    else
-                      // Fallback: показываем поля в стандартном порядке если конфигурация пуста
-                      ...[
-                      Card(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: UserMultiSelectWidget(
-                            selectedUsers: _selectedUsers
-                                .map((user) => user.id.toString())
-                                .toList(),
-                            onSelectUsers: (List<UserData> selectedUsersData) {
-                              setState(() {
-                                _selectedUsers = selectedUsersData;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      // const SizedBox(height: 8),
-                      // Card(
-                      //   shape: RoundedRectangleBorder(
-                      //       borderRadius: BorderRadius.circular(12)),
-                      //   color: Colors.white,
-                      //   child: Padding(
-                      //     padding: const EdgeInsets.all(8),
-                      //     child: TaskStatusRadioGroupWidget(
-                      //       selectedStatus: _selectedStatuses?.toString(),
-                      //       onSelectStatus: (TaskStatus selectedStatusData) {
-                      //         setState(() {
-                      //           _selectedStatuses = selectedStatusData.id;
-                      //         });
-                      //       },
-                      //     ),
-                      //   ),
-                      // ),
-                      const SizedBox(height: 8),
-                      _buildAuthorFilterCard(),
-                    ],
+                          // const SizedBox(height: 8),
+                          // Card(
+                          //   shape: RoundedRectangleBorder(
+                          //       borderRadius: BorderRadius.circular(12)),
+                          //   color: Colors.white,
+                          //   child: Padding(
+                          //     padding: const EdgeInsets.all(8),
+                          //     child: TaskStatusRadioGroupWidget(
+                          //       selectedStatus: _selectedStatuses?.toString(),
+                          //       onSelectStatus: (TaskStatus selectedStatusData) {
+                          //         setState(() {
+                          //           _selectedStatuses = selectedStatusData.id;
+                          //         });
+                          //       },
+                          //     ),
+                          //   ),
+                          // ),
+                          const SizedBox(height: 8),
+                          _buildAuthorFilterCard(),
+                        ],
 
-                    // Department widget если включен
-                    if (_isDepartmentEnabled) ...[
-                      const SizedBox(height: 8),
-                      Card(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: BlocProvider(
-                            create: (context) => DepartmentBloc(_apiService),
-                            child: DepartmentWidget(
-                              selectedDepartment: _selectedDepartment,
-                              onChanged: (departmentId) {
-                                setState(() {
-                                  _selectedDepartment = departmentId;
-                                });
-                              },
+                        // Department widget если включен
+                        if (_isDepartmentEnabled) ...[
+                          const SizedBox(height: 8),
+                          _filterSurface(
+                            padding: const EdgeInsets.all(8),
+                            child: BlocProvider(
+                              create: (context) => DepartmentBloc(_apiService),
+                              child: DepartmentWidget(
+                                selectedDepartment: _selectedDepartment,
+                                onChanged: (departmentId) {
+                                  setState(() {
+                                    _selectedDepartment = departmentId;
+                                  });
+                                },
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // Switches - всегда в конце
-                    const SizedBox(height: 8),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      child: Column(
-                        children: [
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('overdue'),
-                            _isOverdue,
-                            (value) => setState(() => _isOverdue = value),
-                          ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('has_file'),
-                            _hasFile,
-                            (value) => setState(() => _hasFile = value),
-                          ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('has_deal'),
-                            _hasDeal,
-                            (value) => setState(() => _hasDeal = value),
-                          ),
-                          _buildSwitchTile(
-                            AppLocalizations.of(context)!.translate('urgents'),
-                            _isUrgent,
-                            (value) => setState(() => _isUrgent = value),
                           ),
                         ],
-                      ),
+
+                        // Switches - всегда в конце
+                        const SizedBox(height: 8),
+                        _filterSurface(
+                          child: Column(
+                            children: [
+                              _buildSwitchTile(
+                                AppLocalizations.of(context)!
+                                    .translate('overdue'),
+                                _isOverdue,
+                                (value) => setState(() => _isOverdue = value),
+                              ),
+                              _buildSwitchTile(
+                                AppLocalizations.of(context)!
+                                    .translate('has_file'),
+                                _hasFile,
+                                (value) => setState(() => _hasFile = value),
+                              ),
+                              _buildSwitchTile(
+                                AppLocalizations.of(context)!
+                                    .translate('has_deal'),
+                                _hasDeal,
+                                (value) => setState(() => _hasDeal = value),
+                              ),
+                              _buildSwitchTile(
+                                AppLocalizations.of(context)!
+                                    .translate('urgents'),
+                                _isUrgent,
+                                (value) => setState(() => _isUrgent = value),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -20,6 +20,7 @@ class TaskColumn extends StatefulWidget {
   final int? userId; // Добавляем параметр managerId
   final bool isTaskScreenTutorialCompleted;
   final bool isActive;
+  final int? projectId;
 
   const TaskColumn({
     super.key,
@@ -29,6 +30,7 @@ class TaskColumn extends StatefulWidget {
     this.userId,
     required this.isTaskScreenTutorialCompleted,
     required this.isActive,
+    this.projectId,
   });
 
   @override
@@ -105,7 +107,11 @@ class TaskColumnState extends State<TaskColumn> {
           !taskBloc.allTasksFetched &&
           !currentState.isLoadingMore &&
           !taskBloc.isFetching) {
-        taskBloc.add(FetchMoreTasks(widget.statusId, currentState.currentPage));
+        taskBloc.add(FetchMoreTasks(
+          widget.statusId,
+          currentState.currentPage,
+          projectId: widget.projectId,
+        ));
       }
     }
   }
@@ -318,9 +324,14 @@ class TaskColumnState extends State<TaskColumn> {
     // ОПТИМИЗАЦИЯ: При обновлении заново загружаем задачи и статусы из единого блока
     if (mounted) {
       final taskBloc = context.read<TaskBloc>();
-      await taskBloc.clearAllCountsAndCache();
+      await taskBloc.clearAllCountsAndCache(
+        clearPersistentCache: widget.projectId == null,
+      );
       ApiService.clearAnalyticsResponseCache();
-      taskBloc.add(FetchTaskStatuses(forceRefresh: true));
+      taskBloc.add(FetchTaskStatuses(
+        forceRefresh: true,
+        projectId: widget.projectId,
+      ));
     }
     return Future.delayed(Duration(milliseconds: 100));
   }
@@ -417,9 +428,13 @@ class TaskColumnState extends State<TaskColumn> {
                               task: tasks[index],
                               name: widget.name,
                               statusId: widget.statusId,
+                              projectId: widget.projectId,
                               onStatusUpdated: () {
                                 if (mounted) {
-                                  taskBloc.add(FetchTasks(widget.statusId));
+                                  taskBloc.add(FetchTasks(
+                                    widget.statusId,
+                                    projectId: widget.projectId,
+                                  ));
                                 }
                               },
                               onStatusId: (statusTaskId) {
@@ -580,12 +595,18 @@ class TaskColumnState extends State<TaskColumn> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        TaskAddScreen(statusId: widget.statusId),
+                    builder: (context) => TaskAddScreen(
+                      statusId: widget.statusId,
+                      initialProjectId: widget.projectId,
+                      lockProject: false,
+                    ),
                   ),
                 ).then((_) {
                   if (mounted) {
-                    context.read<TaskBloc>().add(FetchTasks(widget.statusId));
+                    context.read<TaskBloc>().add(FetchTasks(
+                          widget.statusId,
+                          projectId: widget.projectId,
+                        ));
                   }
                 });
               },

@@ -91,6 +91,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   int? currencyId; // Поле для хранения currency_id
   final Map<int, TextEditingController> _quantityControllers = {};
+  final Map<int, TextEditingController> _priceControllers = {};
   final TextEditingController _totalController = TextEditingController();
   bool _isTotalEdited = false;
   bool _isLoadingInternetStores = false;
@@ -105,6 +106,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
   bool _isTojsokhtmontjTenant = false;
+  bool _isStomatradeTenant = false;
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -209,10 +211,14 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Future<void> _loadTenantFlags() async {
-    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    final flags = await Future.wait([
+      _apiService.isTojsokhtmontjTenant(),
+      _apiService.isStomatradeTenant(),
+    ]);
     if (!mounted) return;
     setState(() {
-      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+      _isTojsokhtmontjTenant = flags[0];
+      _isStomatradeTenant = flags[1];
     });
   }
 
@@ -338,6 +344,9 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     _phoneController.dispose();
     _commentController.dispose();
     for (final controller in _quantityControllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _priceControllers.values) {
       controller.dispose();
     }
     for (final field in customFields) {
@@ -803,6 +812,19 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     }.contains(normalized);
   }
 
+  bool _isTojsokhtmontjMixedPaymentField(String fieldName) {
+    return <String>{
+      'имущество 1',
+      'имущества 1',
+      'характеристика 1',
+      'сумма 1',
+      'имущество 2',
+      'имущества 2',
+      'характеристика 2',
+      'сумма 2',
+    }.contains(_normalizeTojsokhtmontjFieldName(fieldName));
+  }
+
   bool _isTojsokhtmontjPricePerSquareField(String fieldName) {
     return _normalizeTojsokhtmontjFieldName(fieldName) == 'цена за квадрат';
   }
@@ -945,6 +967,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       if (_isTojsokhtmontjDealTypeField(field.fieldName)) {
         return _normalizeTojsokhtmontjFieldName(field.controller.text) ==
             'наличными';
+      }
+    }
+    return false;
+  }
+
+  bool _shouldHideTojsokhtmontjMixedPaymentFields() {
+    if (!_isTojsokhtmontjTenant) return false;
+    for (final field in customFields) {
+      if (_isTojsokhtmontjDealTypeField(field.fieldName)) {
+        return _normalizeTojsokhtmontjFieldName(field.controller.text) !=
+            'смешанные';
       }
     }
     return false;
@@ -1270,6 +1303,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     if (_shouldHideTojsokhtmontjInstallmentFields() &&
         _isTojsokhtmontjInstallmentField(config.fieldName)) {
+      return null;
+    }
+    if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
+        _isTojsokhtmontjMixedPaymentField(config.fieldName)) {
       return null;
     }
 
@@ -2188,6 +2225,20 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     return controller;
   }
 
+  TextEditingController _getPriceController(int index) {
+    final item = _items[index];
+    final key = identityHashCode(item);
+    final value = '${item['price'] ?? 0}'.replaceAll(RegExp(r'\.0$'), '');
+    return _priceControllers.putIfAbsent(
+        key, () => TextEditingController(text: value));
+  }
+
+  void _handlePriceInput(int index, String value) {
+    final price = double.tryParse(value.replaceAll(',', '.'));
+    if (price == null || index < 0 || index >= _items.length) return;
+    setState(() => _items[index]['price'] = price);
+  }
+
   void _syncQuantityController(int index) {
     if (index < 0 || index >= _items.length) return;
     final key = identityHashCode(_items[index]);
@@ -2257,6 +2308,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     final key = identityHashCode(_items[index]);
     final controller = _quantityControllers.remove(key);
     controller?.dispose();
+    _priceControllers.remove(key)?.dispose();
 
     setState(() {
       _items.removeAt(index);
@@ -2693,6 +2745,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   Widget _buildAmountColumn({
     required String label,
     required String value,
+    Widget? valueWidget,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -2707,15 +2760,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: colors.textPrimary,
-          ),
-        ),
+        valueWidget ??
+            Text(value,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary)),
       ],
     );
   }
@@ -2834,11 +2885,12 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                _buildItemsToolbarAction(
-                  icon: Icons.qr_code_scanner,
-                  label: AppLocalizations.of(context)!.translate('barcode'),
-                  onTap: _scanBarcode,
-                ),
+                if (!_isTojsokhtmontjTenant)
+                  _buildItemsToolbarAction(
+                    icon: Icons.qr_code_scanner,
+                    label: AppLocalizations.of(context)!.translate('barcode'),
+                    onTap: _scanBarcode,
+                  ),
                 _buildItemsToolbarAction(
                   icon: Icons.add,
                   label: AppLocalizations.of(context)!.translate('add_product'),
@@ -3017,6 +3069,25 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                       child: _buildAmountColumn(
                         label: AppLocalizations.of(context)!.translate('price'),
                         value: _formatPrice(item['price']),
+                        valueWidget: _isStomatradeTenant
+                            ? TextField(
+                                controller: _getPriceController(index),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                textAlign: TextAlign.right,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9.,]'))
+                                ],
+                                decoration: const InputDecoration(
+                                    isDense: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero),
+                                onChanged: (value) =>
+                                    _handlePriceInput(index, value),
+                              )
+                            : null,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -3180,6 +3251,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
                     if (_shouldHideTojsokhtmontjInstallmentFields() &&
                         _isTojsokhtmontjInstallmentField(fieldName)) {
+                      continue;
+                    }
+                    if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
+                        _isTojsokhtmontjMixedPaymentField(fieldName)) {
                       continue;
                     }
 

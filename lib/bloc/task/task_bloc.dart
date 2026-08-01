@@ -15,6 +15,7 @@ import 'task_event.dart';
 import 'task_state.dart';
 
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
+  int _taskStatusesRequestVersion = 0;
   final ApiService apiService;
   bool allTasksFetched = false;
   Map<int, int> _taskCounts = {};
@@ -29,6 +30,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   bool? _currentHasDeal;
   bool? _currentUrgent;
   List<int>? _currentProjectIds;
+  int? _currentProjectId;
   List<int>? _currentReasonForRefusalIds;
   List<String>? _currentAuthors;
   DateTime? _currentDeadlineFromDate;
@@ -68,6 +70,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal == true ||
         _currentUrgent == true ||
         (_currentProjectIds != null && _currentProjectIds!.isNotEmpty) ||
+        _currentProjectId != null ||
         (_currentReasonForRefusalIds != null &&
             _currentReasonForRefusalIds!.isNotEmpty) ||
         (_currentAuthors != null && _currentAuthors!.isNotEmpty) ||
@@ -93,6 +96,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
+    final requestVersion = ++_taskStatusesRequestVersion;
     emit(TaskLoading());
 
     try {
@@ -105,7 +109,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         if (!hasInternet) {
           // При отсутствии интернета загружаем из кэша вместо ошибки
           final cachedStatuses = await TaskCache.getTaskStatuses();
-          if (cachedStatuses.isNotEmpty) {
+          if (cachedStatuses.isNotEmpty && event.projectId == null) {
             if (kDebugMode) {
               debugPrint(
                   '⚠️ TaskBloc: forceRefresh without internet, loading from cache');
@@ -168,6 +172,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = null;
         _currentUrgent = null;
         _currentProjectIds = null;
+        _currentProjectId = event.projectId;
         _currentReasonForRefusalIds = null;
         _currentAuthors = null;
         _currentDeadlineFromDate = null;
@@ -177,7 +182,12 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
         // ОПТИМИЗАЦИЯ: Загружаем статусы с сервера с timeout
         api_service.ApiService.clearAnalyticsResponseCache();
-        response = await apiService.getTaskStatuses(bypassCache: true).timeout(
+        response = await apiService
+            .getTaskStatuses(
+          bypassCache: true,
+          projectId: event.projectId,
+        )
+            .timeout(
           Duration(seconds: 15),
           onTimeout: () {
             throw TimeoutException(
@@ -185,21 +195,27 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           },
         );
 
-        // ПОЛНОСТЬЮ перезаписываем кэш новыми данными
-        await TaskCache.clearEverything();
-        await TaskCache.cacheTaskStatuses(response
-            .map((status) => {
-                  'id': status.id,
-                  'title': status.taskStatus?.name ?? "",
-                  'is_unassembled': status.isUnassembled,
-                })
-            .toList());
+        if (requestVersion != _taskStatusesRequestVersion) return;
+
+        // Проектные данные не должны перезаписывать общий кэш задач.
+        if (event.projectId == null) {
+          await TaskCache.clearEverything();
+          await TaskCache.cacheTaskStatuses(response
+              .map((status) => {
+                    'id': status.id,
+                    'title': status.taskStatus?.name ?? "",
+                    'is_unassembled': status.isUnassembled,
+                  })
+              .toList());
+        }
 
         // Устанавливаем новые счетчики ТОЛЬКО из свежих данных API
         for (var status in response) {
           final count = int.tryParse(status.tasksCount) ?? 0;
           _taskCounts[status.id] = count;
-          await TaskCache.setPersistentTaskCount(status.id, count);
+          if (event.projectId == null) {
+            await TaskCache.setPersistentTaskCount(status.id, count);
+          }
         }
       } else {
         // Стандартная логика для обычной загрузки
@@ -208,7 +224,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         if (!hasInternet) {
           // При отсутствии интернета пытаемся загрузить из кэша
           final cachedStatuses = await TaskCache.getTaskStatuses();
-          if (cachedStatuses.isNotEmpty) {
+          if (cachedStatuses.isNotEmpty && event.projectId == null) {
             if (kDebugMode) {
               debugPrint('⚠️ TaskBloc: No internet, loading from cache');
             }
@@ -266,13 +282,14 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         response = await apiService
             .getTaskStatuses(
           bypassCache: event.forceRefresh,
+          projectId: event.projectId,
         )
             .timeout(
           Duration(seconds: 15),
           onTimeout: () async {
             // При timeout возвращаем кэшированные данные
             final cachedStatuses = await TaskCache.getTaskStatuses();
-            if (cachedStatuses.isNotEmpty) {
+            if (cachedStatuses.isNotEmpty && event.projectId == null) {
               return cachedStatuses.map((status) {
                 return TaskStatus(
                   id: status['id'] as int,
@@ -294,20 +311,26 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
                 'Превышено время ожидания загрузки статусов');
           },
         );
-        await TaskCache.cacheTaskStatuses(response
-            .map((status) => {
-                  'id': status.id,
-                  'title': status.taskStatus?.name ?? "",
-                  'is_unassembled': status.isUnassembled,
-                })
-            .toList());
+        if (requestVersion != _taskStatusesRequestVersion) return;
+
+        if (event.projectId == null) {
+          await TaskCache.cacheTaskStatuses(response
+              .map((status) => {
+                    'id': status.id,
+                    'title': status.taskStatus?.name ?? "",
+                    'is_unassembled': status.isUnassembled,
+                  })
+              .toList());
+        }
 
         // Устанавливаем счетчики из свежих данных API
         _taskCounts.clear();
         for (var status in response) {
           final count = int.tryParse(status.tasksCount) ?? 0;
           _taskCounts[status.id] = count;
-          await TaskCache.setPersistentTaskCount(status.id, count);
+          if (event.projectId == null) {
+            await TaskCache.setPersistentTaskCount(status.id, count);
+          }
         }
       }
 
@@ -320,6 +343,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       //   add(FetchTasks(firstStatusId));
       // }
     } catch (e) {
+      if (requestVersion != _taskStatusesRequestVersion) return;
       if (_isWorkdayAccessError(e)) {
         return;
       }
@@ -348,7 +372,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
     try {
       // ОПТИМИЗАЦИЯ: Показываем загрузку только если нет кэшированных данных
-      final cachedTasks = await TaskCache.getTasksForStatus(event.statusId);
+      final cachedTasks = event.projectId == null
+          ? await TaskCache.getTasksForStatus(event.statusId)
+          : <Task>[];
       _currentTabStatusId = event.statusId;
       if (cachedTasks.isEmpty) {
         final currentState = state;
@@ -370,6 +396,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _currentHasDeal = event.hasDeal;
       _currentUrgent = event.urgent;
       _currentProjectIds = event.projectIds;
+      _currentProjectId = event.projectId;
       _currentReasonForRefusalIds = event.reasonForRefusalIds;
       _currentAuthors = event.authors;
       _currentDeadlineFromDate = event.deadlinefromDate;
@@ -380,11 +407,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       _currentDirectoryValues = event.directoryValues;
 
       // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
-      final allPersistentCounts = await TaskCache.getPersistentTaskCounts();
-      for (String statusIdStr in allPersistentCounts.keys) {
-        int statusId = int.parse(statusIdStr);
-        int count = allPersistentCounts[statusIdStr] ?? 0;
-        _taskCounts[statusId] = count;
+      if (event.projectId == null) {
+        final allPersistentCounts = await TaskCache.getPersistentTaskCounts();
+        for (String statusIdStr in allPersistentCounts.keys) {
+          int statusId = int.parse(statusIdStr);
+          int count = allPersistentCounts[statusIdStr] ?? 0;
+          _taskCounts[statusId] = count;
+        }
       }
 
       if (kDebugMode) {
@@ -434,6 +463,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             hasDeal: event.hasDeal,
             urgent: event.urgent,
             projectIds: event.projectIds,
+            projectId: event.projectId,
             reasonForRefusalIds: event.reasonForRefusalIds,
             authors: event.authors,
             deadlinefromDate: event.deadlinefromDate,
@@ -470,24 +500,33 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             }
 
             // Кэшируем свежие задачи с РЕАЛЬНЫМ общим счётчиком
-            await TaskCache.cacheTasksForStatus(
-              event.statusId,
-              tasks,
-              updatePersistentCount: true,
-              actualTotalCount: realTotalCount,
-            );
+            if (event.projectId == null) {
+              await TaskCache.cacheTasksForStatus(
+                event.statusId,
+                tasks,
+                updatePersistentCount: true,
+                actualTotalCount: realTotalCount,
+              );
+            }
 
             if (kDebugMode) {
               debugPrint(
                   '✅ TaskBloc: Cached ${tasks.length} tasks for status ${event.statusId}');
             }
           } else {
+            if (event.projectId != null) {
+              _taskCounts[event.statusId] = 0;
+              tasks = <Task>[];
+              hasCachedData = false;
+            }
             final int? realTotalCount = _taskCounts[event.statusId];
 
             if ((realTotalCount ?? 0) == 0) {
               tasks = <Task>[];
               hasCachedData = false;
-              await TaskCache.clearTasksForStatus(event.statusId);
+              if (event.projectId == null) {
+                await TaskCache.clearTasksForStatus(event.statusId);
+              }
 
               if (kDebugMode) {
                 debugPrint(
@@ -610,6 +649,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             hasDeal: event.hasDeal ?? _currentHasDeal,
             urgent: event.urgent ?? _currentUrgent,
             projectIds: event.projectIds ?? _currentProjectIds,
+            projectId: event.projectId ?? _currentProjectId,
             reasonForRefusalIds:
                 event.reasonForRefusalIds ?? _currentReasonForRefusalIds,
             authors: event.authors ?? _currentAuthors,
@@ -938,6 +978,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     Emitter<TaskState> emit,
   ) async {
     if (kDebugMode) {
+      debugPrint(
+          'TaskBloc: FetchTaskStatusesWithFilters projectId=${event.projectId}');
       debugPrint('🔍 TaskBloc: _fetchTaskStatusesWithFilters - START');
       debugPrint(
           '🔍 TaskBloc: preferredStatusId=${event.preferredStatusId}, statusIds=${event.statusIds}, userIds=${event.userIds}');
@@ -970,6 +1012,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         deadlinetoDate: event.deadlinetoDate,
         reasonForRefusalIds: event.reasonForRefusalIds,
         projectIds: event.projectIds,
+        projectId: event.projectId,
         authors: event.authors,
         department: event.department,
         directoryValues: event.directoryValues,
@@ -998,14 +1041,16 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _taskCounts[status.id] = count;
       }
 
-      // 3. Кэшируем статусы
-      await TaskCache.cacheTaskStatuses(statuses
-          .map((status) => {
-                'id': status.id,
-                'title': status.taskStatus?.name ?? "",
-                'is_unassembled': status.isUnassembled,
-              })
-          .toList());
+      // Проектные статусы изолированы от общего кэша.
+      if (event.projectId == null) {
+        await TaskCache.cacheTaskStatuses(statuses
+            .map((status) => {
+                  'id': status.id,
+                  'title': status.taskStatus?.name ?? "",
+                  'is_unassembled': status.isUnassembled,
+                })
+            .toList());
+      }
 
       // 4. Эмитим состояние со статусами
       emit(TaskLoaded(statuses, taskCounts: Map.from(_taskCounts)));
@@ -1029,6 +1074,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = event.hasDeal;
         _currentUrgent = event.urgent;
         _currentProjectIds = event.projectIds;
+        _currentProjectId = event.projectId;
         _currentReasonForRefusalIds = event.reasonForRefusalIds;
         _currentAuthors = event.authors;
         _currentDeadlineFromDate = event.deadlinefromDate;
@@ -1061,7 +1107,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           }
 
           try {
-            await _fetchTasksForStatusWithFilters(
+            final firstStatusTasks = await _fetchTasksForStatusWithFilters(
               targetStatus.id,
               event.userIds,
               event.statusIds,
@@ -1076,15 +1122,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               event.completedFromDate,
               event.completedToDate,
               event.projectIds,
+              event.projectId,
               event.reasonForRefusalIds,
               event.authors,
               event.department,
               event.directoryValues,
             );
 
-            // После загрузки первого статуса эмитим состояние
-            final firstStatusTasks =
-                await TaskCache.getTasksForStatus(targetStatus.id);
             emit(TaskDataLoaded(firstStatusTasks,
                 currentPage: 1, taskCounts: Map.from(_taskCounts)));
 
@@ -1111,7 +1155,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
 // Вспомогательный метод для загрузки задач одного статуса
-  Future<void> _fetchTasksForStatusWithFilters(
+  Future<List<Task>> _fetchTasksForStatusWithFilters(
     int statusId,
     List<int>? userIds,
     int? statusIds,
@@ -1126,6 +1170,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     DateTime? completedFromDate,
     DateTime? completedToDate,
     List<int>? projectIds,
+    int? projectId,
     List<int>? reasonForRefusalIds,
     List<String>? authors,
     String? department,
@@ -1136,7 +1181,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         if (kDebugMode) {
           debugPrint('⚠️ TaskBloc: No internet for status $statusId');
         }
-        return;
+        return <Task>[];
       }
 
       if (kDebugMode) {
@@ -1165,6 +1210,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             completedFromDate: completedFromDate,
             completedToDate: completedToDate,
             projectIds: projectIds,
+            projectId: projectId,
             reasonForRefusalIds: reasonForRefusalIds,
             authors: authors,
             department: department,
@@ -1182,25 +1228,29 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             '✅ TaskBloc: cache count for status $statusId will be ${_taskCounts[statusId]}');
       }
 
-      // Кэшируем с сохранением реального счётчика
-      final realCount = _taskCounts[statusId];
-      await TaskCache.cacheTasksForStatus(
-        statusId,
-        tasks,
-        updatePersistentCount: true,
-        actualTotalCount: realCount,
-      );
+      if (projectId == null) {
+        final realCount = _taskCounts[statusId];
+        await TaskCache.cacheTasksForStatus(
+          statusId,
+          tasks,
+          updatePersistentCount: true,
+          actualTotalCount: realCount,
+        );
+      }
+      return tasks;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ TaskBloc: Error fetching tasks for status $statusId: $e');
       }
+      return <Task>[];
     }
   }
 
   // ======================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ========================
 
   /// РАДИКАЛЬНАЯ очистка - удаляет ВСЕ данные и сбрасывает состояние блока
-  Future<void> clearAllCountsAndCache() async {
+  Future<void> clearAllCountsAndCache(
+      {bool clearPersistentCache = true}) async {
     if (kDebugMode) {
       debugPrint('🧹 TaskBloc.clearAllCountsAndCache: START');
     }
@@ -1224,6 +1274,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentHasDeal = null;
     _currentUrgent = null;
     _currentProjectIds = null;
+    _currentProjectId = null;
     _currentReasonForRefusalIds = null;
     _currentAuthors = null;
     _currentDeadlineFromDate = null;
@@ -1233,8 +1284,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     _currentDepartment = null;
     _currentDirectoryValues = null;
 
-    // Радикальная очистка кэша
-    await TaskCache.clearEverything();
+    if (clearPersistentCache) {
+      await TaskCache.clearEverything();
+    }
 
     if (kDebugMode) {
       debugPrint('🧹 TaskBloc.clearAllCountsAndCache: FINISHED');

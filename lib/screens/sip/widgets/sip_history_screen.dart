@@ -211,11 +211,9 @@ class _SipCallHistoryScreenState extends State<_SipCallHistoryScreen> {
                                     : isOutgoing
                                         ? const Color(0xFF22C55E)
                                         : const Color(0xFF2563EB);
-                                final fillColor = isMissed
-                                    ? const Color(0xFFFEF2F2)
-                                    : isOutgoing
-                                        ? const Color(0xFFF0FDF4)
-                                        : const Color(0xFFEFF6FF);
+                                final fillColor = accentColor.withValues(
+                                  alpha: isDark ? 0.18 : 0.10,
+                                );
                                 final icon = isMissed
                                     ? CupertinoIcons.phone_down_fill
                                     : isOutgoing

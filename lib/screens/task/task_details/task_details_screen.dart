@@ -211,7 +211,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     super.initState();
     _initialStatusId = widget.statusId ?? 0;
     _currentStatusId = widget.statusId;
-    context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+    context.read<TaskBloc>().add(FetchTaskStatuses(
+          forceRefresh: true,
+          projectId: widget.projectId,
+        ));
     _checkPermissions();
     context
         .read<TaskByIdBloc>()
@@ -307,14 +310,20 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     });
     _loadFieldConfiguration();
     context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: taskId));
-    context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+    context.read<TaskBloc>().add(FetchTaskStatuses(
+          forceRefresh: true,
+          projectId: widget.projectId,
+        ));
     context.read<CalendarBloc>().add(FetchCalendarEvents(
         widget.initialDate?.month ?? DateTime.now().month,
         widget.initialDate?.year ?? DateTime.now().year));
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
       context.read<TaskByIdBloc>().add(FetchTaskByIdEvent(taskId: taskId));
-      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+      context.read<TaskBloc>().add(FetchTaskStatuses(
+            forceRefresh: true,
+            projectId: widget.projectId,
+          ));
     });
   }
 
@@ -377,6 +386,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           priority: currentTask!.priority,
           taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
           project: currentTask!.project?.id.toString(),
+          contextProjectId: widget.projectId,
           user: currentTask!.user != null && currentTask!.user!.isNotEmpty
               ? currentTask!.user!.map((user) => user.id).toList()
               : null,
@@ -399,7 +409,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       context
           .read<TaskByIdBloc>()
           .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+      context.read<TaskBloc>().add(FetchTaskStatuses(
+            forceRefresh: true,
+            projectId: widget.projectId,
+          ));
       context.read<CalendarBloc>().add(FetchCalendarEvents(
           widget.initialDate?.month ?? DateTime.now().month,
           widget.initialDate?.year ?? DateTime.now().year));
@@ -424,6 +437,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           priority: currentTask!.priority,
           taskStatus: currentTask!.taskStatus?.taskStatus.toString() ?? '',
           project: currentTask!.project?.id.toString(),
+          contextProjectId: widget.projectId,
           user: currentTask!.user != null && currentTask!.user!.isNotEmpty
               ? currentTask!.user!.map((user) => user.id).toList()
               : null,
@@ -446,7 +460,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       context
           .read<TaskByIdBloc>()
           .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-      context.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+      context.read<TaskBloc>().add(FetchTaskStatuses(
+            forceRefresh: true,
+            projectId: widget.projectId,
+          ));
       context.read<CalendarBloc>().add(FetchCalendarEvents(
           widget.initialDate?.month ?? DateTime.now().month,
           widget.initialDate?.year ?? DateTime.now().year));
@@ -1256,7 +1273,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                 this
                                     .context
                                     .read<TaskBloc>()
-                                    .add(FetchTaskStatuses(forceRefresh: true));
+                                    .add(FetchTaskStatuses(
+                                      forceRefresh: true,
+                                      projectId: widget.projectId,
+                                    ));
                               }
                             } catch (e) {
                               Navigator.pop(dialogContext);
