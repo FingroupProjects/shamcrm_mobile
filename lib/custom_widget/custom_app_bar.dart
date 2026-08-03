@@ -670,18 +670,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         await _apiService.hasPermission('call-center'); // Исправлено
     final canReadGps =
         await _apiService.hasPermission('call-center'); // Проверка прав для GPS
-    final prefs = await SharedPreferences.getInstance();
-    final rawRoles = (prefs.getString('userAllRoles') ??
-            prefs.getString('userRoleName') ??
-            '')
-        .trim();
-    final roles = rawRoles
-        .split(',')
-        .map((role) => role.trim().toLowerCase())
-        .where((role) => role.isNotEmpty)
-        .toSet();
-    final isAdmin = roles.contains('admin');
-    final workdayEnabled = await _apiService.isWorkdayFeatureEnabled();
+    final canReadTimesheet = await _apiService.canReadTimesheet();
     if (!mounted) return;
     setState(() {
       _canReadNotice = canReadNotice;
@@ -689,7 +678,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadCallCenter = canReadCallCenter;
       _canReadCallCenter = canReadCallCenter;
       _canReadGps = canReadGps;
-      _canOpenTimesheet = isAdmin && workdayEnabled;
+      _canOpenTimesheet = canReadTimesheet;
     });
   }
 

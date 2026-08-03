@@ -10,11 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class LeadMultiSelectWidget extends StatefulWidget {
   final List<dynamic>? selectedLeads;
   final Function(List<LeadData>) onSelectLeads;
+  final bool useSecondaryBackground;
 
   const LeadMultiSelectWidget({
     super.key,
     required this.onSelectLeads,
     this.selectedLeads,
+    this.useSecondaryBackground = false,
   });
 
   @override
@@ -47,9 +49,8 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
       leadsList = result;
       if (widget.selectedLeads != null && leadsList.isNotEmpty) {
         final selectedIds = _selectedLeadIds();
-        final selectedBySearch = leadsList
-            .where((lead) => selectedIds.contains(lead.id))
-            .toList();
+        final selectedBySearch =
+            leadsList.where((lead) => selectedIds.contains(lead.id)).toList();
 
         for (final lead in selectedLeadsData) {
           if (!selectedBySearch.any((item) => item.id == lead.id)) {
@@ -74,6 +75,9 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
+    final dropdownBackground = widget.useSecondaryBackground
+        ? colors.backgroundSecondary
+        : colors.fieldBg;
     return Column(
       children: [
         Column(
@@ -111,18 +115,46 @@ class _LeadsMultiSelectWidgetState extends State<LeadMultiSelectWidget> {
                     AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 decoration: CustomDropdownDecoration(
-                  closedFillColor: colors.fieldBg,
-                  expandedFillColor: colors.surfacePrimary,
+                  closedFillColor: dropdownBackground,
+                  expandedFillColor: dropdownBackground,
                   closedBorder: Border.all(
-                    color: colors.fieldBg,
+                    color: colors.fieldBorder,
                     width: 1,
                   ),
                   closedBorderRadius: BorderRadius.circular(12),
                   expandedBorder: Border.all(
-                    color: colors.fieldBg,
+                    color: colors.fieldBorder,
                     width: 1,
                   ),
                   expandedBorderRadius: BorderRadius.circular(12),
+                  searchFieldDecoration: SearchFieldDecoration(
+                    fillColor: colors.surfaceElevated,
+                    textStyle:
+                        textStyles.bodyMd.copyWith(color: colors.textPrimary),
+                    hintStyle:
+                        textStyles.bodyMd.copyWith(color: colors.textSecondary),
+                    prefixIcon: Icon(Icons.search, color: colors.iconSecondary),
+                    suffixIcon: (onClear) => IconButton(
+                      onPressed: onClear,
+                      icon: Icon(Icons.close_rounded,
+                          color: colors.iconSecondary),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: colors.fieldBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                    ),
+                  ),
+                  listItemDecoration: ListItemDecoration(
+                    selectedColor:
+                        colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                    highlightColor:
+                        colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                    splashColor: Colors.transparent,
+                  ),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return ListTile(

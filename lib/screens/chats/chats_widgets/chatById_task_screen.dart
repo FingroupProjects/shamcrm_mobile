@@ -1,9 +1,12 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/task_profile_status_bottom_sheet.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -17,7 +20,7 @@ import 'package:intl/intl.dart';
 class TaskByIdScreen extends StatefulWidget {
   final int chatId;
 
-  TaskByIdScreen({required this.chatId});
+  const TaskByIdScreen({super.key, required this.chatId});
 
   @override
   State<TaskByIdScreen> createState() => _TaskByIdScreenState();
@@ -227,9 +230,23 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        customIconPath != null
-            ? Image.asset(customIconPath, width: 32, height: 32)
-            : Icon(icon, size: 32, color: context.appColors.buttonPrimaryBg),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: customIconPath != null
+                ? Image.asset(customIconPath, width: 24, height: 24)
+                : Icon(
+                    icon,
+                    size: 22,
+                    color: context.appColors.buttonPrimaryBg,
+                  ),
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -259,7 +276,19 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(Icons.assignment, size: 32, color: context.appColors.buttonPrimaryBg),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.assignment_outlined,
+            size: 22,
+            color: context.appColors.buttonPrimaryBg,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -355,33 +384,57 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
       create: (context) =>
           TaskProfileBloc(ApiService())..add(FetchTaskProfile(widget.chatId)),
       child: Scaffold(
-        backgroundColor: context.appColors.backgroundSecondary,
+        backgroundColor: context.appColors.backgroundPrimary,
         appBar: AppBar(
-          title: Text(
-            AppLocalizations.of(context)!.translate('about_task'),
-            style: TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: context.appColors.textPrimary,
+          toolbarHeight: 78,
+          automaticallyImplyLeading: false,
+          titleSpacing: 16,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: Colors.transparent,
+          title: AppBarShell(
+            leading: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 20,
+                  color: context.appColors.iconPrimary,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-          ),
-          backgroundColor: context.appColors.surfacePrimary,
-          forceMaterialTransparency: true,
-          leading: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            center: AppBarShell.capsule(
+              context,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('about_task'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.appTextStyles.titleMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.textPrimary,
+                  ),
+                ),
+              ),
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            trailing: const SizedBox.shrink(),
           ),
-          centerTitle: false,
         ),
-        body: BlocBuilder<TaskProfileBloc, TaskProfileState>(
-          builder: (context, state) {
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
+              ),
+            ),
+            Positioned.fill(
+              child: BlocBuilder<TaskProfileBloc, TaskProfileState>(
+                builder: (context, state) {
             if (state is TaskProfileLoading) {
               return Center(
                   child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg));
@@ -423,8 +476,14 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: context.appColors.textInverse,
+                        color: context.appColors.surfacePrimary
+                            .withValues(alpha: 0.78),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                        ),
+                        boxShadow: context.appShadows.card,
                       ),
                       padding: const EdgeInsets.symmetric(
                           vertical: 16, horizontal: 16),
@@ -528,7 +587,10 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
             return Center(
                 child: Text(
                     AppLocalizations.of(context)!.translate('download_data')));
-          },
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

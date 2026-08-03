@@ -1,7 +1,10 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
@@ -24,6 +27,7 @@ class ParticipantProfileScreen extends StatelessWidget {
   final bool? buttonChat;
 
   const ParticipantProfileScreen({
+    super.key,
     required this.userId,
     required this.image,
     required this.name,
@@ -189,49 +193,57 @@ class ParticipantProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.appColors.backgroundSecondary,
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
-        toolbarHeight: 72,
+        toolbarHeight: 78,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleSpacing: 0,
-        title: Text(
-          AppLocalizations.of(context)!.translate('user_profile'),
-          style: TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: context.appColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
+        title: AppBarShell(
+          leading: AppBarShell.capsule(
+            context,
+            width: AppBarShell.orbSize,
+            padding: EdgeInsets.zero,
+            child: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 20,
+                color: context.appColors.iconPrimary,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ),
-        backgroundColor: context.appColors.backgroundSecondary,
-        leading: IconButton(
-          icon: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: context.appColors.surfacePrimary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: context.appColors.shadow.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          center: AppBarShell.capsule(
+            context,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                AppLocalizations.of(context)!.translate('user_profile'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.appTextStyles.titleMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.appColors.textPrimary,
                 ),
-              ],
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 16,
-              color: context.appColors.textPrimary,
+              ),
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          trailing: const SizedBox.shrink(),
         ),
-        centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+          ),
+          Positioned.fill(
+            child: SingleChildScrollView(
+              child: Padding(
           padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -240,8 +252,14 @@ class ParticipantProfileScreen extends StatelessWidget {
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
-                  color: context.appColors.surfacePrimary,
+                  color: context.appColors.surfacePrimary
+                      .withValues(alpha: 0.78),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: context.appColors.borderSubtle
+                        .withValues(alpha: 0.42),
+                  ),
+                  boxShadow: context.appShadows.card,
                 ),
                 padding:
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -263,7 +281,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                     buildInfoRow(
                         context,
                         AppLocalizations.of(context)!.translate('number_phone'),
-                        "$phone",
+                        phone,
                         Icons.phone),
                     buildDivider(context),
                     buildInfoRow(
@@ -314,7 +332,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            '${state.message}',
+                            state.message,
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -379,7 +397,10 @@ class ParticipantProfileScreen extends StatelessWidget {
               )
             ],
           ),
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -388,7 +409,19 @@ class ParticipantProfileScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 32, color: context.appColors.buttonPrimaryBg),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 22,
+            color: context.appColors.buttonPrimaryBg,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

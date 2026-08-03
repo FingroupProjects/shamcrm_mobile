@@ -1,6 +1,9 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_bloc.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/add_user_to_group.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/delete_from_group_dialog.dart';
@@ -17,7 +20,11 @@ class CorporateProfileScreen extends StatefulWidget {
   final int chatId;
   final ChatItem chatItem;
 
-  const CorporateProfileScreen({required this.chatId, required this.chatItem});
+  const CorporateProfileScreen({
+    super.key,
+    required this.chatId,
+    required this.chatItem,
+  });
 
   @override
   State<CorporateProfileScreen> createState() => _CorporateProfileScreenState();
@@ -49,10 +56,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     members = [widget.chatItem.name];
     memberDetails = [];
     _fetchChatData();
-    _UserIdCheck();
+    _loadCurrentUserId();
   }
 
-  Future<void> _UserIdCheck() async {
+  Future<void> _loadCurrentUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     userIdCheck = prefs.getString('userID') ?? '';
     debugPrint('USERID: $userIdCheck');
@@ -132,6 +139,51 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     }
   }
 
+  PreferredSizeWidget _buildAppBar(BuildContext context, {String? title}) {
+    return AppBar(
+      toolbarHeight: 78,
+      automaticallyImplyLeading: false,
+      titleSpacing: 16,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
+      title: AppBarShell(
+        leading: AppBarShell.capsule(
+          context,
+          width: AppBarShell.orbSize,
+          padding: EdgeInsets.zero,
+          child: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: context.appColors.iconPrimary,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        center: title == null
+            ? const SizedBox.shrink()
+            : AppBarShell.capsule(
+                context,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.appTextStyles.titleMd.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+        trailing: const SizedBox.shrink(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Проверяем, является ли чат типом support
@@ -142,96 +194,41 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
 
     if (isLoading) {
       return Scaffold(
-        backgroundColor: context.appColors.surfacePrimary,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          toolbarHeight: 72,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: Text(
-            AppLocalizations.of(context)!.translate('group_profile'),
-            style: TextStyle(
-              fontSize: 20,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w600,
-              color: context.appColors.textPrimary,
-            ),
-              maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-          ),
-          backgroundColor: context.appColors.surfacePrimary,
-          leading: IconButton(
-            icon: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: context.appColors.backgroundSecondary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: context.appColors.shadow.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16,
-                color: context.appColors.textPrimary,
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          centerTitle: false,
+        backgroundColor: context.appColors.backgroundPrimary,
+        appBar: _buildAppBar(
+          context,
+          title: AppLocalizations.of(context)!.translate('group_profile'),
         ),
-        body: Center(
-          child: CircularProgressIndicator(color: context.appColors.buttonPrimaryBg),
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
+              ),
+            ),
+            Center(
+              child: CircularProgressIndicator(
+                color: context.appColors.buttonPrimaryBg,
+              ),
+            ),
+          ],
         ),
       );
     }
 
     if (isSupportChat) {
       return Scaffold(
-        backgroundColor: context.appColors.backgroundSecondary,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          toolbarHeight: 72,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: null, // Убираем заголовок для support
-          backgroundColor: context.appColors.surfacePrimary,
-          leading: IconButton(
-            icon: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: context.appColors.backgroundSecondary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: context.appColors.shadow.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16,
-                color: context.appColors.textPrimary,
+        backgroundColor: context.appColors.backgroundPrimary,
+        appBar: _buildAppBar(context),
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
               ),
             ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          centerTitle: false,
-        ),
-        body: Center(
-          child: Column(
+            Center(
+              child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
@@ -252,7 +249,9 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                         overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -261,66 +260,30 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
     String ownerId = memberDetails.isNotEmpty ? memberDetails[0]['id']! : '';
 
     return Scaffold(
-      backgroundColor: context.appColors.backgroundSecondary,
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        toolbarHeight: 72,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          AppLocalizations.of(context)!.translate('group_profile'),
-          style: TextStyle(
-            fontSize: 20,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w600,
-            color: context.appColors.textPrimary,
-          ),
-        ),
-        backgroundColor: context.appColors.surfacePrimary,
-        leading: IconButton(
-          icon: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: context.appColors.backgroundSecondary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: context.appColors.shadow.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 16,
-              color: context.appColors.textPrimary,
-            ),
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        centerTitle: false,
+      backgroundColor: context.appColors.backgroundPrimary,
+      appBar: _buildAppBar(
+        context,
+        title: AppLocalizations.of(context)!.translate('group_profile'),
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+          ),
+          Positioned.fill(
+            child: SingleChildScrollView(
+              child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(height: 10),
-            Container(
-              // decoration: BoxDecoration(
-              //   shape: BoxShape.circle,
-              //   border: Border.all(color: Colors.black, width: 6),
-              // ),
-              child: CircleAvatar(
-                backgroundColor: context.appColors.surfacePrimary,
-                backgroundImage: isGroupChat
-                    ? AssetImage('assets/images/GroupChat.png')
-                    : AssetImage('assets/images/AvatarChat.png'),
-                radius: 60,
-              ),
+            CircleAvatar(
+              backgroundColor: context.appColors.surfacePrimary,
+              backgroundImage: isGroupChat
+                  ? const AssetImage('assets/images/GroupChat.png')
+                  : const AssetImage('assets/images/AvatarChat.png'),
+              radius: 60,
             ),
             SizedBox(height: 10),
             GestureDetector(
@@ -472,15 +435,14 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 18),
                           decoration: BoxDecoration(
-                            color: context.appColors.textInverse,
+                            color: context.appColors.surfacePrimary
+                                .withValues(alpha: 0.78),
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: context.appColors.shadow.withValues(alpha: 0.1),
-                                blurRadius: 0,
-                                spreadRadius: 0,
-                              ),
-                            ],
+                            border: Border.all(
+                              color: context.appColors.borderSubtle
+                                  .withValues(alpha: 0.42),
+                            ),
+                            boxShadow: context.appShadows.card,
                           ),
                           child: Row(
                             children: [
@@ -628,7 +590,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
               ),
             ),
           ],
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

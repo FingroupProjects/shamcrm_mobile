@@ -142,6 +142,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   bool _isNearBottom = true;
   bool _isLoadingOlderFromScroll = false;
   final Set<int> _pendingScrollButtonMessageIds = <int>{};
+  final Set<int> _pendingMessageReconciliationIds = <int>{};
   final List<Message> _queuedSocketMessagesDuringSend = <Message>[];
   ChatAppearanceData _chatAppearance = ChatAppearanceData.defaults();
 
@@ -1488,6 +1489,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         await _cacheService.cacheMessages(widget.chatId, state.messages);
         debugPrint(
             '=================-=== ✅ ChatSmsScreen: Cached ${state.messages.length} fresh messages');
+        _schedulePendingMessageReconciliation(state.messages);
       }
 
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -2541,8 +2543,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           final pinnedMessages = state.pinnedMessages;
           final hasLeadPinnedHeader =
               widget.endPointInTab == 'lead' && integrationUsername != null;
-          final topOverlayOffset =
-              hasLeadPinnedHeader ? 88.0 : 0.0;
+          final topOverlayOffset = hasLeadPinnedHeader ? 88.0 : 0.0;
 
           if (messages.isEmpty) {
             return Center(
@@ -2743,6 +2744,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                                       ? widget.chatItem.name
                                       : null),
                               canSendMessageInChat: widget.canSendMessage,
+                              onDeliveryErrorTap: message.deliveryStatus ==
+                                      MessageDeliveryStatus.failed
+                                  ? () => _showFailedMessageActions(message)
+                                  : null,
                               onReactionToggle: _canUseReactionsInCurrentChat
                                   ? _toggleMessageReaction
                                   : null,
@@ -3821,39 +3826,157 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       String messageText, String? replyMessageId) async {
     final normalizedMessageText = messageText.trim();
     if (normalizedMessageText.isNotEmpty) {
-      try {
-        final myName = await _getMyDisplayName();
-        final localMessage = Message(
-          id: -DateTime.now().millisecondsSinceEpoch,
-          text: normalizedMessageText,
-          type: 'text',
-          createMessateTime: DateTime.now().toUtc().toIso8601String(),
-          isMyMessage: true,
-          senderName: myName,
-        );
+      final myName = await _getMyDisplayName();
+      final localMessage = Message(
+        id: -DateTime.now().microsecondsSinceEpoch,
+        text: normalizedMessageText,
+        type: 'text',
+        createMessateTime: DateTime.now().toUtc().toIso8601String(),
+        isMyMessage: true,
+        senderName: myName,
+        deliveryStatus: MessageDeliveryStatus.pending,
+        localReplyMessageId: replyMessageId,
+        localResponseType:
+            _isInstagramCommentChannel ? _instagramResponseType : null,
+      );
 
-        context.read<MessagingCubit>().addLocalMessage(localMessage);
-        _scrollToBottom(force: true);
-
-        await _playSound();
-
-        _messageController.clear();
-
-        await widget.apiService.sendMessage(
-          widget.chatId,
-          normalizedMessageText,
-          replyMessageId: replyMessageId,
-          responseType:
-              _isInstagramCommentChannel ? _instagramResponseType : null,
-        );
-
-        context.read<ListenSenderTextCubit>().updateValue(false);
-      } catch (e) {
-        debugPrint('Ошибка отправки сообщения через API!');
-      }
+      context.read<MessagingCubit>().addLocalMessage(localMessage);
+      _scrollToBottom(force: true);
+      unawaited(_playSound().catchError((error) {
+        debugPrint('Не удалось воспроизвести звук отправки: $error');
+      }));
+      _messageController.clear();
+      await _sendLocalTextMessage(localMessage);
     } else {
       debugPrint('Сообщение пустое, отправка не выполнена');
     }
+  }
+
+  Future<void> _sendLocalTextMessage(Message message) async {
+    if (!mounted) return;
+    final cubit = context.read<MessagingCubit>();
+    cubit.mergeMessageUpdate(
+      message.copyWith(deliveryStatus: MessageDeliveryStatus.pending),
+    );
+
+    try {
+      await widget.apiService
+          .sendMessage(
+            widget.chatId,
+            message.text,
+            replyMessageId: message.localReplyMessageId,
+            responseType: message.localResponseType,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (!_canMutateMessagingCubit(cubit)) return;
+      final currentMessage = cubit.findMessageById(message.id) ?? message;
+      cubit.mergeMessageUpdate(
+        currentMessage.copyWith(deliveryStatus: MessageDeliveryStatus.sent),
+      );
+      context.read<ListenSenderTextCubit>().updateValue(false);
+    } on TimeoutException catch (error) {
+      debugPrint('Отправка сообщения всё ещё ожидает подтверждения: $error');
+      if (!_canMutateMessagingCubit(cubit)) return;
+      final currentMessage = cubit.findMessageById(message.id) ?? message;
+      cubit.mergeMessageUpdate(
+        currentMessage.copyWith(
+          deliveryStatus: MessageDeliveryStatus.pending,
+        ),
+      );
+      unawaited(_persistCurrentChatMessages());
+      _schedulePendingMessageReconciliation(<Message>[currentMessage]);
+    } catch (error) {
+      debugPrint('Ошибка отправки сообщения через API: $error');
+      if (!_canMutateMessagingCubit(cubit)) return;
+      final currentMessage = cubit.findMessageById(message.id) ?? message;
+      cubit.mergeMessageUpdate(
+        currentMessage.copyWith(deliveryStatus: MessageDeliveryStatus.failed),
+      );
+      unawaited(_persistCurrentChatMessages());
+    }
+  }
+
+  void _schedulePendingMessageReconciliation(List<Message> messages) {
+    for (final message in messages) {
+      if (message.id >= 0 ||
+          message.deliveryStatus != MessageDeliveryStatus.pending ||
+          !_pendingMessageReconciliationIds.add(message.id)) {
+        continue;
+      }
+      unawaited(_reconcilePendingMessage(message.id));
+    }
+  }
+
+  Future<void> _reconcilePendingMessage(int localMessageId) async {
+    const retryDelays = <Duration>[
+      Duration(seconds: 2),
+      Duration(seconds: 5),
+      Duration(seconds: 10),
+    ];
+
+    try {
+      for (final delay in retryDelays) {
+        await Future<void>.delayed(delay);
+        if (!mounted || _isDisposing) return;
+
+        final cubit = context.read<MessagingCubit>();
+        final pendingMessage = cubit.findMessageById(localMessageId);
+        if (pendingMessage == null ||
+            pendingMessage.deliveryStatus != MessageDeliveryStatus.pending) {
+          return;
+        }
+
+        await cubit.refreshLatestPage(
+          widget.chatId,
+          chatType: widget.endPointInTab,
+        );
+
+        if (cubit.findMessageById(localMessageId) == null) {
+          unawaited(_persistCurrentChatMessages());
+          return;
+        }
+      }
+    } finally {
+      _pendingMessageReconciliationIds.remove(localMessageId);
+    }
+  }
+
+  Future<void> _showFailedMessageActions(Message message) async {
+    final localizations = AppLocalizations.of(context)!;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.refresh_rounded,
+                color: context.appColors.buttonPrimaryBg,
+              ),
+              title: Text(localizations.translate('retry_dialog')),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _sendLocalTextMessage(message);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline_rounded,
+                color: context.appColors.error,
+              ),
+              title: Text(localizations.translate('delete_for_me')),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.read<MessagingCubit>().removeMessageLocally(message.id);
+                unawaited(_persistCurrentChatMessages());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onPickFilePressed() async {
@@ -4239,8 +4362,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       }
 
       // ✅ Если есть сообщения, помечаем все как прочитанные на сервере
-      if (messages.isNotEmpty) {
-        final latestMessageId = messages.first.id;
+      final latestServerMessage = messages
+          .where((message) => message.id > 0)
+          .cast<Message?>()
+          .firstWhere((message) => message != null, orElse: () => null);
+      if (latestServerMessage != null) {
+        final latestMessageId = latestServerMessage.id;
         debugPrint(
             'ChatSmsScreen: Marking messages as read on exit, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
 
@@ -4254,7 +4381,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           _chatsBloc!.add(FetchChats(endPoint: widget.endPointInTab));
         }
       } else {
-        debugPrint('ChatSmsScreen: No messages to mark as read on exit');
+        debugPrint('ChatSmsScreen: No server messages to mark as read on exit');
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
       }
 
@@ -4296,6 +4423,7 @@ class MessageItemWidget extends StatelessWidget {
   final bool canSendMessageInChat;
   final void Function(Message message, String emoji)? onReactionToggle;
   final VoidCallback? onTargetReferralTap;
+  final VoidCallback? onDeliveryErrorTap;
 
   const MessageItemWidget({
     super.key,
@@ -4323,6 +4451,7 @@ class MessageItemWidget extends StatelessWidget {
     required this.canSendMessageInChat,
     this.onReactionToggle,
     this.onTargetReferralTap,
+    this.onDeliveryErrorTap,
   });
 
   String get _normalizedChannelName {
@@ -4442,6 +4571,8 @@ class MessageItemWidget extends StatelessWidget {
           onReactionTap: _shouldShowMessageReactions
               ? (emoji) => onReactionToggle?.call(message, emoji)
               : null,
+          deliveryStatus: message.deliveryStatus,
+          onDeliveryErrorTap: onDeliveryErrorTap,
         );
         break;
       case 'image':

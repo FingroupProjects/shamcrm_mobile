@@ -110,6 +110,25 @@ void main() {
     });
   });
 
+  test('cached interrupted message stays pending until server reconciliation',
+      () {
+    final cubit = MessagingCubit(_FakeApiService(const {}));
+    final pendingMessage = _message(
+      -1,
+      'waiting',
+      isMyMessage: true,
+    ).copyWith(deliveryStatus: MessageDeliveryStatus.pending);
+
+    cubit.showCachedMessages([pendingMessage]);
+
+    final state = cubit.state as MessagesCollectionState;
+    expect(state.messages, hasLength(1));
+    expect(
+      state.messages.single.deliveryStatus,
+      MessageDeliveryStatus.pending,
+    );
+  });
+
   test('loadInitialPage loads page 1 only and exposes pagination flags',
       () async {
     final cubit = MessagingCubit(

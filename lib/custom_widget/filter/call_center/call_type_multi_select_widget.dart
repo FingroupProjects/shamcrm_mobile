@@ -7,14 +7,15 @@ class CallTypeMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedCallTypes;
   final Function(List<CallTypeData>) onSelectCallTypes;
 
-  CallTypeMultiSelectWidget({
+  const CallTypeMultiSelectWidget({
     super.key,
     required this.selectedCallTypes,
     required this.onSelectCallTypes,
   });
 
   @override
-  State<CallTypeMultiSelectWidget> createState() => _CallTypeMultiSelectWidgetState();
+  State<CallTypeMultiSelectWidget> createState() =>
+      _CallTypeMultiSelectWidgetState();
 }
 
 class _CallTypeMultiSelectWidgetState extends State<CallTypeMultiSelectWidget> {
@@ -35,7 +36,8 @@ class _CallTypeMultiSelectWidgetState extends State<CallTypeMultiSelectWidget> {
     // Инициализация выбранных элементов, если переданы
     if (widget.selectedCallTypes != null && callTypesList.isNotEmpty) {
       selectedCallTypesData = callTypesList
-          .where((callType) => widget.selectedCallTypes!.contains(callType.id.toString()))
+          .where((callType) =>
+              widget.selectedCallTypes!.contains(callType.id.toString()))
           .toList();
     }
   }
@@ -59,8 +61,8 @@ class _CallTypeMultiSelectWidgetState extends State<CallTypeMultiSelectWidget> {
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
           decoration: CustomDropdownDecoration(
-            closedFillColor: context.appColors.fieldBg,
-            expandedFillColor: context.appColors.surfacePrimary,
+            closedFillColor: context.appColors.backgroundSecondary,
+            expandedFillColor: context.appColors.backgroundSecondary,
             closedBorder: Border.all(
               color: context.appColors.fieldBorder,
               width: 1,
@@ -71,6 +73,36 @@ class _CallTypeMultiSelectWidgetState extends State<CallTypeMultiSelectWidget> {
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
+            searchFieldDecoration: SearchFieldDecoration(
+              fillColor: context.appColors.surfaceElevated,
+              textStyle: context.appTextStyles.bodyMd
+                  .copyWith(color: context.appColors.textPrimary),
+              hintStyle: context.appTextStyles.bodyMd
+                  .copyWith(color: context.appColors.textSecondary),
+              prefixIcon:
+                  Icon(Icons.search, color: context.appColors.iconSecondary),
+              suffixIcon: (onClear) => IconButton(
+                onPressed: onClear,
+                icon: Icon(Icons.close_rounded,
+                    color: context.appColors.iconSecondary),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: context.appColors.fieldBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: context.appColors.buttonPrimaryBg),
+              ),
+            ),
+            listItemDecoration: ListItemDecoration(
+              selectedColor:
+                  context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+              highlightColor:
+                  context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+              splashColor: Colors.transparent,
+            ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return ListTile(
@@ -87,11 +119,16 @@ class _CallTypeMultiSelectWidgetState extends State<CallTypeMultiSelectWidget> {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
-                        color: isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
+                        border: Border.all(
+                            color: context.appColors.buttonPrimaryBg, width: 1),
+                        color: isSelected
+                            ? context.appColors.buttonPrimaryBg
+                            : Colors.transparent,
                       ),
                       child: isSelected
-                          ? Icon(Icons.check, color: context.appColors.buttonPrimaryFg, size: 16)
+                          ? Icon(Icons.check,
+                              color: context.appColors.buttonPrimaryFg,
+                              size: 16)
                           : null,
                     ),
                     const SizedBox(width: 10),

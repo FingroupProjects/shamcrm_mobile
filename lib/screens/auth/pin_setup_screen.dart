@@ -877,7 +877,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   Future<bool> _shouldOpenInitialWorkdayProfile(ApiService apiService) async {
     try {
-      final isWorkdayEnabled = await apiService.isWorkdayFeatureEnabled();
+      final isWorkdayEnabled = await apiService.canReadTimesheet();
       if (!isWorkdayEnabled) {
         WorkdayProfileRedirectService.closeProfileBlock();
         return false;

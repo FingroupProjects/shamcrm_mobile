@@ -4,6 +4,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_state.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -11,6 +13,7 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_status_bottom_sheet.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
@@ -140,46 +143,57 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       create: (context) =>
           ChatProfileBloc(ApiService())..add(FetchChatProfile(widget.chatId)),
       child: Scaffold(
-        backgroundColor: context.appColors.backgroundSecondary,
+        backgroundColor: context.appColors.backgroundPrimary,
         appBar: AppBar(
-          toolbarHeight: 72,
+          toolbarHeight: 78,
+          automaticallyImplyLeading: false,
+          titleSpacing: 16,
           elevation: 0,
           scrolledUnderElevation: 0,
-          title: Text(
-            AppLocalizations.of(context)!.translate('lead_profile'),
-            style: context.appTextStyles.titleMd.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.appColors.textPrimary,
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: Colors.transparent,
+          title: AppBarShell(
+            leading: AppBarShell.capsule(
+              context,
+              width: AppBarShell.orbSize,
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 20,
+                  color: context.appColors.iconPrimary,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-          ),
-          backgroundColor: context.appColors.backgroundSecondary,
-          leading: IconButton(
-            icon: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: context.appColors.surfacePrimary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: context.appColors.shadow.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+            center: AppBarShell.capsule(
+              context,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('lead_profile'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.appTextStyles.titleMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.appColors.textPrimary,
                   ),
-                ],
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16,
-                color: context.appColors.textPrimary,
+                ),
               ),
             ),
-            onPressed: () => Navigator.pop(context),
+            trailing: const SizedBox.shrink(),
           ),
-          centerTitle: false,
         ),
-        body: BlocBuilder<ChatProfileBloc, ChatProfileState>(
-          builder: (context, state) {
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
+              ),
+            ),
+            Positioned.fill(
+              child: BlocBuilder<ChatProfileBloc, ChatProfileState>(
+                builder: (context, state) {
             if (state is ChatProfileLoading) {
               return Center(
                 child: CircularProgressIndicator(
@@ -198,8 +212,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: context.appColors.surfacePrimary,
+                        color: context.appColors.surfacePrimary
+                            .withValues(alpha: 0.78),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                        ),
+                        boxShadow: context.appShadows.card,
                       ),
                       padding: const EdgeInsets.symmetric(
                           vertical: 16, horizontal: 16),
@@ -315,7 +335,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
               ),
             );
-          },
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -325,10 +348,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          Icons.supervisor_account,
-          size: 32,
-          color: context.appColors.buttonPrimaryBg,
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.supervisor_account_outlined,
+            size: 22,
+            color: context.appColors.buttonPrimaryBg,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -405,10 +436,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          Icons.assignment,
-          size: 32,
-          color: context.appColors.buttonPrimaryBg,
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.assignment_outlined,
+            size: 22,
+            color: context.appColors.buttonPrimaryBg,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -541,9 +580,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        customIconPath != null
-            ? Image.asset(customIconPath, width: 32, height: 32)
-            : Icon(icon, size: 32, color: context.appColors.buttonPrimaryBg),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: customIconPath != null
+                ? Image.asset(customIconPath, width: 24, height: 24)
+                : Icon(
+                    icon,
+                    size: 22,
+                    color: context.appColors.buttonPrimaryBg,
+                  ),
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -563,7 +616,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   value,
                   style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: context.appColors.buttonPrimaryBg,
+                    color: isClickable
+                        ? context.appColors.buttonPrimaryBg
+                        : context.appColors.textPrimary,
                     decoration:
                         isClickable ? TextDecoration.underline : null,
                   ),

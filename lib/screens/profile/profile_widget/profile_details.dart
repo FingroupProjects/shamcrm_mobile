@@ -7,6 +7,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/profile_photo_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -149,7 +150,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                   child: Column(
                     children: [
                       const SizedBox(height: 8),
-                      _buildAvatar(t),
+                      _buildAvatar(),
                       const SizedBox(height: 28),
                       _buildField(_nameController, t.translate('name'), Icons.person_outline),
                       const SizedBox(height: 12),
@@ -226,71 +227,10 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     );
   }
 
-  Widget _buildAvatar(AppLocalizations t) {
-    Widget defaultAvatar() => CircleAvatar(
-          radius: 70,
-          backgroundColor: context.appColors.borderPrimary,
-          child: Icon(Icons.person, size: 100, color: context.appColors.textInverse),
-        );
-
-    if (_userImage.isEmpty || _userImage == 'Не найдено') {
-      return defaultAvatar();
-    }
-
-    if (_userImage.contains('<svg')) {
-      final svg = _userImage;
-      if (svg.contains('image href=')) {
-        final start = svg.indexOf('href="') + 6;
-        final end = svg.indexOf('"', start);
-        final url = svg.substring(start, end);
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover),
-          ),
-        );
-      }
-      // SVG с текстом
-      Color? extractColor(String s) {
-        final m = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(s);
-        if (m != null) return Color(int.parse('FF${m.group(1)!.replaceAll('#', '')}', radix: 16));
-        return null;
-      }
-      final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
-      final bg = extractColor(svg) ?? context.appColors.surfaceElevated;
-      return Container(
-        width: 140,
-        height: 140,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: bg,
-          border: Border.all(color: context.appColors.textInverse, width: 1),
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: Padding(
-              padding: const EdgeInsets.all(40),
-              child: Text(
-                text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 120, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      width: 140,
-      height: 140,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(70),
-        image: DecorationImage(image: NetworkImage(_userImage), fit: BoxFit.cover),
-      ),
+  Widget _buildAvatar() {
+    return ProfilePhotoAvatar(
+      heroTag: 'profile-details-photo',
+      photo: _userImage,
     );
   }
 

@@ -8,14 +8,15 @@ class RatingMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedRatings;
   final Function(List<RatingData>) onSelectRatings;
 
-  RatingMultiSelectWidget({
+  const RatingMultiSelectWidget({
     super.key,
     required this.selectedRatings,
     required this.onSelectRatings,
   });
 
   @override
-  State<RatingMultiSelectWidget> createState() => _RatingMultiSelectWidgetState();
+  State<RatingMultiSelectWidget> createState() =>
+      _RatingMultiSelectWidgetState();
 }
 
 class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
@@ -34,10 +35,12 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
     super.initState();
     if (widget.selectedRatings != null && ratingsList.isNotEmpty) {
       selectedRatingsData = ratingsList
-          .where((rating) => widget.selectedRatings!.contains(rating.id.toString()))
+          .where((rating) =>
+              widget.selectedRatings!.contains(rating.id.toString()))
           .toList();
       if (kDebugMode) {
-        debugPrint('RatingMultiSelectWidget: Initial selected ratings: $selectedRatingsData');
+        debugPrint(
+            'RatingMultiSelectWidget: Initial selected ratings: $selectedRatingsData');
       }
     }
   }
@@ -62,11 +65,43 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
           overlayHeight: 400,
           decoration: CustomDropdownDecoration(
             closedFillColor: context.appColors.backgroundSecondary,
-            expandedFillColor: context.appColors.surfacePrimary,
-            closedBorder: Border.all(color: context.appColors.borderSubtle, width: 1),
+            expandedFillColor: context.appColors.backgroundSecondary,
+            closedBorder:
+                Border.all(color: context.appColors.fieldBorder, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder: Border.all(color: context.appColors.borderSubtle, width: 1),
+            expandedBorder:
+                Border.all(color: context.appColors.fieldBorder, width: 1),
             expandedBorderRadius: BorderRadius.circular(12),
+            searchFieldDecoration: SearchFieldDecoration(
+              fillColor: context.appColors.surfaceElevated,
+              textStyle: context.appTextStyles.bodyMd
+                  .copyWith(color: context.appColors.textPrimary),
+              hintStyle: context.appTextStyles.bodyMd
+                  .copyWith(color: context.appColors.textSecondary),
+              prefixIcon:
+                  Icon(Icons.search, color: context.appColors.iconSecondary),
+              suffixIcon: (onClear) => IconButton(
+                onPressed: onClear,
+                icon: Icon(Icons.close_rounded,
+                    color: context.appColors.iconSecondary),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: context.appColors.fieldBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: context.appColors.buttonPrimaryBg),
+              ),
+            ),
+            listItemDecoration: ListItemDecoration(
+              selectedColor:
+                  context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+              highlightColor:
+                  context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+              splashColor: Colors.transparent,
+            ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return ListTile(
@@ -86,11 +121,16 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
-                        color: isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
+                        border: Border.all(
+                            color: context.appColors.buttonPrimaryBg, width: 1),
+                        color: isSelected
+                            ? context.appColors.buttonPrimaryBg
+                            : Colors.transparent,
                       ),
                       child: isSelected
-                          ? Icon(Icons.check, color: context.appColors.buttonPrimaryFg, size: 16)
+                          ? Icon(Icons.check,
+                              color: context.appColors.buttonPrimaryFg,
+                              size: 16)
                           : null,
                     ),
                     const SizedBox(width: 10),
@@ -133,7 +173,8 @@ class _RatingMultiSelectWidgetState extends State<RatingMultiSelectWidget> {
             setState(() {
               selectedRatingsData = values;
               if (kDebugMode) {
-                debugPrint('RatingMultiSelectWidget: Selected ratings updated: $selectedRatingsData');
+                debugPrint(
+                    'RatingMultiSelectWidget: Selected ratings updated: $selectedRatingsData');
               }
             });
             widget.onSelectRatings(values);

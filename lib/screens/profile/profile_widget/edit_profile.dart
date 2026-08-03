@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/profile_photo_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -932,77 +933,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Функция для извлечения URL из SVG
-    Color? extractBackgroundColorFromSvg(String svg) {
-      final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
-      if (fillMatch != null) {
-        final colorHex = fillMatch.group(1);
-        if (colorHex != null) {
-          final hex = colorHex.replaceAll('#', '');
-          return Color(int.parse('FF$hex', radix: 16));
-        }
-      }
-      return null;
-    }
-
-    Widget buildSvgAvatar(String svg) {
-      if (svg.contains('image href=')) {
-        // Извлекаем URL изображения
-        final start = svg.indexOf('href="') + 6;
-        final end = svg.indexOf('"', start);
-        final imageUrl = svg.substring(start, end);
-
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      } else {
-        // Извлекаем текст из SVG и цвет фона
-        final text = RegExp(r'>([^<]+)</text>').firstMatch(svg)?.group(1) ?? '';
-        final backgroundColor =
-            extractBackgroundColorFromSvg(svg) ?? context.appColors.surfaceElevated;
-
-        return Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: backgroundColor, // Теперь используем извлеченный цвет
-            border: Border.all(
-              color: context.appColors.textInverse,
-              width: 1,
-            ),
-          ),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: Padding(
-                padding: EdgeInsets.all(40),
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: context.appColors.textInverse,
-                    fontSize: 120,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                    letterSpacing: 0,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
     return Scaffold(
       key: _formKey,
       appBar: AppBar(
@@ -1072,43 +1002,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           children: [
                             Column(
                               children: [
-                                _localImage != null
-                                    ? CircleAvatar(
-                                        radius: 70,
-                                        backgroundImage:
-                                            FileImage(_localImage!),
-                                      )
-                                    : _userImage !=
-                                                AppLocalizations.of(context)!
-                                                    .translate('not_found') &&
-                                            _userImage.isNotEmpty
-                                        ? _userImage.contains('<svg')
-                                            ? buildSvgAvatar(_userImage)
-                                            : Container(
-                                                width: 140,
-                                                height: 140,
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(70),
-                                                  image: DecorationImage(
-                                                    image: NetworkImage(
-                                                        _userImage),
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              )
-                                        : CircleAvatar(
-                                            radius: 70,
-                                            backgroundColor:
-                                                context.appColors.borderPrimary,
-                                            child: Icon(
-                                              Icons.person,
-                                              size: 100,
-                                              color:
-                                                  context.appColors.textInverse,
-                                            ),
-                                          ),
-                                const SizedBox(height: 10),
+                                ProfilePhotoAvatar(
+                                  heroTag: 'profile-edit-photo',
+                                  photo: _userImage,
+                                  localFile: _localImage,
+                                ),
+                                const SizedBox(height: 14),
                                 ElevatedButton(
                                   onPressed: _showImagePickerDialog,
                                   style: ElevatedButton.styleFrom(

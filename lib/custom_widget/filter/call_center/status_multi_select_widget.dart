@@ -1,4 +1,3 @@
-
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +7,15 @@ class StatusMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedStatuses;
   final Function(List<StatusData>) onSelectStatuses;
 
-  StatusMultiSelectWidget({
+  const StatusMultiSelectWidget({
     super.key,
     required this.selectedStatuses,
     required this.onSelectStatuses,
   });
 
   @override
-  State<StatusMultiSelectWidget> createState() => _StatusMultiSelectWidgetState();
+  State<StatusMultiSelectWidget> createState() =>
+      _StatusMultiSelectWidgetState();
 }
 
 class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
@@ -36,7 +36,8 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
     // Инициализация выбранных элементов, если переданы
     if (widget.selectedStatuses != null && statusesList.isNotEmpty) {
       selectedStatusesData = statusesList
-          .where((status) => widget.selectedStatuses!.contains(status.id.toString()))
+          .where((status) =>
+              widget.selectedStatuses!.contains(status.id.toString()))
           .toList();
     }
   }
@@ -60,8 +61,8 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
           decoration: CustomDropdownDecoration(
-            closedFillColor: context.appColors.fieldBg,
-            expandedFillColor: context.appColors.surfacePrimary,
+            closedFillColor: context.appColors.backgroundSecondary,
+            expandedFillColor: context.appColors.backgroundSecondary,
             closedBorder: Border.all(
               color: context.appColors.fieldBorder,
               width: 1,
@@ -72,6 +73,36 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
+            searchFieldDecoration: SearchFieldDecoration(
+              fillColor: context.appColors.surfaceElevated,
+              textStyle: context.appTextStyles.bodyMd
+                  .copyWith(color: context.appColors.textPrimary),
+              hintStyle: context.appTextStyles.bodyMd
+                  .copyWith(color: context.appColors.textSecondary),
+              prefixIcon:
+                  Icon(Icons.search, color: context.appColors.iconSecondary),
+              suffixIcon: (onClear) => IconButton(
+                onPressed: onClear,
+                icon: Icon(Icons.close_rounded,
+                    color: context.appColors.iconSecondary),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: context.appColors.fieldBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: context.appColors.buttonPrimaryBg),
+              ),
+            ),
+            listItemDecoration: ListItemDecoration(
+              selectedColor:
+                  context.appColors.buttonPrimaryBg.withValues(alpha: 0.14),
+              highlightColor:
+                  context.appColors.buttonPrimaryBg.withValues(alpha: 0.08),
+              splashColor: Colors.transparent,
+            ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return ListTile(
@@ -91,11 +122,16 @@ class _StatusMultiSelectWidgetState extends State<StatusMultiSelectWidget> {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
-                        color: isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
+                        border: Border.all(
+                            color: context.appColors.buttonPrimaryBg, width: 1),
+                        color: isSelected
+                            ? context.appColors.buttonPrimaryBg
+                            : Colors.transparent,
                       ),
                       child: isSelected
-                          ? Icon(Icons.check, color: context.appColors.buttonPrimaryFg, size: 16)
+                          ? Icon(Icons.check,
+                              color: context.appColors.buttonPrimaryFg,
+                              size: 16)
                           : null,
                     ),
                     const SizedBox(width: 10),

@@ -219,12 +219,7 @@ import 'dio_client.dart';
 
 class ApiService {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);
-  static const Set<String> _workdayEnabledSubdomains = {
-    'fingroupcrm-back',
-    'tajikistan-back',
-    'sham-back',
-    'khnodiraaaicloudcom-back',
-  };
+  static const String workdayReadPermission = 'timesheet.read';
   static const Set<String> _tojsokhtmontjSubdomains = {
     'tojsokhtmontj',
     'tojsokhtmontj-back',
@@ -723,11 +718,6 @@ class ApiService {
     return null;
   }
 
-  Future<bool> isWorkdayFeatureEnabled() async {
-    final subdomain = await getCurrentTenantSubdomain();
-    return subdomain != null && _workdayEnabledSubdomains.contains(subdomain);
-  }
-
   Future<bool> isTojsokhtmontjTenant() async {
     final subdomain = await getCurrentTenantSubdomain();
     return subdomain != null && _tojsokhtmontjSubdomains.contains(subdomain);
@@ -736,6 +726,10 @@ class ApiService {
   Future<bool> isStomatradeTenant() async {
     final subdomain = await getCurrentTenantSubdomain();
     return subdomain != null && _stomatradeSubdomains.contains(subdomain);
+  }
+
+  Future<bool> canReadTimesheet() {
+    return hasPermission(workdayReadPermission);
   }
 
   Future<WorkdayStatusResponse?> getWorkdayStatus() async {
@@ -892,7 +886,7 @@ class ApiService {
   }
 
   Future<bool> _shouldHandleWorkdayResponse(http.Response response) async {
-    if (!await isWorkdayFeatureEnabled()) {
+    if (!await canReadTimesheet()) {
       return false;
     }
 

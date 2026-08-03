@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/timesheet_models.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -74,21 +76,22 @@ class _TimesheetDetailScreenState extends State<TimesheetDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        surfaceTintColor: Colors.white,
-        foregroundColor: AppColors.primaryBlue,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: context.appColors.iconPrimary,
         titleSpacing: 0,
         centerTitle: false,
         title: Text(
           widget.entry.user.fullName,
-          style: const TextStyle(
+          style: context.appTextStyles.titleMd.copyWith(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w700,
             fontSize: 19,
-            color: AppColors.primaryBlue,
+            color: context.appColors.textPrimary,
           ),
         ),
         actions: [
@@ -101,20 +104,31 @@ class _TimesheetDetailScreenState extends State<TimesheetDetailScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xffF4F7FD),
-                  borderRadius: BorderRadius.circular(8),
+                  color:
+                      context.appColors.surfacePrimary.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color:
+                        context.appColors.borderSubtle.withValues(alpha: 0.5),
+                  ),
+                  boxShadow: context.appShadows.card,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.calendar_month_rounded, size: 18),
+                    Icon(
+                      Icons.calendar_month_rounded,
+                      size: 18,
+                      color: context.appColors.buttonPrimaryBg,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       DateFormat('MM/yyyy').format(_selectedMonth),
-                      style: const TextStyle(
+                      style: context.appTextStyles.bodyMd.copyWith(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
+                        color: context.appColors.textPrimary,
                       ),
                     ),
                   ],
@@ -124,9 +138,19 @@ class _TimesheetDetailScreenState extends State<TimesheetDetailScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _buildBody(),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          ),
+          Positioned.fill(
+            child: RefreshIndicator(
+              color: context.appColors.buttonPrimaryBg,
+              onRefresh: _load,
+              child: _buildBody(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -142,8 +166,11 @@ class _TimesheetDetailScreenState extends State<TimesheetDetailScreen> {
             height: 168,
             margin: const EdgeInsets.only(bottom: 14),
             decoration: BoxDecoration(
-              color: const Color(0xffF4F7FD),
+              color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: context.appColors.borderSubtle.withValues(alpha: 0.38),
+              ),
             ),
           ),
         ),
@@ -159,17 +186,17 @@ class _TimesheetDetailScreenState extends State<TimesheetDetailScreen> {
           Icon(
             Icons.history_toggle_off_rounded,
             size: 52,
-            color: Colors.grey.shade400,
+            color: context.appColors.textSecondary,
           ),
           const SizedBox(height: 16),
           Text(
             _error!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: context.appTextStyles.titleMd.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 18,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
         ],
@@ -180,16 +207,22 @@ class _TimesheetDetailScreenState extends State<TimesheetDetailScreen> {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
-        children: const [
-          SizedBox(height: 300),
+        children: [
+          const SizedBox(height: 260),
+          Icon(
+            Icons.event_note_rounded,
+            size: 52,
+            color: context.appColors.textSecondary,
+          ),
+          const SizedBox(height: 14),
           Text(
             'За выбранный месяц записей нет',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: context.appTextStyles.bodyLg.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 16,
-              color: AppColors.primaryBlue,
+              color: context.appColors.textPrimary,
             ),
           ),
         ],
@@ -223,8 +256,12 @@ class _TimesheetDayCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xffF4F7FD),
-        borderRadius: BorderRadius.circular(16),
+        color: context.appColors.surfacePrimary.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.42),
+        ),
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,18 +272,19 @@ class _TimesheetDayCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+                  color:
+                      context.appColors.surfaceAccent.withValues(alpha: 0.24),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   entry.startedAt != null
                       ? DateFormat('dd.MM.yyyy').format(entry.startedAt!)
                       : '-',
-                  style: const TextStyle(
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: AppColors.primaryBlue,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
@@ -348,34 +386,37 @@ class _InfoTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        color: context.appColors.backgroundPrimary.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.appColors.borderSubtle.withValues(alpha: 0.36),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: context.appTextStyles.bodySm.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 13,
-              color: Color(0xFF63728A),
+              color: context.appColors.textSecondary,
             ),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF63728A)),
+              Icon(icon, size: 18, color: context.appColors.iconSecondary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   value,
-                  style: const TextStyle(
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
-                    color: AppColors.primaryBlue,
+                    color: context.appColors.textPrimary,
                   ),
                 ),
               ),
@@ -424,11 +465,12 @@ class _MapTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          color: context.appColors.backgroundPrimary.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color:
-                hasCoordinates ? const Color(0x1A00B8D7) : Colors.transparent,
+            color: hasCoordinates
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.22)
+                : context.appColors.borderSubtle.withValues(alpha: 0.36),
           ),
         ),
         child: Column(
@@ -436,11 +478,11 @@ class _MapTile extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: context.appTextStyles.bodySm.copyWith(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: Color(0xFF63728A),
+                color: context.appColors.textSecondary,
               ),
             ),
             const SizedBox(height: 10),
@@ -451,8 +493,8 @@ class _MapTile extends StatelessWidget {
                   Icons.location_on_outlined,
                   size: 18,
                   color: hasCoordinates
-                      ? const Color(0xFF00B8D7)
-                      : const Color(0xFF9CA8BA),
+                      ? context.appColors.buttonPrimaryBg
+                      : context.appColors.iconSecondary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -465,8 +507,8 @@ class _MapTile extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                       color: hasCoordinates
-                          ? AppColors.primaryBlue
-                          : const Color(0xFF9CA8BA),
+                          ? context.appColors.textPrimary
+                          : context.appColors.textMuted,
                       decoration: hasCoordinates
                           ? TextDecoration.underline
                           : TextDecoration.none,
@@ -524,19 +566,22 @@ class _PhotoTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          color: context.appColors.backgroundPrimary.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: context.appColors.borderSubtle.withValues(alpha: 0.36),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: context.appTextStyles.bodySm.copyWith(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: Color(0xFF63728A),
+                color: context.appColors.textSecondary,
               ),
             ),
             const SizedBox(height: 10),
@@ -550,10 +595,11 @@ class _PhotoTile extends StatelessWidget {
                         child: Image.network(
                           fullPhotoUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildEmptyPhoto(),
+                          errorBuilder: (_, __, ___) =>
+                              _buildEmptyPhoto(context),
                         ),
                       )
-                    : _buildEmptyPhoto(),
+                    : _buildEmptyPhoto(context),
               ),
             ),
           ],
@@ -562,21 +608,24 @@ class _PhotoTile extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyPhoto() {
+  Widget _buildEmptyPhoto(BuildContext context) {
     return Container(
-      color: const Color(0xFFEFF3FA),
-      child: const Column(
+      color: context.appColors.surfaceAccent.withValues(alpha: 0.16),
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.image_not_supported_outlined, color: Color(0xFF9CA8BA)),
-          SizedBox(height: 8),
+          Icon(
+            Icons.image_not_supported_outlined,
+            color: context.appColors.iconSecondary,
+          ),
+          const SizedBox(height: 8),
           Text(
             'Нет фото',
-            style: TextStyle(
+            style: context.appTextStyles.bodySm.copyWith(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
               fontSize: 13,
-              color: Color(0xFF9CA8BA),
+              color: context.appColors.textMuted,
             ),
           ),
         ],
@@ -596,16 +645,23 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background =
-        isActive ? const Color(0xFFE0F7EA) : const Color(0xFFF1F3F7);
-    final foreground =
-        isActive ? const Color(0xFF1E9E5A) : const Color(0xFF63728A);
+    final background = isActive
+        ? context.appColors.success
+        : context.appColors.surfaceAccent.withValues(alpha: 0.18);
+    final foreground = isActive
+        ? context.adaptiveForegroundOn(context.appColors.success)
+        : context.appColors.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isActive
+              ? context.appColors.success
+              : context.appColors.borderSubtle.withValues(alpha: 0.5),
+        ),
       ),
       child: Text(
         label,
@@ -663,8 +719,12 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: context.appColors.borderSubtle.withValues(alpha: 0.5),
+          ),
+          boxShadow: context.appShadows.card,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -673,23 +733,29 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
               children: [
                 IconButton(
                   onPressed: () => setState(() => _year--),
-                  icon: const Icon(Icons.chevron_left_rounded),
+                  icon: Icon(
+                    Icons.chevron_left_rounded,
+                    color: context.appColors.iconPrimary,
+                  ),
                 ),
                 Expanded(
                   child: Text(
                     _year.toString(),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: context.appTextStyles.titleLg.copyWith(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
                       fontSize: 22,
-                      color: AppColors.primaryBlue,
+                      color: context.appColors.textPrimary,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => setState(() => _year++),
-                  icon: const Icon(Icons.chevron_right_rounded),
+                  icon: Icon(
+                    Icons.chevron_right_rounded,
+                    color: context.appColors.iconPrimary,
+                  ),
                 ),
               ],
             ),
@@ -714,9 +780,14 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: selected
-                          ? const Color(0xFF4F46E5)
-                          : const Color(0xFFF3F6FC),
+                          ? context.appColors.buttonPrimaryBg
+                          : context.appColors.backgroundPrimary,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected
+                            ? context.appColors.buttonPrimaryBg
+                            : context.appColors.borderSubtle,
+                      ),
                     ),
                     child: Center(
                       child: Text(
@@ -725,8 +796,9 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color:
-                              selected ? Colors.white : AppColors.primaryBlue,
+                          color: selected
+                              ? context.appColors.buttonPrimaryFg
+                              : context.appColors.textPrimary,
                         ),
                       ),
                     ),

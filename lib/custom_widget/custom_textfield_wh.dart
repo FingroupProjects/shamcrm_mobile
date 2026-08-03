@@ -14,6 +14,7 @@ class DateFieldWithFromTo extends StatelessWidget {
   final bool hasError;
   final Function(String)? onDateSelected; // Новый параметр для передачи даты
   final bool isFrom;
+  final Color? fillColor;
 
   DateFieldWithFromTo({
     super.key,
@@ -27,6 +28,7 @@ class DateFieldWithFromTo extends StatelessWidget {
     this.hasError = false,
     this.onDateSelected, // Инициализация
     required this.isFrom,
+    this.fillColor,
   }) {
     if (useCurrentDateAsDefault) {
       controller.text = withTime
@@ -218,7 +220,7 @@ class DateFieldWithFromTo extends StatelessWidget {
                   ),
                 ),
                 filled: true,
-                fillColor: context.appColors.fieldBg,
+                fillColor: fillColor ?? context.appColors.fieldBg,
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),

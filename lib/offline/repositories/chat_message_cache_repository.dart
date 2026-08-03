@@ -95,6 +95,9 @@ class ChatMessageCacheRepository {
       'is_changed': message.isChanged,
       'is_read': message.isRead,
       'is_note': message.isNote,
+      'local_delivery_status': message.deliveryStatus.name,
+      'local_reply_message_id': message.localReplyMessageId,
+      'local_response_type': message.localResponseType,
       'forwarded_message': message.forwardedMessage != null
           ? {
               'id': message.forwardedMessage!.id,

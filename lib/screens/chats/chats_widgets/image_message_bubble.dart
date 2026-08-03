@@ -7,6 +7,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
@@ -80,13 +81,8 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
   @override
   Widget build(BuildContext context) {
     final appearance = ChatAppearanceScope.of(context);
-    final String normalizedFilePath = widget.filePath.startsWith('storage/')
-        ? widget.filePath
-        : 'storage/${widget.filePath.startsWith('/') ? widget.filePath.substring(1) : widget.filePath}';
-
-    final String? fullUrl = baseUrl != null
-        ? Uri.parse(baseUrl!).resolve(normalizedFilePath).toString()
-        : null;
+    final String? fullUrl =
+        baseUrl == null ? null : resolveFileUrl(widget.filePath, baseUrl);
 
     debugPrint(
         'ImageMessageBubble: baseUrl=$baseUrl, filePath=${widget.filePath}, fullUrl=$fullUrl');
@@ -275,6 +271,9 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
   bool _minDisplayElapsed = false;
   DateTime? _loadStart;
   Future<File?>? _cachedFileFuture;
+  bool _loadCompletionScheduled = false;
+  bool _errorUpdateScheduled = false;
+  int _requestGeneration = 0;
 
   @override
   void initState() {
@@ -283,27 +282,52 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
         ChatMediaPersistentCache.instance.getImageFile(widget.url);
   }
 
+  @override
+  void didUpdateWidget(covariant _ShimmerImageLoader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url == widget.url) return;
+
+    _loaded = false;
+    _error = false;
+    _minDisplayElapsed = false;
+    _loadStart = null;
+    _loadCompletionScheduled = false;
+    _errorUpdateScheduled = false;
+    _requestGeneration++;
+    _cachedFileFuture =
+        ChatMediaPersistentCache.instance.getImageFile(widget.url);
+  }
+
   void _onLoaded() {
-    if (!mounted || _loaded) return;
+    if (!mounted || _loaded || _loadCompletionScheduled) return;
+    _loadCompletionScheduled = true;
+    final generation = _requestGeneration;
     _loadStart ??= DateTime.now();
     const minVisible = Duration(milliseconds: 420);
     final elapsed = DateTime.now().difference(_loadStart!);
     final remaining = minVisible - elapsed;
 
     Future.delayed(remaining.isNegative ? Duration.zero : remaining, () {
-      if (!mounted) return;
+      if (!mounted || generation != _requestGeneration) return;
       setState(() {
         _minDisplayElapsed = true;
         _loaded = true;
+        _loadCompletionScheduled = false;
       });
     });
   }
 
   void _onError() {
-    if (!mounted) return;
-    setState(() {
-      _error = true;
-      _loaded = true; // убираем shimmer, показываем заглушку
+    if (!mounted || _error || _errorUpdateScheduled) return;
+    _errorUpdateScheduled = true;
+    final generation = _requestGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || generation != _requestGeneration) return;
+      setState(() {
+        _errorUpdateScheduled = false;
+        _error = true;
+        _loaded = true; // убираем shimmer, показываем заглушку
+      });
     });
   }
 
@@ -391,6 +415,11 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
                 _loaded = false;
                 _minDisplayElapsed = false;
                 _loadStart = null;
+                _loadCompletionScheduled = false;
+                _errorUpdateScheduled = false;
+                _requestGeneration++;
+                _cachedFileFuture =
+                    ChatMediaPersistentCache.instance.getImageFile(widget.url);
               }),
             ),
         ],

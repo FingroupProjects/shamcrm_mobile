@@ -620,7 +620,7 @@ class MessagingCubit extends Cubit<MessagingState> {
   List<Message> _extractPendingMessages(MessagesCollection? collection) {
     if (collection == null) return const [];
     return collection.messages
-        .where((message) => message.isUploading)
+        .where((message) => message.isUploading || message.id < 0)
         .toList(growable: false);
   }
 
@@ -632,7 +632,18 @@ class MessagingCubit extends Cubit<MessagingState> {
 
     final freshIds = freshMessages.map((message) => message.id).toSet();
     final pendingToKeep = pendingMessages
-        .where((message) => !freshIds.contains(message.id))
+        .where(
+          (message) =>
+              !freshIds.contains(message.id) &&
+              !freshMessages.any(
+                (freshMessage) =>
+                    _findPendingLocalMessageIndex(
+                      <Message>[message],
+                      freshMessage,
+                    ) !=
+                    -1,
+              ),
+        )
         .toList(growable: false);
 
     if (pendingToKeep.isEmpty) return freshMessages;
@@ -918,7 +929,14 @@ class MessagingCubit extends Cubit<MessagingState> {
         _findPendingLocalMessageIndex(updatedMessages, incomingMessage);
 
     if (pendingIndex != -1) {
-      updatedMessages[pendingIndex] = incomingMessage;
+      final pendingMessage = updatedMessages[pendingIndex];
+      updatedMessages[pendingIndex] =
+          pendingMessage.isMyMessage && !incomingMessage.isMyMessage
+              ? incomingMessage.copyWith(
+                  isMyMessage: true,
+                  senderName: pendingMessage.senderName,
+                )
+              : incomingMessage;
       return List<Message>.unmodifiable(updatedMessages);
     }
 
@@ -935,7 +953,8 @@ class MessagingCubit extends Cubit<MessagingState> {
       if (mediaGroupIndex != -1) {
         final pendingGroup = updatedMessages[mediaGroupIndex];
         // Remove first matching item from media_group (FIFO order)
-        final remainingItems = List<MessageMediaItem>.from(pendingGroup.mediaItems);
+        final remainingItems =
+            List<MessageMediaItem>.from(pendingGroup.mediaItems);
         if (remainingItems.isNotEmpty) {
           remainingItems.removeAt(0);
         }
@@ -1006,9 +1025,7 @@ class MessagingCubit extends Cubit<MessagingState> {
 
     for (int index = 0; index < messages.length; index++) {
       final message = messages[index];
-      if (message.id >= 0 ||
-          message.type != incomingMessage.type ||
-          message.isMyMessage != incomingMessage.isMyMessage) {
+      if (message.id >= 0 || message.type != incomingMessage.type) {
         continue;
       }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/bloc/call_bloc/call_center_bloc.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_event.dart';
 import 'package:crm_task_manager/bloc/call_bloc/call_center_state.dart';
@@ -29,8 +31,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   CallType? _selectedFilter;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  bool _isSearching = false;
+  Timer? _searchDebounce;
 
   // Добавляем PageController для swipe навигации
   final PageController _pageController = PageController();
@@ -68,9 +69,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   void initState() {
     super.initState();
     context.read<CallCenterBloc>().add(LoadCalls(callType: null));
-    _searchController.addListener(() {
-      _onSearch(_searchController.text);
-    });
+    _searchController.addListener(_onSearchChanged);
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
@@ -98,7 +97,10 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       _expectedFilter = filter; // Track expected filter
       _updateFiltersState();
     });
-    context.read<CallCenterBloc>().add(LoadCalls(callType: filter));
+    context.read<CallCenterBloc>().add(LoadCalls(
+          callType: filter,
+          searchQuery: _searchQuery,
+        ));
   }
 
   // Новый метод для обработки смены страницы через swipe
@@ -120,36 +122,26 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     );
   }
 
-  void _onSearch(String query) {
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
     setState(() {
       _searchQuery = query;
       _expectedFilter = _selectedFilter;
     });
 
-    _updateFiltersState();
-
-    context.read<CallCenterBloc>().add(LoadCalls(
-          callType: _selectedFilter,
-          page: 1,
-          searchQuery: query,
-        ));
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted || query != _searchController.text.trim()) return;
+      context.read<CallCenterBloc>().add(LoadCalls(
+            callType: _selectedFilter,
+            page: 1,
+            searchQuery: query,
+          ));
+    });
   }
 
   void _resetSearch() {
-    setState(() {
-      _searchQuery = '';
-      _searchController.clear();
-      _isSearching = false;
-      _focusNode.unfocus();
-    });
-
-    _updateFiltersState();
-
-    context.read<CallCenterBloc>().add(LoadCalls(
-          callType: _selectedFilter,
-          page: 1,
-          searchQuery: '',
-        ));
+    _searchController.clear();
   }
 
   void _onFiltersSelected(Map filters) {
@@ -389,51 +381,6 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          if (_isSearching)
-            Container(
-              width: 150,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _focusNode,
-                decoration: InputDecoration(
-                  hintText:
-                      AppLocalizations.of(context)!.translate('search_appbar'),
-                  border: InputBorder.none,
-                ),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: context.appColors.textPrimary,
-                ),
-                autofocus: true,
-              ),
-            ),
-          IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            constraints: const BoxConstraints(),
-            icon: _isSearching
-                ? Icon(Icons.close, color: context.appColors.iconPrimary)
-                : Image.asset(
-                    'assets/icons/AppBar/search.png',
-                    width: 24,
-                    height: 24,
-                  ),
-            tooltip: AppLocalizations.of(context)!.translate('search'),
-            onPressed: () {
-              if (_isSearching) {
-                _resetSearch();
-              } else {
-                setState(() {
-                  _isSearching = true;
-                });
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  if (mounted) {
-                    _focusNode.requestFocus();
-                  }
-                });
-              }
-            },
-          ),
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
@@ -480,6 +427,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
                         startDate = null;
                         endDate = null;
                         _areFiltersApplied = false;
+                        _searchController.clear();
                         context.read<CallCenterBloc>().add(ResetFilters());
                       });
                     },
@@ -505,6 +453,60 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
       ),
       body: Column(
         children: [
+          Container(
+            color: context.appColors.surfacePrimary,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              style: context.appTextStyles.bodyMd.copyWith(
+                color: context.appColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText:
+                    AppLocalizations.of(context)!.translate('search_appbar'),
+                hintStyle: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.fieldHint,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: context.appColors.iconSecondary,
+                ),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip:
+                            AppLocalizations.of(context)!.translate('reset'),
+                        onPressed: _resetSearch,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: context.appColors.iconSecondary,
+                        ),
+                      ),
+                filled: true,
+                fillColor: context.appColors.backgroundSecondary,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: context.appColors.borderSubtle,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: context.appColors.buttonPrimaryBg,
+                    width: 1.4,
+                  ),
+                ),
+              ),
+            ),
+          ),
           Container(
             color: context.appColors.surfacePrimary,
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -610,8 +612,9 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _focusNode.dispose();
     _remarkController.dispose();
     _pageController.dispose(); // Не забываем освободить PageController
     super.dispose();

@@ -16,6 +16,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
   List<CallLogEntry> _lastCalls = [];
   int _lastPage = 1;
   int _totalPages = 1;
+  int _loadRequestId = 0;
 
   CallCenterBloc(this.apiService) : super(CallCenterInitial()) {
     if (kDebugMode) {
@@ -45,7 +46,9 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     return true;
   }
 
-  Future<void> _onLoadCalls(LoadCalls event, Emitter<CallCenterState> emit) async {
+  Future<void> _onLoadCalls(
+      LoadCalls event, Emitter<CallCenterState> emit) async {
+    final requestId = ++_loadRequestId;
     if (kDebugMode) {
       //print("Handling LoadCalls event: callType=${event.callType}, page=${event.page}, searchQuery=${event.searchQuery}, filters=$_currentFilters");
     }
@@ -64,7 +67,9 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     }
 
     try {
-      final response = await _fetchCalls(event.callType, event.page, event.searchQuery, _currentFilters);
+      final response = await _fetchCalls(
+          event.callType, event.page, event.searchQuery, _currentFilters);
+      if (requestId != _loadRequestId) return;
       final calls = response['calls'] as List<CallLogEntry>;
       final pagination = response['pagination'] as Map<String, dynamic>;
       final currentPage = pagination['current_page'] as int;
@@ -93,6 +98,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         currentFilter: event.callType,
       ));
     } catch (e) {
+      if (requestId != _loadRequestId) return;
       if (kDebugMode) {
         //print("Error loading calls: $e");
       }
@@ -100,7 +106,8 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     }
   }
 
-  Future<void> _onLoadMoreCalls(LoadMoreCalls event, Emitter<CallCenterState> emit) async {
+  Future<void> _onLoadMoreCalls(
+      LoadMoreCalls event, Emitter<CallCenterState> emit) async {
     if (allCallsFetched || isLoadingMore) {
       if (kDebugMode) {
         //print("All calls fetched or already loading, skipping LoadMoreCalls");
@@ -124,7 +131,8 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     }
 
     try {
-      final response = await _fetchCalls(_currentCallType ?? event.callType, nextPage, _currentSearchQuery, _currentFilters);
+      final response = await _fetchCalls(_currentCallType ?? event.callType,
+          nextPage, _currentSearchQuery, _currentFilters);
       final newCalls = response['calls'] as List<CallLogEntry>;
       final pagination = response['pagination'] as Map<String, dynamic>;
       final currentPage = pagination['current_page'] as int;
@@ -138,7 +146,10 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
       if (state is CallCenterLoaded && !isClosed) {
         final currentState = state as CallCenterLoaded;
-        final uniqueNewCalls = newCalls.where((newCall) => !currentState.calls.any((call) => call.id == newCall.id)).toList();
+        final uniqueNewCalls = newCalls
+            .where((newCall) =>
+                !currentState.calls.any((call) => call.id == newCall.id))
+            .toList();
         emit(currentState.merge(uniqueNewCalls, newPage: currentPage));
       } else {
         if (kDebugMode) {
@@ -149,13 +160,16 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
       if (kDebugMode) {
         //print("Error loading more calls: $e");
       }
-      emit(CallCenterError('Не удалось загрузить дополнительные звонки: ${e.toString()}'));
+      emit(CallCenterError(
+          'Не удалось загрузить дополнительные звонки: ${e.toString()}'));
     } finally {
       isLoadingMore = false;
     }
   }
 
-  Future<void> _onFilterCalls(FilterCalls event, Emitter<CallCenterState> emit) async {
+  Future<void> _onFilterCalls(
+      FilterCalls event, Emitter<CallCenterState> emit) async {
+    final requestId = ++_loadRequestId;
     if (kDebugMode) {
       //print("Handling FilterCalls event: filters=${event.filters}");
     }
@@ -174,7 +188,9 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     }
 
     try {
-      final response = await _fetchCalls(_currentCallType, 1, _currentSearchQuery, _currentFilters);
+      final response = await _fetchCalls(
+          _currentCallType, 1, _currentSearchQuery, _currentFilters);
+      if (requestId != _loadRequestId) return;
       final calls = response['calls'] as List<CallLogEntry>;
       final pagination = response['pagination'] as Map<String, dynamic>;
       final currentPage = pagination['current_page'] as int;
@@ -203,6 +219,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         ));
       }
     } catch (e) {
+      if (requestId != _loadRequestId) return;
       if (kDebugMode) {
         //print('CallCenterBloc: Ошибка применения фильтров: $e');
       }
@@ -210,7 +227,9 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     }
   }
 
-  Future<void> _onResetFilters(ResetFilters event, Emitter<CallCenterState> emit) async {
+  Future<void> _onResetFilters(
+      ResetFilters event, Emitter<CallCenterState> emit) async {
+    final requestId = ++_loadRequestId;
     if (kDebugMode) {
       //print("Handling ResetFilters event");
     }
@@ -225,6 +244,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
 
     try {
       final response = await _fetchCalls(null, 1, null, null);
+      if (requestId != _loadRequestId) return;
       final calls = response['calls'] as List<CallLogEntry>;
       final pagination = response['pagination'] as Map<String, dynamic>;
       final currentPage = pagination['current_page'] as int;
@@ -253,6 +273,7 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
         ));
       }
     } catch (e) {
+      if (requestId != _loadRequestId) return;
       if (kDebugMode) {
         //print('CallCenterBloc: Ошибка сброса фильтров: $e');
       }
@@ -260,7 +281,8 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     }
   }
 
-  Future<void> _onLoadCallById(LoadCallById event, Emitter<CallCenterState> emit) async {
+  Future<void> _onLoadCallById(
+      LoadCallById event, Emitter<CallCenterState> emit) async {
     if (kDebugMode) {
       //print("Handling LoadCallById event: callId=${event.callId}");
     }
@@ -292,15 +314,16 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
           currentFilter: _currentCallType,
         ));
       } else {
-        emit(CallCenterError('Не удалось загрузить данные звонка: ${e.toString()}'));
+        emit(CallCenterError(
+            'Не удалось загрузить данные звонка: ${e.toString()}'));
       }
     }
   }
 
   Future<void> _onSubmitCallRatingAndReport(
-      SubmitCallRatingAndReport event,
-      Emitter<CallCenterState> emit,
-      ) async {
+    SubmitCallRatingAndReport event,
+    Emitter<CallCenterState> emit,
+  ) async {
     if (kDebugMode) {
       //print("Handling SubmitCallRatingAndReport event: callId=${event.callId}, rating=${event.rating}, report=${event.report}");
     }
@@ -342,28 +365,46 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
       if (kDebugMode) {
         //print("Error submitting rating and report: $e");
       }
-      emit(CallCenterError('Не удалось сохранить оценку и замечание: ${e.toString()}'));
+      emit(CallCenterError(
+          'Не удалось сохранить оценку и замечание: ${e.toString()}'));
     }
   }
 
-  Future<Map<String, dynamic>> _fetchCalls(CallType? callType, int page, String? searchQuery, Map<String, dynamic>? filters) async {
+  Future<Map<String, dynamic>> _fetchCalls(CallType? callType, int page,
+      String? searchQuery, Map<String, dynamic>? filters) async {
     if (kDebugMode) {
       //print("Fetching calls: callType=$callType, page=$page, searchQuery=$searchQuery, filters=$filters");
     }
     Map<String, dynamic> response;
     switch (callType) {
       case CallType.incoming:
-        response = await apiService.getIncomingCalls(page: page, perPage: perPage, searchQuery: searchQuery, filters: filters);
+        response = await apiService.getIncomingCalls(
+            page: page,
+            perPage: perPage,
+            searchQuery: searchQuery,
+            filters: filters);
         break;
       case CallType.outgoing:
       case CallType.outgoingMissed:
-        response = await apiService.getOutgoingCalls(page: page, perPage: perPage, searchQuery: searchQuery, filters: filters);
+        response = await apiService.getOutgoingCalls(
+            page: page,
+            perPage: perPage,
+            searchQuery: searchQuery,
+            filters: filters);
         break;
       case CallType.missed:
-        response = await apiService.getMissedCalls(page: page, perPage: perPage, searchQuery: searchQuery, filters: filters);
+        response = await apiService.getMissedCalls(
+            page: page,
+            perPage: perPage,
+            searchQuery: searchQuery,
+            filters: filters);
         break;
       default:
-        response = await apiService.getAllCalls(page: page, perPage: perPage, searchQuery: searchQuery, filters: filters);
+        response = await apiService.getAllCalls(
+            page: page,
+            perPage: perPage,
+            searchQuery: searchQuery,
+            filters: filters);
         break;
     }
     if (kDebugMode) {

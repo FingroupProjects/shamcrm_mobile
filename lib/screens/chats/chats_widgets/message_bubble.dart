@@ -2,6 +2,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -52,6 +53,8 @@ class MessageBubble extends StatelessWidget {
   final List<MessageReaction> reactions; // Реакции
   final Function(String emoji)? onReactionTap; // Callback для реакций
   final VoidCallback? onLongPress; // Callback для long press
+  final MessageDeliveryStatus deliveryStatus;
+  final VoidCallback? onDeliveryErrorTap;
 
   const MessageBubble({
     super.key,
@@ -74,6 +77,8 @@ class MessageBubble extends StatelessWidget {
     this.reactions = const [], // Реакции по умолчанию пустой список
     this.onReactionTap, // Callback для реакций
     this.onLongPress, // Callback для long press
+    this.deliveryStatus = MessageDeliveryStatus.sent,
+    this.onDeliveryErrorTap,
   });
 
   @override
@@ -208,10 +213,10 @@ class MessageBubble extends StatelessWidget {
                               ),
                               const SizedBox(width: 3),
                               if (isSender)
-                                Icon(
-                                  isRead ? Icons.done_all : Icons.done_all,
-                                  size: 16,
-                                  color: isRead ? primaryText : secondaryText,
+                                _buildDeliveryIcon(
+                                  context,
+                                  primaryText: primaryText,
+                                  secondaryText: secondaryText,
                                 ),
                             ],
                           ),
@@ -225,6 +230,44 @@ class MessageBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildDeliveryIcon(
+    BuildContext context, {
+    required Color primaryText,
+    required Color secondaryText,
+  }) {
+    switch (deliveryStatus) {
+      case MessageDeliveryStatus.pending:
+        return Icon(
+          Icons.schedule_rounded,
+          size: 15,
+          color: secondaryText,
+        );
+      case MessageDeliveryStatus.failed:
+        return Semantics(
+          button: true,
+          label: AppLocalizations.of(context)!.translate('message_send_failed'),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onDeliveryErrorTap,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                Icons.error_rounded,
+                size: 17,
+                color: context.appColors.error,
+              ),
+            ),
+          ),
+        );
+      case MessageDeliveryStatus.sent:
+        return Icon(
+          Icons.done_all,
+          size: 16,
+          color: isRead ? primaryText : secondaryText,
+        );
+    }
   }
 
   Widget _buildReplyPreview(BuildContext context) {

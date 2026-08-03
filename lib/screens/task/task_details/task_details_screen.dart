@@ -1632,7 +1632,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                     ),
                                 ],
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               Text(
                                 file.name,
                                 maxLines: 2,
@@ -1641,6 +1641,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
+                                  height: 1.25,
                                   color: _screenPrimaryText(context),
                                 ),
                               ),

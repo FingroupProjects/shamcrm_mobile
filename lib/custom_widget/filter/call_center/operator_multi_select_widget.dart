@@ -20,7 +20,8 @@ class OperatorMultiSelectWidget extends StatefulWidget {
   });
 
   @override
-  State<OperatorMultiSelectWidget> createState() => _OperatorMultiSelectWidgetState();
+  State<OperatorMultiSelectWidget> createState() =>
+      _OperatorMultiSelectWidgetState();
 }
 
 class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
@@ -62,9 +63,11 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                 setState(() {
                   operatorsList = state.operators;
                   errorMessage = null;
-                  if (widget.selectedOperators != null && operatorsList.isNotEmpty) {
+                  if (widget.selectedOperators != null &&
+                      operatorsList.isNotEmpty) {
                     selectedOperatorsData = operatorsList
-                        .where((operator) => widget.selectedOperators!.contains(operator.id.toString()))
+                        .where((operator) => widget.selectedOperators!
+                            .contains(operator.id.toString()))
                         .toList();
                   }
                 });
@@ -79,11 +82,12 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                 CustomDropdown<Operator>.multiSelectSearch(
                   items: operatorsList,
                   initialItems: selectedOperatorsData,
-                  searchHintText: AppLocalizations.of(context)!.translate('search'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: context.appColors.fieldBg,
-                    expandedFillColor: context.appColors.surfacePrimary,
+                    closedFillColor: context.appColors.backgroundSecondary,
+                    expandedFillColor: context.appColors.backgroundSecondary,
                     closedBorder: Border.all(
                       color: context.appColors.fieldBorder,
                       width: 1,
@@ -94,6 +98,37 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      fillColor: context.appColors.surfaceElevated,
+                      textStyle: context.appTextStyles.bodyMd
+                          .copyWith(color: context.appColors.textPrimary),
+                      hintStyle: context.appTextStyles.bodyMd
+                          .copyWith(color: context.appColors.textSecondary),
+                      prefixIcon: Icon(Icons.search,
+                          color: context.appColors.iconSecondary),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(Icons.close_rounded,
+                            color: context.appColors.iconSecondary),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            BorderSide(color: context.appColors.fieldBorder),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                            color: context.appColors.buttonPrimaryBg),
+                      ),
+                    ),
+                    listItemDecoration: ListItemDecoration(
+                      selectedColor: context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.14),
+                      highlightColor: context.appColors.buttonPrimaryBg
+                          .withValues(alpha: 0.08),
+                      splashColor: Colors.transparent,
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return ListTile(
@@ -113,11 +148,17 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                               width: 18,
                               height: 18,
                               decoration: BoxDecoration(
-                                border: Border.all(color: context.appColors.buttonPrimaryBg, width: 1),
-                                color: isSelected ? context.appColors.buttonPrimaryBg : Colors.transparent,
+                                border: Border.all(
+                                    color: context.appColors.buttonPrimaryBg,
+                                    width: 1),
+                                color: isSelected
+                                    ? context.appColors.buttonPrimaryBg
+                                    : Colors.transparent,
                               ),
                               child: isSelected
-                                  ? Icon(Icons.check, color: context.appColors.buttonPrimaryFg, size: 16)
+                                  ? Icon(Icons.check,
+                                      color: context.appColors.buttonPrimaryFg,
+                                      size: 16)
                                   : null,
                             ),
                             const SizedBox(width: 10),
@@ -141,7 +182,8 @@ class _OperatorMultiSelectWidgetState extends State<OperatorMultiSelectWidget> {
                     int selectedOperatorsCount = selectedOperatorsData.length;
                     return Text(
                       selectedOperatorsCount == 0
-                          ? AppLocalizations.of(context)!.translate('select_operator')
+                          ? AppLocalizations.of(context)!
+                              .translate('select_operator')
                           : '${AppLocalizations.of(context)!.translate('select_operator')} $selectedOperatorsCount',
                       style: context.appTextStyles.bodyMd.copyWith(
                         fontWeight: FontWeight.w500,

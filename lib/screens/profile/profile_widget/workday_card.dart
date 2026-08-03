@@ -51,7 +51,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
       _isLoading = true;
     });
 
-    final isVisible = await _apiService.isWorkdayFeatureEnabled();
+    final isVisible = await _apiService.canReadTimesheet();
     if (!mounted) return;
 
     if (!isVisible) {

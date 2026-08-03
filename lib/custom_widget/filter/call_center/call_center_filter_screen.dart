@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/operator_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
@@ -394,11 +393,13 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
               style: TextButton.styleFrom(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                backgroundColor: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
+                backgroundColor:
+                    context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+                side: BorderSide(
+                    color: context.appColors.buttonPrimaryBg, width: 0.5),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('reset'),
@@ -414,11 +415,13 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
               style: TextButton.styleFrom(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                backgroundColor: context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
+                backgroundColor:
+                    context.appColors.buttonPrimaryBg.withValues(alpha: 0.12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+                side: BorderSide(
+                    color: context.appColors.buttonPrimaryBg, width: 0.5),
               ),
               child: Text(
                 AppLocalizations.of(context)!.translate('apply'),
@@ -447,6 +450,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
+                          fillColor: context.appColors.backgroundSecondary,
                           isFrom: true,
                           controller: _startDateController,
                           label:
@@ -480,6 +484,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: DateFieldWithFromTo(
+                          fillColor: context.appColors.backgroundSecondary,
                           isFrom: false,
                           controller: _endDateController,
                           label:
@@ -514,6 +519,7 @@ class CallCenterFilterScreenState extends State<CallCenterFilterScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             LeadMultiSelectWidget(
+                              useSecondaryBackground: true,
                               selectedLeads: _selectedLeads
                                   .map((lead) => lead.id)
                                   .toList(),

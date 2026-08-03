@@ -360,6 +360,8 @@ class Group {
   }
 }
 
+enum MessageDeliveryStatus { pending, sent, failed }
+
 class Message {
   static final RegExp _googleMapsQueryRegExp = RegExp(
     r"""https?:\/\/(?:www\.)?google\.com\/maps(?:\/search\/)?(?:\?[^'"\s>]*?(?:q|query)=)([-+]?\d+(?:\.\d+)?),([-+]?\d+(?:\.\d+)?)""",
@@ -391,6 +393,9 @@ class Message {
   final String? mediaGroupId;
   final bool isUploading;
   final List<MessageMediaItem> mediaItems;
+  final MessageDeliveryStatus deliveryStatus;
+  final String? localReplyMessageId;
+  final String? localResponseType;
 
   Message({
     required this.id,
@@ -418,6 +423,9 @@ class Message {
     this.mediaGroupId,
     this.isUploading = false,
     this.mediaItems = const [],
+    this.deliveryStatus = MessageDeliveryStatus.sent,
+    this.localReplyMessageId,
+    this.localResponseType,
   });
 
   Message copyWith({
@@ -446,6 +454,9 @@ class Message {
     String? mediaGroupId,
     bool? isUploading,
     List<MessageMediaItem>? mediaItems,
+    MessageDeliveryStatus? deliveryStatus,
+    String? localReplyMessageId,
+    String? localResponseType,
   }) {
     return Message(
       id: id ?? this.id,
@@ -472,6 +483,9 @@ class Message {
       mediaGroupId: mediaGroupId ?? this.mediaGroupId,
       isUploading: isUploading ?? this.isUploading,
       mediaItems: mediaItems ?? this.mediaItems,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      localReplyMessageId: localReplyMessageId ?? this.localReplyMessageId,
+      localResponseType: localResponseType ?? this.localResponseType,
     );
   }
 
@@ -696,6 +710,12 @@ class Message {
       mediaGroupId: json['media_group_id']?.toString(),
       isUploading: false,
       mediaItems: const [],
+      deliveryStatus: MessageDeliveryStatus.values.firstWhere(
+        (status) => status.name == json['local_delivery_status'],
+        orElse: () => MessageDeliveryStatus.sent,
+      ),
+      localReplyMessageId: json['local_reply_message_id']?.toString(),
+      localResponseType: json['local_response_type']?.toString(),
       duration: Duration(
         seconds: json['voice_duration'] != null
             ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0

@@ -2313,5 +2313,7 @@
   "sip_open_keypad": "Открыть клавиатуру",
   "sip_search_contacts": "Поиск по контактам",
   "sip_search_leads": "Поиск по лидам",
-  "sip_transport_udp": "UDP"
+  "sip_transport_udp": "UDP",
+  "message_send_failed": "Сообщение не отправлено",
+  "delete_for_me": "Удалить"
 }
