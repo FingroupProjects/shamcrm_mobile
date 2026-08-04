@@ -225,13 +225,17 @@ class ApiService {
     'sham-back',
     'khnodiraaaicloudcom-back',
   };
-  static const Set<String> _tojsokhtmontjSubdomains = {
+    static const Set<String> _tojsokhtmontjSubdomains = {
     'tojsokhtmontj',
     'tojsokhtmontj-back',
+    'tojsokhtmontj-new-back',
+    'tojsokhtmontj-new',
   };
   static const Set<String> _stomatradeSubdomains = {
     'stomatrade',
     'stomatrade-back',
+    'stomatrade-new',
+    'stomatrade-new-back',
   };
 
   String? baseUrl;

@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:crm_task_manager/main.dart';
 
@@ -37,6 +38,8 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  String? _loadedRecordPath;
+  bool _isAudioLoading = false;
   String? _selectedRating;
   String? _ratingComment;
   double _selectedSpeed = 1.0;
@@ -621,6 +624,7 @@ String formatDate(DateTime? date) {
             ),
             if (call.callDuration != null &&
                 call.callDuration! > 0 &&
+                call.callRecordUrl.trim().isNotEmpty &&
                 !isMissed) ...[
               const SizedBox(height: 12),
               _buildVoicePlayer(call.callRecordUrl, call.callDuration!),
@@ -944,6 +948,8 @@ String formatDate(DateTime? date) {
             children: [
               GestureDetector(
                 onTap: () async {
+                  if (_isAudioLoading) return;
+
                   try {
                     //print('Attempting to play audio from: $assetPath');
                     if (_isPlaying) {
@@ -953,20 +959,35 @@ String formatDate(DateTime? date) {
                         _isPlaying = false;
                       });
                     } else {
-                      //print('Setting audio source');
-                      await _audioPlayer.setSourceUrl(assetPath);
-                      //print('Resuming audio');
+                      setState(() {
+                        _isAudioLoading = true;
+                      });
+                      await _setRecordingSource(recordPath, assetPath);
                       await _audioPlayer.resume();
                       setState(() {
                         _isPlaying = true;
+                        _isAudioLoading = false;
                       });
                     }
                   } catch (e, stackTrace) {
-                    //print('Audio playback error: $e\nStackTrace: $stackTrace');
+                    debugPrint(
+                      'Call recording playback failed for $recordPath: '
+                      '$e\n$stackTrace',
+                    );
+                    if (mounted) {
+                      setState(() {
+                        _isPlaying = false;
+                        _isAudioLoading = false;
+                      });
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(context)!.translate('audio_playback_error'),
+                          e is _RecordingUnavailableException
+                              ? AppLocalizations.of(context)!
+                                  .translate('no_recording_available')
+                              : AppLocalizations.of(context)!
+                                  .translate('audio_playback_error'),
                           style: const TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 16,
@@ -986,7 +1007,11 @@ String formatDate(DateTime? date) {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                    _isAudioLoading
+                        ? Icons.hourglass_top
+                        : _isPlaying
+                            ? Icons.pause
+                            : Icons.play_arrow,
                     color: Colors.blue,
                     size: 24,
                   ),
@@ -1091,4 +1116,55 @@ String formatDate(DateTime? date) {
       },
     );
   }
+
+  Future<void> _setRecordingSource(
+    String recordPath,
+    String assetPath,
+  ) async {
+    if (_loadedRecordPath == recordPath) return;
+
+    if (recordPath.startsWith('assets/')) {
+      await _audioPlayer.setSource(AssetSource(assetPath));
+      _loadedRecordPath = recordPath;
+      return;
+    }
+
+    final uri = Uri.tryParse(recordPath);
+    if (uri == null || !uri.isAbsolute) {
+      throw const _RecordingUnavailableException('Invalid recording URL');
+    }
+
+    final response = await http.get(uri).timeout(const Duration(seconds: 20));
+    final contentType = response.headers['content-type']
+            ?.split(';')
+            .first
+            .trim()
+            .toLowerCase() ??
+        '';
+    final isAudio = contentType.startsWith('audio/');
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        response.bodyBytes.isEmpty ||
+        !isAudio) {
+      throw _RecordingUnavailableException(
+        'HTTP ${response.statusCode}, content-type=$contentType, '
+        'bytes=${response.bodyBytes.length}',
+      );
+    }
+
+    await _audioPlayer.setSource(
+      BytesSource(response.bodyBytes, mimeType: contentType),
+    );
+    _loadedRecordPath = recordPath;
+  }
+}
+
+class _RecordingUnavailableException implements Exception {
+  final String message;
+
+  const _RecordingUnavailableException(this.message);
+
+  @override
+  String toString() => message;
 }
