@@ -2,6 +2,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -311,7 +312,7 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                       tooltip: localizations?.translate('back') ?? 'Назад',
                     ),
                   ),
-                  Center(
+                  AdaptivePinContent(
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 460),
                       padding: const EdgeInsets.fromLTRB(4, 20, 4, 12),
@@ -319,18 +320,21 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Иконка
-                          SizedBox(
-                            width: 96,
-                            height: 96,
-                            child: isDark
-                                ? ColorFiltered(
-                                    colorFilter: const ColorFilter.mode(
-                                      Colors.white,
-                                      BlendMode.srcIn,
-                                    ),
-                                    child: pinLogo,
-                                  )
-                                : pinLogo,
+                          Transform.translate(
+                            offset: const Offset(0, 6),
+                            child: SizedBox(
+                              width: 150,
+                              height: 150,
+                              child: isDark
+                                  ? ColorFiltered(
+                                      colorFilter: const ColorFilter.mode(
+                                        Colors.white,
+                                        BlendMode.srcIn,
+                                      ),
+                                      child: pinLogo,
+                                    )
+                                  : pinLogo,
+                            ),
                           ),
                           const SizedBox(height: 20),
 
@@ -374,11 +378,7 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                           const SizedBox(height: 24),
 
                           // Клавиатура
-                          GridView.count(
-                            crossAxisCount: 3,
-                            shrinkWrap: true,
-                            childAspectRatio: 1.14,
-                            physics: const NeverScrollableScrollPhysics(),
+                          AdaptivePinKeypad(
                             children: [
                               for (var i = 1; i <= 9; i++)
                                 _buildNumberButton(i.toString()),
@@ -391,7 +391,7 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                             ],
                           ),
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 4),
 
                           // Кнопка "Очистить"
                           TextButton(
@@ -434,7 +434,7 @@ class _PinChangeScreenState extends State<PinChangeScreen>
           ? Colors.white.withValues(alpha: 0.28)
           : context.appColors.borderSubtle.withValues(alpha: 0.48),
       errorColor: Colors.red,
-      size: 16,
+      size: 12,
       spacing: 8,
     );
   }

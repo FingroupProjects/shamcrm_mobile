@@ -21,6 +21,7 @@ class LiquidPinKey extends StatefulWidget {
   final String digit;
   final String? letters;
   final VoidCallback onPressed;
+  final VoidCallback? onLongPress;
   final Color textColor;
   final bool isDarkBackground;
   final double size;
@@ -29,6 +30,7 @@ class LiquidPinKey extends StatefulWidget {
     super.key,
     required this.digit,
     required this.onPressed,
+    this.onLongPress,
     required this.textColor,
     required this.isDarkBackground,
     this.letters,
@@ -186,6 +188,11 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
           onTapUp: (_) => _setPressed(false),
           onTapCancel: () => _setPressed(false),
           onTap: widget.onPressed,
+          onLongPress: widget.onLongPress,
+          onLongPressEnd:
+              widget.onLongPress == null ? null : (_) => _setPressed(false),
+          onLongPressCancel:
+              widget.onLongPress == null ? null : () => _setPressed(false),
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(end: _isPressed ? 1 : 0),
             duration: const Duration(milliseconds: 210),

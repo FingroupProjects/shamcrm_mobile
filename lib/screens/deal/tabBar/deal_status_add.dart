@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
@@ -109,6 +108,8 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             value: value,
             onChanged: onChanged,
             activeColor: context.appColors.buttonPrimaryBg,
+            checkColor: context.appColors.buttonPrimaryFg,
+            side: BorderSide(color: context.appColors.borderSubtle),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -119,11 +120,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
     );
   }
 
-  TextStyle _textStyle() => const TextStyle(
+  TextStyle _textStyle() => TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: context.appColors.textPrimary,
         overflow: TextOverflow.ellipsis,
       );
 
@@ -182,6 +183,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
         }
       },
       child: Dialog(
+        backgroundColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -192,8 +194,9 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: context.appColors.textInverse,
+              color: context.appColors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.appColors.borderSubtle),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -213,8 +216,11 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                       ),
                     ),
                     IconButton(
-                      icon:
-                          Icon(Icons.close, size: 24, color: Colors.grey[600]),
+                      icon: Icon(
+                        Icons.close,
+                        size: 24,
+                        color: context.appColors.iconSecondary,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => Navigator.of(context).pop(),
@@ -406,14 +412,16 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: context.appColors.buttonPrimaryBg,
+                                backgroundColor:
+                                    context.appColors.buttonPrimaryBg,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8)),
                               ),
                               child: Text(
                                 localizations.translate('deal_number'),
-                                style:
-                                    TextStyle(color: context.appColors.textInverse),
+                                style: TextStyle(
+                                  color: context.appColors.buttonPrimaryFg,
+                                ),
                               ),
                             ),
                             ElevatedButton(
@@ -427,14 +435,16 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: context.appColors.buttonPrimaryBg,
+                                backgroundColor:
+                                    context.appColors.buttonPrimaryBg,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8)),
                               ),
                               child: Text(
                                 localizations.translate('sum'),
-                                style:
-                                    TextStyle(color: context.appColors.textInverse),
+                                style: TextStyle(
+                                  color: context.appColors.buttonPrimaryFg,
+                                ),
                               ),
                             ),
                           ],
@@ -589,7 +599,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                               fontSize: 14,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: context.appColors.textInverse,
+                              color: context.appColors.buttonPrimaryFg,
                             ),
                           ),
                         ),

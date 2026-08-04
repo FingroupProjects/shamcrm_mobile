@@ -22,6 +22,7 @@ class AppThemeController extends ChangeNotifier {
   static const _backgroundAssetPathKey = 'app_background_asset_path_v1';
   static const _backgroundBlurKey = 'app_background_blur_v1';
   static const _loginIntroAnimationKey = 'app_login_intro_animation_v1';
+  static const defaultBackgroundAssetPath = 'assets/fon/IMG_1620.JPG';
   ThemeMode _themeMode;
   AppPalettePreset _palettePreset;
   Color? _paletteSeedColor;
@@ -56,10 +57,21 @@ class AppThemeController extends ChangeNotifier {
     _palettePreset =
         AppPalettePresetX.fromStorageKey(prefs.getString(_paletteKey));
     _paletteSeedColor = _parseColor(prefs.getString(_paletteSeedColorKey));
-    _backgroundPreset =
-        AppBackgroundPresetX.fromStorageKey(prefs.getString(_backgroundKey));
+    final savedBackgroundPreset = prefs.getString(_backgroundKey);
+    if (savedBackgroundPreset == null) {
+      _backgroundPreset = AppBackgroundPreset.custom;
+      _backgroundAssetPath = defaultBackgroundAssetPath;
+      await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
+      await prefs.setString(
+        _backgroundAssetPathKey,
+        defaultBackgroundAssetPath,
+      );
+    } else {
+      _backgroundPreset =
+          AppBackgroundPresetX.fromStorageKey(savedBackgroundPreset);
+      _backgroundAssetPath = prefs.getString(_backgroundAssetPathKey);
+    }
     _backgroundImagePath = prefs.getString(_backgroundImagePathKey);
-    _backgroundAssetPath = prefs.getString(_backgroundAssetPathKey);
     _backgroundBlurPercent =
         prefs.getDouble(_backgroundBlurKey) ?? _backgroundBlurPercent;
     _loginIntroAnimationEnabled =
@@ -172,9 +184,9 @@ class AppThemeController extends ChangeNotifier {
     _themeMode = ThemeMode.system;
     _palettePreset = AppPalettePreset.analogous;
     _paletteSeedColor = null;
-    _backgroundPreset = AppBackgroundPreset.none;
+    _backgroundPreset = AppBackgroundPreset.custom;
     _backgroundImagePath = null;
-    _backgroundAssetPath = null;
+    _backgroundAssetPath = defaultBackgroundAssetPath;
     _backgroundBlurPercent = 18;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, _themeModeToStorage(_themeMode));
@@ -182,7 +194,10 @@ class AppThemeController extends ChangeNotifier {
     await prefs.remove(_paletteSeedColorKey);
     await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
     await prefs.remove(_backgroundImagePathKey);
-    await prefs.remove(_backgroundAssetPathKey);
+    await prefs.setString(
+      _backgroundAssetPathKey,
+      defaultBackgroundAssetPath,
+    );
     await prefs.setDouble(_backgroundBlurKey, _backgroundBlurPercent);
     await _deleteStoredBackgroundIfOwned(previousPath);
     notifyListeners();

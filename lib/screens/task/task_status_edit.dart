@@ -101,6 +101,8 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
             value: value,
             onChanged: onChanged,
             activeColor: colors.buttonPrimaryBg,
+            checkColor: colors.buttonPrimaryFg,
+            side: BorderSide(color: colors.borderSubtle),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -206,7 +208,8 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,

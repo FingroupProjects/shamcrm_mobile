@@ -1257,8 +1257,9 @@ extension _SipMainViewsExtension on _SipScreenState {
       text: TextSpan(
         text: text,
         style: TextStyle(
+          fontFamily: 'SF Pro Display',
           fontSize: maxFontSize,
-          fontWeight: FontWeight.w300,
+          fontWeight: FontWeight.w400,
           letterSpacing: 0,
         ),
       ),
@@ -1306,10 +1307,11 @@ extension _SipMainViewsExtension on _SipScreenState {
         textAlign: TextAlign.center,
         maxLines: 1,
         style: TextStyle(
+          fontFamily: 'SF Pro Display',
           fontSize: fontSize,
-          fontWeight: FontWeight.w300,
+          fontWeight: FontWeight.w400,
           color: context.appColors.textPrimary.withValues(alpha: 0.98),
-          letterSpacing: -0.8,
+          letterSpacing: 0,
         ),
         placeholder:
             AppLocalizations.of(context)!.translate('telephony_enter_number'),
@@ -1341,82 +1343,18 @@ extension _SipMainViewsExtension on _SipScreenState {
     final isTight = outerSize < 84;
     final innerInset = isTight ? 4.0 : 8.0;
     final innerSize = (outerSize - innerInset).clamp(52.0, 88.0);
-    final digitSize = (outerSize * 0.37).clamp(24.0, 34.0);
-    final letterSize = (outerSize * 0.11).clamp(7.0, 10.0);
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      minimumSize: Size.zero,
-      pressedOpacity: 0.72,
-      onPressed: onTap,
-      onLongPress: onLongPress,
-      child: SizedBox(
-        width: outerSize,
-        height: outerSize,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: innerSize,
-              height: innerSize,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? colors.surfaceElevated.withValues(alpha: 0.96)
-                    : const Color(0xFFF1F5F9),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.shadow.withValues(
-                      alpha: isDark ? 0.24 : 0.08,
-                    ),
-                    blurRadius: isDark ? 14 : 18,
-                    offset: const Offset(0, 7),
-                  ),
-                  if (!isDark)
-                    const BoxShadow(
-                      color: Color(0xB3FFFFFF),
-                      blurRadius: 1,
-                      offset: Offset(0, -1),
-                    ),
-                ],
-                border: Border.all(
-                  color: isDark
-                      ? colors.borderPrimary.withValues(alpha: 0.72)
-                      : const Color(0xFFE2E8F0),
-                  width: 0.8,
-                ),
-              ),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: digitSize,
-                    height: 1.0,
-                    fontWeight: FontWeight.w300,
-                    color: colors.textPrimary,
-                    letterSpacing: 0,
-                  ),
-                ),
-                if (letters.isNotEmpty)
-                  Text(
-                    letters,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: letterSize,
-                      letterSpacing: 0,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? colors.textSecondary
-                          : const Color(0xFF64748B),
-                      height: 1.2,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
+
+    return SizedBox(
+      width: outerSize,
+      height: outerSize,
+      child: LiquidPinKey(
+        digit: value,
+        letters: letters,
+        size: innerSize,
+        onPressed: onTap,
+        onLongPress: onLongPress,
+        textColor: colors.textPrimary,
+        isDarkBackground: isDark,
       ),
     );
   }
@@ -1602,7 +1540,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                 (usableWidth - innerGap * (segmentCount - 1)) / segmentCount;
             final thumbLeft = selectedIndex * (segmentWidth + innerGap);
             final highlightedIndex = selectedIndex.round().clamp(0, maxIndex);
-            final thumbTop = _isLiquidNavPressed ? 2.0 : 4.0;
+            final thumbTop = _isLiquidNavPressed ? 0.0 : 2.0;
             final thumbHeight = _isLiquidNavPressed ? 58.0 : 54.0;
 
             Widget buildItemsRow(bool Function(int index) isSelected) {

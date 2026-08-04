@@ -20,6 +20,7 @@ import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
+import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -1134,25 +1135,28 @@ class _PinSetupScreenState extends State<PinSetupScreen>
             child: Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-              child: Center(
+              child: AdaptivePinContent(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 460),
                   padding: const EdgeInsets.fromLTRB(4, 20, 4, 12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: 96,
-                        height: 96,
-                        child: isDark
-                            ? ColorFiltered(
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
-                                child: pinLogo,
-                              )
-                            : pinLogo,
+                      Transform.translate(
+                        offset: const Offset(0, 6),
+                        child: SizedBox(
+                          width: 150,
+                          height: 150,
+                          child: isDark
+                              ? ColorFiltered(
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                  child: pinLogo,
+                                )
+                              : pinLogo,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -1196,49 +1200,33 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                               _pinsDoNotMatch ? _shakeAnimation.value : 0,
                               0,
                             ),
-                            child: SizedBox(
-                              height: 48,
-                              child: Center(
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 220),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  child: _isValidatingPins
-                                      ? PinProgressDots(
-                                          key: const ValueKey('pin-loading'),
-                                          filledCount: 4,
-                                          isLoading: true,
-                                          isError: false,
-                                          activeColor: colors.buttonPrimaryBg,
-                                          inactiveColor: colors.borderSubtle
-                                              .withValues(alpha: 0.48),
-                                          errorColor: colors.error,
-                                          size: 16,
-                                          spacing: 8,
-                                        )
-                                      : Column(
-                                          key: const ValueKey('pin-entry'),
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            _buildPinRow(_pin),
-                                            if (_isConfirming)
-                                              const SizedBox(height: 16),
-                                            if (_isConfirming)
-                                              _buildPinRow(_confirmPin),
-                                          ],
-                                        ),
-                                ),
-                              ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              child: _isValidatingPins
+                                  ? PinProgressDots(
+                                      key: const ValueKey('pin-loading'),
+                                      filledCount: 4,
+                                      isLoading: true,
+                                      isError: false,
+                                      activeColor: colors.buttonPrimaryBg,
+                                      inactiveColor: colors.borderSubtle
+                                          .withValues(alpha: 0.48),
+                                      errorColor: colors.error,
+                                      size: 12,
+                                      spacing: 8,
+                                    )
+                                  : _buildPinRow(
+                                      _isConfirming ? _confirmPin : _pin,
+                                      key: ValueKey(_isConfirming),
+                                    ),
                             ),
                           );
                         },
                       ),
                       const SizedBox(height: 24),
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 1.14,
+                      AdaptivePinKeypad(
                         children: [
                           for (var i = 1; i <= 9; i++)
                             LiquidPinKey(
@@ -1263,7 +1251,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                           const SizedBox(),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 4),
                       TextButton(
                         onPressed: _onClear,
                         child: Text(
@@ -1286,16 +1274,21 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     );
   }
 
-  Widget _buildPinRow(String pin, {bool isLoading = false}) {
+  Widget _buildPinRow(
+    String pin, {
+    Key? key,
+    bool isLoading = false,
+  }) {
     final colors = context.appColors;
     return PinProgressDots(
+      key: key,
       filledCount: pin.length,
       isLoading: isLoading,
       isError: _pinsDoNotMatch,
       activeColor: colors.buttonPrimaryBg,
       inactiveColor: colors.borderSubtle.withValues(alpha: 0.48),
       errorColor: colors.error,
-      size: 16,
+      size: 12,
       spacing: 8,
     );
   }

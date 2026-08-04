@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/models/user_data_response.dart'; // ✅ ДОБАВИТЬ
@@ -153,7 +154,9 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
           child: Checkbox(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xff1E2E52),
+            activeColor: context.appColors.buttonPrimaryBg,
+            checkColor: context.appColors.buttonPrimaryFg,
+            side: BorderSide(color: context.appColors.borderSubtle),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
@@ -179,6 +182,12 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
           controller: controller,
           hintText: hintText ?? '',
           label: label,
+          backgroundColor: context.appColors.fieldBg,
+          textColor: context.appColors.textPrimary,
+          labelColor: context.appColors.textPrimary,
+          hintColor: context.appColors.textSecondary,
+          borderColor: context.appColors.borderSubtle,
+          focusedBorderColor: context.appColors.buttonPrimaryBg,
           validator: isRequired
               ? (value) => value!.isEmpty ? 'Поле обязательно' : null
               : null,
@@ -231,7 +240,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -239,7 +248,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: context.appColors.success,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -258,7 +267,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: context.appColors.textInverse,
                 ),
               ),
               behavior: SnackBarBehavior.floating,
@@ -266,7 +275,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: context.appColors.error,
               elevation: 3,
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               duration: Duration(seconds: 3),
@@ -276,6 +285,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
       },
       builder: (context, state) {
         return Dialog(
+          backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -286,8 +296,9 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.appColors.borderSubtle),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -303,12 +314,15 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                           fontSize: 18,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Colors.black.withOpacity(0.8),
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close,
-                            size: 24, color: Colors.grey[600]),
+                        icon: Icon(
+                          Icons.close,
+                          size: 24,
+                          color: context.appColors.iconSecondary,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -319,9 +333,11 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                   // Основной контент
                   Expanded(
                     child: state is DealLoading
-                        ? const Center(
+                        ? Center(
                             child: CircularProgressIndicator(
-                                color: Color(0xff1E2E52)))
+                              color: context.appColors.buttonPrimaryBg,
+                            ),
+                          )
                         : SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,14 +513,17 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            const Color(0xff1E2E52),
+                                            context.appColors.buttonPrimaryBg,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8)),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'Номер сделки',
-                                        style: TextStyle(color: Colors.white),
+                                        style: TextStyle(
+                                          color:
+                                              context.appColors.buttonPrimaryFg,
+                                        ),
                                       ),
                                     ),
                                     ElevatedButton(
@@ -519,14 +538,17 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
-                                            const Color(0xff1E2E52),
+                                            context.appColors.buttonPrimaryBg,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8)),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'Сумма',
-                                        style: TextStyle(color: Colors.white),
+                                        style: TextStyle(
+                                          color:
+                                              context.appColors.buttonPrimaryFg,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -602,7 +624,7 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                       margin: const EdgeInsets.only(top: 16),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: const Color(0xff1E2E52),
+                        color: context.appColors.buttonPrimaryBg,
                       ),
                       child: TextButton(
                         onPressed: _saveChanges,
@@ -612,13 +634,13 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
                             vertical: 10,
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Сохранить',
                           style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: context.appColors.buttonPrimaryFg,
                           ),
                         ),
                       ),
@@ -633,11 +655,11 @@ class _EditDealStatusScreenState extends State<EditDealStatusScreen> {
     );
   }
 
-  TextStyle _textStyle() => const TextStyle(
+  TextStyle _textStyle() => TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color.fromARGB(255, 0, 0, 0),
+        color: context.appColors.textPrimary,
         overflow: TextOverflow.ellipsis,
       );
 }

@@ -16,6 +16,7 @@ import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
+import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -982,25 +983,28 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
             child: Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-              child: Center(
+              child: AdaptivePinContent(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 460),
                   padding: const EdgeInsets.fromLTRB(4, 20, 4, 12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: 96,
-                        height: 96,
-                        child: headerOnDarkBackground
-                            ? ColorFiltered(
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
-                                child: pinLogo,
-                              )
-                            : pinLogo,
+                      Transform.translate(
+                        offset: const Offset(0, 6),
+                        child: SizedBox(
+                          width: 150,
+                          height: 150,
+                          child: headerOnDarkBackground
+                              ? ColorFiltered(
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                  child: pinLogo,
+                                )
+                              : pinLogo,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -1050,11 +1054,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                         },
                       ),
                       const SizedBox(height: 24),
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 1.14,
+                      AdaptivePinKeypad(
                         children: [
                           for (var i = 1; i <= 9; i++)
                             LiquidPinKey(

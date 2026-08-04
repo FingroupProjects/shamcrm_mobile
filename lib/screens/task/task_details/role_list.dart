@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/role/role_bloc.dart';
 import 'package:crm_task_manager/bloc/role/role_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/role_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +57,8 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
   }
 
   String _getSelectedRolesText(List<Role> roles) {
-    if (_selectedRoleIds.isEmpty) return AppLocalizations.of(context)!.translate('select_roles');
+    if (_selectedRoleIds.isEmpty)
+      return AppLocalizations.of(context)!.translate('select_roles');
 
     return roles
         .where((role) => _selectedRoleIds.contains(role.id))
@@ -66,6 +68,8 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return BlocBuilder<RoleBloc, RoleState>(
       builder: (context, state) {
         List<Widget> roleCheckboxes = [];
@@ -78,7 +82,7 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           );
@@ -91,21 +95,21 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               value: _areAllSelected(state.roles),
               onChanged: (selected) => _onSelectAll(selected, state.roles),
               controlAffinity: ListTileControlAffinity.leading,
-              activeColor: Color(0xff1E2E52),
-              checkColor: Colors.white,
+              activeColor: colors.buttonPrimaryBg,
+              checkColor: colors.buttonPrimaryFg,
               tileColor: Colors.transparent,
             ),
           );
 
           roleCheckboxes.add(
             Divider(
-              color: Color(0xff1E2E52).withOpacity(0.2),
+              color: colors.borderSubtle,
               height: 1,
               thickness: 1,
             ),
@@ -120,14 +124,14 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
                 value: _selectedRoleIds.contains(role.id),
                 onChanged: (bool? selected) => _onRoleSelected(selected, role),
                 controlAffinity: ListTileControlAffinity.leading,
-                activeColor: Color(0xff1E2E52),
-                checkColor: Colors.white,
+                activeColor: colors.buttonPrimaryBg,
+                checkColor: colors.buttonPrimaryFg,
                 tileColor: Colors.transparent,
               );
             }).toList(),
@@ -138,12 +142,12 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('role'), 
+              AppLocalizations.of(context)!.translate('role'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -156,9 +160,9 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF4F7FD),
+                  color: colors.fieldBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFFF4F7FD)),
+                  border: Border.all(color: colors.borderSubtle),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,19 +171,21 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                       child: Text(
                         state is RoleLoaded
                             ? _getSelectedRolesText(state.roles)
-                            : AppLocalizations.of(context)!.translate('select_roles'),
+                            : AppLocalizations.of(context)!
+                                .translate('select_roles'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Transform.rotate(
                       angle: 90 * 3.1415926535 / 180,
-                      child: Image.asset('assets/icons/arrow_down.png', width: 10, height: 10),
+                      child: Image.asset('assets/icons/arrow_down.png',
+                          width: 10, height: 10),
                     ),
                     SizedBox(width: 8),
                   ],
@@ -191,9 +197,9 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                 margin: const EdgeInsets.only(top: 4),
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(0xff1E2E52).withOpacity(0.2)),
+                  border: Border.all(color: colors.borderSubtle),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -106,6 +106,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             fontFamily: 'Gilroy',
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
+                            color: colors.textPrimary,
                           ),
                         ),
                         Switch(
@@ -140,6 +141,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             fontFamily: 'Gilroy',
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
+                            color: colors.textPrimary,
                           ),
                         ),
                         Switch(
@@ -170,6 +172,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                             fontFamily: 'Gilroy',
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
+                            color: colors.textPrimary,
                           ),
                         ),
                         Switch(
@@ -227,7 +230,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   child: Text(
                     AppLocalizations.of(context)!.translate('cancel'),
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.textInverse,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       fontFamily: 'Gilroy',
@@ -241,7 +244,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   onPressed: _createStatus,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: colors.textPrimary,
+                    backgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -249,7 +252,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                   child: Text(
                     AppLocalizations.of(context)!.translate('add'),
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.buttonPrimaryFg,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       fontFamily: 'Gilroy',
@@ -265,6 +268,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
   }
 
   void _createStatus() {
+    final colors = context.appColors;
     bool hasError = false;
 
     if (selectedStatusNameId == null) {
@@ -315,7 +319,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             fontFamily: 'Gilroy',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: colors.textInverse,
           ),
         ),
         behavior: SnackBarBehavior.floating,
@@ -323,7 +327,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: colors.success,
         elevation: 3,
         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         duration: Duration(seconds: 3),

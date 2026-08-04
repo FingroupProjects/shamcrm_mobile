@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/task_Status_Name_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,8 @@ class StatusList extends StatefulWidget {
 class _TaskStatusListState extends State<StatusList> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return BlocBuilder<TaskStatusNameBloc, StatusNameState>(
       builder: (context, state) {
         List<DropdownMenuItem<String>> dropdownItems = [];
@@ -33,11 +36,11 @@ class _TaskStatusListState extends State<StatusList> {
               value: null,
               child: Text(
                 AppLocalizations.of(context)!.translate('loading'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             ),
@@ -49,11 +52,11 @@ class _TaskStatusListState extends State<StatusList> {
               value: status.id.toString(),
               child: Text(
                 status.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
             );
@@ -64,14 +67,14 @@ class _TaskStatusListState extends State<StatusList> {
               SnackBar(
                 content: Text(
                   AppLocalizations.of(context)!.translate(state.message),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Colors.white,
+                    color: colors.textInverse,
                   ),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: colors.error,
                 behavior: SnackBarBehavior.floating,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 duration: const Duration(seconds: 3),
@@ -89,13 +92,13 @@ class _TaskStatusListState extends State<StatusList> {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Gilroy',
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: DropdownButtonFormField<String>(
@@ -110,7 +113,7 @@ class _TaskStatusListState extends State<StatusList> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: colors.textSecondary,
                   ),
                 ),
                 items: dropdownItems,
@@ -138,15 +141,15 @@ class _TaskStatusListState extends State<StatusList> {
                   errorText: widget.errorText,
                   errorStyle: TextStyle(
                     fontSize: 14,
-                    color: Colors.red,
+                    color: colors.error,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Gilroy',
                   ),
                   border: OutlineInputBorder(
                     borderSide: BorderSide(
                       color: widget.errorText != null
-                          ? Colors.red
-                          : Color(0xFFF4F7FD),
+                          ? colors.error
+                          : colors.borderSubtle,
                       width: widget.errorText != null ? 1.5 : 1,
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -154,8 +157,8 @@ class _TaskStatusListState extends State<StatusList> {
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(
                       color: widget.errorText != null
-                          ? Colors.red
-                          : Color(0xFFF4F7FD),
+                          ? colors.error
+                          : colors.borderSubtle,
                       width: widget.errorText != null ? 1.5 : 1,
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -163,35 +166,35 @@ class _TaskStatusListState extends State<StatusList> {
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(
                       color: widget.errorText != null
-                          ? Colors.red
-                          : Color(0xff1E2E52),
+                          ? colors.error
+                          : colors.buttonPrimaryBg,
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderSide: BorderSide(
-                      color: Colors.red,
+                      color: colors.error,
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderSide: BorderSide(
-                      color: Colors.red,
+                      color: colors.error,
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFF4F7FD),
+                  fillColor: colors.fieldBg,
                 ),
-                dropdownColor: Colors.white,
+                dropdownColor: colors.surfaceElevated,
                 iconSize: 20,
                 icon: Icon(
                   Icons.keyboard_arrow_down,
                   size: 20,
-                  color: Color(0xff1E2E52),
+                  color: colors.iconPrimary,
                 ),
               ),
             ),

@@ -181,10 +181,9 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
       },
       builder: (context, state) {
         return Dialog(
-          backgroundColor: context.appColors.surfacePrimary,
+          backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: context.appColors.borderSubtle),
           ),
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
@@ -195,6 +194,7 @@ class _EditLeadStatusScreenState extends State<EditLeadStatusScreen> {
               decoration: BoxDecoration(
                 color: context.appColors.surfacePrimary,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: context.appColors.borderSubtle),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

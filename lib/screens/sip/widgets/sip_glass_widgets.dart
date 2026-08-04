@@ -40,6 +40,7 @@ class _TelephonyBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    const readability = 0.08;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 320),
@@ -48,21 +49,26 @@ class _TelephonyBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
+          const AppBackgroundOverlay(
+            preset: AppBackgroundPreset.none,
+            blurSigma: 18,
+          ),
           IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                   colors: [
-                    colors.backgroundPrimary,
-                    Color.alphaBlend(
-                      _TelephonyVisualColors.blue.withValues(
-                        alpha: isDark ? 0.035 : 0.025,
-                      ),
-                      colors.backgroundPrimary,
+                    colors.backgroundPrimary.withValues(
+                      alpha: isDark ? readability + 0.16 : readability,
                     ),
-                    colors.backgroundSecondary,
+                    colors.surfacePrimary.withValues(
+                      alpha: isDark ? 0.12 : 0.04,
+                    ),
+                    colors.backgroundSecondary.withValues(
+                      alpha: isDark ? readability + 0.12 : readability + 0.03,
+                    ),
                   ],
                 ),
               ),
@@ -80,7 +86,7 @@ class _TelephonyBackground extends StatelessWidget {
                   gradient: RadialGradient(
                     colors: [
                       _TelephonyVisualColors.blue.withValues(
-                        alpha: isDark ? 0.10 : 0.075,
+                        alpha: isDark ? 0.08 : 0.055,
                       ),
                       _TelephonyVisualColors.blue.withValues(alpha: 0),
                     ],
