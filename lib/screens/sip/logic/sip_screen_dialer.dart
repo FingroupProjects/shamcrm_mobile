@@ -569,11 +569,16 @@ extension _SipScreenDialerExtension on _SipScreenState {
   Future<void> _startDialCall({String? fallbackNumber}) async {
     var target = _sipIdController.text.trim();
     if (target.isEmpty) {
-      target = fallbackNumber?.trim().isNotEmpty == true
-          ? fallbackNumber!.trim()
+      final fallbackTarget = fallbackNumber?.trim();
+      target = fallbackTarget?.isNotEmpty == true
+          ? fallbackTarget!
           : _lastCallDialTarget();
       if (target.isNotEmpty) {
         _setDialControllerText(target);
+        if (fallbackTarget == null || fallbackTarget.isEmpty) {
+          await _saveDraft();
+          return;
+        }
       }
     }
 
