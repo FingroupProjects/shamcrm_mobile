@@ -62,6 +62,15 @@ class SipCallLogEntry {
 
   factory SipCallLogEntry.fromServerCall(CallLogEntry entry) {
     final isMissed = entry.callType == CallType.missed;
+    final isOutgoing = entry.callType == CallType.outgoing ||
+        entry.callType == CallType.outgoingMissed;
+    final dialTarget = sanitizeUtf16(
+      isOutgoing
+          ? ((entry.destinationNumber?.trim().isNotEmpty ?? false)
+              ? entry.destinationNumber!
+              : entry.phoneNumber)
+          : entry.phoneNumber,
+    );
     return SipCallLogEntry(
       id: 'server_${entry.id}',
       serverCallId: entry.id,
@@ -69,12 +78,11 @@ class SipCallLogEntry {
       target: sanitizeUtf16(
         entry.leadName.trim().isNotEmpty && entry.leadName != 'Неизвестно'
             ? entry.leadName
-            : entry.phoneNumber,
+            : dialTarget,
       ),
-      dialTarget: sanitizeUtf16(entry.phoneNumber),
-      direction: entry.callType == CallType.outgoing
-          ? SipCallDirection.outgoing
-          : SipCallDirection.incoming,
+      dialTarget: dialTarget,
+      direction:
+          isOutgoing ? SipCallDirection.outgoing : SipCallDirection.incoming,
       result: isMissed ? SipCallUiStatus.ended : SipCallUiStatus.ended,
       timestamp: entry.callDate,
       duration: entry.duration,
