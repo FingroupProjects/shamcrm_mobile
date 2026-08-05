@@ -386,6 +386,7 @@ class Good {
   final String goodName;
   final int quantity;
   final double price;
+  final String? availabilityStatus;
 
   Good({
     required this.good,
@@ -394,6 +395,7 @@ class Good {
     required this.goodName,
     required this.quantity,
     required this.price,
+    this.availabilityStatus,
   });
 
   // Метод для получения корректного ID товара
@@ -434,6 +436,19 @@ class Good {
   }
 
   factory Good.fromJson(Map<String, dynamic> json) {
+    String? parseStatus(dynamic value) {
+      if (value == null) return null;
+      if (value is Map) {
+        for (final key in const ['name', 'title', 'value', 'status']) {
+          final parsed = parseStatus(value[key]);
+          if (parsed != null) return parsed;
+        }
+        return null;
+      }
+      final text = value.toString().trim();
+      return text.isEmpty ? null : text;
+    }
+
     final goodRaw = json['good'];
     final variantRaw = json['variant'];
     final goodItem = goodRaw is Map<String, dynamic>
@@ -450,6 +465,26 @@ class Good {
         ? GoodItem.fromJson(variantRaw['good'] as Map<String, dynamic>)
         : null;
     final cachedGoodName = json['good_name']?.toString();
+    final variantGoodRaw =
+        variantRaw is Map<String, dynamic> ? variantRaw['good'] : null;
+    final availabilityStatus = parseStatus(json['availability_status']) ??
+        parseStatus(json['status_name']) ??
+        parseStatus(json['status']) ??
+        (goodRaw is Map
+            ? parseStatus(goodRaw['availability_status']) ??
+                parseStatus(goodRaw['status_name']) ??
+                parseStatus(goodRaw['status'])
+            : null) ??
+        (variantRaw is Map
+            ? parseStatus(variantRaw['availability_status']) ??
+                parseStatus(variantRaw['status_name']) ??
+                parseStatus(variantRaw['status'])
+            : null) ??
+        (variantGoodRaw is Map
+            ? parseStatus(variantGoodRaw['availability_status']) ??
+                parseStatus(variantGoodRaw['status_name']) ??
+                parseStatus(variantGoodRaw['status'])
+            : null);
 
     return Good(
       good: goodItem,
@@ -460,6 +495,7 @@ class Good {
               ? goodItem.name
               : (variantGoodItem?.name ?? '')),
       quantity: json['quantity'] ?? 0,
+      availabilityStatus: availabilityStatus,
       price: double.tryParse(
             json['price']?.toString() ??
                 (variantRaw is Map<String, dynamic>
@@ -483,6 +519,7 @@ class Good {
       'good_name': getCorrectGoodName(),
       'quantity': quantity,
       'price': price,
+      if (availabilityStatus != null) 'availability_status': availabilityStatus,
     };
   }
 }

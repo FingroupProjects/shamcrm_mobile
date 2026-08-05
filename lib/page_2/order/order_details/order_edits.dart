@@ -128,6 +128,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'name': good.goodName,
         'price': good.price,
         'quantity': good.quantity,
+        'availabilityStatus': good.availabilityStatus,
         'imagePath': imagePath,
       };
     }).toList();
@@ -501,6 +502,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 'name': item['name'],
                 'price': item['price'],
                 'quantity': item['quantity'] ?? 1,
+                'availabilityStatus': item['availabilityStatus'],
                 'imagePath': item['imagePath'],
               })
           .toList();
@@ -742,6 +744,26 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   bool _isTojsokhtmontjDealTypeField(String fieldName) {
     final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
     return normalized == 'тип сделки';
+  }
+
+  bool _isTojsokhtmontjDepositField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'залог';
+  }
+
+  bool _hasTojsokhtmontjBookingItem() {
+    return _items.any(
+      (item) =>
+          _normalizeTojsokhtmontjFieldName(
+            item['availabilityStatus']?.toString() ?? '',
+          ) ==
+          'бронь',
+    );
+  }
+
+  bool _shouldHideTojsokhtmontjDepositField(String fieldName) {
+    return _isTojsokhtmontjTenant &&
+        _isTojsokhtmontjDepositField(fieldName) &&
+        !_hasTojsokhtmontjBookingItem();
   }
 
   bool _isTojsokhtmontjInstallmentField(String fieldName) {
@@ -1242,6 +1264,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   Widget? _buildFieldWidget(FieldConfiguration config) {
     if (config.fieldName == 'integration_id') {
+      return null;
+    }
+
+    if (_shouldHideTojsokhtmontjDepositField(config.fieldName)) {
       return null;
     }
 
@@ -3361,6 +3387,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
                     if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
                         _isTojsokhtmontjMixedPaymentField(fieldName)) {
+                      continue;
+                    }
+
+                    if (_shouldHideTojsokhtmontjDepositField(fieldName)) {
                       continue;
                     }
 

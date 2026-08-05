@@ -138,6 +138,7 @@ class _GoodsCardState extends State<GoodsCard> {
             'name': widget.goodsName,
             'price': widget.goodsPrice ?? 0.0,
             'quantity': 1,
+            'availabilityStatus': widget.availabilityStatus,
             'imagePath': _getMainImage()?.path,
           },
         ),

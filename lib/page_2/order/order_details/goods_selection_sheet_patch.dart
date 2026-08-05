@@ -510,6 +510,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               'price': variant.price ?? 0.0,
               'quantity':
                   _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
+              'availabilityStatus': variant.good?.availabilityStatus,
               'imagePath': variant.good?.files.isNotEmpty == true
                   ? variant.good!.files[0].path
                   : null,

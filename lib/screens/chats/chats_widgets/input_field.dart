@@ -259,9 +259,10 @@ class _InputFieldState extends State<InputField>
                 child: TemplateSuggestions(
                   query: _currentQuery,
                   onTemplateSelected: (templateText) {
-                    widget.messageController.text = templateText;
-                    _htmlContent = templateText;
-                    _displayText = templateText;
+                    final plainText = stripHtmlTags(templateText).trim();
+                    widget.messageController.text = plainText;
+                    _htmlContent = plainText;
+                    _displayText = plainText;
                     setState(() {
                       _showTemplates = false;
                       _animationController
@@ -1103,9 +1104,10 @@ class _InputFieldState extends State<InputField>
           Navigator.of(bottomSheetContext).pop();
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            widget.messageController.text = selectedText;
-            _htmlContent = selectedText;
-            _displayText = selectedText;
+            final plainText = stripHtmlTags(selectedText).trim();
+            widget.messageController.text = plainText;
+            _htmlContent = plainText;
+            _displayText = plainText;
 
             widget.focusNode.requestFocus();
 
