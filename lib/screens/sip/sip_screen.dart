@@ -260,7 +260,6 @@ class _SipScreenState extends State<SipScreen>
     _passwordController.addListener(_handleDraftChanged);
     _portController.addListener(_handleDraftChanged);
     _sipIdController.addListener(_handleDialChanged);
-    _sipIdController.addListener(_handleDraftChanged);
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -289,7 +288,10 @@ class _SipScreenState extends State<SipScreen>
     _serverController.text = state.server;
     _loginController.text = state.login;
     _passwordController.text = state.password;
-    _sipIdController.text = state.sipId;
+    // The dialed number is transient UI state. Older builds stored it in
+    // `sipId`, which made the last number reappear after reopening telephony.
+    _sipIdController.clear();
+    unawaited(_sipService.clearSavedDialTarget());
     _portController.text = state.port.toString();
     _selectedTransport = state.transport;
     _suspendDraftAutosave = false;
@@ -323,7 +325,6 @@ class _SipScreenState extends State<SipScreen>
     _loginController.removeListener(_handleDraftChanged);
     _passwordController.removeListener(_handleDraftChanged);
     _portController.removeListener(_handleDraftChanged);
-    _sipIdController.removeListener(_handleDraftChanged);
     _serverController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
@@ -396,8 +397,10 @@ class _SipScreenState extends State<SipScreen>
                                 ),
                               Expanded(
                                 child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 280),
-                                  switchInCurve: Curves.easeOutCubic,
+                                  duration: const Duration(milliseconds: 360),
+                                  reverseDuration:
+                                      const Duration(milliseconds: 280),
+                                  switchInCurve: Curves.easeOutQuart,
                                   switchOutCurve: Curves.easeInCubic,
                                   transitionBuilder: (child, animation) {
                                     final childIndex =
@@ -406,7 +409,7 @@ class _SipScreenState extends State<SipScreen>
                                         childIndex < visibleBottomTabIndex;
                                     final slideAnimation = Tween<Offset>(
                                       begin: Offset(
-                                        slidesFromLeft ? -0.08 : 0.08,
+                                        slidesFromLeft ? -0.035 : 0.035,
                                         0,
                                       ),
                                       end: Offset.zero,

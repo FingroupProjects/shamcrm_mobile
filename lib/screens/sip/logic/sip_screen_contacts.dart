@@ -404,6 +404,7 @@ extension _SipScreenContactsExtension on _SipScreenState {
 
     final unique = <String>{};
     final uniqueSuggestions = merged.where((item) {
+      if (_isOwnLineNumber(item.phone)) return false;
       final key = '${item.normalizedPhone}|${item.sourceLabel}|${item.name}';
       return unique.add(key);
     }).toList(growable: false);

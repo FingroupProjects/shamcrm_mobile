@@ -1007,7 +1007,11 @@ class SipService extends ChangeNotifier
     await _storage.write(key: _serverKey, value: _state.server);
     await _storage.write(key: _loginKey, value: _state.login);
     await _storage.write(key: _passwordKey, value: _state.password);
-    await _storage.write(key: _sipIdKey, value: _state.sipId);
+    if (_state.sipId.isEmpty) {
+      await _storage.delete(key: _sipIdKey);
+    } else {
+      await _storage.write(key: _sipIdKey, value: _state.sipId);
+    }
     await _storage.write(
         key: _transportKey,
         value: switch (_state.transport) {
@@ -1020,6 +1024,13 @@ class SipService extends ChangeNotifier
     if (notifyUi) {
       _notifyListenersSafely();
     }
+  }
+
+  Future<void> clearSavedDialTarget() async {
+    if (_state.sipId.isNotEmpty) {
+      _state = _state.copyWith(sipId: '');
+    }
+    await _storage.delete(key: _sipIdKey);
   }
 
   Future<void> handleIncomingCallPushPayload(

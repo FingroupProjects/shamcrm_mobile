@@ -48,8 +48,6 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dro
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
-import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
-import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -178,6 +176,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 'name': good.goodName,
                 'price': good.price,
                 'quantity': good.quantity,
+                'availabilityStatus': good.availabilityStatus,
                 'imagePath': null,
               })
           .toList();
@@ -229,6 +228,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         'quantity': (item['quantity'] as num?)?.toInt() ??
             int.tryParse('${item['quantity']}') ??
             1,
+        'availabilityStatus': item['availabilityStatus'] ??
+            item['availability_status'] ??
+            item['status'],
         'imagePath': item['imagePath'],
       },
     ];
@@ -502,6 +504,26 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   bool _isTojsokhtmontjDealTypeField(String fieldName) {
     final normalized = _normalizeTojsokhtmontjFieldName(fieldName);
     return normalized == 'тип сделки';
+  }
+
+  bool _isTojsokhtmontjDepositField(String fieldName) {
+    return _normalizeTojsokhtmontjFieldName(fieldName) == 'залог';
+  }
+
+  bool _hasTojsokhtmontjBookingItem() {
+    return _items.any(
+      (item) =>
+          _normalizeTojsokhtmontjFieldName(
+            item['availabilityStatus']?.toString() ?? '',
+          ) ==
+          'бронь',
+    );
+  }
+
+  bool _shouldHideTojsokhtmontjDepositField(String fieldName) {
+    return _isTojsokhtmontjTenant &&
+        _isTojsokhtmontjDepositField(fieldName) &&
+        !_hasTojsokhtmontjBookingItem();
   }
 
   bool _isTojsokhtmontjInstallmentField(String fieldName) {
@@ -1023,6 +1045,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   Widget? _buildFieldWidget(FieldConfiguration config) {
     if (config.fieldName == 'integration_id') {
+      return null;
+    }
+
+    if (_shouldHideTojsokhtmontjDepositField(config.fieldName)) {
       return null;
     }
 
@@ -2213,6 +2239,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 'name': item['name'],
                 'price': item['price'],
                 'quantity': item['quantity'],
+                'availabilityStatus': item['availabilityStatus'],
                 'imagePath': item['imagePath'],
               })
           .toList();
@@ -3342,6 +3369,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   }
                   if (_shouldHideTojsokhtmontjMixedPaymentFields() &&
                       _isTojsokhtmontjMixedPaymentField(fieldName)) {
+                    continue;
+                  }
+
+                  if (_shouldHideTojsokhtmontjDepositField(fieldName)) {
                     continue;
                   }
 

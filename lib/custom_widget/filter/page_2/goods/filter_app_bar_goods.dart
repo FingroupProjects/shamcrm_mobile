@@ -1,3 +1,5 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_state.dart';
@@ -7,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/filter/page_2/goods/SubCategoryMu
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/labels_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/status.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
+import 'package:crm_task_manager/models/page_2/category_dashboard_warehouse_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +22,7 @@ class GoodsFilterScreen extends StatefulWidget {
   final double? initialDiscountPercent;
   final List<String>? initialLabels; // Оставляем List<String> для label_id
   final bool? initialIsActive;
+  final bool isTojsokhtmontjTenant;
 
   const GoodsFilterScreen({
     super.key,
@@ -28,6 +32,7 @@ class GoodsFilterScreen extends StatefulWidget {
     this.initialDiscountPercent,
     this.initialLabels,
     this.initialIsActive,
+    this.isTojsokhtmontjTenant = false,
   });
 
   @override
@@ -41,6 +46,10 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
   List<String> selectedLabels = []; // Храним label_id как строки
   bool isCategoryValid = true;
   bool? isActive;
+  final ApiService _apiService = ApiService();
+  List<CategoryDashboardWarehouse> categories = [];
+  int? selectedCategoryId;
+  bool isCategoriesLoading = false;
 
   @override
   void initState() {
@@ -80,6 +89,37 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
     }
 
     context.read<GoodsBloc>().add(FetchSubCategories());
+    if (widget.isTojsokhtmontjTenant) {
+      _loadCategories();
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      isCategoriesLoading = true;
+      selectedCategoryId = widget.initialCategoryIds != null &&
+              widget.initialCategoryIds!.isNotEmpty
+          ? widget.initialCategoryIds!.first
+          : null;
+    });
+
+    try {
+      final loadedCategories =
+          await _apiService.getCategoryDashboardWarehouse();
+      if (!mounted) return;
+      setState(() {
+        categories = loadedCategories;
+        isCategoriesLoading = false;
+      });
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('GoodsFilterScreen: Ошибка загрузки категорий: $error');
+      }
+      if (!mounted) return;
+      setState(() {
+        isCategoriesLoading = false;
+      });
+    }
   }
 
   @override
@@ -98,6 +138,95 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
         debugPrint('GoodsFilterScreen: Изменено значение is_active: $isActive');
       }
     });
+  }
+
+  Widget _buildTenantCategoryField() {
+    CategoryDashboardWarehouse? selectedCategory;
+    for (final category in categories) {
+      if (category.id == selectedCategoryId) {
+        selectedCategory = category;
+        break;
+      }
+    }
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: context.appColors.surfacePrimary,
+      shadowColor: context.appColors.shadowColor,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Категория',
+              style: context.appTextStyles.bodyLg.copyWith(
+                fontWeight: FontWeight.w500,
+                color: context.appColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            CustomDropdown<CategoryDashboardWarehouse>.search(
+              closeDropDownOnClearFilterSearch: true,
+              items: categories,
+              searchHintText: AppLocalizations.of(context)!.translate('search'),
+              overlayHeight: 300,
+              enabled: !isCategoriesLoading,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: context.appColors.fieldBg,
+                expandedFillColor: context.appColors.surfacePrimary,
+                closedBorder: Border.all(
+                  color: context.appColors.borderSubtle,
+                  width: 1.5,
+                ),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(
+                  color: context.appColors.borderSubtle,
+                  width: 1.5,
+                ),
+                expandedBorderRadius: BorderRadius.circular(12),
+              ),
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
+                return Text(
+                  item.name,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
+              headerBuilder: (context, selectedItem, enabled) {
+                return Text(
+                  selectedItem.name,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: context.appColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
+              hintBuilder: (context, hint, enabled) => Text(
+                'Все категории',
+                style: context.appTextStyles.bodyMd.copyWith(
+                  color: context.appColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              initialItem: selectedCategory,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  selectedCategoryId = value.id;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -124,6 +253,7 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 }
                 widget.onResetFilters?.call();
                 selectedCategories = [];
+                selectedCategoryId = null;
                 selectedLabels = [];
                 discountPercentController.clear();
                 isCategoryValid = true;
@@ -158,21 +288,26 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                 'page': '1',
                 'per_page': '20',
                 'organization_id': '2',
-                'category_id': selectedCategories.isNotEmpty
-                    ? selectedCategories
-                        .map((category) => category.id.toString())
-                        .toList()
-                    : [],
-                'label_id': selectedLabels.isNotEmpty
-                    ? selectedLabels
-                    : [], // Изменено на label_id
+                'category_id': widget.isTojsokhtmontjTenant
+                    ? selectedCategoryId
+                    : selectedCategories.isNotEmpty
+                        ? selectedCategories
+                            .map((category) => category.id.toString())
+                            .toList()
+                        : [],
               };
 
-              if (isActive != null) {
+              if (!widget.isTojsokhtmontjTenant) {
+                filters['label_id'] =
+                    selectedLabels.isNotEmpty ? selectedLabels : [];
+              }
+
+              if (!widget.isTojsokhtmontjTenant && isActive != null) {
                 filters['is_active'] = isActive;
               }
 
-              if (discountPercentController.text.isNotEmpty) {
+              if (!widget.isTojsokhtmontjTenant &&
+                  discountPercentController.text.isNotEmpty) {
                 final discount =
                     double.tryParse(discountPercentController.text);
                 if (discount != null) {
@@ -190,11 +325,17 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                     'GoodsFilterScreen: onSelectedDataFilter существует: ${widget.onSelectedDataFilter != null}');
               }
 
-              if (filters['category_id'].isNotEmpty ||
-                  filters.containsKey('discount_percent') ||
-                  filters['label_id'].isNotEmpty ||
-                  filters.containsKey('is_active')) {
+              final hasCategory = widget.isTojsokhtmontjTenant
+                  ? selectedCategoryId != null
+                  : (filters['category_id'] as List).isNotEmpty;
+              if (hasCategory ||
+                  (!widget.isTojsokhtmontjTenant &&
+                      (filters.containsKey('discount_percent') ||
+                          (filters['label_id'] as List).isNotEmpty ||
+                          filters.containsKey('is_active')))) {
                 widget.onSelectedDataFilter?.call(filters);
+              } else if (widget.isTojsokhtmontjTenant) {
+                widget.onResetFilters?.call();
               } else {
                 if (kDebugMode) {
                   debugPrint(
@@ -306,121 +447,131 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: context.appColors.surfacePrimary,
-                          shadowColor: context.appColors.shadowColor,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: SubCategoryMultiSelectWidget(
-                              initialSubCategoryIds: widget.initialCategoryIds,
-                              onSelectSubCategories: (categories) {
-                                setState(() {
-                                  selectedCategories = categories;
-                                  isCategoryValid = true;
-                                  if (kDebugMode) {
-                                    debugPrint(
-                                        'GoodsFilterScreen: Выбраны подкатегории: ${categories.map((c) => c.name).toList()}, category_ids: ${categories.map((c) => c.parent?.id).toList()}');
-                                  }
-                                });
-                              },
-                              isValid: isCategoryValid,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: context.appColors.surfacePrimary,
-                          shadowColor: context.appColors.shadowColor,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: LabelsMultiSelectWidget(
-                              selectedLabels: selectedLabels,
-                              onSelectLabels: (labelIds) {
-                                // Изменено на labelIds
-                                setState(() {
-                                  selectedLabels = labelIds;
-                                  if (kDebugMode) {
-                                    debugPrint(
-                                        'GoodsFilterScreen: Выбраны label_id: $labelIds');
-                                  }
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          color: context.appColors.surfacePrimary,
-                          shadowColor: context.appColors.shadowColor,
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                                left: 12, right: 12, top: 4, bottom: 0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CustomTextField(
-                                  controller: discountPercentController,
-                                  hintText: AppLocalizations.of(context)!
-                                      .translate('enter_discount_percent'),
-                                  label: AppLocalizations.of(context)!
-                                      .translate('discount_percent'),
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return null;
-                                    }
-                                    final number = double.tryParse(value);
-                                    if (number == null || number < 0) {
-                                      return AppLocalizations.of(context)!
-                                          .translate('invalid_discount');
-                                    }
-                                    return null;
-                                  },
-                                  onChanged: (value) {
+                        if (!widget.isTojsokhtmontjTenant) ...[
+                          Card(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            color: context.appColors.surfacePrimary,
+                            shadowColor: context.appColors.shadowColor,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: SubCategoryMultiSelectWidget(
+                                initialSubCategoryIds:
+                                    widget.initialCategoryIds,
+                                onSelectSubCategories: (categories) {
+                                  setState(() {
+                                    selectedCategories = categories;
+                                    isCategoryValid = true;
                                     if (kDebugMode) {
                                       debugPrint(
-                                          'GoodsFilterScreen: Введен процент скидки: $value');
+                                          'GoodsFilterScreen: Выбраны подкатегории: ${categories.map((c) => c.name).toList()}, category_ids: ${categories.map((c) => c.parent?.id).toList()}');
                                     }
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                              ],
+                                  });
+                                },
+                                isValid: isCategoryValid,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        ],
+                        if (widget.isTojsokhtmontjTenant)
+                          _buildTenantCategoryField(),
+                        if (!widget.isTojsokhtmontjTenant) ...[
+                          const SizedBox(height: 8),
+                          Card(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            color: context.appColors.surfacePrimary,
+                            shadowColor: context.appColors.shadowColor,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: LabelsMultiSelectWidget(
+                                selectedLabels: selectedLabels,
+                                onSelectLabels: (labelIds) {
+                                  // Изменено на labelIds
+                                  setState(() {
+                                    selectedLabels = labelIds;
+                                    if (kDebugMode) {
+                                      debugPrint(
+                                          'GoodsFilterScreen: Выбраны label_id: $labelIds');
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
                           ),
-                          color: context.appColors.surfacePrimary,
-                          shadowColor: context.appColors.shadowColor,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('active_status'),
-                                  style: context.appTextStyles.bodyLg.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: context.appColors.textPrimary,
+                          const SizedBox(height: 8),
+                          Card(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            color: context.appColors.surfacePrimary,
+                            shadowColor: context.appColors.shadowColor,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 12, right: 12, top: 4, bottom: 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CustomTextField(
+                                    controller: discountPercentController,
+                                    hintText: AppLocalizations.of(context)!
+                                        .translate('enter_discount_percent'),
+                                    label: AppLocalizations.of(context)!
+                                        .translate('discount_percent'),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return null;
+                                      }
+                                      final number = double.tryParse(value);
+                                      if (number == null || number < 0) {
+                                        return AppLocalizations.of(context)!
+                                            .translate('invalid_discount');
+                                      }
+                                      return null;
+                                    },
+                                    onChanged: (value) {
+                                      if (kDebugMode) {
+                                        debugPrint(
+                                            'GoodsFilterScreen: Введен процент скидки: $value');
+                                      }
+                                    },
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                StatusSelector(
-                                    onStatusChanged: _handleStatusChanged),
-                              ],
+                                  const SizedBox(height: 12),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            color: context.appColors.surfacePrimary,
+                            shadowColor: context.appColors.shadowColor,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .translate('active_status'),
+                                    style:
+                                        context.appTextStyles.bodyLg.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: context.appColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  StatusSelector(
+                                      onStatusChanged: _handleStatusChanged),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

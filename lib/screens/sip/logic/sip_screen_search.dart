@@ -185,11 +185,15 @@ extension _SipScreenSearchExtension on _SipScreenState {
       final calls = results.first as Map<String, dynamic>;
       final callEntries = calls['calls'] as List<CallLogEntry>;
       for (final call in callEntries) {
-        final phone = call.phoneNumber.trim();
+        final phone = _dialSuggestionPhoneForCall(call);
         if (phone.isEmpty) continue;
+        final rawName = call.leadName.trim();
+        final name = _isCallableNumber(rawName) || _isOwnLineNumber(rawName)
+            ? ''
+            : rawName;
         suggestions.add(
           _SipInlineSuggestion(
-            name: call.leadName.trim().isEmpty ? phone : call.leadName,
+            name: name == 'Неизвестно' ? '' : name,
             phone: phone,
             normalizedPhone: _digitsOnly(phone),
             sourceLabel: 'Вызов',
@@ -238,6 +242,24 @@ extension _SipScreenSearchExtension on _SipScreenState {
       _rebuildDialSuggestions(serverSuggestions: const []);
       _updateView(() {});
     }
+  }
+
+  String _dialSuggestionPhoneForCall(CallLogEntry call) {
+    final isOutgoing = call.callType == CallType.outgoing ||
+        call.callType == CallType.outgoingMissed;
+    final candidates = isOutgoing
+        ? <String>[call.destinationNumber ?? '', call.leadName]
+        : <String>[call.phoneNumber, call.leadName];
+
+    for (final candidate in candidates) {
+      final value = candidate.trim();
+      if (_isCallableNumber(value) && !_isOwnLineNumber(value)) {
+        return value;
+      }
+    }
+
+    // Never offer the user's own SIP line as a dial recommendation.
+    return '';
   }
 
   Future<void> _loadUnifiedCallResults({bool reset = false}) async {

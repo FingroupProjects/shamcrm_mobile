@@ -198,6 +198,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
           onFilterGoodsSelected: _onFilterSelected,
           onGoodsResetFilters: _onResetFilters,
           currentFilters: _currentFilters,
+          isTojsokhtmontjTenant: _isTojsokhtmontjTenant,
           initialLabels: _currentFilters['label_id'] != null
               ? List<String>.from(_currentFilters['label_id'])
               : null,
@@ -430,6 +431,7 @@ class _GoodsScreenState extends State<GoodsScreen> {
                 goods.discountedPrice ??
                 goods.discountPrice,
             orderId: goods.orderId,
+            orderNumber: goods.orderNumber,
           ),
         );
       },

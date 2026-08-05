@@ -9,7 +9,7 @@ extension _SipScreenDialerExtension on _SipScreenState {
       server: _serverController.text,
       login: _loginController.text,
       password: _passwordController.text,
-      sipId: _sipIdController.text,
+      sipId: '',
       transport: _selectedTransport,
       port: parsedPort,
     );
@@ -25,7 +25,7 @@ extension _SipScreenDialerExtension on _SipScreenState {
         server: _serverController.text,
         login: _loginController.text,
         password: _passwordController.text,
-        sipId: _sipIdController.text,
+        sipId: '',
         transport: _selectedTransport,
         port: parsedPort,
         notifyUi: false,

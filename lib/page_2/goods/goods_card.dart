@@ -3,8 +3,10 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +25,7 @@ class GoodsCard extends StatefulWidget {
   final List<String> characteristics;
   final double? goodsPrice;
   final int? orderId;
+  final String? orderNumber;
 
   const GoodsCard({
     Key? key,
@@ -40,6 +43,7 @@ class GoodsCard extends StatefulWidget {
     this.characteristics = const [],
     this.goodsPrice,
     this.orderId,
+    this.orderNumber,
   }) : super(key: key);
 
   @override
@@ -78,6 +82,30 @@ class _GoodsCardState extends State<GoodsCard> {
     );
   }
 
+  void _navigateToOrderDetails() {
+    final orderId = widget.orderId;
+    if (orderId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderDetailsScreen(
+          orderId: orderId,
+          categoryName: '',
+          order: Order(
+            id: orderId,
+            phone: '',
+            orderNumber: widget.orderNumber ?? orderId.toString(),
+            delivery: false,
+            lead: OrderLead(id: 0, name: '', channels: const [], phone: ''),
+            orderStatus: OrderStatusName(id: 0, name: ''),
+            goods: const [],
+          ),
+        ),
+      ),
+    );
+  }
+
   bool get _isFreeForTojsokhtmontjOrder {
     if (!widget.isTojsokhtmontjTenant) return false;
     return widget.orderId == null &&
@@ -98,6 +126,7 @@ class _GoodsCardState extends State<GoodsCard> {
             'name': widget.goodsName,
             'price': widget.goodsPrice ?? 0.0,
             'quantity': 1,
+            'availabilityStatus': widget.availabilityStatus,
             'imagePath': _getMainImage()?.path,
           },
         ),
@@ -115,6 +144,55 @@ class _GoodsCardState extends State<GoodsCard> {
           onPressed: _navigateToCreateOrder,
           icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Создать заказ'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderLink() {
+    if (!widget.isTojsokhtmontjTenant || widget.orderId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final number = widget.orderNumber?.trim();
+    final label = number == null || number.isEmpty
+        ? 'Заказ #${widget.orderId}'
+        : 'Заказ №$number';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: InkWell(
+        onTap: _navigateToOrderDetails,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          decoration: BoxDecoration(
+            color: context.appColors.buttonSecondaryBg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.receipt_long_outlined,
+                size: 15,
+                color: context.appColors.buttonPrimaryBg,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TaskCardStyles.priorityStyle(context).copyWith(
+                    fontSize: 12,
+                    color: context.appColors.buttonPrimaryBg,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -438,6 +516,7 @@ class _GoodsCardState extends State<GoodsCard> {
                       ],
                       const SizedBox(height: 4),
                       _buildStatusLabel(),
+                      _buildOrderLink(),
                       _buildCreateOrderButton(),
                     ],
                   ),

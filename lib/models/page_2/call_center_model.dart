@@ -7,6 +7,7 @@ class CallLogEntry {
   final int? leadId;
   final String leadName;
   final String phoneNumber;
+  final String? destinationNumber;
   final DateTime callDate;
   final CallType callType;
   final Duration? duration;
@@ -19,6 +20,7 @@ class CallLogEntry {
     this.leadId,
     required this.leadName,
     required this.phoneNumber,
+    this.destinationNumber,
     required this.callDate,
     required this.callType,
     this.duration,
@@ -84,6 +86,9 @@ class CallLogEntry {
         (json['caller'] ?? json['destination_number'] ?? 'Неизвестно')
             .toString(),
       ),
+      destinationNumber: json['destination_number'] == null
+          ? null
+          : sanitizeUtf16(json['destination_number'].toString()),
       callDate: callDate,
       callType: callType,
       duration: json['call_duration'] != null

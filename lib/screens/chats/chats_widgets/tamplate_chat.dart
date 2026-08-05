@@ -2,6 +2,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_state.dart' show TemplateState, TemplateLoading, TemplateLoaded, TemplateError;
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/global_fun.dart' show stripHtmlTags;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -51,6 +52,7 @@ class TemplateSuggestions extends StatelessWidget {
                     itemCount: templates.length,
                     itemBuilder: (context, index) {
                       final template = templates[index];
+                      final previewText = stripHtmlTags(template.body).trim();
                       return Column(
                         children: [
                           ListTile(
@@ -64,7 +66,7 @@ class TemplateSuggestions extends StatelessWidget {
                               ),
                             ),
                             subtitle: Text(
-                              template.body,
+                              previewText,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

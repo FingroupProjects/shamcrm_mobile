@@ -27,6 +27,7 @@ class CategoryDetailsScreen extends StatefulWidget {
 }
 
 class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
+  final ScrollController _scrollController = ScrollController();
   List<Map<String, String>> details = [];
   final ApiService _apiService = ApiService();
   String? baseUrl;
@@ -47,53 +48,69 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   }
 
   Future<void> _checkPermissions() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final bool integrationWith1C = prefs.getBool('integration_with_1C') ?? false;
-    final bool canUpdate = await _apiService.hasPermission('category.update');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bool integrationWith1C =
+          prefs.getBool('integration_with_1C') ?? false;
+      final bool canUpdate = await _apiService.hasPermission('category.update');
 
-    setState(() {
-      _canUpdateCategory = canUpdate && !integrationWith1C;
-      //print('CategoryDetailsScreen: _canUpdateCategory установлен в $_canUpdateCategory (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
-    });
-  } catch (e) {
-    setState(() {
-      _canUpdateCategory = false;
-      //print('CategoryDetailsScreen: Ошибка при проверке прав: $e');
-    });
+      setState(() {
+        _canUpdateCategory = canUpdate && !integrationWith1C;
+        //print('CategoryDetailsScreen: _canUpdateCategory установлен в $_canUpdateCategory (canUpdate: $canUpdate, integration_with_1C: $integrationWith1C)');
+      });
+    } catch (e) {
+      setState(() {
+        _canUpdateCategory = false;
+        //print('CategoryDetailsScreen: Ошибка при проверке прав: $e');
+      });
+    }
   }
-}
 
- Future<void> _loadImage(String imageUrl) async {
-  if (imageUrl.isNotEmpty) {
-    final fullUrl = await _apiService.getFileUrl(imageUrl);
-    final file = await urlToFile(fullUrl);
-    setState(() {
-      _cachedImageFile = file;
-    });
+  Future<void> _loadImage(String imageUrl) async {
+    if (imageUrl.isNotEmpty) {
+      final fullUrl = await _apiService.getFileUrl(imageUrl);
+      final file = await urlToFile(fullUrl);
+      setState(() {
+        _cachedImageFile = file;
+      });
+    }
   }
-}
-Future<void> _initializeBaseUrl() async {
-  try {
-    final staticBaseUrl = await _apiService.getStaticBaseUrl();
-    setState(() {
-      baseUrl = staticBaseUrl;
-    });
-  } catch (error) {
-    setState(() {
-      baseUrl = 'https://shamcrm.com/storage';
-    });
+
+  Future<void> _initializeBaseUrl() async {
+    try {
+      final staticBaseUrl = await _apiService.getStaticBaseUrl();
+      setState(() {
+        baseUrl = staticBaseUrl;
+      });
+    } catch (error) {
+      setState(() {
+        baseUrl = 'https://shamcrm.com/storage';
+      });
+    }
   }
-}
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _updateDetails();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      //print('CategoryDetailsScreen: Очистка временных файлов');
+      cleanTempFiles();
+    });
+  }
+
   void _updateDetails() {
     details = [
-      {'label': AppLocalizations.of(context)!.translate('name_deal_details'), 'value': currentName},
+      {
+        'label': AppLocalizations.of(context)!.translate('name_deal_details'),
+        'value': currentName
+      },
     ];
     //print('CategoryDetailsScreen: Детали обновлены, количество: ${details.length}');
   }
@@ -110,6 +127,7 @@ Future<void> _initializeBaseUrl() async {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: ListView(
+          controller: _scrollController,
           children: [
             if (_cachedImageFile != null || widget.imageUrl != null)
               Padding(
@@ -133,7 +151,8 @@ Future<void> _initializeBaseUrl() async {
                               width: double.infinity,
                               height: 200,
                               color: colors.surfacePrimary,
-                              child: Icon(Icons.image_not_supported, size: 50, color: colors.textSecondary),
+                              child: Icon(Icons.image_not_supported,
+                                  size: 50, color: colors.textSecondary),
                             );
                           },
                           loadingBuilder: (context, child, loadingProgress) {
@@ -144,7 +163,8 @@ Future<void> _initializeBaseUrl() async {
                               color: colors.surfacePrimary,
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
                                       ? loadingProgress.cumulativeBytesLoaded /
                                           loadingProgress.expectedTotalBytes!
                                       : null,
@@ -157,7 +177,11 @@ Future<void> _initializeBaseUrl() async {
                 ),
               ),
             _buildDetailsList(),
-            CategorySubCategoryScreen(categoryId: widget.categoryId, categoryName: widget.categoryName),
+            CategorySubCategoryScreen(
+              categoryId: widget.categoryId,
+              categoryName: widget.categoryName,
+              scrollController: _scrollController,
+            ),
           ],
         ),
       ),
@@ -227,7 +251,8 @@ Future<void> _initializeBaseUrl() async {
                           currentName = result['updatedName'];
                           if (result['updatedImage'] != null) {
                             _cachedImageFile = result['updatedImage'];
-                          } else if (result['updatedImage'] == null && result['isImageRemoved'] == true) {
+                          } else if (result['updatedImage'] == null &&
+                              result['isImageRemoved'] == true) {
                             _cachedImageFile = null;
                           }
                           _updateDetails();
@@ -247,7 +272,8 @@ Future<void> _initializeBaseUrl() async {
                     onPressed: () {
                       showDialog(
                         context: context,
-                        builder: (context) => DeleteCategoryDialog(categoryId: widget.categoryId),
+                        builder: (context) =>
+                            DeleteCategoryDialog(categoryId: widget.categoryId),
                       ).then((deleted) {
                         if (deleted == true) {
                           Navigator.of(context).pop(true);
@@ -289,12 +315,16 @@ Future<void> _initializeBaseUrl() async {
             _buildLabel(label),
             SizedBox(width: 8),
             Expanded(
-              child: label == AppLocalizations.of(context)!.translate('description_details')
+              child: label ==
+                      AppLocalizations.of(context)!
+                          .translate('description_details')
                   ? GestureDetector(
                       onTap: () {
                         //print('CategoryDetailsScreen: Нажато на элемент деталей: $label');
                         _showFullTextDialog(
-                            AppLocalizations.of(context)!.translate('description_details'), value);
+                            AppLocalizations.of(context)!
+                                .translate('description_details'),
+                            value);
                       },
                       child: _buildValue(value, label, maxLines: 2),
                     )
@@ -331,7 +361,8 @@ Future<void> _initializeBaseUrl() async {
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
         color: colors.textPrimary,
-        decoration: label == AppLocalizations.of(context)!.translate('description_details')
+        decoration: label ==
+                AppLocalizations.of(context)!.translate('description_details')
             ? TextDecoration.underline
             : TextDecoration.none,
       ),
@@ -397,14 +428,5 @@ Future<void> _initializeBaseUrl() async {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      //print('CategoryDetailsScreen: Очистка временных файлов');
-      cleanTempFiles();
-    });
   }
 }

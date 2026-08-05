@@ -905,6 +905,29 @@ extension _SipMainViewsExtension on _SipScreenState {
       fontWeight: FontWeight.w600,
       height: 1.1,
     );
+    final sourceStyle = TextStyle(
+      color: colors.textSecondary,
+      fontSize: isTight ? 12.0 : 13.0,
+      fontWeight: FontWeight.w500,
+      height: 1.1,
+    );
+
+    Widget phoneAndSource({TextAlign textAlign = TextAlign.left}) {
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: suggestion!.phone, style: phoneStyle),
+            TextSpan(
+              text: '  ${suggestion.sourceLabel}',
+              style: sourceStyle,
+            ),
+          ],
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: textAlign,
+      );
+    }
 
     if (!hasQuery) {
       return SizedBox(height: reservedHeight + 8);
@@ -961,27 +984,25 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     ),
                                     SizedBox(width: gap),
                                     Expanded(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            suggestion.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: nameStyle,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            '${suggestion.phone} • ${suggestion.sourceLabel}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: phoneStyle,
-                                          ),
-                                        ],
-                                      ),
+                                      child: suggestion.name.isEmpty
+                                          ? phoneAndSource()
+                                          : Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  suggestion.name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: nameStyle,
+                                                ),
+                                                const SizedBox(height: 2),
+                                                phoneAndSource(),
+                                              ],
+                                            ),
                                     ),
                                   ],
                                 )
@@ -998,22 +1019,22 @@ extension _SipMainViewsExtension on _SipScreenState {
                                       color: colors.iconSecondary,
                                     ),
                                     SizedBox(width: gap),
-                                    Expanded(
-                                      child: Text(
-                                        suggestion.name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: nameStyle,
+                                    if (suggestion.name.isNotEmpty) ...[
+                                      Expanded(
+                                        child: Text(
+                                          suggestion.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: nameStyle,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
+                                      const SizedBox(width: 8),
+                                    ],
                                     Flexible(
-                                      child: Text(
-                                        '${suggestion.phone} • ${suggestion.sourceLabel}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.right,
-                                        style: phoneStyle,
+                                      child: phoneAndSource(
+                                        textAlign: suggestion.name.isEmpty
+                                            ? TextAlign.left
+                                            : TextAlign.right,
                                       ),
                                     ),
                                   ],
@@ -1513,7 +1534,8 @@ extension _SipMainViewsExtension on _SipScreenState {
         padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            const horizontalPadding = 5.0;
+            const horizontalPadding = 7.0;
+            const verticalPadding = 5.0;
             const innerGap = 2.0;
             final maxIndex = segmentCount - 1;
             final currentNavPosition =
@@ -1538,10 +1560,17 @@ extension _SipMainViewsExtension on _SipScreenState {
             final usableWidth = constraints.maxWidth - (horizontalPadding * 2);
             final segmentWidth =
                 (usableWidth - innerGap * (segmentCount - 1)) / segmentCount;
-            final thumbLeft = selectedIndex * (segmentWidth + innerGap);
+            final segmentLeft = selectedIndex * (segmentWidth + innerGap);
             final highlightedIndex = selectedIndex.round().clamp(0, maxIndex);
+            final restingThumbWidth = segmentWidth;
+            final restingThumbLeft = segmentLeft;
+            final pressedExpansion = math.min(30.0, segmentWidth * 0.24);
+            final thumbExpansion = _isLiquidNavPressed ? pressedExpansion : 0.0;
+            final thumbWidth = restingThumbWidth + thumbExpansion;
+            final thumbLeft = (restingThumbLeft - thumbExpansion / 2)
+                .clamp(0.0, usableWidth - thumbWidth);
             final thumbTop = _isLiquidNavPressed ? 0.0 : 2.0;
-            final thumbHeight = _isLiquidNavPressed ? 58.0 : 54.0;
+            final thumbHeight = _isLiquidNavPressed ? 70.0 : 66.0;
 
             Widget buildItemsRow(bool Function(int index) isSelected) {
               return Row(
@@ -1554,6 +1583,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                         activeIconAsset: navItems[i].activeIconAsset,
                         label: navItems[i].label,
                         selected: isSelected(i),
+                        pressed: isSelected(i) && _isLiquidNavPressed,
                       ),
                     ),
                   ],
@@ -1561,29 +1591,35 @@ extension _SipMainViewsExtension on _SipScreenState {
               );
             }
 
-            void snapToLocalPosition(double localDx) {
-              final safeDx = localDx.clamp(0.0, usableWidth);
-              final nextPosition = (safeDx / (segmentWidth + innerGap))
-                  .round()
+            int tapPositionFor(double localDx) {
+              final safeDx = localDx.clamp(
+                0.0,
+                math.max(0.0, constraints.maxWidth - 0.001),
+              );
+              return ((safeDx / constraints.maxWidth) * segmentCount)
+                  .floor()
                   .clamp(0, maxIndex);
+            }
+
+            void selectPosition(int nextPosition) {
               final nextIndex = navItems[nextPosition].index;
               _updateView(() {
                 _bottomTabIndex = nextIndex;
                 _liquidNavDragIndex = nextPosition.toDouble();
+                _isLiquidNavPressed = false;
               });
             }
 
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               onHorizontalDragStart: (_) {
-                // onTapDown may have already selected another tab before
-                // Flutter recognizes the same touch as a short drag.
-                // Read the current state here, not the value captured by
-                // this build, otherwise the drag end can restore the old tab.
-                final dragStartPosition = currentSelectedNavPosition();
+                // Continue from the glass position shown under the finger.
+                final dragStartPosition = (_liquidNavDragIndex ??
+                        currentSelectedNavPosition().toDouble())
+                    .clamp(0.0, maxIndex.toDouble());
                 _updateView(() {
                   _isLiquidNavPressed = true;
-                  _liquidNavDragIndex = dragStartPosition.toDouble();
+                  _liquidNavDragIndex = dragStartPosition;
                 });
               },
               onHorizontalDragUpdate: (details) {
@@ -1615,30 +1651,36 @@ extension _SipMainViewsExtension on _SipScreenState {
                 });
               },
               onTapDown: (details) {
+                final pressedPosition =
+                    tapPositionFor(details.localPosition.dx);
                 _updateView(() {
                   _isLiquidNavPressed = true;
+                  // Move only the glass highlight on touch-down. The actual
+                  // page is committed on touch-up, so taps and swipes cannot
+                  // open neighboring tabs by accident.
+                  _liquidNavDragIndex = pressedPosition.toDouble();
                 });
-                snapToLocalPosition(
-                  details.localPosition.dx - horizontalPadding,
-                );
               },
-              onTapUp: (_) {
-                _updateView(() {
-                  _isLiquidNavPressed = false;
-                });
+              onTapUp: (details) {
+                selectPosition(tapPositionFor(details.localPosition.dx));
               },
               onTapCancel: () {
+                final resetPosition = currentSelectedNavPosition();
                 _updateView(() {
                   _isLiquidNavPressed = false;
+                  _liquidNavDragIndex = resetPosition.toDouble();
                 });
               },
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(42),
+                borderRadius: BorderRadius.circular(46),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 34, sigmaY: 34),
                   child: Container(
-                    height: 70,
-                    padding: const EdgeInsets.all(horizontalPadding),
+                    height: 80,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: verticalPadding,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -1650,11 +1692,13 @@ extension _SipMainViewsExtension on _SipScreenState {
                           colors.surfaceElevated.withValues(
                             alpha: isDark ? 0.52 : 0.68,
                           ),
-                          colors.surfaceAccent.withValues(alpha: 0.48),
+                          colors.surfaceAccent.withValues(
+                            alpha: isDark ? 0.28 : 0.34,
+                          ),
                         ],
                         stops: const [0.0, 0.58, 1.0],
                       ),
-                      borderRadius: BorderRadius.circular(42),
+                      borderRadius: BorderRadius.circular(46),
                       border: Border.all(
                         color: colors.borderSubtle.withValues(alpha: 0.8),
                         width: 1.2,
@@ -1672,11 +1716,15 @@ extension _SipMainViewsExtension on _SipScreenState {
                     child: Stack(
                       children: [
                         AnimatedPositioned(
-                          duration: const Duration(milliseconds: 120),
-                          curve: Curves.easeOutCubic,
+                          duration: Duration(
+                            milliseconds: _isLiquidNavPressed ? 90 : 300,
+                          ),
+                          curve: _isLiquidNavPressed
+                              ? Curves.easeOut
+                              : Curves.easeOutQuart,
                           left: thumbLeft,
                           top: thumbTop,
-                          width: segmentWidth,
+                          width: thumbWidth,
                           height: thumbHeight,
                           child: _liquidMirrorThumb(
                             isPressed: _isLiquidNavPressed,
@@ -1704,70 +1752,78 @@ extension _SipMainViewsExtension on _SipScreenState {
     required String activeIconAsset,
     required String label,
     required bool selected,
+    required bool pressed,
   }) {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 140),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutQuart,
       height: 58,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(34),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 180),
-            child: Image.asset(
-              selected ? activeIconAsset : iconAsset,
-              key: ValueKey(selected),
-              width: 22,
-              height: 22,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.medium,
-              color: selected
-                  ? _TelephonyVisualColors.blue
-                  : (isDark
-                      ? colors.textPrimary.withValues(alpha: 0.84)
-                      : colors.iconSecondary),
-              colorBlendMode: BlendMode.srcIn,
+      child: AnimatedScale(
+        scale: pressed ? 1.15 : 1.0,
+        duration: Duration(milliseconds: pressed ? 100 : 320),
+        curve: pressed ? Curves.easeOutCubic : Curves.easeOutBack,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              switchInCurve: Curves.easeOutQuart,
+              switchOutCurve: Curves.easeInCubic,
+              child: Image.asset(
+                selected ? activeIconAsset : iconAsset,
+                key: ValueKey(selected),
+                width: 22,
+                height: 22,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
+                color: selected
+                    ? _TelephonyVisualColors.blue
+                    : (isDark
+                        ? colors.textPrimary.withValues(alpha: 0.84)
+                        : colors.iconSecondary),
+                colorBlendMode: BlendMode.srcIn,
+              ),
             ),
-          ),
-          const SizedBox(height: 3),
-          SizedBox(
-            height: 15,
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                sanitizeUtf16(label),
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected
-                      ? _TelephonyVisualColors.blue
-                      : (Theme.of(context).brightness == Brightness.dark
-                          ? colors.textPrimary.withValues(alpha: 0.88)
-                          : colors.textSecondary),
-                  letterSpacing: 0,
-                  shadows: Theme.of(context).brightness == Brightness.dark
-                      ? [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.38),
-                            blurRadius: 2,
-                          ),
-                        ]
-                      : null,
+            const SizedBox(height: 3),
+            SizedBox(
+              height: 15,
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  sanitizeUtf16(label),
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? _TelephonyVisualColors.blue
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? colors.textPrimary.withValues(alpha: 0.88)
+                            : colors.textSecondary),
+                    letterSpacing: 0,
+                    shadows: Theme.of(context).brightness == Brightness.dark
+                        ? [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.38),
+                              blurRadius: 2,
+                            ),
+                          ]
+                        : null,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1775,36 +1831,125 @@ extension _SipMainViewsExtension on _SipScreenState {
   Widget _liquidMirrorThumb({required bool isPressed}) {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(34),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: isPressed ? 28 : 22,
-          sigmaY: isPressed ? 28 : 22,
+    const outerRadius = 44.0;
+    final thumbPadding = isPressed ? 2.6 : 1.0;
+    final innerRadius = outerRadius - thumbPadding;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: isPressed ? 100 : 320),
+      curve: isPressed ? Curves.easeOutCubic : Curves.easeOutBack,
+      padding: EdgeInsets.all(thumbPadding),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: isPressed ? 0.88 : 0.58),
+            _TelephonyVisualColors.blue.withValues(
+              alpha: isPressed ? 0.58 : 0.38,
+            ),
+            Colors.white.withValues(alpha: isPressed ? 0.30 : 0.16),
+            _TelephonyVisualColors.blue.withValues(
+              alpha: isPressed ? 0.66 : 0.42,
+            ),
+          ],
+          stops: const [0.0, 0.28, 0.62, 1.0],
         ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          decoration: BoxDecoration(
-            color: Color.alphaBlend(
-              _TelephonyVisualColors.blue.withValues(
-                alpha: isPressed ? 0.24 : (isDark ? 0.18 : 0.12),
-              ),
-              colors.surfaceElevated.withValues(alpha: isDark ? 0.88 : 0.94),
+        borderRadius: BorderRadius.circular(outerRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: isPressed ? (isDark ? 0.34 : 0.18) : 0.10,
             ),
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(
-              color: _TelephonyVisualColors.blue.withValues(
-                alpha: isPressed ? 0.58 : 0.36,
-              ),
-              width: isPressed ? 1.8 : 1.2,
+            blurRadius: isPressed ? 24 : 14,
+            spreadRadius: isPressed ? 1.0 : 0.0,
+            offset: Offset(0, isPressed ? 8 : 4),
+          ),
+          BoxShadow(
+            color: _TelephonyVisualColors.blue.withValues(
+              alpha: isPressed ? 0.30 : 0.12,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: _TelephonyVisualColors.blue.withValues(alpha: 0.12),
-                blurRadius: isPressed ? 20 : 14,
-                offset: const Offset(0, 5),
+            blurRadius: isPressed ? 22 : 12,
+            spreadRadius: isPressed ? 0.8 : 0.0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(innerRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: isPressed ? 32 : 22,
+            sigmaY: isPressed ? 32 : 22,
+          ),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: isPressed ? 100 : 300),
+            curve: isPressed ? Curves.easeOutCubic : Curves.easeOutQuart,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(
+                    alpha: isPressed ? (isDark ? 0.18 : 0.46) : 0.16,
+                  ),
+                  Color.alphaBlend(
+                    _TelephonyVisualColors.blue.withValues(
+                      alpha: isPressed ? 0.28 : (isDark ? 0.18 : 0.12),
+                    ),
+                    colors.surfaceElevated.withValues(
+                      alpha: isDark ? 0.82 : 0.90,
+                    ),
+                  ),
+                  colors.surfacePrimary.withValues(
+                    alpha: isPressed ? 0.70 : 0.82,
+                  ),
+                ],
+                stops: const [0.0, 0.46, 1.0],
               ),
-            ],
+              borderRadius: BorderRadius.circular(innerRadius),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 26,
+                  right: 26,
+                  top: 1,
+                  height: isPressed ? 2.0 : 1.2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0),
+                          Colors.white.withValues(
+                            alpha: isPressed ? 0.92 : 0.56,
+                          ),
+                          Colors.white.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 30,
+                  right: 30,
+                  bottom: 1,
+                  height: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _TelephonyVisualColors.blue.withValues(alpha: 0),
+                          _TelephonyVisualColors.blue.withValues(
+                            alpha: isPressed ? 0.48 : 0.24,
+                          ),
+                          _TelephonyVisualColors.blue.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -46,6 +46,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   bool _hasCategory = false; // Новое право для категорий
   bool _hasLead = false; // TODO, проверка права для лидов
   bool _hasOpenings = false; // TODO, проверка права для первоначальных остатков
+  bool _isTojsokhtmontjTenant = false;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasLead = await _apiService.hasPermission('lead.read');
       _hasOpenings = await _apiService.hasPermission(
           'initial_balance.read'); // TODO: Проверить правильное имя права
+      _isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
       _hasStorage = false;
@@ -94,6 +96,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasCategory = false;
       _hasLead = false;
       _hasOpenings = false;
+      _isTojsokhtmontjTenant = false;
     } finally {
       setState(() {
         _isLoading = false;
@@ -216,7 +219,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
-    if (_hasLead) {
+    if (_hasLead && !_isTojsokhtmontjTenant) {
       allReferences.add(
         ReferenceItem(
           keyName: 'clients',

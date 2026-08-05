@@ -521,6 +521,7 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
             'name': goods.name,
             'price': _goodsOrderPrice(goods),
             'quantity': 1,
+            'availabilityStatus': goods.availabilityStatus,
             'imagePath': goods.files.isNotEmpty ? goods.files.first.path : null,
           },
         ),

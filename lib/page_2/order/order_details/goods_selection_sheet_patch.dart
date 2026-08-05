@@ -399,6 +399,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               'price': variant.price ?? 0.0,
               'quantity':
                   _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
+              'availabilityStatus': variant.good?.availabilityStatus,
               'imagePath': variant.good?.files.isNotEmpty == true
                   ? variant.good!.files[0].path
                   : null,
@@ -410,7 +411,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         SnackBar(
           content: Text(
             AppLocalizations.of(context)!.translate('please_select_product'),
-            style:  TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -483,7 +484,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             height: MediaQuery.of(context).size.height * _bottomSheetHeight,
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.14),
@@ -508,7 +510,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  Widget _buildHeader(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildHeader(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     final colors = context.appColors;
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 10, 12),
@@ -539,7 +542,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 ),
                 Text(
                   localizations.translate('add_producted'),
-                  style:  TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
@@ -579,7 +582,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
         onTap: _onBackFromCategory,
         child: Row(
           children: [
-             Icon(
+            Icon(
               Icons.arrow_back,
               size: 14,
               color: colors.buttonPrimaryBg,
@@ -588,7 +591,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             Flexible(
               child: Text(
                 categoryName,
-                style:  TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -607,12 +610,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final totalResults =
         state.searchCategories.length + state.searchVariants.length;
     final localizations = AppLocalizations.of(context)!;
-final colors = context.appColors;
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Text(
-        localizations.translate('found_results').replaceAll('{count}', totalResults.toString()),
-        style:  TextStyle(
+        localizations
+            .translate('found_results')
+            .replaceAll('{count}', totalResults.toString()),
+        style: TextStyle(
           fontSize: 13,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
@@ -622,7 +627,8 @@ final colors = context.appColors;
     );
   }
 
-  Widget _buildSearchField(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildSearchField(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -634,7 +640,7 @@ final colors = context.appColors;
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: localizations.translate('search_variants'),
-                hintStyle:  TextStyle(
+                hintStyle: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
                   color: colors.fieldHint,
@@ -642,20 +648,20 @@ final colors = context.appColors;
                 prefixIcon: Icon(Icons.search, color: colors.buttonPrimaryBg),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: colors.fieldHint,
-                  ),
-                  onPressed: () {
-                    _searchController.clear();
-                    // Вместо SearchAll('') возвращаемся к предыдущему режиму
-                    if (_showAllMode) {
-                      _bloc.add(FetchVariants());
-                    } else {
-                      _bloc.add(FetchCategories());
-                    }
-                  },
-                )
+                        icon: Icon(
+                          Icons.clear,
+                          color: colors.fieldHint,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          // Вместо SearchAll('') возвращаемся к предыдущему режиму
+                          if (_showAllMode) {
+                            _bloc.add(FetchVariants());
+                          } else {
+                            _bloc.add(FetchCategories());
+                          }
+                        },
+                      )
                     : null,
                 filled: true,
                 fillColor: colors.fieldBg,
@@ -673,7 +679,8 @@ final colors = context.appColors;
                     color: colors.buttonPrimaryBg.withValues(alpha: 0.45),
                   ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               style: TextStyle(
                 fontFamily: 'Gilroy',
@@ -715,7 +722,8 @@ final colors = context.appColors;
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.error != null && !state.hasData) { // Only show error if no data
+    if (state.error != null && !state.hasData) {
+      // Only show error if no data
       final colors = context.appColors;
       return Center(
         child: Column(
@@ -815,7 +823,7 @@ final colors = context.appColors;
         children: [
           Text(
             title,
-            style:  TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
@@ -831,7 +839,7 @@ final colors = context.appColors;
             ),
             child: Text(
               count.toString(),
-              style:  TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
@@ -844,7 +852,8 @@ final colors = context.appColors;
     );
   }
 
-  Widget _buildCategories(AppLocalizations localizations, VariantBottomSheetState state) {
+  Widget _buildCategories(
+      AppLocalizations localizations, VariantBottomSheetState state) {
     final colors = context.appColors;
     if (state.isLoading && state.categories.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -854,7 +863,7 @@ final colors = context.appColors;
       return Center(
         child: Text(
           localizations.translate('no_categories_found'),
-          style:  TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             color: colors.textSecondary,
@@ -876,7 +885,7 @@ final colors = context.appColors;
   Widget _buildCategoryCard(CategoryWithCount categoryWithCount) {
     final category = categoryWithCount.category;
     final level = categoryWithCount.level;
-final colors = context.appColors;
+    final colors = context.appColors;
     final leftPadding = 16.0 + (level * 24.0);
 
     return GestureDetector(
@@ -916,29 +925,34 @@ final colors = context.appColors;
                 ),
                 child: category.image != null && category.image!.isNotEmpty
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: CachedNetworkImage(
-                    imageUrl: 'https://shamcrm.com/storage/${category.image}',
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Icon(
-                      level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                      color: colors.buttonPrimaryBg,
-                      size: level > 0 ? 20 : 28,
-                    ),
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              'https://shamcrm.com/storage/${category.image}',
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Icon(
+                            level > 0
+                                ? Icons.subdirectory_arrow_right
+                                : Icons.category,
+                            color: colors.buttonPrimaryBg,
+                            size: level > 0 ? 20 : 28,
+                          ),
+                        ),
+                      )
                     : Icon(
-                  level > 0 ? Icons.subdirectory_arrow_right : Icons.category,
-                  color: colors.buttonPrimaryBg,
-                  size: level > 0 ? 20 : 28,
-                ),
+                        level > 0
+                            ? Icons.subdirectory_arrow_right
+                            : Icons.category,
+                        color: colors.buttonPrimaryBg,
+                        size: level > 0 ? 20 : 28,
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -952,7 +966,7 @@ final colors = context.appColors;
                   ),
                 ),
               ),
-               Icon(
+              Icon(
                 Icons.arrow_forward_ios,
                 color: colors.textSecondary,
                 size: 18,
@@ -989,7 +1003,6 @@ final colors = context.appColors;
   }
 
   Widget _buildVariantsList({
-    
     required List<Variant> variants,
     required String emptyMessageKey,
     required VariantBottomSheetState state,
@@ -1000,7 +1013,7 @@ final colors = context.appColors;
       return Center(
         child: Text(
           localizations.translate(emptyMessageKey),
-          style:  TextStyle(
+          style: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 16,
             color: colors.textSecondary,
@@ -1046,7 +1059,7 @@ final colors = context.appColors;
           const SizedBox(height: 16),
           Text(
             title,
-            style:  TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -1056,7 +1069,7 @@ final colors = context.appColors;
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style:  TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 14,
               color: colors.textSecondary,
@@ -1108,7 +1121,7 @@ final colors = context.appColors;
                       children: [
                         Text(
                           displayName,
-                          style:  TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
@@ -1123,7 +1136,7 @@ final colors = context.appColors;
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               _formatPrice(variant.price),
-                              style:  TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w600,
@@ -1145,7 +1158,8 @@ final colors = context.appColors;
             if (isSelected && !_isTojsokhtmontjTenant) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 decoration: BoxDecoration(
                   color: colors.fieldBg,
                   borderRadius: BorderRadius.circular(14),
@@ -1155,7 +1169,7 @@ final colors = context.appColors;
                   children: [
                     Text(
                       localizations.translate('quantity'),
-                      style:  TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w500,
@@ -1182,8 +1196,8 @@ final colors = context.appColors;
                                   height: 42,
                                   decoration: BoxDecoration(
                                     border: Border(
-                                      right:
-                                          BorderSide(color: colors.borderSubtle),
+                                      right: BorderSide(
+                                          color: colors.borderSubtle),
                                     ),
                                   ),
                                   child: Icon(
@@ -1197,8 +1211,9 @@ final colors = context.appColors;
                                 width: 44,
                                 child: TextField(
                                   controller: _getQuantityController(variant),
-                                  keyboardType: const TextInputType
-                                      .numberWithOptions(decimal: true),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 15,
@@ -1221,7 +1236,8 @@ final colors = context.appColors;
                                   onChanged: (value) =>
                                       _handleQuantityInput(variant, value),
                                   onEditingComplete: () {
-                                    if ((_quantityControllers[variant.id]?.text ??
+                                    if ((_quantityControllers[variant.id]
+                                                ?.text ??
                                             '')
                                         .isEmpty) {
                                       _syncQuantityController(variant.id);
@@ -1240,8 +1256,8 @@ final colors = context.appColors;
                                   height: 42,
                                   decoration: BoxDecoration(
                                     border: Border(
-                                      left:
-                                          BorderSide(color: colors.borderSubtle),
+                                      left: BorderSide(
+                                          color: colors.borderSubtle),
                                     ),
                                   ),
                                   child: Icon(
@@ -1274,7 +1290,7 @@ final colors = context.appColors;
     }
     final quantityText = localizations.translate('quantity');
     final outOfStockText = localizations.translate('out_of_stock');
-final colors = context.appColors;
+    final colors = context.appColors;
     return Text(
       hasStock ? '$quantityText: $remainder' : outOfStockText,
       style: TextStyle(
@@ -1297,29 +1313,29 @@ final colors = context.appColors;
       ),
       child: imageUrl != null
           ? ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Icon(
+                  Icons.shopping_cart_outlined,
+                  color: colors.buttonPrimaryBg,
+                  size: 24,
+                ),
+              ),
+            )
+          : Icon(
+              Icons.shopping_cart_outlined,
+              color: colors.buttonPrimaryBg,
+              size: 24,
             ),
-          ),
-          errorWidget: (context, url, error) =>  Icon(
-            Icons.shopping_cart_outlined,
-            color: colors.buttonPrimaryBg,
-            size: 24,
-          ),
-        ),
-      )
-          :  Icon(
-        Icons.shopping_cart_outlined,
-        color: colors.buttonPrimaryBg,
-        size: 24,
-      ),
     );
   }
 

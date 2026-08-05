@@ -65,6 +65,7 @@ class CustomAppBarPage2 extends StatefulWidget {
 
   final Map<String, dynamic> currentFilters;
   final List<String>? initialLabels;
+  final bool isTojsokhtmontjTenant;
 
   CustomAppBarPage2({
     super.key,
@@ -97,6 +98,7 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.onClientReturnResetFilters,
     required this.currentFilters,
     this.initialLabels,
+    this.isTojsokhtmontjTenant = false,
   });
 
   @override
@@ -660,8 +662,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
               focusNode: focusNode,
               onChanged: widget.onChangedSearchInput,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!
-                    .translate('search_appbar'),
+                hintText:
+                    AppLocalizations.of(context)!.translate('search_appbar'),
                 border: InputBorder.none,
                 hintStyle: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.fieldHint,
@@ -791,7 +793,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
                   color: context.appColors.iconPrimary,
                 ),
                 onPressed: _scanBarcode,
-                tooltip: AppLocalizations.of(context)!.translate('scan_barcode'),
+                tooltip:
+                    AppLocalizations.of(context)!.translate('scan_barcode'),
               ),
             if (widget.showFilterIcon && _canCreateProduct)
               _buildFilterActionButton(
@@ -894,6 +897,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           initialDiscountPercent: initialDiscountPercent,
           initialLabels: initialLabels,
           initialIsActive: initialIsActive,
+          isTojsokhtmontjTenant: widget.isTojsokhtmontjTenant,
         ),
       ),
     );

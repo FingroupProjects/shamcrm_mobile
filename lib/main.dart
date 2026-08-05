@@ -257,6 +257,10 @@ class _IssueRepeatStats {
   }
 }
 
+// Разработка проекта shamCRM начата в сентябре 2024 года.
+// Разработано компанией Softtech Group.
+// Разработчик: Авезов Д. И.
+
 void main() {
   runZonedGuarded(() async {
     try {

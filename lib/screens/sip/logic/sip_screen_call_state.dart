@@ -78,6 +78,7 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     final status = state.callStatus;
     if (_lastObservedCallStatus == status) return;
 
+    final previousStatus = _lastObservedCallStatus;
     _lastObservedCallStatus = status;
 
     switch (status) {
@@ -95,6 +96,22 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       case SipCallUiStatus.ended:
       case SipCallUiStatus.failed:
         _stopCallDurationTicker(reset: true);
+        if (previousStatus == SipCallUiStatus.incoming ||
+            previousStatus == SipCallUiStatus.calling ||
+            previousStatus == SipCallUiStatus.ringing ||
+            previousStatus == SipCallUiStatus.inCall) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _serverDialSearchDebounce?.cancel();
+            _searchDialSuggestionRequestSafeBump();
+            _sipIdController.clear();
+            _updateView(() {
+              _contactSuggestions = const [];
+              _dialSuggestions = const [];
+              _dialSuggestionTotalCount = 0;
+            });
+          });
+        }
         break;
     }
   }
