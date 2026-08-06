@@ -7,6 +7,7 @@ void main() {
       'id': 1,
       'caller': '992488886363',
       'destination_number': '+992929664041',
+      'trunk': '992488886363',
       'incoming': false,
       'missed': false,
       'call_started_at': '2026-08-05T08:00:00.000Z',
@@ -15,5 +16,7 @@ void main() {
     expect(call.callType, CallType.outgoing);
     expect(call.phoneNumber, '992488886363');
     expect(call.destinationNumber, '+992929664041');
+    expect(call.trunk, '992488886363');
+    expect(call.outboundCallerNumber, '992488886363');
   });
 }

@@ -118,6 +118,10 @@ class SipUiState {
   final String login;
   final String password;
   final String sipId;
+  /// Our PSTN number shown to clients on outgoing calls (from call `trunk`/`caller`).
+  final String outboundNumber;
+  /// PBX extension from `/user/{id}` → `internal_number`.
+  final String internalNumber;
   final SipTransportUi transport;
   final int port;
   final SipRegistrationUiStatus registrationStatus;
@@ -141,6 +145,8 @@ class SipUiState {
     required this.login,
     required this.password,
     required this.sipId,
+    required this.outboundNumber,
+    required this.internalNumber,
     required this.transport,
     required this.port,
     required this.registrationStatus,
@@ -166,6 +172,8 @@ class SipUiState {
       login: '',
       password: '',
       sipId: '',
+      outboundNumber: '',
+      internalNumber: '',
       transport: SipTransportUi.udp,
       port: 5060,
       registrationStatus: SipRegistrationUiStatus.disconnected,
@@ -191,6 +199,8 @@ class SipUiState {
     String? login,
     String? password,
     String? sipId,
+    String? outboundNumber,
+    String? internalNumber,
     SipTransportUi? transport,
     int? port,
     SipRegistrationUiStatus? registrationStatus,
@@ -216,6 +226,8 @@ class SipUiState {
       login: login ?? this.login,
       password: password ?? this.password,
       sipId: sipId ?? this.sipId,
+      outboundNumber: outboundNumber ?? this.outboundNumber,
+      internalNumber: internalNumber ?? this.internalNumber,
       transport: transport ?? this.transport,
       port: port ?? this.port,
       registrationStatus: registrationStatus ?? this.registrationStatus,

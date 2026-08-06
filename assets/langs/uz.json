@@ -193,6 +193,8 @@
   "sip_status_failed": "Ulanish xatosi",
   "sip_subscriber": "Abonent",
   "sip_id": "Liniya raqami",
+  "sip_outbound_number": "Chiquvchi raqam",
+  "sip_internal_number": "Ichki raqam",
   "sip_call_controls": "Qo'ng'iroq boshqaruvi",
   "sip_call": "Qo'ng'iroq qilish",
   "sip_accept": "Javob berish",

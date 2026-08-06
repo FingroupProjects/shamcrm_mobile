@@ -12,6 +12,7 @@ class UserByIdProfile {
   final String? lastSeen;
   final List<Role>? role;
   final String? uniqueId; // Новое поле
+  final int? internalNumber;
 
   UserByIdProfile({
     required this.id,
@@ -25,9 +26,15 @@ class UserByIdProfile {
     this.lastSeen,
     this.role,
     this.uniqueId, // Добавляем в конструктор
+    this.internalNumber,
   });
 
   factory UserByIdProfile.fromJson(Map<String, dynamic> json) {
+    final internalNumberRaw = json['internal_number'];
+    final int? internalNumber = internalNumberRaw is int
+        ? internalNumberRaw
+        : int.tryParse(internalNumberRaw?.toString() ?? '');
+
     return UserByIdProfile(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Не указано',
@@ -39,6 +46,7 @@ class UserByIdProfile {
       image: json['image'] as String?,
       lastSeen: json['last_seen'] as String?,
       uniqueId: json['unique_id'] as String?, // Парсим unique_id
+      internalNumber: internalNumber,
       role: (json['roles'] as List<dynamic>?)
           ?.map((roleJson) => Role.fromJson(roleJson))
           .toList(),

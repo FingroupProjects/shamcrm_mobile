@@ -172,6 +172,7 @@ class NativeSipForegroundService : Service() {
     private var explicitStopRequested = false
     private var incomingCallRingtone: Ringtone? = null
     private var incomingPresentationKey: String? = null
+    private var microphoneForegroundTypeActive = false
 
     override fun onCreate() {
         super.onCreate()
@@ -260,15 +261,53 @@ class NativeSipForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startSipForeground(notification: Notification) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_SERVICE_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
-            )
-        } else {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_SERVICE_ID, notification)
+            return
         }
+
+        // Тип microphone обязателен, чтобы Android 11+ не глушил микрофон,
+        // когда пользователь сворачивает приложение во время разговора.
+        // Тип можно повышать повторным вызовом startForeground при активном
+        // звонке (в этот момент приложение на переднем плане).
+        if (isActiveCallState(currentCallState())) {
+            try {
+                startForeground(
+                    NOTIFICATION_SERVICE_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL or
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                )
+                microphoneForegroundTypeActive = true
+                return
+            } catch (error: Throwable) {
+                // Android 14+ может отклонить тип microphone (нет разрешения
+                // RECORD_AUDIO или старт из фона). phoneCall-сервис в этом
+                // случае всё равно лучше, чем падение.
+                Log.w(
+                    TAG,
+                    "startForeground with microphone type failed: ${error.message}",
+                )
+            }
+        }
+
+        startForeground(
+            NOTIFICATION_SERVICE_ID,
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL,
+        )
+        microphoneForegroundTypeActive = false
+    }
+
+    private fun currentCallState(): String? {
+        return NativeSipBridge.getStateSnapshot()["callState"]?.toString()
+    }
+
+    private fun isActiveCallState(callState: String?): Boolean {
+        return callState == "incoming" ||
+            callState == "calling" ||
+            callState == "ringing" ||
+            callState == "in_call"
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -430,10 +469,15 @@ class NativeSipForegroundService : Service() {
 
     private fun updateServiceNotification() {
         try {
-            notificationManager.notify(
-                NOTIFICATION_SERVICE_ID,
-                buildServiceNotification(NativeSipBridge.getStateSnapshot()),
-            )
+            val snapshot = NativeSipBridge.getStateSnapshot()
+            val notification = buildServiceNotification(snapshot)
+            val wantsMicrophoneType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                isActiveCallState(snapshot["callState"]?.toString())
+            if (wantsMicrophoneType != microphoneForegroundTypeActive) {
+                startSipForeground(notification)
+            } else {
+                notificationManager.notify(NOTIFICATION_SERVICE_ID, notification)
+            }
         } catch (error: Throwable) {
             Log.e(TAG, "updateServiceNotification failed: ${error.message}", error)
         }

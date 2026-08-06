@@ -8,6 +8,8 @@ class CallLogEntry {
   final String leadName;
   final String phoneNumber;
   final String? destinationNumber;
+  /// Our PSTN / outbound caller ID from the telephony provider (e.g. 992488886363).
+  final String? trunk;
   final DateTime callDate;
   final CallType callType;
   final Duration? duration;
@@ -21,6 +23,7 @@ class CallLogEntry {
     required this.leadName,
     required this.phoneNumber,
     this.destinationNumber,
+    this.trunk,
     required this.callDate,
     required this.callType,
     this.duration,
@@ -28,6 +31,14 @@ class CallLogEntry {
     this.rating,
     this.report,
   });
+
+  /// Number shown to the client on our outgoing calls.
+  /// We trust only the explicit backend `trunk` field here.
+  String? get outboundCallerNumber {
+    final trunkNumber = trunk?.trim() ?? '';
+    if (trunkNumber.isNotEmpty) return trunkNumber;
+    return null;
+  }
 
   factory CallLogEntry.fromJson(Map<String, dynamic> json) {
     final lead = json['lead'] as Map<String, dynamic>?;
@@ -72,6 +83,8 @@ class CallLogEntry {
           DateTime.now();
     }
 
+    final trunkRaw = json['trunk']?.toString().trim();
+
     return CallLogEntry(
       id: json['id'].toString(),
       leadId: lead?['id'] is int
@@ -89,6 +102,9 @@ class CallLogEntry {
       destinationNumber: json['destination_number'] == null
           ? null
           : sanitizeUtf16(json['destination_number'].toString()),
+      trunk: (trunkRaw == null || trunkRaw.isEmpty)
+          ? null
+          : sanitizeUtf16(trunkRaw),
       callDate: callDate,
       callType: callType,
       duration: json['call_duration'] != null

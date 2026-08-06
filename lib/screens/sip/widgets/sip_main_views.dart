@@ -158,7 +158,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     final selected = await showMenu<String>(
       context: anchorContext,
       position: RelativeRect.fromLTRB(
-        overlayBox.size.width - 222,
+        overlayBox.size.width - 250,
         70,
         14,
         0,
@@ -202,14 +202,24 @@ extension _SipMainViewsExtension on _SipScreenState {
         children: [
           Icon(icon, size: 19, color: colors.iconSecondary),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: colors.textPrimary,
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
+              ),
             ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            CupertinoIcons.chevron_right,
+            size: 16,
+            color: colors.textSecondary,
           ),
         ],
       ),

@@ -283,6 +283,22 @@ struct VoIPIncomingPayload {
         ["call_cancelled", "call_canceled", "call_ended", "call_end"].contains(eventType)
     }
 
+    func replacingUUID(_ newUUID: UUID) -> VoIPIncomingPayload {
+        VoIPIncomingPayload(
+            issuedAt: issuedAt,
+            eventType: eventType,
+            uuid: newUUID,
+            callId: callId,
+            handle: handle,
+            callerName: callerName,
+            hasVideo: hasVideo,
+            fromUri: fromUri,
+            toUri: toUri,
+            sipUri: sipUri,
+            bridgeUri: bridgeUri
+        )
+    }
+
     private static func firstDate(
         in root: [AnyHashable: Any],
         nested: [[String: Any]?],
@@ -572,6 +588,31 @@ final class IOSCallKitManager: NSObject, CXProviderDelegate {
         let action = CXEndCallAction(call: callUUID)
         let transaction = CXTransaction(action: action)
         callController.request(transaction, completion: completion)
+    }
+
+    func requestAnswerCall(callUUID: UUID, completion: @escaping (Error?) -> Void) {
+        let action = CXAnswerCallAction(call: callUUID)
+        let transaction = CXTransaction(action: action)
+        callController.request(transaction, completion: completion)
+    }
+
+    /// Apple требует вызывать reportNewIncomingCall на КАЖДЫЙ VoIP-пуш,
+    /// включая дубликаты и пуши-отмены. Для уже показанного звонка попытка
+    /// завершается ошибкой callUUIDAlreadyExists — она безвредна, поэтому
+    /// здесь payload живого звонка при ошибке не удаляется.
+    func reportPushComplianceAttempt(
+        payload: VoIPIncomingPayload,
+        completion: ((Error?) -> Void)? = nil
+    ) {
+        if payloadsByUUID[payload.uuid] == nil {
+            payloadsByUUID[payload.uuid] = payload
+        }
+        provider.reportNewIncomingCall(
+            with: payload.uuid,
+            update: buildCallUpdate(for: payload)
+        ) { error in
+            completion?(error)
+        }
     }
 
     private func handleType(for handle: String) -> CXHandle.HandleType {
@@ -958,7 +999,20 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             // Answer is never allowed to restart REGISTER or create a new outgoing
             // call. If INVITE is late, acceptCall stores a deferred answer and the
             // Linphone incoming callback applies it immediately.
-            result(acceptCall(reason: "flutter"))
+            // Ответ из in-app UI обязан идти через CXAnswerCallAction: прямой
+            // accept мимо CallKit оставляет системный звонок «звонящим» и
+            // разъезжается состояние аудиосессии.
+            answerThroughCallKitIfPossible { [weak self] handledByCallKit in
+                guard let self else {
+                    result(false)
+                    return
+                }
+                if handledByCallKit {
+                    result(true)
+                } else {
+                    result(self.acceptCall(reason: "flutter"))
+                }
+            }
         case "declineCall":
             result(declineCall())
         case "hangup":
@@ -1380,6 +1434,38 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         configureAudioSessionForCallIfNeeded()
         emitCallEvent(state: "calling", remoteIdentity: target, callId: snapshot.callId, message: snapshot.message)
         return true
+    }
+
+    /// Проводит ответ пользователя из Flutter-UI через CXAnswerCallAction,
+    /// чтобы CallKit и SIP-сессия оставались в едином состоянии. Возвращает
+    /// false в completion, если CallKit-звонка нет (Китай, прямой INVITE без
+    /// пуша) или транзакция отклонена — тогда вызывающий отвечает напрямую.
+    private func answerThroughCallKitIfPossible(completion: @escaping (Bool) -> Void) {
+        guard
+            let callKitManager,
+            callKitReportedForCurrentIncoming,
+            snapshot.callState == "incoming" || snapshot.callState == "ringing",
+            let callUUID = resolvedCallUUID(from: nil)
+        else {
+            completion(false)
+            return
+        }
+
+        appendDiagnosticLog("[VOIP] ANSWER_VIA_CALLKIT_REQUESTED", [
+            "call_uuid": callUUID.uuidString,
+            "call_id": snapshot.callId ?? "",
+        ])
+        callKitManager.requestAnswerCall(callUUID: callUUID) { [weak self] error in
+            guard let error else {
+                completion(true)
+                return
+            }
+            self?.appendDiagnosticLog("callkit_answer_transaction_failed", [
+                "call_uuid": callUUID.uuidString,
+                "error": error.localizedDescription,
+            ])
+            completion(false)
+        }
     }
 
     private func acceptCall(reason: String) -> Bool {
@@ -2713,6 +2799,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "current_call_id": snapshot.callId ?? "",
                 "reason": "no_matching_active_call",
             ])
+            reportOrphanTerminationPush(payload)
             return
         }
 
@@ -2721,8 +2808,27 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "call_uuid": callUUID.uuidString,
             "call_id": cancelledCallId,
         ])
+        // Пуш-отмена — это тоже VoIP-пуш: обязательна попытка
+        // reportNewIncomingCall. С UUID уже показанного звонка она
+        // завершается безвредным duplicate-error, после чего звонок
+        // закрывается штатно.
+        callKitManager?.reportPushComplianceAttempt(payload: payload.replacingUUID(callUUID))
         callKitManager?.reportCallEnded(callUUID: callUUID, reason: .remoteEnded)
         handleCallEnded(reason: .remoteEnded, callUUID: callUUID, remoteIdentity: snapshot.remoteIdentity)
+    }
+
+    /// VoIP-пуш об отмене звонка, которого у нас уже нет. Чтобы не попасть
+    /// под системный watchdog PushKit, репортим входящий и сразу же
+    /// завершаем его как remoteEnded.
+    private func reportOrphanTerminationPush(_ payload: VoIPIncomingPayload) {
+        guard let callKitManager else { return }
+        callKitManager.reportPushComplianceAttempt(payload: payload) { [weak self] _ in
+            callKitManager.reportCallEnded(callUUID: payload.uuid, reason: .remoteEnded)
+            self?.appendDiagnosticLog("push_call_end_orphan_reported", [
+                "call_uuid": payload.uuid.uuidString,
+                "call_id": payload.callId ?? "",
+            ])
+        }
     }
 
     private func reportIncomingCall(payload: VoIPIncomingPayload, completion: (() -> Void)? = nil) {
@@ -2786,7 +2892,25 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "call_id": payload.callId ?? "",
             ])
             scheduleIncomingInviteTimeout(for: canonicalPayload)
-            completion?()
+            // Дубликат — тоже VoIP-пуш: обязана быть попытка
+            // reportNewIncomingCall. С каноническим UUID она не создаёт
+            // второй звонок, а для уже показанного завершается безвредным
+            // duplicate-error.
+            guard let callKitManager else {
+                completion?()
+                return
+            }
+            callKitManager.reportPushComplianceAttempt(payload: canonicalPayload) { [weak self] error in
+                if error == nil {
+                    self?.callKitReportedForCurrentIncoming = true
+                } else {
+                    self?.appendDiagnosticLog("callkit_duplicate_report_attempt", [
+                        "call_uuid": canonicalUUID.uuidString,
+                        "error": error?.localizedDescription ?? "",
+                    ])
+                }
+                completion?()
+            }
             return
         }
 
@@ -2928,20 +3052,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
 
         let applicationState = UIApplication.shared.applicationState
-        let isActuallyForeground = applicationState == .active
-        snapshot.appForeground = isActuallyForeground
+        snapshot.appForeground = applicationState == .active
+        persistSnapshot()
 
-        guard !isActuallyForeground else {
-            appendDiagnosticLog("callkit_skipped_foreground", [
-                "call_uuid": payload.uuid.uuidString,
-                "call_id": payload.callId ?? "",
-                "application_state": String(describing: applicationState),
-            ])
-            persistSnapshot()
-            completion?()
-            return
-        }
-
+        // Требование Apple (iOS 13+): каждый VoIP-пуш обязан синхронно
+        // сопровождаться reportNewIncomingCall, даже когда приложение
+        // активно. Прежний пропуск в foreground приводил к принудительному
+        // завершению приложения системой и риску блокировки VoIP-пушей.
         guard let callKitManager else {
             appendDiagnosticLog("callkit_report_skipped", [
                 "call_uuid": payload.uuid.uuidString,

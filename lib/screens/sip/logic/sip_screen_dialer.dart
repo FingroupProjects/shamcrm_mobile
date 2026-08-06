@@ -644,6 +644,8 @@ extension _SipScreenDialerExtension on _SipScreenState {
     final ownCandidates = <String>[
       state.login,
       state.login.split('@').first,
+      state.outboundNumber,
+      state.internalNumber,
     ];
 
     for (final ownCandidate in ownCandidates) {

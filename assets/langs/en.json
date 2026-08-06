@@ -194,6 +194,8 @@
   "sip_status_failed": "Failed",
   "sip_subscriber": "Subscriber",
   "sip_id": "Line number",
+  "sip_outbound_number": "Outgoing number",
+  "sip_internal_number": "Internal number",
   "sip_call_controls": "Call controls",
   "sip_call": "Call",
   "sip_accept": "Accept",

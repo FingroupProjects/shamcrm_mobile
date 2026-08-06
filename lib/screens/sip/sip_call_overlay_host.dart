@@ -731,37 +731,43 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                     const Spacer(),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(36),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.12),
+                      // Рабочая кнопка напоминания живёт на полном экране
+                      // звонка, поэтому из оверлея просто открываем его.
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: _openSipScreen,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(36),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  CupertinoIcons.alarm,
+                                  color: const Color(0xCCFFFFFF),
+                                  size: 28,
+                                ),
                               ),
                             ),
-                            child: Center(
-                              child: Icon(
-                                CupertinoIcons.alarm,
-                                color: const Color(0xCCFFFFFF),
-                                size: 28,
+                            const SizedBox(height: 8),
+                            Text(
+                              'Напомнить',
+                              style: const TextStyle(
+                                color: Color(0xCCFFFFFF),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Напомнить',
-                            style: const TextStyle(
-                              color: Color(0xCCFFFFFF),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 28),

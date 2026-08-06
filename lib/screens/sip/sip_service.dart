@@ -53,6 +53,8 @@ class SipService extends ChangeNotifier
   static const String _loginKey = 'sip_login';
   static const String _passwordKey = 'sip_password';
   static const String _sipIdKey = 'sip_target_sip_id';
+  static const String _outboundNumberKey = 'sip_outbound_number';
+  static const String _internalNumberKey = 'sip_internal_number';
   static const String _transportKey = 'sip_transport';
   static const String _portKey = 'sip_port';
   static const String _enabledKey = 'sip_enabled';
@@ -70,6 +72,8 @@ class SipService extends ChangeNotifier
     _loginKey,
     _passwordKey,
     _sipIdKey,
+    _outboundNumberKey,
+    _internalNumberKey,
     _transportKey,
     _portKey,
     _enabledKey,
@@ -218,6 +222,16 @@ class SipService extends ChangeNotifier
             fallback: '',
           ) ??
           '';
+      final outboundNumber = await _readSecureStorageValue(
+            _outboundNumberKey,
+            fallback: '',
+          ) ??
+          '';
+      final internalNumber = await _readSecureStorageValue(
+            _internalNumberKey,
+            fallback: '',
+          ) ??
+          '';
       var transportRaw = await _readSecureStorageValue(
             _transportKey,
             fallback: 'udp',
@@ -282,6 +296,8 @@ class SipService extends ChangeNotifier
         login: login,
         password: password,
         sipId: sipId,
+        outboundNumber: outboundNumber.trim(),
+        internalNumber: internalNumber.trim(),
         transport: transport,
         port: parsedPort,
         errorMessage: _pendingStorageRecoveryMessage,
@@ -311,6 +327,7 @@ class SipService extends ChangeNotifier
       _startRegistrationWatchdog();
       _configLoaded = true;
       unawaited(refreshRecentCallLogs(force: true));
+      unawaited(ensureInternalNumber());
       unawaited(_restorePersistentConnection());
       unawaited(recoverPendingIncomingCallPush());
       _notifyListenersSafely();
@@ -635,9 +652,9 @@ class SipService extends ChangeNotifier
         return;
       }
 
-      final calls = (response['calls'] as List<CallLogEntry>)
-          .map(SipCallLogEntry.fromServerCall)
-          .toList();
+      final callEntries = response['calls'] as List<CallLogEntry>;
+      final calls =
+          callEntries.map(SipCallLogEntry.fromServerCall).toList();
       final pagination = response['pagination'] as Map<String, dynamic>;
       final currentPage = pagination['current_page'] as int? ?? page;
       final totalPages = pagination['total_pages'] as int? ?? currentPage;
@@ -664,6 +681,7 @@ class SipService extends ChangeNotifier
         allServerCallLogsFetched: merged.isEmpty || currentPage >= totalPages,
       );
       _recentCallLogsFetchedAt = DateTime.now();
+      unawaited(_captureOutboundNumberFromCallEntries(callEntries));
     } catch (_) {
       if (requestToken != _recentCallLogsRequestToken) {
         return;
@@ -712,6 +730,143 @@ class SipService extends ChangeNotifier
         // TODO: Handle this case.
         throw UnimplementedError();
     }
+  }
+
+  /// Ensures [SipUiState.outboundNumber] is filled from call history
+  /// (`trunk` / outgoing `caller`) — the number clients see on outbound calls.
+  Future<String> ensureOutboundNumber({bool forceRefresh = false}) async {
+    final cached = _state.outboundNumber.trim();
+    if (!forceRefresh && cached.isNotEmpty) {
+      return cached;
+    }
+
+    if (forceRefresh && cached.isNotEmpty) {
+      _state = _state.copyWith(outboundNumber: '');
+    }
+
+    try {
+      final response = await _apiService.getOutgoingCalls(
+        page: 1,
+        perPage: 10,
+      );
+      final calls = response['calls'] as List<CallLogEntry>;
+      await _captureOutboundNumberFromCallEntries(calls);
+    } catch (error) {
+      debugPrint('SipService.ensureOutboundNumber failed: $error');
+    }
+
+    if (_state.outboundNumber.trim().isNotEmpty) {
+      return _state.outboundNumber.trim();
+    }
+
+    try {
+      final response = await _apiService.getAllCalls(
+        page: 1,
+        perPage: 20,
+      );
+      final calls = response['calls'] as List<CallLogEntry>;
+      await _captureOutboundNumberFromCallEntries(calls);
+    } catch (error) {
+      debugPrint(
+        'SipService.ensureOutboundNumber all-calls fallback failed: $error',
+      );
+    }
+
+    if (_state.outboundNumber.trim().isNotEmpty) {
+      return _state.outboundNumber.trim();
+    }
+
+    if (forceRefresh && cached.isNotEmpty) {
+      await _clearOutboundNumber();
+    }
+
+    return _state.outboundNumber.trim();
+  }
+
+  Future<void> _captureOutboundNumberFromCallEntries(
+    List<CallLogEntry> entries,
+  ) async {
+    for (final entry in entries) {
+      final candidate = entry.outboundCallerNumber?.trim() ?? '';
+      if (candidate.isEmpty) continue;
+      await _persistOutboundNumber(candidate);
+      return;
+    }
+  }
+
+  Future<void> _persistOutboundNumber(String number) async {
+    final normalized = number.trim();
+    if (normalized.isEmpty || normalized == _state.outboundNumber.trim()) {
+      return;
+    }
+
+    _state = _state.copyWith(outboundNumber: normalized);
+    try {
+      await _storage.write(key: _outboundNumberKey, value: normalized);
+    } catch (error) {
+      debugPrint('SipService failed to persist outbound number: $error');
+    }
+    _notifyListenersSafely();
+  }
+
+  /// Loads PBX extension from `/user/{id}` → `internal_number`.
+  Future<String> ensureInternalNumber({bool forceRefresh = false}) async {
+    final cached = _state.internalNumber.trim();
+    if (!forceRefresh && cached.isNotEmpty) {
+      return cached;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userIdRaw = prefs.getString('userID')?.trim() ?? '';
+      final userId = int.tryParse(userIdRaw);
+      if (userId == null) {
+        return cached;
+      }
+
+      final profile = await _apiService.getUserById(userId);
+      final number = profile.internalNumber?.toString().trim() ?? '';
+      if (number.isNotEmpty) {
+        await _persistInternalNumber(number);
+      }
+    } catch (error) {
+      debugPrint('SipService.ensureInternalNumber failed: $error');
+    }
+
+    return _state.internalNumber.trim();
+  }
+
+  Future<void> _persistInternalNumber(String number) async {
+    final normalized = number.trim();
+    if (normalized.isEmpty || normalized == _state.internalNumber.trim()) {
+      return;
+    }
+
+    _state = _state.copyWith(internalNumber: normalized);
+    try {
+      await _storage.write(key: _internalNumberKey, value: normalized);
+    } catch (error) {
+      debugPrint('SipService failed to persist internal number: $error');
+    }
+    _notifyListenersSafely();
+  }
+
+  Future<void> _clearOutboundNumber() async {
+    if (_state.outboundNumber.trim().isEmpty) {
+      return;
+    }
+
+    _state = _state.copyWith(outboundNumber: '');
+    try {
+      await _storage.delete(key: _outboundNumberKey);
+    } catch (error) {
+      debugPrint('SipService failed to clear outbound number: $error');
+    }
+    _notifyListenersSafely();
+  }
+
+  void _refreshOutboundNumberAfterRegistration() {
+    unawaited(ensureOutboundNumber(forceRefresh: true));
   }
 
   void clearTransientError([String? expectedMessage]) {
@@ -962,6 +1117,95 @@ class SipService extends ChangeNotifier
         .toList(growable: false);
   }
 
+  Future<Map<String, dynamic>> getOutboundNumberDiagnostics() async {
+    Map<String, dynamic> nativeSnapshot = const <String, dynamic>{};
+    Map<String, dynamic> nativeConfig = const <String, dynamic>{};
+
+    if ((Platform.isIOS || Platform.isAndroid) &&
+        await _ensureNativeSipBridgeInitialized()) {
+      final snapshot = await _invokeNativeSipMethod<Map<dynamic, dynamic>>(
+        'getStateSnapshot',
+      );
+      if (snapshot != null) {
+        nativeSnapshot = Map<String, dynamic>.from(snapshot);
+      }
+
+      final config = await _invokeNativeSipMethod<Map<dynamic, dynamic>>(
+        'getStoredConfig',
+      );
+      if (config != null) {
+        nativeConfig = Map<String, dynamic>.from(config);
+      }
+    }
+
+    final storageServer =
+        await _readSecureStorageValue(_serverKey, fallback: '') ?? '';
+    final storageLogin =
+        await _readSecureStorageValue(_loginKey, fallback: '') ?? '';
+    final storageOutbound =
+        await _readSecureStorageValue(_outboundNumberKey, fallback: '') ?? '';
+
+    List<Map<String, dynamic>> outgoingEntries = const <Map<String, dynamic>>[];
+    List<Map<String, dynamic>> allCallEntries = const <Map<String, dynamic>>[];
+    String? outgoingError;
+    String? allCallsError;
+
+    try {
+      final response = await _apiService.getOutgoingCalls(page: 1, perPage: 5);
+      final calls = response['calls'] as List<CallLogEntry>;
+      outgoingEntries = _mapCallEntriesForDiagnostics(calls);
+    } catch (error) {
+      outgoingError = '$error';
+    }
+
+    try {
+      final response = await _apiService.getAllCalls(page: 1, perPage: 5);
+      final calls = response['calls'] as List<CallLogEntry>;
+      allCallEntries = _mapCallEntriesForDiagnostics(calls);
+    } catch (error) {
+      allCallsError = '$error';
+    }
+
+    return <String, dynamic>{
+      'state': <String, dynamic>{
+        'server': _state.server,
+        'login': _state.login,
+        'outboundNumber': _state.outboundNumber,
+        'registrationStatus': _state.registrationStatus.name,
+      },
+      'storage': <String, dynamic>{
+        'server': storageServer,
+        'login': storageLogin,
+        'outboundNumber': storageOutbound,
+      },
+      'nativeSnapshot': nativeSnapshot,
+      'nativeConfig': nativeConfig,
+      'outgoingCalls': outgoingEntries,
+      'allCalls': allCallEntries,
+      'outgoingError': outgoingError,
+      'allCallsError': allCallsError,
+    };
+  }
+
+  List<Map<String, dynamic>> _mapCallEntriesForDiagnostics(
+    List<CallLogEntry> entries,
+  ) {
+    return entries
+        .map(
+          (entry) => <String, dynamic>{
+            'id': entry.id,
+            'type': entry.callType.name,
+            'leadName': entry.leadName,
+            'caller': entry.phoneNumber,
+            'destinationNumber': entry.destinationNumber ?? '',
+            'trunk': entry.trunk ?? '',
+            'candidate': entry.outboundCallerNumber ?? '',
+            'date': entry.callDate.toIso8601String(),
+          },
+        )
+        .toList(growable: false);
+  }
+
   Future<void> clearNativeDiagnosticLogs() async {
     if (!Platform.isIOS && !Platform.isAndroid) {
       return;
@@ -984,6 +1228,10 @@ class SipService extends ChangeNotifier
     bool notifyUi = true,
   }) async {
     final normalizedServer = _normalizeServerInput(server, transport);
+    final normalizedLogin = login.trim();
+    final credentialsChanged = _state.server != normalizedServer ||
+        _state.login != normalizedLogin ||
+        _state.password != password;
     final nextEndpoint = _endpointKey(
       server: normalizedServer,
       transport: transport,
@@ -996,17 +1244,21 @@ class SipService extends ChangeNotifier
 
     _state = _state.copyWith(
       server: normalizedServer,
-      login: login.trim(),
+      login: normalizedLogin,
       password: password,
       sipId: sipId.trim(),
       transport: transport,
       port: port,
+      outboundNumber: credentialsChanged ? '' : _state.outboundNumber,
       clearError: true,
     );
 
     await _storage.write(key: _serverKey, value: _state.server);
     await _storage.write(key: _loginKey, value: _state.login);
     await _storage.write(key: _passwordKey, value: _state.password);
+    if (credentialsChanged) {
+      await _storage.delete(key: _outboundNumberKey);
+    }
     if (_state.sipId.isEmpty) {
       await _storage.delete(key: _sipIdKey);
     } else {
@@ -1358,6 +1610,12 @@ class SipService extends ChangeNotifier
 
     try {
       await Permission.microphone.request();
+    } catch (_) {}
+
+    // Android 12+: без BLUETOOTH_CONNECT Linphone не видит BT-гарнитуры и не
+    // может маршрутизировать звук звонка на них.
+    try {
+      await Permission.bluetoothConnect.request();
     } catch (_) {}
 
     if (_shouldUseNativeSip()) {
@@ -3160,6 +3418,7 @@ class SipService extends ChangeNotifier
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,
         );
+        _refreshOutboundNumberAfterRegistration();
         break;
       case 'failed':
         if (_shouldIgnoreTransientAuthorizationChallenge(message)) {
@@ -3941,6 +4200,7 @@ class SipService extends ChangeNotifier
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,
         );
+        _refreshOutboundNumberAfterRegistration();
         _startKeepAlive();
         break;
       case RegistrationStateEnum.REGISTRATION_FAILED:

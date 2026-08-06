@@ -86,7 +86,6 @@ class NativeSipManager(
             currentAccount = null
             isSpeakerOn = false
             desiredRegistrationEnabled = true
-            markNetworkReachable(sipCore)
 
             sipCore.clearAccounts()
             sipCore.clearAllAuthInfo()
@@ -172,7 +171,6 @@ class NativeSipManager(
         }
 
         return try {
-            markNetworkReachable(sipCore)
             sipCore.refreshRegisters()
             Log.d(TAG, "maintainRegistration: core.refreshRegisters(), reason=$reason")
             true
@@ -549,7 +547,6 @@ class NativeSipManager(
     fun onAppForeground() {
         try {
             core?.let { sipCore ->
-                markNetworkReachable(sipCore)
                 sipCore.enterForeground()
                 val hasActiveCall = lastCallState == "incoming" ||
                     lastCallState == "calling" ||
@@ -588,7 +585,11 @@ class NativeSipManager(
         // Incoming ringtone is owned by NativeSipForegroundService.
         // Keeping Linphone ringing enabled creates a second simultaneous melody.
         createdCore.disableCallRinging(true)
-        markNetworkReachable(createdCore)
+        // ВАЖНО: не вызывать core.setNetworkReachable(true) вручную.
+        // Публичный сеттер НАВСЕГДА отключает встроенный мониторинг сети
+        // Linphone (AndroidPlatformHelper + ConnectivityManager). Без него
+        // переключение Wi-Fi <-> мобильный интернет не перепривязывает сокеты
+        // и не запускает re-REGISTER, что рвёт звонки при смене сети.
 
         val natPolicy = createdCore.createNatPolicy()
         natPolicy.setIceEnabled(false)
@@ -1033,15 +1034,6 @@ class NativeSipManager(
             "Failed" -> "failed"
             "Cleared" -> "disconnected"
             else -> "disconnected"
-        }
-    }
-
-    private fun markNetworkReachable(sipCore: Core) {
-        try {
-            sipCore.setNetworkReachable(true)
-            sipCore.setSipNetworkReachable(true)
-            sipCore.setMediaNetworkReachable(true)
-        } catch (_: Throwable) {
         }
     }
 

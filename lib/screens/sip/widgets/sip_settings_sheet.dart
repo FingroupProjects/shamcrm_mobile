@@ -6,6 +6,8 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     final l10n = AppLocalizations.of(context)!;
     var passwordVisible = false;
     final currentState = _sipRuntime.state;
+    final isRegistered =
+        currentState.registrationStatus == SipRegistrationUiStatus.registered;
     _suspendDraftAutosave = true;
     _serverController.text = currentState.server;
     _loginController.text = currentState.login;
@@ -14,14 +16,39 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     _selectedTransport = currentState.transport;
     _suspendDraftAutosave = false;
 
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (context) {
-        final mediaQuery = MediaQuery.of(context);
-        final state = _sipRuntime.state;
-        return Material(
-          color: Colors.transparent,
-          child: GestureDetector(
+    var outboundNumber = currentState.outboundNumber.trim();
+    var internalNumber = currentState.internalNumber.trim();
+    if (isRegistered) {
+      final resolved = await Future.wait<String>([
+        _sipRuntime.ensureOutboundNumber(forceRefresh: true),
+        _sipRuntime.ensureInternalNumber(forceRefresh: true),
+      ]);
+      outboundNumber = resolved[0];
+      internalNumber = resolved[1];
+    } else if (internalNumber.isEmpty) {
+      internalNumber = await _sipRuntime.ensureInternalNumber();
+    }
+
+    final outboundNumberController = TextEditingController(
+      text: outboundNumber,
+    );
+    final internalNumberController = TextEditingController(
+      text: internalNumber,
+    );
+
+    try {
+      await showCupertinoModalPopup<void>(
+        context: context,
+        builder: (context) {
+          final mediaQuery = MediaQuery.of(context);
+          final state = _sipRuntime.state;
+          final showOutboundNumber = isRegistered &&
+              outboundNumberController.text.trim().isNotEmpty;
+          final showInternalNumber =
+              internalNumberController.text.trim().isNotEmpty;
+          return Material(
+            color: Colors.transparent,
+            child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.of(context).pop(),
             child: AnimatedPadding(
@@ -84,6 +111,74 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                                 controller: _loginController,
                                 placeholder: l10n.translate('sip_login'),
                               ),
+                              if (showOutboundNumber) ...[
+                                const SizedBox(height: 10),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 4,
+                                      bottom: 6,
+                                    ),
+                                    child: Text(
+                                      l10n.translate('sip_outbound_number'),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.appColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                _iosField(
+                                  controller: outboundNumberController,
+                                  placeholder:
+                                      l10n.translate('sip_outbound_number'),
+                                  readOnly: true,
+                                  suffix: Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    // child: Icon(
+                                    //   CupertinoIcons.lock_fill,
+                                    //   size: 18,
+                                    //   color: context.appColors.iconSecondary,
+                                    // ),
+                                  ),
+                                ),
+                              ],
+                              if (showInternalNumber) ...[
+                                const SizedBox(height: 10),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 4,
+                                      bottom: 6,
+                                    ),
+                                    child: Text(
+                                      l10n.translate('sip_internal_number'),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.appColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                _iosField(
+                                  controller: internalNumberController,
+                                  placeholder:
+                                      l10n.translate('sip_internal_number'),
+                                  readOnly: true,
+                                  suffix: Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    // child: Icon(
+                                    //   CupertinoIcons.lock_fill,
+                                    //   size: 18,
+                                    //   color: context.appColors.iconSecondary,
+                                    // ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 10),
                               StatefulBuilder(
                                 builder: (context, setPasswordState) =>
@@ -234,17 +329,22 @@ extension _SipSettingsSheetExtension on _SipScreenState {
                   ),
                 ),
               ),
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    } finally {
+      outboundNumberController.dispose();
+      internalNumberController.dispose();
+    }
   }
 
   Widget _iosField({
     required TextEditingController controller,
     required String placeholder,
     bool obscureText = false,
+    bool readOnly = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffix,
   }) {
@@ -252,16 +352,24 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     return CupertinoTextField(
       controller: controller,
       obscureText: obscureText,
+      readOnly: readOnly,
+      enableInteractiveSelection: true,
       keyboardType: keyboardType,
       suffix: suffix,
       suffixMode: OverlayVisibilityMode.always,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       placeholder: placeholder,
       cursorColor: _TelephonyVisualColors.blue,
-      style: TextStyle(color: colors.textPrimary),
+      style: TextStyle(
+        color: readOnly
+            ? colors.textPrimary.withValues(alpha: 0.78)
+            : colors.textPrimary,
+      ),
       placeholderStyle: TextStyle(color: colors.fieldHint),
       decoration: BoxDecoration(
-        color: colors.fieldBg,
+        color: readOnly
+            ? colors.fieldBg.withValues(alpha: 0.72)
+            : colors.fieldBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: colors.fieldBorder),
       ),
@@ -272,6 +380,7 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     final isAndroid = Platform.isAndroid;
     final voipToken = isAndroid ? null : await _sipRuntime.getVoipPushToken();
     final logs = await _sipRuntime.getNativeDiagnosticLogs();
+    final outboundDiagnostics = await _sipRuntime.getOutboundNumberDiagnostics();
     final backendSync = isAndroid
         ? const <String, dynamic>{}
         : await _apiService.getVoipSyncDiagnostics();
@@ -291,6 +400,8 @@ extension _SipSettingsSheetExtension on _SipScreenState {
     final backendText =
         'Backend sync: status=${backendSync['status']}, http=${backendSync['httpCode'] ?? 'n/a'}, pending=${backendSync['hasPendingToken']}, at=$syncedAt';
     final backendError = backendSync['error']?.toString();
+    final outboundDiagnosticsText =
+        _buildOutboundNumberDiagnosticsReport(outboundDiagnostics);
 
     final visibleLogs = logs.reversed.toList(growable: false);
     final logLines = visibleLogs.isEmpty
@@ -313,6 +424,9 @@ extension _SipSettingsSheetExtension on _SipScreenState {
       'Диагностика телефонии ${Platform.isAndroid ? 'Android' : 'iOS'}',
       registrationText,
       callText,
+      '',
+      'Источник нашего номера',
+      outboundDiagnosticsText,
       if (!isAndroid) tokenText,
       if (!isAndroid) backendText,
       if (!isAndroid && backendError != null && backendError.trim().isNotEmpty)
@@ -508,6 +622,55 @@ extension _SipSettingsSheetExtension on _SipScreenState {
         isError: true,
       );
     }
+  }
+
+  String _buildOutboundNumberDiagnosticsReport(Map<String, dynamic> diagnostics) {
+    final state =
+        Map<String, dynamic>.from(diagnostics['state'] as Map? ?? const {});
+    final storage =
+        Map<String, dynamic>.from(diagnostics['storage'] as Map? ?? const {});
+    final nativeSnapshot = Map<String, dynamic>.from(
+      diagnostics['nativeSnapshot'] as Map? ?? const {},
+    );
+    final nativeConfig = Map<String, dynamic>.from(
+      diagnostics['nativeConfig'] as Map? ?? const {},
+    );
+    final outgoingCalls = (diagnostics['outgoingCalls'] as List? ?? const [])
+        .whereType<Map>()
+        .map((entry) => Map<String, dynamic>.from(entry))
+        .toList(growable: false);
+    final allCalls = (diagnostics['allCalls'] as List? ?? const [])
+        .whereType<Map>()
+        .map((entry) => Map<String, dynamic>.from(entry))
+        .toList(growable: false);
+    final outgoingError = diagnostics['outgoingError']?.toString();
+    final allCallsError = diagnostics['allCallsError']?.toString();
+
+    String formatCallEntries(String title, List<Map<String, dynamic>> entries) {
+      if (entries.isEmpty) return '$title: empty';
+      final lines = <String>['$title:'];
+      for (final entry in entries) {
+        lines.add(
+          '- id=${entry['id']}, type=${entry['type']}, trunk=${entry['trunk']}, caller=${entry['caller']}, destination=${entry['destinationNumber']}, candidate=${entry['candidate']}',
+        );
+      }
+      return lines.join('\n');
+    }
+
+    final lines = <String>[
+      'State: server=${state['server'] ?? ''}, login=${state['login'] ?? ''}, outbound=${state['outboundNumber'] ?? ''}, registration=${state['registrationStatus'] ?? ''}',
+      'Storage: server=${storage['server'] ?? ''}, login=${storage['login'] ?? ''}, outbound=${storage['outboundNumber'] ?? ''}',
+      'Native snapshot: registration=${nativeSnapshot['registrationState'] ?? ''}, call=${nativeSnapshot['callState'] ?? ''}, remote=${nativeSnapshot['remoteIdentity'] ?? ''}, message=${nativeSnapshot['message'] ?? ''}',
+      'Native config: server=${nativeConfig['server'] ?? ''}, login=${nativeConfig['login'] ?? ''}, authUser=${nativeConfig['authUser'] ?? ''}, transport=${nativeConfig['transport'] ?? ''}, port=${nativeConfig['port'] ?? ''}',
+      if (outgoingError != null && outgoingError.trim().isNotEmpty)
+        'Outgoing API error: $outgoingError',
+      formatCallEntries('Outgoing calls', outgoingCalls),
+      if (allCallsError != null && allCallsError.trim().isNotEmpty)
+        'All calls API error: $allCallsError',
+      formatCallEntries('All calls', allCalls),
+    ];
+
+    return lines.join('\n');
   }
 
   Widget _transportSelector(BuildContext context) {

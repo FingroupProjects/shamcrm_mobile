@@ -193,6 +193,8 @@
   "sip_status_failed": "Ошибка подключения",
   "sip_subscriber": "Абонент",
   "sip_id": "Номер линии",
+  "sip_outbound_number": "Номер колл-центра",
+  "sip_internal_number": "Внутренний номер",
   "sip_call_controls": "Управление звонком",
   "sip_call": "Позвонить",
   "sip_accept": "Ответить",
