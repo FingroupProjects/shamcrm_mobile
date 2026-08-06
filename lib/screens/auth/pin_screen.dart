@@ -1,12 +1,8 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math' as math;
-import 'dart:ui';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/biometric_service.dart';
 import 'package:crm_task_manager/app_feature_flags.dart';
-import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -19,16 +15,17 @@ import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:new_version_plus/new_version_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
-import 'package:flutter/services.dart';
 
 import '../../update_dialog.dart';
 
@@ -62,8 +59,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   bool _isPinChecking = false;
   bool _showIntro = true;
   bool _didNavigateToSipCall = false;
-  _PinAdaptivePalette? _adaptivePalette;
-  String? _adaptivePaletteKey;
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
 
   @override
   void initState() {
@@ -97,32 +94,11 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final controller = AppThemeController.instance;
-    final size = MediaQuery.sizeOf(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final paletteKey = [
-      controller.backgroundPreset.storageKey,
-      controller.backgroundImagePath ?? '',
-      controller.backgroundAssetPath ?? '',
-      controller.backgroundBlurPercent.toStringAsFixed(1),
-      isDark,
-      size.width.round(),
-      size.height.round(),
-    ].join('|');
-
-    if (_adaptivePaletteKey == paletteKey) return;
-    _adaptivePaletteKey = paletteKey;
-    _adaptivePalette = _PinAdaptivePalette.fallback(
-      isDark: isDark,
-      backgroundLuminance:
-          context.appColors.backgroundPrimary.computeLuminance(),
-    );
-    unawaited(
-      _loadAdaptivePalette(
-        paletteKey: paletteKey,
-        controller: controller,
-        screenSize: size,
-      ),
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
     );
   }
 
@@ -750,133 +726,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadAdaptivePalette({
-    required String paletteKey,
-    required AppThemeController controller,
-    required Size screenSize,
-  }) async {
-    if (controller.backgroundPreset != AppBackgroundPreset.custom) return;
-
-    final imagePath = controller.backgroundImagePath;
-    final assetPath = controller.backgroundAssetPath;
-    if ((imagePath == null || imagePath.isEmpty) &&
-        (assetPath == null || assetPath.isEmpty)) {
-      return;
-    }
-    final themeLuminance =
-        context.appColors.backgroundPrimary.computeLuminance();
-
-    try {
-      final bytes = imagePath != null && imagePath.isNotEmpty
-          ? await File(imagePath).readAsBytes()
-          : (await rootBundle.load(assetPath!)).buffer.asUint8List();
-      final codec = await instantiateImageCodec(bytes, targetWidth: 120);
-      final frame = await codec.getNextFrame();
-      final image = frame.image;
-      final byteData = await image.toByteData(format: ImageByteFormat.rawRgba);
-      if (byteData == null) {
-        image.dispose();
-        codec.dispose();
-        return;
-      }
-
-      final sample = _sampleBackgroundLuminance(
-        bytes: byteData,
-        imageWidth: image.width,
-        imageHeight: image.height,
-        screenSize: screenSize,
-        fallbackLuminance: themeLuminance,
-      );
-      image.dispose();
-      codec.dispose();
-
-      if (!mounted || _adaptivePaletteKey != paletteKey) return;
-      setState(() {
-        _adaptivePalette = _PinAdaptivePalette(
-          headerLuminance: sample.header,
-          keypadLuminance: sample.keypad,
-          bottomLuminance: sample.bottom,
-        );
-      });
-    } catch (error) {
-      debugPrint('PinScreen: adaptive background palette skipped: $error');
-    }
-  }
-
-  _PinBackgroundLuminance _sampleBackgroundLuminance({
-    required ByteData bytes,
-    required int imageWidth,
-    required int imageHeight,
-    required Size screenSize,
-    required double fallbackLuminance,
-  }) {
-    final imageAspect = imageWidth / imageHeight;
-    final screenAspect = screenSize.width / screenSize.height;
-
-    double cropLeft = 0;
-    double cropTop = 0;
-    double visibleWidth = imageWidth.toDouble();
-    double visibleHeight = imageHeight.toDouble();
-
-    if (imageAspect > screenAspect) {
-      visibleWidth = imageHeight * screenAspect;
-      cropLeft = (imageWidth - visibleWidth) / 2;
-    } else {
-      visibleHeight = imageWidth / screenAspect;
-      cropTop = (imageHeight - visibleHeight) / 2;
-    }
-
-    double sampleRegion(double top, double bottom) {
-      var luminanceTotal = 0.0;
-      var sampleCount = 0;
-
-      for (var yIndex = 0; yIndex < 8; yIndex++) {
-        final screenY = top + (bottom - top) * ((yIndex + 0.5) / 8);
-        final imageY = (cropTop + visibleHeight * screenY)
-            .round()
-            .clamp(0, imageHeight - 1);
-
-        for (var xIndex = 0; xIndex < 8; xIndex++) {
-          final screenX = 0.12 + 0.76 * ((xIndex + 0.5) / 8);
-          final imageX = (cropLeft + visibleWidth * screenX)
-              .round()
-              .clamp(0, imageWidth - 1);
-          final offset = (imageY * imageWidth + imageX) * 4;
-          final red = bytes.getUint8(offset);
-          final green = bytes.getUint8(offset + 1);
-          final blue = bytes.getUint8(offset + 2);
-          final alpha = bytes.getUint8(offset + 3) / 255;
-          final pixelLuminance = _relativeLuminance(red, green, blue);
-          luminanceTotal +=
-              pixelLuminance * alpha + fallbackLuminance * (1 - alpha);
-          sampleCount++;
-        }
-      }
-
-      final sampled = luminanceTotal / sampleCount;
-      return sampled * 0.88 + fallbackLuminance * 0.12;
-    }
-
-    return _PinBackgroundLuminance(
-      header: sampleRegion(0.13, 0.37),
-      keypad: sampleRegion(0.39, 0.82),
-      bottom: sampleRegion(0.80, 0.96),
-    );
-  }
-
-  double _relativeLuminance(int red, int green, int blue) {
-    double linearize(int channel) {
-      final value = channel / 255;
-      return value <= 0.04045
-          ? value / 12.92
-          : math.pow((value + 0.055) / 1.055, 2.4).toDouble();
-    }
-
-    return 0.2126 * linearize(red) +
-        0.7152 * linearize(green) +
-        0.0722 * linearize(blue);
-  }
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -894,11 +743,10 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final adaptivePalette = _adaptivePalette ??
-        _PinAdaptivePalette.fallback(
-          isDark: isDark,
-          backgroundLuminance: colors.backgroundPrimary.computeLuminance(),
-        );
+    final adaptivePalette = _adaptiveContrast.resolve(
+      context,
+      isDark: isDark,
+    );
     final pinForeground =
         adaptivePalette.foregroundFor(adaptivePalette.headerLuminance);
     final pinSecondary =
@@ -909,12 +757,12 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
         adaptivePalette.foregroundFor(adaptivePalette.keypadLuminance);
     final actionForeground =
         adaptivePalette.foregroundFor(adaptivePalette.bottomLuminance);
-    final keypadShadow =
-        adaptivePalette.shadowFor(adaptivePalette.keypadLuminance);
-    final actionShadow =
-        adaptivePalette.shadowFor(adaptivePalette.bottomLuminance);
-    final pinTextShadow =
-        adaptivePalette.shadowFor(adaptivePalette.headerLuminance);
+    final keypadShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.keypadLuminance);
+    final actionShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.bottomLuminance);
+    final pinTextShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.headerLuminance);
     final headerOnDarkBackground =
         adaptivePalette.isDarkBackground(adaptivePalette.headerLuminance);
     final keypadOnDarkBackground =
@@ -1014,7 +862,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
                           color: pinForeground,
-                          shadows: [pinTextShadow],
+                          shadows: pinTextShadows,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1026,9 +874,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                         style: textStyles.bodyMd.copyWith(
                           fontFamily: 'SF Pro Display',
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           color: _isWrongPin ? pinErrorColor : pinSecondary,
-                          shadows: [pinTextShadow],
+                          shadows: pinTextShadows,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1073,7 +921,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                                 fontSize: 16,
                                 color: keypadForeground,
                                 fontWeight: FontWeight.w600,
-                                shadows: [keypadShadow],
+                                shadows: keypadShadows,
                               ),
                             ),
                           ),
@@ -1102,7 +950,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                                       Icons.backspace_outlined,
                                       color: keypadForeground,
                                       size: 27,
-                                      shadows: [keypadShadow],
+                                      shadows: keypadShadows,
                                     ),
                             )
                           else if (!_isBiometricEnabled && _pin.isNotEmpty)
@@ -1113,7 +961,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                                 Icons.backspace_outlined,
                                 color: keypadForeground,
                                 size: 27,
-                                shadows: [keypadShadow],
+                                shadows: keypadShadows,
                               ),
                             ),
                         ],
@@ -1134,7 +982,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                             fontFamily: 'SF Pro Display',
                             color: actionForeground,
                             fontWeight: FontWeight.w600,
-                            shadows: [actionShadow],
+                            shadows: actionShadows,
                           ),
                         ),
                       ),
@@ -1146,73 +994,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PinBackgroundLuminance {
-  final double header;
-  final double keypad;
-  final double bottom;
-
-  const _PinBackgroundLuminance({
-    required this.header,
-    required this.keypad,
-    required this.bottom,
-  });
-}
-
-class _PinAdaptivePalette {
-  final double headerLuminance;
-  final double keypadLuminance;
-  final double bottomLuminance;
-
-  const _PinAdaptivePalette({
-    required this.headerLuminance,
-    required this.keypadLuminance,
-    required this.bottomLuminance,
-  });
-
-  factory _PinAdaptivePalette.fallback({
-    required bool isDark,
-    required double backgroundLuminance,
-  }) {
-    final luminance = backgroundLuminance.isFinite
-        ? backgroundLuminance.clamp(0.0, 1.0)
-        : (isDark ? 0.08 : 0.94);
-    return _PinAdaptivePalette(
-      headerLuminance: luminance,
-      keypadLuminance: luminance,
-      bottomLuminance: luminance,
-    );
-  }
-
-  bool isDarkBackground(double luminance) => luminance < 0.34;
-
-  Color foregroundFor(double luminance) {
-    return isDarkBackground(luminance) ? Colors.white : const Color(0xFF073B55);
-  }
-
-  Color secondaryFor(double luminance) {
-    return isDarkBackground(luminance)
-        ? Colors.white.withValues(alpha: 0.84)
-        : const Color(0xFF18556D);
-  }
-
-  Color accentFor(double luminance) {
-    return isDarkBackground(luminance)
-        ? const Color(0xFFC3F1FF)
-        : const Color(0xFF00698F);
-  }
-
-  Shadow shadowFor(double luminance) {
-    final onDark = isDarkBackground(luminance);
-    return Shadow(
-      color: onDark
-          ? Colors.black.withValues(alpha: 0.56)
-          : Colors.white.withValues(alpha: 0.94),
-      blurRadius: onDark ? 9 : 6,
-      offset: const Offset(0, 2),
     );
   }
 }

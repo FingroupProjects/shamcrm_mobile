@@ -151,6 +151,8 @@ class SipService extends ChangeNotifier
 
   bool _speakerToggleInProgress = false;
   bool _audioRouteChangeInProgress = false;
+  bool? _pendingSpeakerPreference;
+  DateTime? _pendingSpeakerPreferenceAt;
   String? _currentAudioRouteType;
   String? _currentAudioRouteName;
   String? get currentAudioRouteType => _currentAudioRouteType;
@@ -2164,7 +2166,10 @@ class SipService extends ChangeNotifier
       'SipService toggleSpeaker -> current=${_state.isSpeakerOn}, target=$targetSpeaker, callStatus=${_state.callStatus}',
     );
     _speakerToggleInProgress = true;
+    _pendingSpeakerPreference = targetSpeaker;
+    _pendingSpeakerPreferenceAt = DateTime.now();
     _state = _state.copyWith(isSpeakerOn: targetSpeaker);
+    _currentAudioRouteType = targetSpeaker ? 'speaker' : 'earpiece';
     _notifyListenersSafely();
 
     try {
@@ -2178,7 +2183,10 @@ class SipService extends ChangeNotifier
           'SipService toggleSpeaker native result -> success=$success, target=$targetSpeaker',
         );
         if (!success) {
+          _pendingSpeakerPreference = previousSpeaker;
+          _pendingSpeakerPreferenceAt = DateTime.now();
           _state = _state.copyWith(isSpeakerOn: previousSpeaker);
+          _currentAudioRouteType = previousSpeaker ? 'speaker' : 'earpiece';
           _notifyListenersSafely();
           _setError('Не удалось изменить аудиовыход звонка.');
         }
@@ -2189,12 +2197,16 @@ class SipService extends ChangeNotifier
           ? _localStream!.getAudioTracks().first
           : null;
       if (track == null) {
+        _pendingSpeakerPreference = previousSpeaker;
+        _pendingSpeakerPreferenceAt = DateTime.now();
         _state = _state.copyWith(isSpeakerOn: previousSpeaker);
         _notifyListenersSafely();
         return;
       }
       track.enableSpeakerphone(targetSpeaker);
     } catch (error) {
+      _pendingSpeakerPreference = previousSpeaker;
+      _pendingSpeakerPreferenceAt = DateTime.now();
       _state = _state.copyWith(isSpeakerOn: previousSpeaker);
       _notifyListenersSafely();
       _setError('Не удалось изменить аудиовыход звонка: $error');
@@ -2237,9 +2249,12 @@ class SipService extends ChangeNotifier
     final previousSpeaker = _state.isSpeakerOn;
     final previousRouteType = _currentAudioRouteType;
     final previousRouteName = _currentAudioRouteName;
+    final targetSpeaker = route.type == 'speaker';
     _currentAudioRouteType = route.type;
     _currentAudioRouteName = route.name;
-    _state = _state.copyWith(isSpeakerOn: route.type == 'speaker');
+    _pendingSpeakerPreference = targetSpeaker;
+    _pendingSpeakerPreferenceAt = DateTime.now();
+    _state = _state.copyWith(isSpeakerOn: targetSpeaker);
     _notifyListenersSafely();
 
     try {
@@ -2252,6 +2267,8 @@ class SipService extends ChangeNotifier
       if (!success) {
         _currentAudioRouteType = previousRouteType;
         _currentAudioRouteName = previousRouteName;
+        _pendingSpeakerPreference = previousSpeaker;
+        _pendingSpeakerPreferenceAt = DateTime.now();
         _state = _state.copyWith(isSpeakerOn: previousSpeaker);
         _notifyListenersSafely();
         _setError('Не удалось переключить аудиовыход звонка.');
@@ -2260,6 +2277,8 @@ class SipService extends ChangeNotifier
     } catch (error) {
       _currentAudioRouteType = previousRouteType;
       _currentAudioRouteName = previousRouteName;
+      _pendingSpeakerPreference = previousSpeaker;
+      _pendingSpeakerPreferenceAt = DateTime.now();
       _state = _state.copyWith(isSpeakerOn: previousSpeaker);
       _notifyListenersSafely();
       _setError('Не удалось переключить аудиовыход звонка: $error');
@@ -2909,13 +2928,33 @@ class SipService extends ChangeNotifier
         expectedRemoteIdentity: _activeNativeRemoteIdentity,
       );
       if (!matchesCurrent) {
-        return true;
+        // Outgoing/incoming early states often get a callId later (or a
+        // differently formatted remote). Do not drop progression to in_call.
+        final canProgressEarlyCall = _wasEarlyCallStatus(_state.callStatus) &&
+            (nativeState == 'calling' ||
+                nativeState == 'ringing' ||
+                nativeState == 'in_call') &&
+            _nativeRemotesLikelySame(
+              remoteIdentity,
+              _activeNativeRemoteIdentity ?? _state.remoteIdentity,
+            );
+        if (!canProgressEarlyCall) {
+          return true;
+        }
       }
     }
 
     final terminalAt = _lastTerminalNativeCallAt;
     if (terminalAt == null ||
         DateTime.now().difference(terminalAt) > const Duration(seconds: 5)) {
+      return false;
+    }
+
+    // Never treat an active early/in-call progression as a stale terminal echo.
+    if (_isActiveUiCallStatus(_state.callStatus) &&
+        (nativeState == 'calling' ||
+            nativeState == 'ringing' ||
+            nativeState == 'in_call')) {
       return false;
     }
 
@@ -2929,10 +2968,38 @@ class SipService extends ChangeNotifier
     );
   }
 
+  bool _nativeRemotesLikelySame(String? left, String? right) {
+    final a = _digitsOnlyRemote(left);
+    final b = _digitsOnlyRemote(right);
+    if (a == null || b == null) return false;
+    if (a == b) return true;
+    return a.endsWith(b) || b.endsWith(a);
+  }
+
+  String? _digitsOnlyRemote(String? value) {
+    final digits = value?.replaceAll(RegExp(r'\D'), '') ?? '';
+    if (digits.isEmpty) return null;
+    return digits;
+  }
+
   bool _wasEarlyCallStatus(SipCallUiStatus status) {
     return status == SipCallUiStatus.incoming ||
         status == SipCallUiStatus.calling ||
         status == SipCallUiStatus.ringing;
+  }
+
+  bool _hasFreshSpeakerPreference() {
+    final pendingAt = _pendingSpeakerPreferenceAt;
+    return _pendingSpeakerPreference != null &&
+        pendingAt != null &&
+        DateTime.now().difference(pendingAt) <= const Duration(seconds: 2);
+  }
+
+  bool _resolveSpeakerForNativeCallEvent(bool? speakerOn) {
+    if (_hasFreshSpeakerPreference()) {
+      return _pendingSpeakerPreference!;
+    }
+    return speakerOn ?? _state.isSpeakerOn;
   }
 
   bool _shouldIgnoreLateAudioSessionEvent({
@@ -3002,17 +3069,33 @@ class SipService extends ChangeNotifier
     }
 
     if (speakerOn != null || output != null) {
+      final resolvedSpeakerOn = _state.callStatus == SipCallUiStatus.ended ||
+              _state.callStatus == SipCallUiStatus.failed ||
+              _state.callStatus == SipCallUiStatus.idle
+          ? false
+          : (speakerOn ?? (output == 'speaker'));
+
+      final pendingPreference = _pendingSpeakerPreference;
+      final hasFreshUserPreference = _hasFreshSpeakerPreference();
+      if (hasFreshUserPreference && pendingPreference != resolvedSpeakerOn) {
+        // Keep the user's toggle while AVAudioSession/Linphone settle.
+        // Previously a stale output=speaker event flipped loudspeaker back on.
+        debugPrint(
+          'SipService stale/contradictory speaker sync ignored -> pending=$pendingPreference, resolved=$resolvedSpeakerOn, reason=$reason',
+        );
+        return;
+      }
+      if (hasFreshUserPreference && pendingPreference == resolvedSpeakerOn) {
+        _pendingSpeakerPreference = null;
+        _pendingSpeakerPreferenceAt = null;
+      }
+
       if (output != null && output.trim().isNotEmpty) {
         _currentAudioRouteType = _normalizeAudioRouteType(output);
       }
       if (outputDeviceName != null && outputDeviceName.trim().isNotEmpty) {
         _currentAudioRouteName = outputDeviceName.trim();
       }
-      final resolvedSpeakerOn = _state.callStatus == SipCallUiStatus.ended ||
-              _state.callStatus == SipCallUiStatus.failed ||
-              _state.callStatus == SipCallUiStatus.idle
-          ? false
-          : (speakerOn ?? (output == 'speaker'));
       debugPrint(
         'SipService native audio session resolved -> previous=${_state.isSpeakerOn}, resolved=$resolvedSpeakerOn, output=$output, callStatus=${_state.callStatus}',
       );
@@ -3610,15 +3693,18 @@ class SipService extends ChangeNotifier
           callId: callId,
           remoteIdentity: remoteIdentity,
         );
+        final resolvedInCallSpeaker = _resolveSpeakerForNativeCallEvent(
+          speakerOn,
+        );
         debugPrint(
-          'SipService applying in_call state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
+          'SipService applying in_call state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn, resolvedSpeaker=$resolvedInCallSpeaker',
         );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.inCall,
           remoteIdentity: remoteIdentity,
           clearError: true,
           isMuted: muted ?? _state.isMuted,
-          isSpeakerOn: speakerOn ?? _state.isSpeakerOn,
+          isSpeakerOn: resolvedInCallSpeaker,
         );
         break;
       case 'failed':

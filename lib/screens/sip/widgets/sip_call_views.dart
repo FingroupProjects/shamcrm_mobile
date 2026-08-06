@@ -17,124 +17,137 @@ extension _SipCallViewsExtension on _SipScreenState {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const [0, 0.48, 1],
-          colors: _callGradient(isDark),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 8, 22, 18),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxHeight < 760;
-              if (_showInCallKeypad) {
-                return _activeCallKeypadView(
-                  context,
-                  state,
-                  compact: compact,
-                  isConnected: isConnected,
-                  isDark: isDark,
-                );
-              }
-
-              return Column(
-                children: [
-                  _buildActiveCallTopBar(context, isDark: isDark),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        SizedBox(height: compact ? 18 : 34),
-                        _GlassContainer(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          borderRadius: 20,
-                          color: _callGlassFill(isDark),
-                          borderColor: _callGlassBorder(isDark),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: isConnected ? _G.green : _G.accent,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          (isConnected ? _G.green : _G.accent)
-                                              .withValues(alpha: 0.6),
-                                      blurRadius: 6,
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                isConnected
-                                    ? 'Вызов активен'
-                                    : _resolvedCallLabel(context, state),
-                                style: TextStyle(
-                                  color: _callSecondaryText(isDark),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: compact ? 12 : 16),
-                        Text(
-                          target,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _callPrimaryText(isDark),
-                            fontSize: compact ? 40 : 50,
-                            height: 0.96,
-                            fontWeight: FontWeight.w300,
-                            letterSpacing: compact ? -1.8 : -2.4,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          statusText,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _callTertiaryText(isDark),
-                            fontSize: compact ? 16 : 18,
-                            height: 1.3,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const Spacer(),
-                        _iosCallControls(
-                          context,
-                          state,
-                          compact: compact,
-                          isDark: isDark,
-                        ),
-                        SizedBox(height: compact ? 4 : 8),
-                      ],
-                    ),
-                  ),
+    // Фон берём из общего `_TelephonyBackground` (как у набора) —
+    // здесь только лёгкая вуаль для читаемости белого текста.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.22),
+                  Colors.black.withValues(alpha: 0.10),
+                  Colors.black.withValues(alpha: 0.34),
                 ],
-              );
-            },
+              ),
+            ),
           ),
         ),
-      ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 8, 22, 18),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxHeight < 760;
+                if (_showInCallKeypad) {
+                  return _activeCallKeypadView(
+                    context,
+                    state,
+                    compact: compact,
+                    isConnected: isConnected,
+                    isDark: isDark,
+                  );
+                }
+
+                return Column(
+                  children: [
+                    _buildActiveCallTopBar(context, isDark: isDark),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          SizedBox(height: compact ? 18 : 34),
+                          _GlassContainer(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            borderRadius: 20,
+                            color: _callGlassFill(isDark),
+                            borderColor: _callGlassBorder(isDark),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: isConnected ? _G.green : _G.accent,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: (isConnected
+                                                ? _G.green
+                                                : _G.accent)
+                                            .withValues(alpha: 0.6),
+                                        blurRadius: 6,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isConnected
+                                      ? 'Вызов активен'
+                                      : _resolvedCallLabel(context, state),
+                                  style: TextStyle(
+                                    color: _callSecondaryText(isDark),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: compact ? 12 : 16),
+                          Text(
+                            target,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _callPrimaryText(isDark),
+                              fontSize: compact ? 40 : 50,
+                              height: 0.96,
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: compact ? -1.8 : -2.4,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            statusText,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _callTertiaryText(isDark),
+                              fontSize: compact ? 16 : 18,
+                              height: 1.3,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          const Spacer(),
+                          _iosCallControls(
+                            context,
+                            state,
+                            compact: compact,
+                            isDark: isDark,
+                          ),
+                          SizedBox(height: compact ? 4 : 8),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -307,54 +320,73 @@ extension _SipCallViewsExtension on _SipScreenState {
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : const Color(0xFFE1EAF6),
-            width: 1,
-          ),
-          boxShadow: isDark
-              ? null
-              : const [
-                  BoxShadow(
-                    color: Color(0x120F172A),
-                    blurRadius: 14,
-                    offset: Offset(0, 6),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        Colors.white.withValues(alpha: 0.22),
+                        Colors.white.withValues(alpha: 0.08),
+                      ]
+                    : const [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF4F7FC),
+                      ],
+              ),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.28)
+                    : const Color(0xFFE1EAF6),
+                width: 1,
+              ),
+              boxShadow: isDark
+                  ? null
+                  : const [
+                      BoxShadow(
+                        color: Color(0x120F172A),
+                        blurRadius: 14,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: isDark ? _G.textPrimary : _G.lightText,
+                    fontSize: size * 0.42,
+                    fontWeight: FontWeight.w300,
+                    height: 1,
+                  ),
+                ),
+                if (letters.isNotEmpty) ...[
+                  SizedBox(height: size * 0.05),
+                  Text(
+                    letters,
+                    style: TextStyle(
+                      color:
+                          isDark ? _G.textTertiary : const Color(0xFF7C8CA5),
+                      fontSize: math.max(10, size * 0.11),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.8,
+                      height: 1,
+                    ),
                   ),
                 ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: isDark ? _G.textPrimary : _G.lightText,
-                fontSize: size * 0.42,
-                fontWeight: FontWeight.w300,
-                height: 1,
-              ),
+              ],
             ),
-            if (letters.isNotEmpty) ...[
-              SizedBox(height: size * 0.05),
-              Text(
-                letters,
-                style: TextStyle(
-                  color: isDark ? _G.textTertiary : const Color(0xFF7C8CA5),
-                  fontSize: math.max(10, size * 0.11),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  height: 1,
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -365,63 +397,76 @@ extension _SipCallViewsExtension on _SipScreenState {
     required String target,
     required SipUiState state,
   }) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: [0, 0.45, 1],
-          colors: _G.activeBg,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.26),
+                  Colors.black.withValues(alpha: 0.12),
+                  Colors.black.withValues(alpha: 0.40),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.18),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: _G.accent.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: const Icon(
+                              CupertinoIcons.sparkles,
+                              color: _G.accent,
+                              size: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Аудиовызов shamCRM',
+                            style: TextStyle(
+                              color: Color(0xCCFFFFFF),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: _G.accent.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: const Icon(
-                            CupertinoIcons.sparkles,
-                            color: _G.accent,
-                            size: 14,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Аудиовызов shamCRM',
-                          style: const TextStyle(
-                            color: Color(0xCCFFFFFF),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
+                ),
                   const SizedBox(height: 32),
                   Container(
                     width: 92,
@@ -565,9 +610,9 @@ extension _SipCallViewsExtension on _SipScreenState {
                           color: Colors.white.withValues(alpha: 0.12),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Отклонить',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xCCFFFFFF),
                           fontSize: 17,
                           fontWeight: FontWeight.w500,
@@ -579,8 +624,7 @@ extension _SipCallViewsExtension on _SipScreenState {
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -934,15 +978,6 @@ extension _SipCallViewsExtension on _SipScreenState {
     final buttonSize = keypadVisible ? (compact ? 72.0 : 78.0) : 84.0;
     final iconSize = keypadVisible ? 28.0 : 30.0;
     final labelFontSize = keypadVisible ? 13.0 : 15.0;
-    final audioRouteType = _sipRuntime.currentAudioRouteType ??
-        (state.isSpeakerOn ? 'speaker' : 'other');
-    final audioRouteLabel = switch (audioRouteType) {
-      'bluetooth' => _sipRuntime.currentAudioRouteName ?? 'Bluetooth',
-      'speaker' => 'Динамик',
-      'earpiece' => Platform.isIOS ? 'iPhone' : 'Телефон',
-      'headset' => 'Наушники',
-      _ => 'Аудио',
-    };
 
     return Column(
       children: [
@@ -950,12 +985,11 @@ extension _SipCallViewsExtension on _SipScreenState {
           children: [
             Expanded(
               child: _iosCircleAction(
-                icon: _audioRouteCupertinoIcon(audioRouteType),
-                label: audioRouteLabel,
-                onTap: () => _showAudioRoutePicker(context),
-                active: audioRouteType == 'speaker' ||
-                    audioRouteType == 'bluetooth' ||
-                    audioRouteType == 'headset',
+                icon: CupertinoIcons.speaker_3_fill,
+                label: l10n.translate('sip_speaker'),
+                onTap: _sipRuntime.toggleSpeaker,
+                onLongPress: () => _showAudioRoutePicker(context),
+                active: state.isSpeakerOn,
                 size: buttonSize,
                 iconSize: iconSize,
                 labelFontSize: labelFontSize,
@@ -1029,6 +1063,7 @@ extension _SipCallViewsExtension on _SipScreenState {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    VoidCallback? onLongPress,
     bool active = false,
     bool destructive = false,
     double size = 84,
@@ -1037,14 +1072,22 @@ extension _SipCallViewsExtension on _SipScreenState {
     // Временно оставляем только светлую визуальную ветку SIP.
     bool isDark = false,
   }) {
-    final activeBackground = isDark ? Colors.white : _G.lightText;
-    final activeBorder = isDark ? Colors.white : _G.lightText;
-    final activeIconColor = isDark ? _G.lightText : Colors.white;
-    final inactiveBackground = isDark ? _G.glassFill : const Color(0xDFFFFFFF);
-    final inactiveBorder = isDark ? _G.glassBorder : const Color(0xFFE1EAF6);
-    final inactiveIconColor = isDark ? _G.textPrimary : _G.lightText;
+    final activeBackground = Colors.white;
+    final activeBorder = Colors.white;
+    final activeIconColor = _G.lightText;
+    final inactiveBackground = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xDFFFFFFF);
+    final inactiveBorder = isDark
+        ? Colors.white.withValues(alpha: 0.42)
+        : const Color(0xFFE1EAF6);
+    final inactiveIconColor = isDark ? Colors.white : _G.lightText;
+    final labelColor =
+        isDark ? Colors.white.withValues(alpha: 0.78) : _G.lightSubtext;
 
-    return CupertinoButton(
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: onTap,
       child: Column(
@@ -1070,17 +1113,43 @@ extension _SipCallViewsExtension on _SipScreenState {
               : ClipRRect(
                   borderRadius: BorderRadius.circular(size / 2),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                    child: Container(
+                    filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
                       width: size,
                       height: size,
                       decoration: BoxDecoration(
-                        color: active ? activeBackground : inactiveBackground,
+                        color: active ? activeBackground : null,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: active ? activeBorder : inactiveBorder,
-                          width: 0.8,
+                          width: active ? 0 : 1.1,
                         ),
+                        boxShadow: active
+                            ? [
+                                BoxShadow(
+                                  color: Colors.white.withValues(alpha: 0.28),
+                                  blurRadius: 18,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
+                        gradient: active
+                            ? null
+                            : LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: isDark
+                                    ? [
+                                        Colors.white.withValues(alpha: 0.22),
+                                        Colors.white.withValues(alpha: 0.06),
+                                      ]
+                                    : [
+                                        inactiveBackground,
+                                        inactiveBackground,
+                                      ],
+                              ),
                       ),
                       child: Icon(
                         icon,
@@ -1097,13 +1166,14 @@ extension _SipCallViewsExtension on _SipScreenState {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark ? _G.textSecondary : _G.lightSubtext,
+              color: labelColor,
               fontSize: labelFontSize,
               height: 1.2,
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
+      ),
       ),
     );
   }

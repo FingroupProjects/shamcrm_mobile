@@ -23,6 +23,7 @@ import 'package:crm_task_manager/services/workday_profile_redirect_service.dart'
 import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
@@ -68,10 +69,23 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
   // ✅ НОВОЕ: Флаг для отслеживания статуса инициализации
   bool _isInitializing = false;
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
 
   // ═══════════════════════════════════════════════════════════════════════
   // ИНИЦИАЛИЗАЦИЯ
   // ═══════════════════════════════════════════════════════════════════════
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -1118,9 +1132,31 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final foreground = isDark ? Colors.white : colors.textPrimary;
+    final adaptivePalette = _adaptiveContrast.resolve(
+      context,
+      isDark: isDark,
+    );
+    final foreground =
+        adaptivePalette.foregroundFor(adaptivePalette.headerLuminance);
     final secondary =
-        isDark ? Colors.white.withValues(alpha: 0.76) : colors.textSecondary;
+        adaptivePalette.secondaryFor(adaptivePalette.headerLuminance);
+    final accent = adaptivePalette.accentFor(adaptivePalette.headerLuminance);
+    final keypadForeground =
+        adaptivePalette.foregroundFor(adaptivePalette.keypadLuminance);
+    final actionForeground =
+        adaptivePalette.foregroundFor(adaptivePalette.bottomLuminance);
+    final headerOnDark =
+        adaptivePalette.isDarkBackground(adaptivePalette.headerLuminance);
+    final keypadOnDark =
+        adaptivePalette.isDarkBackground(adaptivePalette.keypadLuminance);
+    final headerShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.headerLuminance);
+    final keypadShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.keypadLuminance);
+    final actionShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.bottomLuminance);
+    final errorColor =
+        headerOnDark ? const Color(0xFFFFB4AB) : const Color(0xFFB3261E);
     final pinLogo = Image.asset(
       'assets/icons/playstore.png',
       fit: BoxFit.contain,
@@ -1147,7 +1183,7 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                         child: SizedBox(
                           width: 150,
                           height: 150,
-                          child: isDark
+                          child: headerOnDark
                               ? ColorFiltered(
                                   colorFilter: const ColorFilter.mode(
                                     Colors.white,
@@ -1173,7 +1209,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                           fontFamily: 'SF Pro Display',
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
-                          color: _pinsDoNotMatch ? colors.error : foreground,
+                          color: _pinsDoNotMatch ? errorColor : foreground,
+                          shadows: headerShadows,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1187,8 +1224,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                         style: textStyles.bodyMd.copyWith(
                           fontFamily: 'SF Pro Display',
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: _pinsDoNotMatch ? colors.error : secondary,
+                          fontWeight: FontWeight.w600,
+                          color: _pinsDoNotMatch ? errorColor : secondary,
+                          shadows: headerShadows,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -1210,16 +1248,19 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                                       filledCount: 4,
                                       isLoading: true,
                                       isError: false,
-                                      activeColor: colors.buttonPrimaryBg,
-                                      inactiveColor: colors.borderSubtle
-                                          .withValues(alpha: 0.48),
-                                      errorColor: colors.error,
+                                      activeColor: accent,
+                                      inactiveColor:
+                                          foreground.withValues(alpha: 0.24),
+                                      errorColor: errorColor,
                                       size: 12,
                                       spacing: 8,
                                     )
                                   : _buildPinRow(
                                       _isConfirming ? _confirmPin : _pin,
                                       key: ValueKey(_isConfirming),
+                                      accent: accent,
+                                      foreground: foreground,
+                                      errorColor: errorColor,
                                     ),
                             ),
                           );
@@ -1232,21 +1273,22 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                             LiquidPinKey(
                               digit: i.toString(),
                               onPressed: () => _onNumberPressed(i.toString()),
-                              textColor: foreground,
-                              isDarkBackground: isDark,
+                              textColor: keypadForeground,
+                              isDarkBackground: keypadOnDark,
                             ),
                           TextButton(
                             onPressed: _onDelete,
                             child: Icon(
                               Icons.backspace_outlined,
-                              color: foreground,
+                              color: keypadForeground,
+                              shadows: keypadShadows,
                             ),
                           ),
                           LiquidPinKey(
                             digit: '0',
                             onPressed: () => _onNumberPressed('0'),
-                            textColor: foreground,
-                            isDarkBackground: isDark,
+                            textColor: keypadForeground,
+                            isDarkBackground: keypadOnDark,
                           ),
                           const SizedBox(),
                         ],
@@ -1258,8 +1300,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
                           AppLocalizations.of(context)!.translate('clear'),
                           style: textStyles.labelLg.copyWith(
                             fontFamily: 'SF Pro Display',
-                            color: foreground,
+                            color: actionForeground,
                             fontWeight: FontWeight.w700,
+                            shadows: actionShadows,
                           ),
                         ),
                       ),
@@ -1278,16 +1321,18 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     String pin, {
     Key? key,
     bool isLoading = false,
+    required Color accent,
+    required Color foreground,
+    required Color errorColor,
   }) {
-    final colors = context.appColors;
     return PinProgressDots(
       key: key,
       filledCount: pin.length,
       isLoading: isLoading,
       isError: _pinsDoNotMatch,
-      activeColor: colors.buttonPrimaryBg,
-      inactiveColor: colors.borderSubtle.withValues(alpha: 0.48),
-      errorColor: colors.error,
+      activeColor: accent,
+      inactiveColor: foreground.withValues(alpha: 0.24),
+      errorColor: errorColor,
       size: 12,
       spacing: 8,
     );

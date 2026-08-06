@@ -1703,7 +1703,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         speakerRouteRequestGeneration += 1
         let requestGeneration = speakerRouteRequestGeneration
         let previousSpeaker = snapshot.speakerOn
-        selectedAudioRouteId = enabled ? "speaker" : nil
+        // Keep an explicit non-speaker preference so route sync does not snap
+        // back to speaker while AVAudioSession is still transitioning.
+        selectedAudioRouteId = enabled ? "speaker" : "earpiece"
         snapshot.speakerOn = enabled
         persistSnapshot()
         appendDiagnosticLog("[VOIP] AUDIO_ROUTE_REQUESTED", [
@@ -1962,15 +1964,26 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         if let selected {
             linphone_call_set_output_audio_device(call, selected)
-        } else {
-            do {
-                let session = AVAudioSession.sharedInstance()
-                try session.overrideOutputAudioPort(enabled ? .speaker : .none)
-            } catch {
-                appendDiagnosticLog("[VOIP] AUDIO_ROUTE_FAILED", [
-                    "speaker_on": enabled ? "true" : "false",
-                    "error": error.localizedDescription,
-                ])
+        }
+
+        // Always sync AVAudioSession override with the requested route.
+        // Leaving a previous .speaker override active keeps output on the
+        // loudspeaker even after Linphone switches to the earpiece device.
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(
+                .playAndRecord,
+                mode: .voiceChat,
+                options: [.allowBluetooth, .allowBluetoothA2DP]
+            )
+            try session.setActive(true, options: [])
+            try session.overrideOutputAudioPort(enabled ? .speaker : .none)
+        } catch {
+            appendDiagnosticLog("[VOIP] AUDIO_ROUTE_FAILED", [
+                "speaker_on": enabled ? "true" : "false",
+                "error": error.localizedDescription,
+            ])
+            if selected == nil {
                 syncAudioRouteState(reason: "speaker_request_failed")
                 return
             }
@@ -2215,13 +2228,27 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             snapshot.callState == "ringing" ||
             snapshot.callState == "incoming" ||
             snapshot.callState == "in_call"
-        print("IOSNativeSipManager syncAudioRouteState -> reason=\(reason), callState=\(snapshot.callState), previousSpeaker=\(snapshot.speakerOn), output=\(outputKind), route=\(audioRouteDescription(route))")
-        snapshot.speakerOn = isCallActive && outputKind == "speaker"
+        let observedSpeaker = isCallActive && outputKind == "speaker"
+        // Prefer the explicit user/route preference over a stale AVAudioSession
+        // observation — after disabling speaker the session can still report
+        // builtInSpeaker for a short window and was flipping the UI back on.
+        let resolvedSpeakerOn: Bool
+        if let selectedAudioRouteId {
+            resolvedSpeakerOn = isCallActive && selectedAudioRouteId == "speaker"
+        } else if reason == "speaker_disabled" {
+            resolvedSpeakerOn = false
+        } else if reason == "speaker_enabled" {
+            resolvedSpeakerOn = isCallActive
+        } else {
+            resolvedSpeakerOn = observedSpeaker
+        }
+        print("IOSNativeSipManager syncAudioRouteState -> reason=\(reason), callState=\(snapshot.callState), previousSpeaker=\(snapshot.speakerOn), resolvedSpeaker=\(resolvedSpeakerOn), selected=\(selectedAudioRouteId ?? "nil"), output=\(outputKind), route=\(audioRouteDescription(route))")
+        snapshot.speakerOn = resolvedSpeakerOn
         persistSnapshot()
         emitAudioSessionEvent(
             state: "route_changed",
             reason: reason,
-            output: outputKind,
+            output: resolvedSpeakerOn ? "speaker" : (outputKind == "speaker" ? "earpiece" : outputKind),
             route: audioRouteDescription(route)
         )
         emitCallEvent(state: snapshot.callState, message: snapshot.message)

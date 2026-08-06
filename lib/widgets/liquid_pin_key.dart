@@ -339,23 +339,25 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                                       fontFamily: 'SF Pro Display',
                                       fontSize: 8.7,
                                       height: 1.03,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w700,
                                       letterSpacing: 1.1,
                                       color: widget.textColor.withValues(
-                                        alpha: 0.84,
+                                        alpha: widget.isDarkBackground
+                                            ? 0.88
+                                            : 0.96,
                                       ),
                                       shadows: [
                                         Shadow(
                                           color: widget.isDarkBackground
                                               ? Colors.black.withValues(
-                                                  alpha: 0.42,
+                                                  alpha: 0.48,
                                                 )
                                               : Colors.white.withValues(
-                                                  alpha: 0.90,
+                                                  alpha: 0.96,
                                                 ),
                                           blurRadius: widget.isDarkBackground
                                               ? 1.8
-                                              : 1.2,
+                                              : 2.4,
                                           offset: const Offset(0, 1),
                                         ),
                                       ],

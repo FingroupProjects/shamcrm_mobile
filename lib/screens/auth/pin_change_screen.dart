@@ -4,6 +4,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart';
@@ -29,6 +30,8 @@ class _PinChangeScreenState extends State<PinChangeScreen>
 
   late AnimationController _animationController;
   late Animation<double> _shakeAnimation;
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
 
   @override
   void initState() {
@@ -48,6 +51,17 @@ class _PinChangeScreenState extends State<PinChangeScreen>
         _animationController.reset();
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override
@@ -285,9 +299,31 @@ class _PinChangeScreenState extends State<PinChangeScreen>
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final foreground = isDark ? Colors.white : colors.textPrimary;
+    final adaptivePalette = _adaptiveContrast.resolve(
+      context,
+      isDark: isDark,
+    );
+    final foreground =
+        adaptivePalette.foregroundFor(adaptivePalette.headerLuminance);
     final secondary =
-        isDark ? Colors.white.withValues(alpha: 0.76) : colors.textSecondary;
+        adaptivePalette.secondaryFor(adaptivePalette.headerLuminance);
+    final accent = adaptivePalette.accentFor(adaptivePalette.headerLuminance);
+    final keypadForeground =
+        adaptivePalette.foregroundFor(adaptivePalette.keypadLuminance);
+    final actionForeground =
+        adaptivePalette.foregroundFor(adaptivePalette.bottomLuminance);
+    final headerOnDark =
+        adaptivePalette.isDarkBackground(adaptivePalette.headerLuminance);
+    final keypadOnDark =
+        adaptivePalette.isDarkBackground(adaptivePalette.keypadLuminance);
+    final headerShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.headerLuminance);
+    final keypadShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.keypadLuminance);
+    final actionShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.bottomLuminance);
+    final errorColor =
+        headerOnDark ? const Color(0xFFFFB4AB) : const Color(0xFFB3261E);
     final pinLogo = Image.asset(
       'assets/icons/playstore.png',
       fit: BoxFit.contain,
@@ -308,7 +344,11 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                     alignment: Alignment.topLeft,
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.chevron_left_rounded, color: foreground),
+                      icon: Icon(
+                        Icons.chevron_left_rounded,
+                        color: foreground,
+                        shadows: headerShadows,
+                      ),
                       tooltip: localizations?.translate('back') ?? 'Назад',
                     ),
                   ),
@@ -319,13 +359,12 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Иконка
                           Transform.translate(
                             offset: const Offset(0, 6),
                             child: SizedBox(
                               width: 150,
                               height: 150,
-                              child: isDark
+                              child: headerOnDark
                                   ? ColorFiltered(
                                       colorFilter: const ColorFilter.mode(
                                         Colors.white,
@@ -337,15 +376,14 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // Заголовок
                           Text(
                             _isError ? _getErrorMessage() : _getTitle(),
                             style: textStyles.titleLg.copyWith(
                               fontFamily: 'SF Pro Display',
                               fontSize: 24,
                               fontWeight: FontWeight.w600,
-                              color: _isError ? Colors.red : foreground,
+                              color: _isError ? errorColor : foreground,
+                              shadows: headerShadows,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -356,52 +394,59 @@ class _PinChangeScreenState extends State<PinChangeScreen>
                             style: textStyles.bodyMd.copyWith(
                               fontFamily: 'SF Pro Display',
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: _isError ? Colors.red : secondary,
+                              fontWeight: FontWeight.w600,
+                              color: _isError ? errorColor : secondary,
+                              shadows: headerShadows,
                             ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
-
-                          // PIN индикаторы с анимацией
                           AnimatedBuilder(
                             animation: _shakeAnimation,
                             builder: (context, child) {
                               return Transform.translate(
                                 offset: Offset(
                                     _isError ? _shakeAnimation.value : 0, 0),
-                                child: _buildPinRow(_getCurrentPinInput()),
+                                child: _buildPinRow(
+                                  _getCurrentPinInput(),
+                                  accent: accent,
+                                  foreground: foreground,
+                                  errorColor: errorColor,
+                                ),
                               );
                             },
                           ),
-
                           const SizedBox(height: 24),
-
-                          // Клавиатура
                           AdaptivePinKeypad(
                             children: [
                               for (var i = 1; i <= 9; i++)
-                                _buildNumberButton(i.toString()),
-
-                              const SizedBox(), // Пустая ячейка
-
-                              _buildNumberButton('0'),
-
-                              _buildDeleteButton(),
+                                _buildNumberButton(
+                                  i.toString(),
+                                  textColor: keypadForeground,
+                                  isDarkBackground: keypadOnDark,
+                                ),
+                              const SizedBox(),
+                              _buildNumberButton(
+                                '0',
+                                textColor: keypadForeground,
+                                isDarkBackground: keypadOnDark,
+                              ),
+                              _buildDeleteButton(
+                                color: keypadForeground,
+                                shadows: keypadShadows,
+                              ),
                             ],
                           ),
-
                           const SizedBox(height: 4),
-
-                          // Кнопка "Очистить"
                           TextButton(
                             onPressed: _onClear,
                             child: Text(
                               localizations?.translate('clear') ?? 'Очистить',
                               style: textStyles.labelLg.copyWith(
                                 fontFamily: 'SF Pro Display',
-                                color: foreground,
+                                color: actionForeground,
                                 fontWeight: FontWeight.w700,
+                                shadows: actionShadows,
                               ),
                             ),
                           ),
@@ -422,43 +467,48 @@ class _PinChangeScreenState extends State<PinChangeScreen>
   // ВСПОМОГАТЕЛЬНЫЕ ВИДЖЕТЫ
   // ==========================================================================
 
-  Widget _buildPinRow(String pin) {
+  Widget _buildPinRow(
+    String pin, {
+    required Color accent,
+    required Color foreground,
+    required Color errorColor,
+  }) {
     return PinProgressDots(
       filledCount: pin.length,
       isLoading: _isPinChecking,
       isError: _isError,
-      activeColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.white
-          : context.appColors.buttonPrimaryBg,
-      inactiveColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.28)
-          : context.appColors.borderSubtle.withValues(alpha: 0.48),
-      errorColor: Colors.red,
+      activeColor: accent,
+      inactiveColor: foreground.withValues(alpha: 0.24),
+      errorColor: errorColor,
       size: 12,
       spacing: 8,
     );
   }
 
-  Widget _buildNumberButton(String number) {
+  Widget _buildNumberButton(
+    String number, {
+    required Color textColor,
+    required bool isDarkBackground,
+  }) {
     return LiquidPinKey(
       digit: number,
       onPressed: () => _onNumberPressed(number),
-      textColor: Theme.of(context).brightness == Brightness.dark
-          ? Colors.white
-          : context.appColors.textPrimary,
-      isDarkBackground: Theme.of(context).brightness == Brightness.dark,
+      textColor: textColor,
+      isDarkBackground: isDarkBackground,
     );
   }
 
-  Widget _buildDeleteButton() {
+  Widget _buildDeleteButton({
+    required Color color,
+    required List<Shadow> shadows,
+  }) {
     return TextButton(
       onPressed: _onDelete,
       child: Icon(
         Icons.backspace_outlined,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white
-            : context.appColors.textPrimary,
+        color: color,
         size: 28,
+        shadows: shadows,
       ),
     );
   }

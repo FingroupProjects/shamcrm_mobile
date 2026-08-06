@@ -168,7 +168,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 final GlobalKey<NavigatorState> navigatorKey = ApiService.navigatorKey;
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     ApiService.scaffoldMessengerKey;
-
+// The following constants are used for Telegram crash reporting. They can be set via environment variables or will default to the provided values.
 const String _telegramCrashBotToken = String.fromEnvironment(
   'TELEGRAM_CRASH_BOT_TOKEN',
   defaultValue: '8926264073:AAEF31-5Bvhnr2Xdz6GIpG5u_KyFbWpA5KM',
