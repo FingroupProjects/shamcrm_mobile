@@ -637,20 +637,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         },
         child: BlocBuilder<OrderBloc, OrderState>(
           builder: (context, state) {
-            // Обновляем текущие детали заказа
-            Order? orderForAppBar = _currentOrderDetails;
-            if (state is OrderLoaded && state.orderDetails != null) {
-              orderForAppBar = state.orderDetails;
-              if (_currentOrderDetails != state.orderDetails) {
-                _currentOrderDetails = state.orderDetails;
+            final Order? loadedOrder = _matchingOrderDetails(state);
+
+            if (loadedOrder != null) {
+              if (_currentOrderDetails != loadedOrder) {
+                _currentOrderDetails = loadedOrder;
               }
-              _updateDetails(state.orderDetails!);
+              _updateDetails(loadedOrder);
+            } else {
+              _currentOrderDetails = null;
+              details.clear();
             }
 
             return Scaffold(
               backgroundColor: Colors.white,
-              appBar: _buildAppBar(context, orderForAppBar),
-              body: _buildBody(state),
+              appBar: _buildAppBar(context, loadedOrder),
+              body: _buildBody(state, loadedOrder),
             );
           },
         ),
@@ -658,36 +660,59 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildBody(OrderState state) {
-    if (state is OrderLoading || !_isConfigurationLoaded) {
-      return const Center(child: CircularProgressIndicator());
-    } else if (state is OrderLoaded && state.orderDetails != null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: ListView(
-          children: [
-            _buildDetailsList(),
-            const SizedBox(height: 16),
-            if (state.orderDetails!.files.isNotEmpty) ...[
-              _buildFilesSection(state.orderDetails!.files),
-              const SizedBox(height: 16),
-            ],
-            OrderHistoryWidget(orderId: widget.orderId),
-            const SizedBox(height: 16),
-            OrderGoodsScreen(
-              goods: state.orderDetails!.goods,
-              order: widget.order,
-            ),
-          ],
-        ),
-      );
-    } else if (state is OrderError) {
+  Order? _matchingOrderDetails(OrderState state) {
+    if (state is OrderLoaded &&
+        state.orderDetails != null &&
+        state.orderDetails!.id == widget.orderId) {
+      return state.orderDetails;
+    }
+    return null;
+  }
+
+  String _resolveOrderNumber(Order? loadedOrder) {
+    if (loadedOrder != null && loadedOrder.orderNumber.isNotEmpty) {
+      return loadedOrder.orderNumber;
+    }
+    if (widget.order.orderNumber.isNotEmpty) {
+      return widget.order.orderNumber;
+    }
+    return widget.orderId.toString();
+  }
+
+  Widget _buildBody(OrderState state, Order? loadedOrder) {
+    if (state is OrderError) {
       return Center(child: Text(state.message));
     }
-    return const Center(child: Text(''));
+
+    // Как в задачах: пока грузится или в bloc ещё чужой заказ —
+    // показываем лоадер, а не предыдущие детали.
+    if (loadedOrder == null || !_isConfigurationLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListView(
+        children: [
+          _buildDetailsList(),
+          const SizedBox(height: 16),
+          if (loadedOrder.files.isNotEmpty) ...[
+            _buildFilesSection(loadedOrder.files),
+            const SizedBox(height: 16),
+          ],
+          OrderHistoryWidget(orderId: widget.orderId),
+          const SizedBox(height: 16),
+          OrderGoodsScreen(
+            goods: loadedOrder.goods,
+            order: loadedOrder,
+          ),
+        ],
+      ),
+    );
   }
 
   AppBar _buildAppBar(BuildContext context, Order? order) {
+    final displayOrderNumber = _resolveOrderNumber(order);
     return AppBar(
       backgroundColor: Colors.white,
       forceMaterialTransparency: true,
@@ -700,7 +725,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         },
       ),
       title: Text(
-        '${AppLocalizations.of(context)!.translate('order_title')}№${widget.orderId}',
+        '${AppLocalizations.of(context)!.translate('order_title')}№$displayOrderNumber',
         style: const TextStyle(
           fontSize: 20,
           fontFamily: 'Gilroy',
