@@ -303,9 +303,13 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       case SipCallUiStatus.calling:
         return 'Соединяем звонок';
       case SipCallUiStatus.ringing:
-        return 'Подключаем вас к клиенту';
+        return _sipRuntime.isOutgoingNetworkMediaActive
+            ? 'Сообщение линии'
+            : 'Подключаем вас к клиенту';
       case SipCallUiStatus.inCall:
-        return l10n.translate('sip_call_in_call');
+        return _sipRuntime.isOutgoingNetworkMediaActive
+            ? 'Сообщение линии'
+            : l10n.translate('sip_call_in_call');
       case SipCallUiStatus.ended:
         return l10n.translate('sip_call_ended');
       case SipCallUiStatus.failed:
@@ -442,11 +446,15 @@ extension _SipScreenCallStateExtension on _SipScreenState {
       case SipCallUiStatus.incoming:
         return 'Входящий вызов. Звучит сигнал вызова.';
       case SipCallUiStatus.calling:
-        return 'Исходящий вызов. Включен сигнал ожидания ответа.';
+        return 'Исходящий вызов. Ожидаем ответ сети.';
       case SipCallUiStatus.ringing:
-        return 'Абонент уведомлен. Ожидаем ответ.';
+        return _sipRuntime.isOutgoingNetworkMediaActive
+            ? 'Линия передаёт гудок (~занято). Слушайте в трубке.'
+            : 'Абонент уведомлен. Ожидаем ответ.';
       case SipCallUiStatus.inCall:
-        return 'Соединение активно.';
+        return _sipRuntime.isOutgoingNetworkMediaActive
+            ? 'Сообщение линии (гудок). Сеть может сбросить через ~8 с — это нормально.'
+            : 'Соединение активно.';
       case SipCallUiStatus.failed:
         return 'Не удалось завершить вызов успешно.';
       case SipCallUiStatus.ended:
@@ -456,22 +464,67 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     }
   }
 
+  PinAdaptivePalette _sipAdaptivePalette([BuildContext? ctx]) {
+    final resolvedContext = ctx ?? context;
+    return _adaptiveContrast.resolve(
+      resolvedContext,
+      isDark: Theme.of(resolvedContext).brightness == Brightness.dark,
+    );
+  }
+
   bool _isDarkSipTheme(BuildContext context) {
-    // На экране звонка используем светлый текст поверх общего стеклянного
-    // фона телефонии — контраст не зависит от темы приложения.
-    return true;
+    // Wallpaper luminance drives ink — same model as PIN / dialer.
+    final palette = _sipAdaptivePalette(context);
+    return palette.isDarkBackground(palette.keypadLuminance);
+  }
+
+  bool _isSipKeypadOnDark([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.isDarkBackground(palette.keypadLuminance);
+  }
+
+  Color _sipHeaderForeground([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.foregroundFor(palette.headerLuminance);
+  }
+
+  Color _sipHeaderSecondary([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.secondaryFor(palette.headerLuminance);
+  }
+
+  List<Shadow> _sipHeaderShadows([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.shadowsFor(palette.headerLuminance);
+  }
+
+  Color _sipKeypadForeground([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.foregroundFor(palette.keypadLuminance);
+  }
+
+  Color _sipKeypadSecondary([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.secondaryFor(palette.keypadLuminance);
+  }
+
+  List<Shadow> _sipKeypadShadows([BuildContext? ctx]) {
+    final palette = _sipAdaptivePalette(ctx);
+    return palette.shadowsFor(palette.keypadLuminance);
   }
 
   Color _callPrimaryText(bool isDark) {
-    return isDark ? _G.textPrimary : _G.lightText;
+    return isDark ? _G.textPrimary : const Color(0xFF0B2F44);
   }
 
   Color _callSecondaryText(bool isDark) {
-    return isDark ? _G.textSecondary : _G.lightSubtext;
+    return isDark
+        ? _G.textSecondary
+        : const Color(0xFF123F57).withValues(alpha: 0.92);
   }
 
   Color _callTertiaryText(bool isDark) {
-    return isDark ? _G.textTertiary : const Color(0xFF7C8CA5);
+    return isDark ? _G.textTertiary : const Color(0xFF3D5A6E);
   }
 
   Color _callGlassFill(bool isDark) {

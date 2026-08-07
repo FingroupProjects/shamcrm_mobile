@@ -43,7 +43,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                         ? '?'
                         : suggestion.name[0].toUpperCase(),
                     style: TextStyle(
-                      color: colors.textPrimary,
+                      color: _glassControlInk(context),
                       fontWeight: FontWeight.w700,
                     ),
                   )
@@ -62,7 +62,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
+                      color: _glassControlInk(context),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -71,7 +71,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: colors.textSecondary,
+                      color: _glassControlSecondaryInk(context),
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
                     ),
@@ -461,8 +461,10 @@ extension _SipContactsViewsExtension on _SipScreenState {
     final borderColor = selected
         ? _TelephonyVisualColors.blue.withValues(alpha: 0.55)
         : colors.borderSubtle;
+    final glassInk = _glassControlInk(context);
+    final glassSecondaryInk = _glassControlSecondaryInk(context);
     final labelColor =
-        selected ? _TelephonyVisualColors.blue : colors.textSecondary;
+        selected ? _TelephonyVisualColors.blue : glassInk;
 
     return GestureDetector(
       onTap: onTap,
@@ -520,7 +522,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                         valueColor: AlwaysStoppedAnimation<Color>(
                           selected
                               ? colors.buttonPrimaryFg
-                              : colors.textSecondary,
+                              : glassSecondaryInk,
                         ),
                       ),
                     )
@@ -529,7 +531,7 @@ extension _SipContactsViewsExtension on _SipScreenState {
                       style: TextStyle(
                         color: selected
                             ? colors.buttonPrimaryFg
-                            : colors.textSecondary,
+                            : glassInk,
                         fontFamily: 'Gilroy',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

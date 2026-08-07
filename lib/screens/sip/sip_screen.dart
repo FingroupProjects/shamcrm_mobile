@@ -36,6 +36,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 
 import 'sip_service.dart';
@@ -169,6 +170,8 @@ class _SipScreenState extends State<SipScreen>
   double? _contactsIndexOverlayTop;
   String? _journalDateRailLabel;
   double? _journalDateRailTop;
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
 
   static const List<Map<String, String>> _dialPadItems = [
     {'key': '1', 'letters': ''},
@@ -243,6 +246,17 @@ class _SipScreenState extends State<SipScreen>
       const ValueKey('search') => 3,
       _ => _bottomTabIndex,
     };
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override

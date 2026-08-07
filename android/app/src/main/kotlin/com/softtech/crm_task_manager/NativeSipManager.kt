@@ -697,6 +697,53 @@ class NativeSipManager(
                     TAG,
                     "onCallStateChanged: rawState=$rawState, mappedState=$mappedState, effectiveMappedState=$effectiveMappedState, previousCallState=$previousCallState, remote=$remoteIdentity, rawMessage=$rawMessage, effectiveMessage=$effectiveMessage, reason=$callReason, protocol=${errorInfo?.getProtocol()}, protocolCode=${errorInfo?.getProtocolCode()}, phrase=${errorInfo?.getPhrase()}",
                 )
+                val protocolCode = errorInfo?.getProtocolCode()
+                val phrase = errorInfo?.getPhrase().orEmpty()
+                val reasonText = callReason.orEmpty()
+                val busySignal = protocolCode == 486 ||
+                    protocolCode == 600 ||
+                    protocolCode == 603 ||
+                    reasonText.contains("Busy", ignoreCase = true) ||
+                    phrase.contains("busy", ignoreCase = true) ||
+                    rawMessage.contains("486") ||
+                    effectiveMessage.contains("busy", ignoreCase = true)
+                NativeSipBridge.recordDiagnosticEvent(
+                    "[VOIP] CALL_STATE_CHANGED",
+                    hashMapOf(
+                        "raw_state" to rawState,
+                        "mapped_state" to effectiveMappedState,
+                        "previous_state" to previousCallState,
+                        "remote" to remoteIdentity,
+                        "message" to effectiveMessage,
+                        "sip_reason" to callReason,
+                        "protocol" to errorInfo?.getProtocol(),
+                        "protocol_code" to protocolCode,
+                        "phrase" to phrase,
+                        "busy_signal" to busySignal,
+                    ),
+                )
+                if (busySignal) {
+                    NativeSipBridge.recordDiagnosticEvent(
+                        "[VOIP] BUSY_SIGNAL_DETECTED",
+                        hashMapOf(
+                            "raw_state" to rawState,
+                            "protocol_code" to protocolCode,
+                            "phrase" to phrase,
+                            "sip_reason" to callReason,
+                            "remote" to remoteIdentity,
+                        ),
+                    )
+                }
+                if (rawState == "OutgoingEarlyMedia") {
+                    NativeSipBridge.recordDiagnosticEvent(
+                        "[VOIP] EARLY_MEDIA",
+                        hashMapOf(
+                            "remote" to remoteIdentity,
+                            "protocol_code" to protocolCode,
+                            "phrase" to phrase,
+                        ),
+                    )
+                }
                 currentCall = when (effectiveMappedState) {
                     "ended", "failed", "idle" -> null
                     else -> call
@@ -734,26 +781,66 @@ class NativeSipManager(
                 lastCallState = effectiveMappedState
                 if (effectiveMappedState == "calling" ||
                     effectiveMappedState == "ringing" ||
+                    effectiveMappedState == "early_media" ||
                     effectiveMappedState == "in_call"
                 ) {
                     tryApplySpeakerPreference(core)
                 }
 
+                if (effectiveMappedState == "in_call" &&
+                    (previousCallState == "calling" ||
+                        previousCallState == "ringing" ||
+                        previousCallState == "early_media")
+                ) {
+                    NativeSipBridge.recordDiagnosticEvent(
+                        "[VOIP] OUTGOING_NETWORK_MEDIA",
+                        hashMapOf(
+                            "previous_state" to previousCallState,
+                            "raw_state" to rawState,
+                            "speaker_on" to isSpeakerOn,
+                            "remote" to remoteIdentity,
+                        ),
+                    )
+                }
+
                 emitCallState(
                     state = effectiveMappedState,
                     remoteIdentity = remoteIdentity,
-                    message = effectiveMessage,
+                    message = when {
+                        busySignal &&
+                            (effectiveMappedState == "ended" || effectiveMappedState == "failed") ->
+                            "Абонент занят"
+                        effectiveMappedState == "early_media" ->
+                            "Outgoing early media"
+                        effectiveMappedState == "in_call" &&
+                            (previousCallState == "calling" ||
+                                previousCallState == "ringing" ||
+                                previousCallState == "early_media") ->
+                            "Network media connected"
+                        else -> effectiveMessage
+                    },
                     muted = call.getMicrophoneMuted(),
                     speakerOn = isSpeakerOn,
                     diagnostics = hashMapOf(
                         "rawState" to rawState,
+                        "raw_state" to rawState,
                         "rawMessage" to rawMessage,
                         "previousCallState" to previousCallState,
                         "reason" to callReason,
+                        "sip_reason" to callReason,
                         "protocol" to errorInfo?.getProtocol(),
                         "protocolCode" to errorInfo?.getProtocolCode(),
+                        "protocol_code" to errorInfo?.getProtocolCode(),
                         "phrase" to errorInfo?.getPhrase(),
                         "warnings" to errorInfo?.getWarnings(),
+                        "busy_signal" to busySignal,
+                        "outgoing_network_media" to (
+                            effectiveMappedState == "early_media" ||
+                                (effectiveMappedState == "in_call" &&
+                                    (previousCallState == "calling" ||
+                                        previousCallState == "ringing" ||
+                                        previousCallState == "early_media"))
+                            ),
                     ),
                 )
             }
@@ -1041,7 +1128,8 @@ class NativeSipManager(
         return when (value) {
             "IncomingReceived" -> "incoming"
             "OutgoingInit" -> "calling"
-            "OutgoingProgress", "OutgoingEarlyMedia", "OutgoingRinging" -> "ringing"
+            "OutgoingProgress", "OutgoingRinging" -> "ringing"
+            "OutgoingEarlyMedia" -> "early_media"
             "Connected", "StreamsRunning", "Paused", "PausedByRemote", "Resuming" -> "in_call"
             "Error" -> if (isRemoteDeclineMessage(message)) "ended" else "failed"
             "End", "Released" -> "ended"
@@ -1050,7 +1138,7 @@ class NativeSipManager(
     }
 
     private fun isEarlyCallState(state: String): Boolean {
-        return state == "incoming" || state == "calling" || state == "ringing"
+        return state == "incoming" || state == "calling" || state == "ringing" || state == "early_media"
     }
 
     private fun shouldTreatEarlyTerminationAsEnded(

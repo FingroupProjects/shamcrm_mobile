@@ -91,8 +91,11 @@ class PinAdaptivePalette {
   }
 }
 
-/// Samples wallpaper luminance and exposes PIN ink colors that stay readable
+/// Samples wallpaper luminance and exposes ink colors that stay readable
 /// on both light and dark backgrounds.
+///
+/// Used by PIN screens and telephony (dialer, call UI, nav) over custom
+/// wallpapers / glass surfaces.
 class PinAdaptiveContrastController {
   PinAdaptivePalette? palette;
   String? _paletteKey;
@@ -288,5 +291,63 @@ class PinAdaptiveContrastController {
     return 0.2126 * linearize(red) +
         0.7152 * linearize(green) +
         0.0722 * linearize(blue);
+  }
+}
+
+/// Provides a sampled wallpaper palette to descendants (settings labels, etc.).
+class WallpaperAdaptiveScope extends InheritedWidget {
+  final PinAdaptivePalette palette;
+
+  const WallpaperAdaptiveScope({
+    super.key,
+    required this.palette,
+    required super.child,
+  });
+
+  static PinAdaptivePalette? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<WallpaperAdaptiveScope>()
+        ?.palette;
+  }
+
+  static PinAdaptivePalette of(BuildContext context) {
+    final scoped = maybeOf(context);
+    if (scoped != null) return scoped;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return PinAdaptivePalette.fallback(
+      isDark: isDark,
+      backgroundLuminance:
+          context.appColors.backgroundPrimary.computeLuminance(),
+    );
+  }
+
+  @override
+  bool updateShouldNotify(WallpaperAdaptiveScope oldWidget) {
+    return oldWidget.palette.headerLuminance != palette.headerLuminance ||
+        oldWidget.palette.keypadLuminance != palette.keypadLuminance ||
+        oldWidget.palette.bottomLuminance != palette.bottomLuminance;
+  }
+}
+
+extension WallpaperAdaptiveInk on BuildContext {
+  /// Ink for free-floating text/icons sitting on the wallpaper (not on cards).
+  Color wallpaperForeground({double? luminance}) {
+    final palette = WallpaperAdaptiveScope.of(this);
+    return palette.foregroundFor(luminance ?? palette.keypadLuminance);
+  }
+
+  Color wallpaperSecondary({double? luminance}) {
+    final palette = WallpaperAdaptiveScope.of(this);
+    return palette.secondaryFor(luminance ?? palette.keypadLuminance);
+  }
+
+  Color wallpaperAccent({double? luminance}) {
+    final palette = WallpaperAdaptiveScope.of(this);
+    return palette.accentFor(luminance ?? palette.bottomLuminance);
+  }
+
+  List<Shadow> wallpaperShadows({double? luminance}) {
+    final palette = WallpaperAdaptiveScope.of(this);
+    return palette.shadowsFor(luminance ?? palette.keypadLuminance);
   }
 }

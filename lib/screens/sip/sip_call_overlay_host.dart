@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,6 +49,8 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       'sip_pin_required_after_call_v1';
 
   final SipService _sipService = SipService();
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
   late final AnimationController _pulseController;
   Timer? _durationTimer;
   SipCallUiStatus? _lastObservedStatus;
@@ -70,6 +73,17 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       duration: const Duration(milliseconds: 1600),
     )..repeat();
     unawaited(_sipService.initialize());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override
@@ -197,7 +211,11 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   bool _isDarkSipTheme(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark;
+    final palette = _adaptiveContrast.resolve(
+      context,
+      isDark: Theme.of(context).brightness == Brightness.dark,
+    );
+    return palette.isDarkBackground(palette.keypadLuminance);
   }
 
   Color _accent(SipCallUiStatus status) {

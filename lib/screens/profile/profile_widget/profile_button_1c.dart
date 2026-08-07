@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -142,12 +143,15 @@ class _UpdateWidget1CState extends State<UpdateWidget1C>
               valueListenable: lastUpdatedNotifier,
               builder: (context, lastUpdated, child) {
                 if (organization.is1cIntegration && lastUpdated != null) {
+                  final bottomLum =
+                      WallpaperAdaptiveScope.of(context).bottomLuminance;
                   return Center(
                     child: Text(
                       '${localizations.translate('last_update_1c')}: $lastUpdated',
                       style: context.appTextStyles.bodySm.copyWith(
                         fontWeight: FontWeight.w400,
-                        color: context.appColors.textSecondary,
+                        color: context.wallpaperSecondary(luminance: bottomLum),
+                        shadows: context.wallpaperShadows(luminance: bottomLum),
                       ),
                     ),
                   );

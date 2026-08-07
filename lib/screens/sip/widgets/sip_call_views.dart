@@ -17,8 +17,8 @@ extension _SipCallViewsExtension on _SipScreenState {
       );
     }
 
-    // Фон берём из общего `_TelephonyBackground` (как у набора) —
-    // здесь только лёгкая вуаль для читаемости белого текста.
+    // Фон — общий `_TelephonyBackground`; вуаль подстраивается под яркость
+    // обоев, чтобы тёмный/светлый текст оставался читаемым.
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -28,11 +28,17 @@ extension _SipCallViewsExtension on _SipScreenState {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.22),
-                  Colors.black.withValues(alpha: 0.10),
-                  Colors.black.withValues(alpha: 0.34),
-                ],
+                colors: isDark
+                    ? [
+                        Colors.black.withValues(alpha: 0.22),
+                        Colors.black.withValues(alpha: 0.10),
+                        Colors.black.withValues(alpha: 0.34),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.14),
+                        Colors.white.withValues(alpha: 0.05),
+                        Colors.white.withValues(alpha: 0.18),
+                      ],
               ),
             ),
           ),
@@ -397,6 +403,9 @@ extension _SipCallViewsExtension on _SipScreenState {
     required String target,
     required SipUiState state,
   }) {
+    final isDark = _isDarkSipTheme(context);
+    final primaryText = _callPrimaryText(isDark);
+    final secondaryText = _callSecondaryText(isDark);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -406,11 +415,17 @@ extension _SipCallViewsExtension on _SipScreenState {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.26),
-                  Colors.black.withValues(alpha: 0.12),
-                  Colors.black.withValues(alpha: 0.40),
-                ],
+                colors: isDark
+                    ? [
+                        Colors.black.withValues(alpha: 0.26),
+                        Colors.black.withValues(alpha: 0.12),
+                        Colors.black.withValues(alpha: 0.40),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.16),
+                        Colors.white.withValues(alpha: 0.06),
+                        Colors.white.withValues(alpha: 0.22),
+                      ],
               ),
             ),
           ),
@@ -431,10 +446,10 @@ extension _SipCallViewsExtension on _SipScreenState {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: _callGlassFill(isDark),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color: _callGlassBorder(isDark),
                         ),
                       ),
                       child: Row(
@@ -454,10 +469,10 @@ extension _SipCallViewsExtension on _SipScreenState {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Аудиовызов shamCRM',
                             style: TextStyle(
-                              color: Color(0xCCFFFFFF),
+                              color: secondaryText,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -501,12 +516,13 @@ extension _SipCallViewsExtension on _SipScreenState {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: primaryText,
                       fontSize: 42,
                       fontWeight: FontWeight.w300,
                       letterSpacing: -1.6,
                       height: 1.0,
+                      shadows: _sipKeypadShadows(context),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -527,7 +543,7 @@ extension _SipCallViewsExtension on _SipScreenState {
                             height: 6,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withValues(
+                              color: primaryText.withValues(
                                 alpha: opacity,
                               ),
                             ),
@@ -539,10 +555,11 @@ extension _SipCallViewsExtension on _SipScreenState {
                   const SizedBox(height: 4),
                   Text(
                     'Входящий звонок',
-                    style: const TextStyle(
-                      color: Color(0xAAFFFFFF),
+                    style: TextStyle(
+                      color: secondaryText,
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
+                      shadows: _sipKeypadShadows(context),
                     ),
                   ),
                   const Spacer(),
@@ -560,20 +577,20 @@ extension _SipCallViewsExtension on _SipScreenState {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.10),
+                              color: _callGlassFill(isDark),
                               borderRadius: BorderRadius.circular(36),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.12),
+                                color: _callGlassBorder(isDark),
                               ),
                             ),
                             child: Center(
                               child: _isCreatingCallbackReminder
-                                  ? const CupertinoActivityIndicator(
-                                      color: Color(0xCCFFFFFF),
+                                  ? CupertinoActivityIndicator(
+                                      color: secondaryText,
                                     )
-                                  : const Icon(
+                                  : Icon(
                                       CupertinoIcons.alarm,
-                                      color: Color(0xCCFFFFFF),
+                                      color: secondaryText,
                                       size: 28,
                                     ),
                             ),
@@ -582,8 +599,8 @@ extension _SipCallViewsExtension on _SipScreenState {
                           Text(
                             AppLocalizations.of(context)!
                                 .translate('sip_remind'),
-                            style: const TextStyle(
-                              color: Color(0xCCFFFFFF),
+                            style: TextStyle(
+                              color: secondaryText,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -604,16 +621,16 @@ extension _SipCallViewsExtension on _SipScreenState {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.10),
+                        color: _callGlassFill(isDark),
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.12),
+                          color: _callGlassBorder(isDark),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Отклонить',
                         style: TextStyle(
-                          color: Color(0xCCFFFFFF),
+                          color: secondaryText,
                           fontSize: 17,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1081,9 +1098,11 @@ extension _SipCallViewsExtension on _SipScreenState {
     final inactiveBorder = isDark
         ? Colors.white.withValues(alpha: 0.42)
         : const Color(0xFFE1EAF6);
-    final inactiveIconColor = isDark ? Colors.white : _G.lightText;
-    final labelColor =
-        isDark ? Colors.white.withValues(alpha: 0.78) : _G.lightSubtext;
+    final inactiveIconColor =
+        isDark ? Colors.white : const Color(0xFF0B2F44);
+    final labelColor = isDark
+        ? Colors.white.withValues(alpha: 0.78)
+        : const Color(0xFF123F57);
 
     return GestureDetector(
       onLongPress: onLongPress,

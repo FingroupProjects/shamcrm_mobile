@@ -378,6 +378,11 @@ extension _SipSettingsSheetExtension on _SipScreenState {
 
   Future<void> _showIosDiagnosticsSheet(BuildContext context) async {
     final isAndroid = Platform.isAndroid;
+    // Flutter UI can lag behind native Linphone state (shows failed while
+    // native is still registered). Sync first so diagnostics don't look like
+    // a false disconnect and don't trigger unnecessary reconnect churn.
+    await _sipRuntime.syncNativeStateForDiagnostics();
+
     final voipToken = isAndroid ? null : await _sipRuntime.getVoipPushToken();
     final logs = await _sipRuntime.getNativeDiagnosticLogs();
     final outboundDiagnostics = await _sipRuntime.getOutboundNumberDiagnostics();
@@ -385,12 +390,21 @@ extension _SipSettingsSheetExtension on _SipScreenState {
         ? const <String, dynamic>{}
         : await _apiService.getVoipSyncDiagnostics();
 
+    final nativeSnapshot = Map<String, dynamic>.from(
+      outboundDiagnostics['nativeSnapshot'] as Map? ?? const {},
+    );
+    final flutterRegistration = _sipRuntime.state.registrationStatus.name;
+    final nativeRegistration =
+        nativeSnapshot['registrationState']?.toString() ?? 'unknown';
+    final registrationMismatch = flutterRegistration != nativeRegistration;
+
     final tokenText = (voipToken == null || voipToken.trim().isEmpty)
         ? 'VoIP token: MISSING'
         : 'VoIP token: ${voipToken.trim()}';
     final registrationText =
-        'Registration: ${_sipRuntime.state.registrationStatus.name}';
-    final callText = 'Call: ${_sipRuntime.state.callStatus.name}';
+        'Registration (Flutter): $flutterRegistration\nRegistration (Native): $nativeRegistration${registrationMismatch ? '\nNOTE: Flutter/Native registration mismatch — native is source of truth; opening diagnostics does NOT unregister SIP.' : ''}';
+    final callText =
+        'Call (Flutter): ${_sipRuntime.state.callStatus.name}\nCall (Native): ${nativeSnapshot['callState'] ?? 'unknown'}';
     final syncedAtMillis = backendSync['syncedAt'] as int?;
     final syncedAt = syncedAtMillis == null
         ? 'unknown'
@@ -404,26 +418,57 @@ extension _SipSettingsSheetExtension on _SipScreenState {
         _buildOutboundNumberDiagnosticsReport(outboundDiagnostics);
 
     final visibleLogs = logs.reversed.toList(growable: false);
+    String formatLogLine(Map<String, dynamic> entry) {
+      final timestamp = DateTime.fromMillisecondsSinceEpoch(
+        (((entry['timestamp'] as num?) ?? 0) * 1000).round(),
+      ).toLocal();
+      final event = entry['event']?.toString() ?? 'unknown';
+      final details = (entry['details'] as Map?)
+              ?.map((key, value) => MapEntry('$key', '$value'))
+              .entries
+              .map((item) => '${item.key}=${item.value}')
+              .join(', ') ??
+          '';
+      return '${timestamp.toIso8601String()} | $event${details.isEmpty ? '' : ' | $details'}';
+    }
+
+    bool isSipSignalLog(Map<String, dynamic> entry) {
+      final event = (entry['event']?.toString() ?? '').toUpperCase();
+      return event.contains('CALL_') ||
+          event.contains('BUSY') ||
+          event.contains('EARLY_MEDIA') ||
+          event.contains('OUTGOING_INVITE') ||
+          event.contains('OUTGOING_NETWORK_MEDIA') ||
+          event.contains('OUTGOING_WATCHDOG') ||
+          event.contains('REGISTRATION') ||
+          event.contains('SIP_REGISTER') ||
+          event.contains('MEDIA_CONNECTED') ||
+          event.contains('INVITE_') ||
+          event.contains('HANGUP') ||
+          event.contains('CALL_SIGNAL') ||
+          event.contains('BUSY_OR_DECLINE');
+    }
+
+    final sipSignalLogs =
+        visibleLogs.where(isSipSignalLog).map(formatLogLine).toList();
     final logLines = visibleLogs.isEmpty
         ? <String>['Native logs: empty']
-        : visibleLogs.map((entry) {
-            final timestamp = DateTime.fromMillisecondsSinceEpoch(
-              (((entry['timestamp'] as num?) ?? 0) * 1000).round(),
-            ).toLocal();
-            final event = entry['event']?.toString() ?? 'unknown';
-            final details = (entry['details'] as Map?)
-                    ?.map((key, value) => MapEntry('$key', '$value'))
-                    .entries
-                    .map((item) => '${item.key}=${item.value}')
-                    .join(', ') ??
-                '';
-            return '${timestamp.toIso8601String()} | $event${details.isEmpty ? '' : ' | $details'}';
-          }).toList(growable: false);
+        : visibleLogs.map(formatLogLine).toList(growable: false);
 
     final report = [
       'Диагностика телефонии ${Platform.isAndroid ? 'Android' : 'iOS'}',
       registrationText,
       callText,
+      '',
+      'Как читать busy-сценарий:',
+      '- Ищите CALL_STATE_CHANGED / EARLY_MEDIA / OUTGOING_NETWORK_MEDIA / protocol_code=486',
+      '- TTL отдаёт busy звуком (183+RTP), не SIP 486 — слушайте early media',
+      '- Если только ringing без RTP/early media — проблема у оператора линии',
+      '- EARLY_MEDIA / OUTGOING_NETWORK_MEDIA = сеть прислала звук (гудок или «занят»)',
+      '- Короткий гудок ~8 с + remote hangup без 486 — типично для TTL SoftX, это не баг приложения',
+      '- Динамик при исходящем не включается автоматически — только по кнопке пользователя',
+      '- Если есть OUTGOING_NETWORK_MEDIA + слышен только гудок — контент RTP от TTL/Sipuni',
+      '- protocol_code=486 / busy_signal=true — явный SIP busy; у TTL чаще только звук без 486',
       '',
       'Источник нашего номера',
       outboundDiagnosticsText,
@@ -431,6 +476,14 @@ extension _SipSettingsSheetExtension on _SipScreenState {
       if (!isAndroid) backendText,
       if (!isAndroid && backendError != null && backendError.trim().isNotEmpty)
         'Backend error: $backendError',
+      '',
+      'SIP signal logs: ${sipSignalLogs.length} (filtered, newest first)',
+      '',
+      if (sipSignalLogs.isEmpty)
+        'SIP signal logs: empty — сделайте тестовый звонок после обновления'
+      else
+        ...sipSignalLogs,
+      '',
       'Native logs: ${logs.length} stored, newest first',
       '',
       ...logLines,

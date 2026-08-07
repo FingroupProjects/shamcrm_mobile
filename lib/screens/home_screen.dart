@@ -7,6 +7,8 @@ import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/online_shop.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
@@ -701,76 +703,84 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final textStyles = context.appTextStyles;
     return Positioned.fill(
       child: Material(
-        color: colors.surfacePrimary,
-        child: Column(
+        color: Colors.transparent,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            SafeArea(
-              bottom: false,
-              child: Container(
-                height: 68,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: colors.borderSubtle.withValues(alpha: 0.2),
-                      width: 0.5,
+            const Positioned.fill(
+              child: AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
+                forceRender: true,
+              ),
+            ),
+            Column(
+              children: [
+                SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: SizedBox(
+                      height: 56,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: colors.buttonPrimaryBg,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _profileHeaderName.isNotEmpty
+                                  ? _profileHeaderName
+                                      .substring(0, 1)
+                                      .toUpperCase()
+                                  : 'P',
+                              style: textStyles.titleLg.copyWith(
+                                color: colors.textInverse,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _currentSectionTitle(localizations),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textStyles.titleLg.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(Icons.search,
+                                color: colors.iconSecondary),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(Icons.notifications_none,
+                                color: colors.iconSecondary),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(Icons.more_vert,
+                                color: colors.iconSecondary),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: colors.buttonPrimaryBg,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        _profileHeaderName.isNotEmpty
-                            ? _profileHeaderName.substring(0, 1).toUpperCase()
-                            : 'P',
-                        style: textStyles.titleLg.copyWith(
-                          color: colors.textInverse,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _currentSectionTitle(localizations),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textStyles.titleLg.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: Icon(Icons.search, color: colors.iconSecondary),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: Icon(Icons.notifications_none,
-                          color: colors.iconSecondary),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: Icon(Icons.more_vert, color: colors.iconSecondary),
-                    ),
-                  ],
+                const Expanded(
+                  child: ProfileScreen(embedded: true),
                 ),
-              ),
-            ),
-            const Expanded(
-              child: ProfileScreen(embedded: true),
+              ],
             ),
           ],
         ),

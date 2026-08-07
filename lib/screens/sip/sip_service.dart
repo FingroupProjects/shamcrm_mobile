@@ -141,6 +141,9 @@ class SipService extends ChangeNotifier
   SipCallDirection _currentCallDirection = SipCallDirection.outgoing;
   DateTime? _currentCallStartedAt;
   DateTime? get currentCallStartedAt => _currentCallStartedAt;
+  Timer? _outgoingCallWatchdogTimer;
+  bool _outgoingNetworkMediaActive = false;
+  static const Duration _outgoingCallWatchdogTimeout = Duration(seconds: 45);
 
   Duration get currentCallDuration {
     final startedAt = _currentCallStartedAt;
@@ -1073,6 +1076,49 @@ class SipService extends ChangeNotifier
     _applyNativeSnapshot(Map<String, dynamic>.from(snapshot), notify: true);
   }
 
+  /// Sync Flutter UI registration/call state from native before diagnostics.
+  /// Prevents false "Registration: failed" when Linphone is still registered.
+  Future<void> syncNativeStateForDiagnostics() async {
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      return;
+    }
+    await _syncNativeSnapshot(restoreIfNeeded: false);
+
+    // Native snapshot is the source of truth for diagnostics. If Flutter still
+    // lags on a failed/disconnected UI state while native is registered,
+    // force-align so reconnect churn and false "disconnect" reports stop.
+    if (!await _ensureNativeSipBridgeInitialized()) {
+      return;
+    }
+    final snapshot = await _invokeNativeSipMethod<Map<dynamic, dynamic>>(
+      'getStateSnapshot',
+    );
+    if (snapshot == null) {
+      return;
+    }
+    final nativeRegistration =
+        snapshot['registrationState']?.toString() ?? 'disconnected';
+    if (nativeRegistration == 'registered' &&
+        _state.registrationStatus != SipRegistrationUiStatus.registered) {
+      final flutterBefore = _state.registrationStatus.name;
+      _cancelReconnect();
+      _persistentSipEnabled = true;
+      _shouldStayConnected = true;
+      _state = _state.copyWith(
+        registrationStatus: SipRegistrationUiStatus.registered,
+        clearError: true,
+      );
+      _notifyListenersSafely();
+      unawaited(recordUiDiagnostic(
+        'REGISTRATION_FORCE_SYNCED_FROM_NATIVE',
+        <String, Object?>{
+          'flutter_before': flutterBefore,
+          'native': nativeRegistration,
+        },
+      ));
+    }
+  }
+
   Future<void> _consumePendingIosCallActions() async {
     if (!Platform.isIOS) {
       return;
@@ -1983,8 +2029,11 @@ class SipService extends ChangeNotifier
         callStatus: SipCallUiStatus.calling,
         remoteIdentity: normalizedTarget,
         clearError: true,
+        isSpeakerOn: false,
+        isMuted: false,
       );
       _notifyListenersSafely();
+      _startOutgoingCallWatchdog();
 
       final success = await _invokeNativeSipMethod<bool>(
             'makeCall',
@@ -1992,6 +2041,7 @@ class SipService extends ChangeNotifier
           ) ??
           false;
       if (!success) {
+        _cancelOutgoingCallWatchdog();
         final status = _state.callStatus;
         if (status == SipCallUiStatus.calling ||
             status == SipCallUiStatus.ringing) {
@@ -2085,6 +2135,8 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> hangup() async {
+    _cancelOutgoingCallWatchdog();
+    _outgoingNetworkMediaActive = false;
     if (_shouldUseNativeSip()) {
       final uiWasActive = _state.callStatus == SipCallUiStatus.incoming ||
           _state.callStatus == SipCallUiStatus.calling ||
@@ -2748,6 +2800,49 @@ class SipService extends ChangeNotifier
         normalized.contains('request terminated');
   }
 
+  bool _isConfirmedBusySignal({
+    required String? protocolCode,
+    required String? sipReason,
+    required String? phrase,
+    required String? message,
+    required bool busyFlag,
+  }) {
+    if (busyFlag) {
+      return true;
+    }
+    if (protocolCode == '486' ||
+        protocolCode == '600' ||
+        protocolCode == '603') {
+      return true;
+    }
+    final blob = '$sipReason $phrase $message'.toLowerCase();
+    return blob.contains('busy here') ||
+        blob.contains('busy') ||
+        blob.contains('486') ||
+        blob.contains('абонент занят');
+  }
+
+  /// "Call declined" without SIP code is only a remote hangup during ringing,
+  /// not proof the callee was busy on another call.
+  bool _isDeclineWithoutBusyProof({
+    required String? protocolCode,
+    required String? sipReason,
+    required String? phrase,
+    required String? message,
+  }) {
+    final hasCode = protocolCode != null &&
+        protocolCode.trim().isNotEmpty &&
+        protocolCode.trim() != '0';
+    if (hasCode) {
+      return false;
+    }
+    final blob = '$sipReason $phrase $message'.toLowerCase();
+    if (blob.contains('busy') || blob.contains('486')) {
+      return false;
+    }
+    return blob.contains('decline') || blob.contains('declined');
+  }
+
   bool _isElsewhereTerminationMessage(String? message) {
     final normalized = message?.trim().toLowerCase() ?? '';
     if (normalized.isEmpty) {
@@ -2770,13 +2865,49 @@ class SipService extends ChangeNotifier
     return switch (callState) {
       'incoming' => SipCallUiStatus.incoming,
       'calling' => SipCallUiStatus.calling,
-      'ringing' => SipCallUiStatus.ringing,
+      'ringing' || 'early_media' => SipCallUiStatus.ringing,
       'in_call' => SipCallUiStatus.inCall,
       'ended' => SipCallUiStatus.ended,
       'failed' => SipCallUiStatus.failed,
       _ => SipCallUiStatus.idle,
     };
   }
+
+  void _startOutgoingCallWatchdog() {
+    _cancelOutgoingCallWatchdog();
+    _outgoingNetworkMediaActive = false;
+    _outgoingCallWatchdogTimer = Timer(_outgoingCallWatchdogTimeout, () async {
+      if (!_isActiveUiCallStatus(_state.callStatus)) {
+        return;
+      }
+      if (_currentCallDirection != SipCallDirection.outgoing) {
+        return;
+      }
+      unawaited(recordUiDiagnostic(
+        '[VOIP] OUTGOING_WATCHDOG_TIMEOUT',
+        <String, Object?>{
+          'timeout_seconds': _outgoingCallWatchdogTimeout.inSeconds,
+          'call_status': _state.callStatus.name,
+          'network_media': _outgoingNetworkMediaActive,
+          'remote': _state.remoteIdentity,
+        },
+      ));
+      await hangup();
+      _state = _state.copyWith(
+        callStatus: SipCallUiStatus.ended,
+        errorMessage:
+            'Нет ответа. Если абонент занят, линия передаёт это звуком — перезвоните позже.',
+      );
+      _notifyListenersSafely();
+    });
+  }
+
+  void _cancelOutgoingCallWatchdog() {
+    _outgoingCallWatchdogTimer?.cancel();
+    _outgoingCallWatchdogTimer = null;
+  }
+
+  bool get isOutgoingNetworkMediaActive => _outgoingNetworkMediaActive;
 
   bool _isDuplicateIncomingEvent({
     required String? callUUID,
@@ -2933,6 +3064,7 @@ class SipService extends ChangeNotifier
         final canProgressEarlyCall = _wasEarlyCallStatus(_state.callStatus) &&
             (nativeState == 'calling' ||
                 nativeState == 'ringing' ||
+                nativeState == 'early_media' ||
                 nativeState == 'in_call') &&
             _nativeRemotesLikelySame(
               remoteIdentity,
@@ -2954,6 +3086,7 @@ class SipService extends ChangeNotifier
     if (_isActiveUiCallStatus(_state.callStatus) &&
         (nativeState == 'calling' ||
             nativeState == 'ringing' ||
+            nativeState == 'early_media' ||
             nativeState == 'in_call')) {
       return false;
     }
@@ -3372,7 +3505,7 @@ class SipService extends ChangeNotifier
     final mappedCall = switch (callState) {
       'incoming' => SipCallUiStatus.incoming,
       'calling' => SipCallUiStatus.calling,
-      'ringing' => SipCallUiStatus.ringing,
+      'ringing' || 'early_media' => SipCallUiStatus.ringing,
       'in_call' => SipCallUiStatus.inCall,
       'ended' => SipCallUiStatus.ended,
       'failed' => SipCallUiStatus.failed,
@@ -3418,6 +3551,10 @@ class SipService extends ChangeNotifier
         (mappedRegistration == SipRegistrationUiStatus.registered ||
             mappedRegistration == SipRegistrationUiStatus.registering)) {
       _shouldStayConnected = true;
+    }
+
+    if (mappedRegistration == SipRegistrationUiStatus.registered) {
+      _cancelReconnect();
     }
 
     final resolvedSpeakerOn = mappedCall == SipCallUiStatus.ended ||
@@ -3496,6 +3633,7 @@ class SipService extends ChangeNotifier
       case 'registered':
         _persistentSipEnabled = true;
         _shouldStayConnected = true;
+        _cancelReconnect();
         unawaited(_storage.write(key: _enabledKey, value: 'true'));
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
@@ -3592,12 +3730,56 @@ class SipService extends ChangeNotifier
     final speakerOn = payload['speakerOn'] as bool?;
     final callUUID = payload['callUUID']?.toString();
     final callId = payload['callId']?.toString();
+    final protocolCode = payload['protocol_code']?.toString();
+    final sipReason = payload['sip_reason']?.toString();
+    final phrase = payload['phrase']?.toString();
+    final busySignal = _isConfirmedBusySignal(
+      protocolCode: protocolCode,
+      sipReason: sipReason,
+      phrase: phrase,
+      message: message,
+      busyFlag: payload['busy_signal']?.toString() == 'true',
+    );
+    final declineOnly = !busySignal &&
+        _isDeclineWithoutBusyProof(
+          protocolCode: protocolCode,
+          sipReason: sipReason,
+          phrase: phrase,
+          message: message,
+        );
 
     _trackIosSystemCall(callUUID: callUUID, stateHint: nativeState);
 
     debugPrint(
-      'SipService native call event -> state=$nativeState, remote=$remoteIdentity, message=$message, muted=$muted, speaker=$speakerOn',
+      'SipService native call event -> state=$nativeState, remote=$remoteIdentity, message=$message, muted=$muted, speaker=$speakerOn, protocolCode=$protocolCode, sipReason=$sipReason, phrase=$phrase, busy=$busySignal, declineOnly=$declineOnly',
     );
+
+    if (protocolCode != null ||
+        sipReason != null ||
+        phrase != null ||
+        busySignal ||
+        declineOnly) {
+      unawaited(recordUiDiagnostic(
+        busySignal
+            ? '[VOIP] BUSY_SIGNAL_CONFIRMED'
+            : (declineOnly
+                ? '[VOIP] REMOTE_DECLINE_OR_CANCEL'
+                : '[VOIP] CALL_SIGNAL_DETAIL'),
+        <String, Object?>{
+          'native_state': nativeState,
+          'remote': remoteIdentity,
+          'message': message,
+          'protocol_code': protocolCode,
+          'sip_reason': sipReason,
+          'phrase': phrase,
+          'busy_signal': busySignal,
+          'decline_only': declineOnly,
+          'raw_state': payload['raw_state'],
+          'call_id': callId,
+          'call_uuid': callUUID,
+        },
+      ));
+    }
 
     if (_shouldIgnoreLateNativeCallEvent(
       nativeState: nativeState,
@@ -3612,7 +3794,9 @@ class SipService extends ChangeNotifier
     }
 
     final wasTerminal = _isTerminalUiCallStatus(_state.callStatus);
-    final treatAsEnded = _isRemoteDeclineCause(message) ||
+    final treatAsEnded = busySignal ||
+        declineOnly ||
+        _isRemoteDeclineCause(message) ||
         _isElsewhereTerminationMessage(message);
 
     switch (nativeState) {
@@ -3669,18 +3853,26 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'ringing':
+      case 'early_media':
         _rememberActiveNativeCallFingerprint(
           callUUID: callUUID,
           callId: callId,
           remoteIdentity: remoteIdentity,
         );
+        if (nativeState == 'early_media' ||
+            (message?.toLowerCase().contains('early media') ?? false)) {
+          _outgoingNetworkMediaActive = true;
+        }
         debugPrint(
-          'SipService applying ringing state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn',
+          'SipService applying $nativeState state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn, networkMedia=$_outgoingNetworkMediaActive',
         );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ringing,
           remoteIdentity: remoteIdentity,
-          clearError: true,
+          errorMessage: _outgoingNetworkMediaActive
+              ? 'Сообщение линии (гудок/~занято).'
+              : null,
+          clearError: !_outgoingNetworkMediaActive,
           isMuted: muted ?? _state.isMuted,
           isSpeakerOn: _state.isSpeakerOn,
         );
@@ -3693,21 +3885,34 @@ class SipService extends ChangeNotifier
           callId: callId,
           remoteIdentity: remoteIdentity,
         );
-        final resolvedInCallSpeaker = _resolveSpeakerForNativeCallEvent(
-          speakerOn,
-        );
+        final outgoingNetworkMedia = _currentCallDirection ==
+                SipCallDirection.outgoing &&
+            (payload['outgoing_network_media'] == true ||
+                payload['outgoing_network_media']?.toString() == 'true' ||
+                _outgoingNetworkMediaActive ||
+                (message?.toLowerCase().contains('network media') ?? false) ||
+                _wasEarlyCallStatus(_state.callStatus));
+        if (outgoingNetworkMedia) {
+          _outgoingNetworkMediaActive = true;
+        }
+        final resolvedInCallSpeaker = _resolveSpeakerForNativeCallEvent(speakerOn);
         debugPrint(
-          'SipService applying in_call state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn, resolvedSpeaker=$resolvedInCallSpeaker',
+          'SipService applying in_call state -> previousSpeaker=${_state.isSpeakerOn}, incomingSpeaker=$speakerOn, resolvedSpeaker=$resolvedInCallSpeaker, networkMedia=$outgoingNetworkMedia',
         );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.inCall,
           remoteIdentity: remoteIdentity,
-          clearError: true,
+          errorMessage: outgoingNetworkMedia
+              ? 'Сообщение линии. При сбросе сетью (~8 с) это нормально для TTL.'
+              : null,
+          clearError: !outgoingNetworkMedia,
           isMuted: muted ?? _state.isMuted,
           isSpeakerOn: resolvedInCallSpeaker,
         );
         break;
       case 'failed':
+        _cancelOutgoingCallWatchdog();
+        _outgoingNetworkMediaActive = false;
         _clearIncomingFingerprint();
         _markTerminalNativeCallFingerprint();
         if (!(wasTerminal &&
@@ -3718,30 +3923,48 @@ class SipService extends ChangeNotifier
           );
         }
         _currentInviteUri = null;
+        final failedBusyMessage = busySignal
+            ? (message?.trim().isNotEmpty == true
+                ? message
+                : 'Абонент занят')
+            : null;
         _state = _state.copyWith(
           callStatus:
               treatAsEnded ? SipCallUiStatus.ended : SipCallUiStatus.failed,
-          errorMessage:
-              treatAsEnded ? null : (message ?? 'Не удалось выполнить звонок'),
-          clearError: treatAsEnded,
+          errorMessage: treatAsEnded
+              ? failedBusyMessage
+              : (message ?? 'Не удалось выполнить звонок'),
+          clearError: treatAsEnded && failedBusyMessage == null,
           clearRemoteIdentity: true,
           isMuted: false,
           isSpeakerOn: false,
         );
         break;
       case 'ended':
+        _cancelOutgoingCallWatchdog();
+        final keepNetworkMediaHint = _outgoingNetworkMediaActive &&
+            !(message?.trim().isNotEmpty == true);
+        _outgoingNetworkMediaActive = false;
         _clearIncomingFingerprint();
         _markTerminalNativeCallFingerprint();
         if (!wasTerminal || _state.callStatus == SipCallUiStatus.inCall) {
           _appendCallLog(SipCallUiStatus.ended, endReason: message);
         }
         _currentInviteUri = null;
+        final endedNotice = busySignal
+            ? (message?.trim().isNotEmpty == true
+                ? message
+                : 'Абонент занят')
+            : (_isElsewhereTerminationMessage(message)
+                ? message
+                : (keepNetworkMediaHint
+                    ? 'Вызов завершён. Если слышали «занят» — перезвоните позже.'
+                    : null));
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ended,
-          errorMessage:
-              _isElsewhereTerminationMessage(message) ? message : null,
+          errorMessage: endedNotice,
           clearRemoteIdentity: true,
-          clearError: !_isElsewhereTerminationMessage(message),
+          clearError: endedNotice == null,
           isMuted: false,
           isSpeakerOn: false,
         );
@@ -4514,6 +4737,7 @@ class SipService extends ChangeNotifier
     _helper.removeSipUaHelperListener(this);
     _helper.stop();
     _cancelReconnect();
+    _cancelOutgoingCallWatchdog();
     _stopKeepAlive();
     _registrationWatchdogTimer?.cancel();
     _connectivitySubscription?.cancel();

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/organization/organization_bloc.dart';
@@ -100,6 +101,11 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
               dropdownItems.isNotEmpty ? dropdownItems.first.value : null;
         }
 
+        final palette = WallpaperAdaptiveScope.of(context);
+        final labelInk =
+            palette.foregroundFor(palette.headerLuminance);
+        final labelShadows = palette.shadowsFor(palette.headerLuminance);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -109,7 +115,8 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
                 localizations.translate('organizations'),
                 style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: context.appColors.textPrimary,
+                  color: labelInk,
+                  shadows: labelShadows,
                 ),
               ),
             ),

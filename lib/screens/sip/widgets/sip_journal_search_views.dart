@@ -3,7 +3,6 @@ part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 extension _SipJournalSearchViewsExtension on _SipScreenState {
   Widget _journalView(BuildContext context, SipUiState state) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.appColors;
     final entries =
         state.serverCallLogs.isNotEmpty ? state.serverCallLogs : state.callLogs;
     final items = _buildJournalItemsWithHeaders(entries);
@@ -71,9 +70,10 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                         child: Text(
                           l10n.translate('sip_journal_empty'),
                           style: TextStyle(
-                            color: colors.textSecondary,
+                            color: _sipKeypadSecondary(),
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
+                            shadows: _sipKeypadShadows(),
                           ),
                         ),
                       ),
@@ -119,19 +119,21 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                                         Text(
                                           item['date'] ?? '',
                                           style: TextStyle(
-                                            color: colors.textPrimary,
+                                            color: _sipKeypadForeground(),
                                             fontFamily: 'Gilroy',
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
+                                            shadows: _sipKeypadShadows(),
                                           ),
                                         ),
                                         Text(
                                           item['year'] ?? '',
                                           style: TextStyle(
-                                            color: colors.textMuted,
+                                            color: _sipKeypadSecondary(),
                                             fontFamily: 'Gilroy',
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
+                                            shadows: _sipKeypadShadows(),
                                           ),
                                         ),
                                       ],
@@ -484,7 +486,9 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? _TelephonyVisualColors.blue : colors.textPrimary,
+            color: selected
+                ? _TelephonyVisualColors.blue
+                : _glassControlInk(context),
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
@@ -521,14 +525,14 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
       title: Text(
         item.target,
         style: TextStyle(
-          color: colors.textPrimary,
+          color: _glassControlInk(context),
           fontWeight: FontWeight.w700,
         ),
       ),
       subtitle: Text(
         _buildCallLogSubtitle(item, compact: compact),
         style: TextStyle(
-          color: colors.textSecondary,
+          color: _glassControlSecondaryInk(context),
           fontWeight: FontWeight.w500,
           fontSize: 12,
         ),
@@ -557,7 +561,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           : Text(
               _formatTime(item.timestamp),
               style: TextStyle(
-                color: colors.textMuted,
+                color: _glassControlSecondaryInk(context),
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
@@ -774,16 +778,17 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           ),
         Expanded(
           child: noResults
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
                     child: Text(
                       'Ничего не найдено',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFF9CA3AF),
+                        color: _sipKeypadSecondary(),
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
+                        shadows: _sipKeypadShadows(),
                       ),
                     ),
                   ),
@@ -915,7 +920,9 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? _TelephonyVisualColors.blue : colors.textPrimary,
+            color: selected
+                ? _TelephonyVisualColors.blue
+                : _glassControlInk(context),
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
@@ -972,7 +979,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: colors.iconPrimary),
+            Icon(icon, size: 22, color: _glassControlInk(context)),
             const SizedBox(height: 6),
             SizedBox(
               width: double.infinity,
@@ -983,7 +990,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                   maxLines: 1,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: colors.textPrimary,
+                    color: _glassControlInk(context),
                     fontFamily: 'Gilroy',
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -1032,21 +1039,21 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
             ),
             child: Icon(
               CupertinoIcons.person_crop_circle,
-              color: colors.iconSecondary,
+              color: _glassControlSecondaryInk(context),
               size: 22,
             ),
           ),
           title: Text(
             lead.name.trim().isEmpty ? 'Без имени' : lead.name,
             style: TextStyle(
-              color: colors.textPrimary,
+              color: _glassControlInk(context),
               fontWeight: FontWeight.w700,
             ),
           ),
           subtitle: Text(
             phone.isEmpty ? 'Нет телефона' : phone,
             style: TextStyle(
-              color: colors.textSecondary,
+              color: _glassControlSecondaryInk(context),
               fontWeight: FontWeight.w500,
               fontSize: 12,
             ),
@@ -1085,6 +1092,9 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasText = controller?.text.trim().isNotEmpty ?? false;
+    // Search sits on frosted field glass — never use wallpaper ink here.
+    final fieldInk = _glassControlInk(context);
+    final fieldSecondaryInk = _glassControlSecondaryInk(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -1105,12 +1115,12 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
         textInputAction: TextInputAction.search,
         decoration: const BoxDecoration(),
         style: TextStyle(
-          color: colors.textPrimary,
+          color: fieldInk,
           fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
         placeholderStyle: TextStyle(
-          color: colors.fieldHint,
+          color: fieldSecondaryInk,
           fontSize: 15,
           fontWeight: FontWeight.w400,
         ),
@@ -1118,7 +1128,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
           padding: const EdgeInsetsDirectional.fromSTEB(14, 0, 10, 0),
           child: Icon(
             CupertinoIcons.search,
-            color: colors.iconSecondary,
+            color: fieldSecondaryInk,
             size: 18,
           ),
         ),
@@ -1129,7 +1139,7 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
                 onPressed: onClear,
                 child: Icon(
                   CupertinoIcons.xmark_circle_fill,
-                  color: colors.iconSecondary,
+                  color: fieldSecondaryInk,
                   size: 18,
                 ),
               )

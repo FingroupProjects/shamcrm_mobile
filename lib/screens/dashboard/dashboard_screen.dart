@@ -697,87 +697,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
           MyTaskIconKey: keyMyTaskIcon,
         ),
       ),
-      body: isClickAvatarIcon
-          ? ProfileScreen()
-          : Stack(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Always paint wallpaper full-bleed so AppBar (transparent) and
+          // settings never flash a solid/half-screen background.
+          const Positioned.fill(
+            child: AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+              forceRender: true,
+            ),
+          ),
+          if (isClickAvatarIcon)
+            Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight,
+              ),
+              child: const ProfileScreen(embedded: true),
+            )
+          else
+            Column(
               children: [
-                const Positioned.fill(
-                  child: AppBackgroundOverlay(
-                    preset: AppBackgroundPreset.aurora,
-                  ),
+                SizedBox(
+                  height: MediaQuery.of(context).padding.top + kToolbarHeight,
                 ),
-                Column(
-                  children: [
-                    SizedBox(
-                      height:
-                          MediaQuery.of(context).padding.top + kToolbarHeight,
-                    ),
-                    // ИЗМЕНЕНО: Показываем переключатель только если есть право
-                    if (_hasAccountingDashboardPermission)
-                      DashboardSwitcher(
-                        activeDashboard: _activeDashboard,
-                        onDashboardChanged: (type) {
-                          setState(() {
-                            _activeDashboard = type;
-                          });
-                        },
-                      ),
-                    Expanded(
-                      child: _activeDashboard == DashboardType.crm
-                          ? AnalyticsScreen(
-                              key: const ValueKey('dashboard_crm_analytics'),
-                              showAppBar: false,
-                              filterTrigger: _analyticsFilterTrigger,
-                              chartSettingsTrigger:
-                                  _analyticsChartSettingsTrigger,
-                              showStatistics: userRoles.contains('admin'),
-                              showInitialLoader: false,
-                            )
-                          : RefreshIndicator(
-                              color: const Color(0xff1E2E52),
-                              backgroundColor: context.appColors.surfacePrimary,
-                              onRefresh: _onRefresh,
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  children: _buildAccountingDashboard(),
-                                ),
-                              ),
+                if (_hasAccountingDashboardPermission)
+                  DashboardSwitcher(
+                    activeDashboard: _activeDashboard,
+                    onDashboardChanged: (type) {
+                      setState(() {
+                        _activeDashboard = type;
+                      });
+                    },
+                  ),
+                Expanded(
+                  child: _activeDashboard == DashboardType.crm
+                      ? AnalyticsScreen(
+                          key: const ValueKey('dashboard_crm_analytics'),
+                          showAppBar: false,
+                          filterTrigger: _analyticsFilterTrigger,
+                          chartSettingsTrigger: _analyticsChartSettingsTrigger,
+                          showStatistics: userRoles.contains('admin'),
+                          showInitialLoader: false,
+                        )
+                      : RefreshIndicator(
+                          color: const Color(0xff1E2E52),
+                          backgroundColor: context.appColors.surfacePrimary,
+                          onRefresh: _onRefresh,
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: _buildAccountingDashboard(),
                             ),
-                    ),
-                  ],
-                ),
-                IgnorePointer(
-                  child: AnimatedOpacity(
-                    opacity: _isDashboardReady ? 0 : 1,
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Закрываем готовящиеся графики тем же фоном проекта.
-                        // Пользователь видит только фон и loader до полной
-                        // готовности dashboard.
-                        const Positioned.fill(
-                          child: AppBackgroundOverlay(
-                            preset: AppBackgroundPreset.aurora,
-                            forceRender: true,
                           ),
                         ),
-                        Center(
-                          child: PlayStoreImageLoading(
-                            size: 64,
-                            duration: const Duration(milliseconds: 1050),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
+          if (!isClickAvatarIcon)
+            IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _isDashboardReady ? 0 : 1,
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const Positioned.fill(
+                      child: AppBackgroundOverlay(
+                        preset: AppBackgroundPreset.aurora,
+                        forceRender: true,
+                      ),
+                    ),
+                    const Center(
+                      child: PlayStoreImageLoading(
+                        size: 64,
+                        duration: Duration(milliseconds: 1050),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

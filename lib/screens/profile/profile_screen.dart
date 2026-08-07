@@ -63,6 +63,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:io' show Platform; // Добавляем импорт для проверки платформы
 import 'package:crm_task_manager/screens/profile/profile_widget/http_inspector_toggle.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool embedded;
@@ -76,6 +77,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _selectedOrganization;
   final ApiService _apiService = ApiService();
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
   bool _hasPermissionToAddLeadAndSwitch = false;
   bool _hasPermissionForOneC = false;
   Map<String, dynamic>? tutorialProgress;
@@ -110,6 +113,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     //   await Future.delayed(Duration(milliseconds: 500));
     //   _checkPermissionsAndTutorial();
     // });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   Future<void> _saveOrganizationsToCache(
@@ -381,142 +395,170 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
-    final content = SafeArea(
-      top: !widget.embedded,
-      child: Stack(
-        children: [
-          const Positioned.fill(
-            child: AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 56),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  BlocBuilder<OrganizationBloc, OrganizationState>(
-                    builder: (context, state) {
-                      if (state is OrganizationLoading) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: PlayStoreImageLoading(
-                                size: 80.0,
-                                duration: Duration(milliseconds: 1000)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final adaptivePalette = _adaptiveContrast.resolve(
+      context,
+      isDark: isDark,
+    );
+    final versionInk = adaptivePalette.accentFor(adaptivePalette.bottomLuminance);
+    final versionShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.bottomLuminance);
+    final errorInk =
+        adaptivePalette.foregroundFor(adaptivePalette.keypadLuminance);
+    final errorShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.keypadLuminance);
+    // Keep the wallpaper full-bleed under the AppBar. Nested overlays shrink
+    // when a root AppBackgroundOverlay already exists, so never cover it with
+    // an opaque Scaffold color (that caused the white half-screen flash).
+    final scrollContent = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 56),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BlocBuilder<OrganizationBloc, OrganizationState>(
+              builder: (context, state) {
+                if (state is OrganizationLoading) {
+                  return SizedBox(
+                    height: MediaQuery.sizeOf(context).height * 0.45,
+                    child: const Center(
+                      child: PlayStoreImageLoading(
+                        size: 80.0,
+                        duration: Duration(milliseconds: 1000),
+                      ),
+                    ),
+                  );
+                } else if (state is OrganizationLoaded) {
+                  final selectedOrg = _selectedOrganization != null
+                      ? state.organizations.firstWhere(
+                          (org) => org.id.toString() == _selectedOrganization,
+                          orElse: () => state.organizations.first,
+                        )
+                      : state.organizations.first;
+
+                  return Column(
+                    children: [
+                      WorkdayCard(
+                        key: ValueKey(_selectedOrganization),
+                        organizationId: _selectedOrganization,
+                      ),
+                      OrganizationWidget(
+                        selectedOrganization: _selectedOrganization,
+                        onChanged: _onOrganizationChanged,
+                      ),
+                      const AppearanceButtonWidget(),
+                      ProfileEdit(),
+                      LanguageButtonWidget(),
+                      PinChangeWidget(),
+                      if (_hasPermissionToAddLeadAndSwitch)
+                        ToggleFeatureButton(),
+                      BiometricToggleWidget(),
+                      const HttpInspectorToggleWidget(),
+                      if (_hasPermissionForOneC)
+                        UpdateWidget1C(organization: selectedOrg),
+                      LogoutButtonWidget(),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: _openAppStoreLink,
+                        child: Text(
+                          '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
+                          textAlign: TextAlign.center,
+                          style: textStyles.bodySm.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: versionInk,
+                            shadows: versionShadows,
+                            decoration: TextDecoration.none,
                           ),
-                        );
-                      } else if (state is OrganizationLoaded) {
-                        final selectedOrg = _selectedOrganization != null
-                            ? state.organizations.firstWhere(
-                                (org) =>
-                                    org.id.toString() == _selectedOrganization,
-                                orElse: () => state.organizations.first,
-                              )
-                            : state.organizations.first;
+                        ),
+                      ),
+                    ],
+                  );
+                } else if (state is OrganizationError) {
+                  if (state.message.contains(
+                      localizations.translate("unauthorized_access"))) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _forceLogout();
+                    });
+                    return SizedBox(
+                      height: MediaQuery.sizeOf(context).height * 0.45,
+                      child: const Center(
+                        child: PlayStoreImageLoading(
+                          size: 80.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
+                      ),
+                    );
+                  }
 
-                        return Column(
-                          children: [
-                            WorkdayCard(
-                              key: ValueKey(_selectedOrganization),
-                              organizationId: _selectedOrganization,
-                            ),
-                            OrganizationWidget(
-                              selectedOrganization: _selectedOrganization,
-                              onChanged: _onOrganizationChanged,
-                            ),
-                            const AppearanceButtonWidget(),
-                            ProfileEdit(),
-                            LanguageButtonWidget(),
-                            PinChangeWidget(),
-                            
-                            if (_hasPermissionToAddLeadAndSwitch)
-                              ToggleFeatureButton(),
-                            BiometricToggleWidget(),
-                            const HttpInspectorToggleWidget(),
-                            if (_hasPermissionForOneC)
-                              UpdateWidget1C(organization: selectedOrg),
-                              LogoutButtonWidget(),
-                            const SizedBox(height: 20),
-                            
-                            GestureDetector(
-                              onTap: _openAppStoreLink,
-                              child: Text(
-                                '${AppLocalizations.of(context)!.translate('version_mobile')}: $_appVersion',
-                                textAlign: TextAlign.center,
-                                style: textStyles.bodySm.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: colors.buttonPrimaryBg,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                            ),
-                            
-                          ],
-                        );
-                      } else if (state is OrganizationError) {
-                        if (state.message.contains(
-                            localizations.translate("unauthorized_access"))) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _forceLogout();
-                          });
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: PlayStoreImageLoading(
-                                  size: 80.0,
-                                  duration: Duration(milliseconds: 1000)),
-                            ),
-                          );
-                        }
-
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(height: 50),
-                            Icon(
-                              Icons.error_outline,
-                              size: 80,
-                              color: colors.error,
-                            ),
-                            const SizedBox(height: 20),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Text(
-                                state.message,
-                                textAlign: TextAlign.center,
-                                style: textStyles.bodyLg.copyWith(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-                            LogoutButtonWidget(),
-                          ],
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
-              ),
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 50),
+                      Icon(
+                        Icons.error_outline,
+                        size: 80,
+                        color: colors.error,
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          state.message,
+                          textAlign: TextAlign.center,
+                          style: textStyles.bodyLg.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: errorInk,
+                            shadows: errorShadows,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      LogoutButtonWidget(),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
 
+    final layered = Stack(
+      fit: StackFit.expand,
+      children: [
+        // Standalone route needs its own full-bleed wallpaper. Embedded mode
+        // reuses the parent (dashboard/home) wallpaper so AppBar stays clear.
+        if (!widget.embedded)
+          const Positioned.fill(
+            child: AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+              forceRender: true,
+            ),
+          ),
+        SafeArea(
+          top: !widget.embedded,
+          child: scrollContent,
+        ),
+      ],
+    );
+
+    final scoped = WallpaperAdaptiveScope(
+      palette: adaptivePalette,
+      child: layered,
+    );
+
     if (widget.embedded) {
-      return content;
+      return scoped;
     }
 
     return Scaffold(
-      backgroundColor: colors.backgroundPrimary,
-      body: content,
+      backgroundColor: Colors.transparent,
+      body: scoped,
     );
   }
 }

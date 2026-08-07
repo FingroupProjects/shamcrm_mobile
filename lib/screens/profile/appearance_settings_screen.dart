@@ -6,6 +6,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette_presets.dart';
 import 'package:crm_task_manager/custom_widget/full_color_wheel_dialog.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -19,29 +20,60 @@ class AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
+  final PinAdaptiveContrastController _adaptiveContrast =
+      PinAdaptiveContrastController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adaptiveContrast.syncWithContext(
+      context,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AppThemeController>();
-    return Scaffold(
-      backgroundColor: context.appColors.backgroundPrimary,
-      appBar: AppBar(
-        title: Text(
-          'Оформление',
-          style: context.appTextStyles.titleLg.copyWith(
-            color: context.appColors.textPrimary,
-          ),
-        ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final adaptivePalette = _adaptiveContrast.resolve(
+      context,
+      isDark: isDark,
+    );
+    final headerInk =
+        adaptivePalette.foregroundFor(adaptivePalette.headerLuminance);
+    final headerShadows =
+        adaptivePalette.shadowsFor(adaptivePalette.headerLuminance);
+
+    return WallpaperAdaptiveScope(
+      palette: adaptivePalette,
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        forceMaterialTransparency: true,
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
-          ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
+        appBar: AppBar(
+          title: Text(
+            'Оформление',
+            style: context.appTextStyles.titleLg.copyWith(
+              color: headerInk,
+              shadows: headerShadows,
+            ),
+          ),
+          iconTheme: IconThemeData(color: headerInk),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          forceMaterialTransparency: true,
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+              forceRender: true,
+            ),
+            ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
               _SectionCard(
                 title: 'Режим темы',
                 subtitle:
@@ -151,6 +183,7 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
             ],
           ),
         ],
+      ),
       ),
     );
   }

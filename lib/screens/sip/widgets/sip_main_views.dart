@@ -3,14 +3,15 @@ part of 'package:crm_task_manager/screens/sip/sip_screen.dart';
 
 extension _SipMainViewsExtension on _SipScreenState {
   Widget _buildTopBar(BuildContext context, SipUiState state) {
-    final colors = context.appColors;
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final showCompactStatus =
         isRegistered && state.callStatus != SipCallUiStatus.incoming;
     final isReconnectInProgress = _isReconnectInProgress(state);
     final isNetworkUnavailable = _isNetworkUnavailableState(state);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerForeground = _sipHeaderForeground(context);
+    final headerSecondary = _sipHeaderSecondary(context);
+    final headerShadows = _sipHeaderShadows(context);
     final hasActiveCall = state.callStatus == SipCallUiStatus.incoming ||
         state.callStatus == SipCallUiStatus.calling ||
         state.callStatus == SipCallUiStatus.ringing ||
@@ -45,8 +46,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                       style: TextStyle(
                         fontSize: 23,
                         fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
+                        color: headerForeground,
                         letterSpacing: 0,
+                        shadows: headerShadows,
                       ),
                     ),
                     if (showCompactStatus) ...[
@@ -61,19 +63,10 @@ extension _SipMainViewsExtension on _SipScreenState {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12.5,
-                          color: isDark
-                              ? colors.textPrimary.withValues(alpha: 0.96)
-                              : colors.textSecondary,
+                          color: headerSecondary,
                           fontWeight: FontWeight.w600,
                           height: 1.1,
-                          shadows: isDark
-                              ? [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.58),
-                                    blurRadius: 4,
-                                  ),
-                                ]
-                              : null,
+                          shadows: headerShadows,
                         ),
                       ),
                     ],
@@ -129,20 +122,51 @@ extension _SipMainViewsExtension on _SipScreenState {
     );
   }
 
+  /// Ink for text/icons on frosted glass (search, chips, AppBar, nav),
+  /// not on the raw wallpaper behind them.
+  Color _glassControlInk(BuildContext context, {double alpha = 0.92}) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Prefer field/surface blend: search bars use fieldBg, chips use surface.
+    final surfaceLuminance = Color.lerp(
+          colors.surfacePrimary,
+          colors.fieldBg,
+          0.35,
+        )!
+        .computeLuminance();
+    final onDarkSurface = surfaceLuminance < 0.42 ||
+        (isDark && surfaceLuminance < 0.55);
+    final base = onDarkSurface ? Colors.white : const Color(0xFF1E293B);
+    return base.withValues(alpha: alpha.clamp(0.0, 1.0));
+  }
+
+  Color _glassControlSecondaryInk(BuildContext context) {
+    return _glassControlInk(context, alpha: 0.58);
+  }
+
   Widget _buildTopIconButton({
     required IconData icon,
     required VoidCallback onPressed,
   }) {
     final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = _glassControlInk(context);
     return SizedBox(
       width: 46,
       height: 46,
       child: _GlassButton(
         borderRadius: 16,
         padding: EdgeInsets.zero,
+        // Slightly denser frost so icon contrast stays stable on bright wallpapers.
+        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.72 : 0.86),
+        borderColor: colors.borderSubtle.withValues(alpha: isDark ? 0.62 : 0.78),
         onPressed: onPressed,
         child: Center(
-          child: Icon(icon, size: 21, color: colors.iconPrimary),
+          child: Icon(
+            icon,
+            size: 21,
+            color: iconColor,
+          ),
         ),
       ),
     );
@@ -376,8 +400,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                             fontFamily: 'Gilroy',
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
-                            color: context.appColors.textPrimary,
+                            color: _sipHeaderForeground(context),
                             letterSpacing: 0,
+                            shadows: _sipHeaderShadows(context),
                           ),
                         ),
                       ),
@@ -743,7 +768,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
+                    color: _glassControlInk(context),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -751,7 +776,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: colors.textSecondary,
+                    color: _glassControlSecondaryInk(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -903,20 +928,22 @@ extension _SipMainViewsExtension on _SipScreenState {
     final suggestion = hasSuggestion ? _dialSuggestions.first : null;
     final extraResults =
         hasSuggestion ? math.max(0, _dialSuggestionTotalCount - 1) : 0;
+    final glassInk = _glassControlInk(context);
+    final glassSecondaryInk = _glassControlSecondaryInk(context);
     final nameStyle = TextStyle(
-      color: colors.textSecondary,
+      color: glassSecondaryInk,
       fontSize: isTight ? 12.0 : 13.0,
       fontWeight: FontWeight.w500,
       height: 1.1,
     );
     final phoneStyle = TextStyle(
-      color: colors.textPrimary,
+      color: glassInk,
       fontSize: isTight ? 13.0 : 14.0,
       fontWeight: FontWeight.w600,
       height: 1.1,
     );
     final sourceStyle = TextStyle(
-      color: colors.textSecondary,
+      color: glassSecondaryInk,
       fontSize: isTight ? 12.0 : 13.0,
       fontWeight: FontWeight.w500,
       height: 1.1,
@@ -990,7 +1017,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                                   .person_crop_circle_badge_plus
                                               : CupertinoIcons.phone_fill,
                                       size: iconSize,
-                                      color: colors.iconSecondary,
+                                      color: glassSecondaryInk,
                                     ),
                                     SizedBox(width: gap),
                                     Expanded(
@@ -1026,7 +1053,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                                   .person_crop_circle_badge_plus
                                               : CupertinoIcons.phone_fill,
                                       size: iconSize,
-                                      color: colors.iconSecondary,
+                                      color: glassSecondaryInk,
                                     ),
                                     SizedBox(width: gap),
                                     if (suggestion.name.isNotEmpty) ...[
@@ -1072,7 +1099,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                 Icon(
                                   CupertinoIcons.search,
                                   size: iconSize,
-                                  color: colors.iconSecondary,
+                                  color: glassSecondaryInk,
                                 ),
                                 SizedBox(width: gap),
                                 Expanded(
@@ -1081,7 +1108,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: colors.textSecondary,
+                                      color: glassSecondaryInk,
                                       fontSize: isTight ? 12.0 : 13.0,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1105,8 +1132,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     SipUiState state,
     BoxConstraints constraints,
   ) {
-    final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final keypadForeground = _sipKeypadForeground(context);
     final isRegistered =
         state.registrationStatus == SipRegistrationUiStatus.registered;
     final maxWidth =
@@ -1214,10 +1240,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                           onPressed: _showAddDialDestinationSheet,
                           child: Icon(
                             CupertinoIcons.person_crop_circle_badge_plus,
-                            color: isDark
-                                ? colors.textPrimary.withValues(alpha: 0.9)
-                                : const Color(0xFF6B7280),
+                            color: keypadForeground.withValues(alpha: 0.9),
                             size: actionIconSize,
+                            shadows: _sipKeypadShadows(context),
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -1261,10 +1286,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                           onLongPress: _clearDial,
                           child: Icon(
                             CupertinoIcons.delete_left_fill,
-                            color: isDark
-                                ? colors.textPrimary.withValues(alpha: 0.9)
-                                : const Color(0xFF6B7280),
+                            color: keypadForeground.withValues(alpha: 0.9),
                             size: actionIconSize - 1,
+                            shadows: _sipKeypadShadows(context),
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -1324,6 +1348,8 @@ extension _SipMainViewsExtension on _SipScreenState {
         : isCompact
             ? 22.0
             : 27.0;
+    final keypadForeground = _sipKeypadForeground();
+    final keypadSecondary = _sipKeypadSecondary();
     return GestureDetector(
       onTap: _expandDialPanel,
       onLongPress: _showDialActions,
@@ -1332,7 +1358,7 @@ extension _SipMainViewsExtension on _SipScreenState {
         focusNode: _dialFocusNode,
         readOnly: true,
         showCursor: true,
-        cursorColor: context.appColors.textPrimary,
+        cursorColor: keypadForeground,
         cursorWidth: 2,
         cursorHeight: fontSize,
         textAlign: TextAlign.center,
@@ -1341,16 +1367,18 @@ extension _SipMainViewsExtension on _SipScreenState {
           fontFamily: 'SF Pro Display',
           fontSize: fontSize,
           fontWeight: FontWeight.w400,
-          color: context.appColors.textPrimary.withValues(alpha: 0.98),
+          color: keypadForeground.withValues(alpha: 0.98),
           letterSpacing: 0,
+          shadows: _sipKeypadShadows(),
         ),
         placeholder:
             AppLocalizations.of(context)!.translate('telephony_enter_number'),
         placeholderStyle: TextStyle(
           fontSize: placeholderSize,
           fontWeight: FontWeight.w300,
-          color: context.appColors.textMuted,
+          color: keypadSecondary.withValues(alpha: 0.78),
           letterSpacing: 0,
+          shadows: _sipKeypadShadows(),
         ),
         magnifierConfiguration: TextMagnifierConfiguration.disabled,
         padding: EdgeInsets.symmetric(
@@ -1369,8 +1397,6 @@ extension _SipMainViewsExtension on _SipScreenState {
     required VoidCallback onTap,
     VoidCallback? onLongPress,
   }) {
-    final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isTight = outerSize < 84;
     final innerInset = isTight ? 4.0 : 8.0;
     final innerSize = (outerSize - innerInset).clamp(52.0, 88.0);
@@ -1384,8 +1410,8 @@ extension _SipMainViewsExtension on _SipScreenState {
         size: innerSize,
         onPressed: onTap,
         onLongPress: onLongPress,
-        textColor: colors.textPrimary,
-        isDarkBackground: isDark,
+        textColor: _sipKeypadForeground(),
+        isDarkBackground: _isSipKeypadOnDark(),
       ),
     );
   }
@@ -1430,7 +1456,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                     child: Icon(
                       CupertinoIcons.circle_grid_3x3_fill,
                       size: 18,
-                      color: colors.iconPrimary,
+                      color: _glassControlInk(context),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1444,7 +1470,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
+                            color: _glassControlInk(context),
                           ),
                         ),
                         Text(
@@ -1456,7 +1482,7 @@ extension _SipMainViewsExtension on _SipScreenState {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: colors.textSecondary,
+                            color: _glassControlSecondaryInk(context),
                           ),
                         ),
                       ],
@@ -1697,26 +1723,26 @@ extension _SipMainViewsExtension on _SipScreenState {
                         end: Alignment.bottomRight,
                         colors: [
                           colors.surfacePrimary.withValues(
-                            alpha: isDark ? 0.62 : 0.78,
+                            alpha: isDark ? 0.78 : 0.90,
                           ),
                           colors.surfaceElevated.withValues(
-                            alpha: isDark ? 0.52 : 0.68,
+                            alpha: isDark ? 0.70 : 0.84,
                           ),
                           colors.surfaceAccent.withValues(
-                            alpha: isDark ? 0.28 : 0.34,
+                            alpha: isDark ? 0.42 : 0.48,
                           ),
                         ],
                         stops: const [0.0, 0.58, 1.0],
                       ),
                       borderRadius: BorderRadius.circular(46),
                       border: Border.all(
-                        color: colors.borderSubtle.withValues(alpha: 0.8),
+                        color: colors.borderSubtle.withValues(alpha: 0.88),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: colors.shadow.withValues(
-                            alpha: isDark ? 0.26 : 0.12,
+                            alpha: isDark ? 0.28 : 0.14,
                           ),
                           blurRadius: 24,
                           offset: const Offset(0, 10),
@@ -1764,8 +1790,7 @@ extension _SipMainViewsExtension on _SipScreenState {
     required bool selected,
     required bool pressed,
   }) {
-    final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedColor = _glassControlInk(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeOutQuart,
@@ -1783,24 +1808,14 @@ extension _SipMainViewsExtension on _SipScreenState {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 240),
-              switchInCurve: Curves.easeOutQuart,
-              switchOutCurve: Curves.easeInCubic,
-              child: Image.asset(
-                selected ? activeIconAsset : iconAsset,
-                key: ValueKey(selected),
-                width: 22,
-                height: 22,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-                color: selected
-                    ? _TelephonyVisualColors.blue
-                    : (isDark
-                        ? colors.textPrimary.withValues(alpha: 0.84)
-                        : colors.iconSecondary),
-                colorBlendMode: BlendMode.srcIn,
-              ),
+            Image.asset(
+              selected ? activeIconAsset : iconAsset,
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+              color: selected ? _TelephonyVisualColors.blue : unselectedColor,
+              colorBlendMode: BlendMode.srcIn,
             ),
             const SizedBox(height: 3),
             SizedBox(
@@ -1812,22 +1827,13 @@ extension _SipMainViewsExtension on _SipScreenState {
                   sanitizeUtf16(label),
                   maxLines: 1,
                   style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                     color: selected
                         ? _TelephonyVisualColors.blue
-                        : (Theme.of(context).brightness == Brightness.dark
-                            ? colors.textPrimary.withValues(alpha: 0.88)
-                            : colors.textSecondary),
+                        : unselectedColor,
                     letterSpacing: 0,
-                    shadows: Theme.of(context).brightness == Brightness.dark
-                        ? [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.38),
-                              blurRadius: 2,
-                            ),
-                          ]
-                        : null,
+                    height: 1.05,
                   ),
                 ),
               ),
