@@ -2255,34 +2255,34 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
             ? phoneNumber
             : clientName;
 
-    final ownsScreenClaim = sipService.claimSipScreenOpen();
-    await sipService.makeCallTo(
-      phoneNumber,
-      displayName: displayName,
-    );
-
-    if (!mounted) {
-      if (ownsScreenClaim) {
-        sipService.releaseSipScreenOpenClaim();
-      }
+    // If telephony UI is already open, dial in place (same as dialer path).
+    if (sipService.isSipScreenVisible) {
+      await sipService.makeCallTo(
+        phoneNumber,
+        displayName: displayName,
+      );
       return;
     }
 
-    final callStatus = sipService.state.callStatus;
-    final callStarted = callStatus == SipCallUiStatus.calling ||
-        callStatus == SipCallUiStatus.ringing ||
-        callStatus == SipCallUiStatus.inCall;
-    if (!callStarted || !ownsScreenClaim) {
-      if (ownsScreenClaim) {
-        sipService.releaseSipScreenOpenClaim();
-      }
+    final ownsScreenClaim = sipService.claimSipScreenOpen();
+    if (!ownsScreenClaim) {
+      await sipService.makeCallTo(
+        phoneNumber,
+        displayName: displayName,
+      );
       return;
     }
 
     try {
+      // Open SipScreen FIRST, then auto-dial from inside it. Starting INVITE
+      // before the screen is visible races with SipCallOverlayHost (mini overlay
+      // + deferred PIN redirect) and ends the call with HANGUP reason=flutter.
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => const SipScreen(),
+          builder: (_) => SipScreen(
+            autoCallNumber: phoneNumber,
+            autoCallDisplayName: displayName,
+          ),
           fullscreenDialog: true,
           settings: const RouteSettings(name: '/sip_call'),
         ),
