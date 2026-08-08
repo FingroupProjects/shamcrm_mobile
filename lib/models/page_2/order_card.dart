@@ -73,7 +73,7 @@ class Order {
       return Order(
         id: json['id'] ?? 0,
         phone: (json['phone'] ?? '').toString(),
-        orderNumber: json['order_number'] ?? '',
+        orderNumber: json['order_number']?.toString() ?? '',
         delivery: isDelivery,
         deliveryAddress: deliveryAddressRaw is Map<String, dynamic>
             ? deliveryAddressRaw['address']?.toString()

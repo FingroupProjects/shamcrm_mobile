@@ -66,9 +66,17 @@ class SipScreen extends StatefulWidget {
   const SipScreen({
     super.key,
     this.initialTab = SipScreenInitialTab.dial,
+    this.autoCallNumber,
+    this.autoCallDisplayName,
   });
 
   final SipScreenInitialTab initialTab;
+
+  /// When set (e.g. call from lead details), dial after the screen is visible.
+  /// Starting the INVITE before SipScreen opens races with the mini-overlay/PIN
+  /// redirect and can drop the call.
+  final String? autoCallNumber;
+  final String? autoCallDisplayName;
 
   @override
   State<SipScreen> createState() => _SipScreenState();
@@ -102,6 +110,9 @@ class _SipScreenState extends State<SipScreen>
   int _bottomTabIndex = 0;
   late final AnimationController _pulseController;
   Timer? _callDurationTimer;
+  bool _autoCallScheduled = false;
+  bool _leadAutoCallPending = false;
+  DateTime? _hangupEnabledAfter;
   SipCallUiStatus? _lastObservedCallStatus;
   String? _lastShownSipNoticeKey;
   SipRegistrationUiStatus? _lastObservedRegistrationStatus;
@@ -278,12 +289,72 @@ class _SipScreenState extends State<SipScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
+    final autoNumber = widget.autoCallNumber?.trim() ?? '';
+    if (autoNumber.isNotEmpty) {
+      // Show the call UI immediately — never flash the dial pad for lead dials.
+      _leadAutoCallPending = true;
+      _hangupEnabledAfter =
+          DateTime.now().add(const Duration(milliseconds: 2000));
+    }
     _initializeSip();
+  }
+
+  Future<void> _startAutoCallIfNeeded() async {
+    final number = widget.autoCallNumber?.trim() ?? '';
+    if (number.isEmpty || _autoCallScheduled || !mounted) return;
+    _autoCallScheduled = true;
+    if (_sipService.state.registrationStatus !=
+        SipRegistrationUiStatus.registered) {
+      if (mounted) {
+        setState(() => _leadAutoCallPending = false);
+      }
+      return;
+    }
+    final status = _sipService.state.callStatus;
+    if (status == SipCallUiStatus.calling ||
+        status == SipCallUiStatus.ringing ||
+        status == SipCallUiStatus.inCall ||
+        status == SipCallUiStatus.incoming) {
+      if (mounted) {
+        setState(() => _leadAutoCallPending = false);
+      }
+      return;
+    }
+    // Let the bottom-sheet tap finish before the hangup control exists.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+    _hangupEnabledAfter =
+        DateTime.now().add(const Duration(milliseconds: 1500));
+    await _sipService.makeCallTo(
+      number,
+      displayName: widget.autoCallDisplayName,
+    );
+    if (mounted && _isActiveCallState(_sipService.state.callStatus)) {
+      setState(() => _leadAutoCallPending = false);
+    }
+  }
+
+  Future<void> _requestHangup() async {
+    final armedAfter = _hangupEnabledAfter;
+    if (armedAfter != null && DateTime.now().isBefore(armedAfter)) {
+      debugPrint(
+        'SipScreen hangup ignored -> opening gesture guard active',
+      );
+      return;
+    }
+    await _sipService.hangup();
+  }
+
+  bool get _isHangupGestureGuarded {
+    final armedAfter = _hangupEnabledAfter;
+    return armedAfter != null && DateTime.now().isBefore(armedAfter);
   }
 
   Future<void> _initializeSip() async {
     try {
       await _sipService.initialize().timeout(const Duration(seconds: 8));
+      // Start the lead call as soon as SIP is ready — do not wait for contacts.
+      unawaited(_startAutoCallIfNeeded());
       await _sipService
           .prepareSipRuntimePermissions()
           .timeout(const Duration(seconds: 5));
@@ -376,7 +447,8 @@ class _SipScreenState extends State<SipScreen>
           }
 
           final state = _sipService.state;
-          final isActiveCall = _isActiveCallState(state.callStatus);
+          final isActiveCall = _isActiveCallState(state.callStatus) ||
+              _leadAutoCallPending;
           final visibleBottomTabIndex =
               _hasContactsTab || _bottomTabIndex != 2 ? _bottomTabIndex : 1;
 

@@ -76,6 +76,14 @@ extension _SipScreenCallStateExtension on _SipScreenState {
 
   void _syncCallEffects(SipUiState state) {
     final status = state.callStatus;
+    if (_leadAutoCallPending &&
+        (status == SipCallUiStatus.calling ||
+            status == SipCallUiStatus.ringing ||
+            status == SipCallUiStatus.inCall ||
+            status == SipCallUiStatus.ended ||
+            status == SipCallUiStatus.failed)) {
+      _leadAutoCallPending = false;
+    }
     if (_lastObservedCallStatus == status) return;
 
     final previousStatus = _lastObservedCallStatus;
@@ -411,6 +419,8 @@ extension _SipScreenCallStateExtension on _SipScreenState {
   }
 
   String _displayIdentity(SipUiState state) {
+    final pendingName = widget.autoCallDisplayName?.trim();
+    final pendingNumber = widget.autoCallNumber?.trim();
     final callDisplayName = _sipRuntime.currentCallDisplayName?.trim();
     final callTarget = _sipRuntime.currentCallTarget?.trim();
     final raw = (callDisplayName?.isNotEmpty == true
@@ -419,7 +429,11 @@ extension _SipScreenCallStateExtension on _SipScreenState {
                 ? state.remoteIdentity!.trim()
                 : callTarget?.isNotEmpty == true
                     ? callTarget!
-                    : _sipIdController.text.trim())
+                    : pendingName?.isNotEmpty == true
+                        ? pendingName!
+                        : pendingNumber?.isNotEmpty == true
+                            ? pendingNumber!
+                            : _sipIdController.text.trim())
         .trim();
 
     if (raw.isEmpty) return 'Неизвестно';
@@ -440,6 +454,10 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     }
     if (_isDeclinedElsewhereMessage(state.errorMessage)) {
       return 'Этот вызов уже отклонили на другом устройстве.';
+    }
+
+    if (_leadAutoCallPending && !_isActiveCallState(state.callStatus)) {
+      return 'Соединяем звонок...';
     }
 
     switch (state.callStatus) {

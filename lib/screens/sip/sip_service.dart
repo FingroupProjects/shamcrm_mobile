@@ -3878,6 +3878,7 @@ class SipService extends ChangeNotifier
         );
         break;
       case 'in_call':
+        _cancelOutgoingCallWatchdog();
         _currentCallStartedAt ??= DateTime.now();
         _clearIncomingFingerprint();
         _rememberActiveNativeCallFingerprint(

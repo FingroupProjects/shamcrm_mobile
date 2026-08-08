@@ -1045,15 +1045,21 @@ extension _SipCallViewsExtension on _SipScreenState {
         ),
         SizedBox(height: compact && keypadVisible ? 18 : 30),
         Center(
-          child: _iosCircleAction(
-            icon: CupertinoIcons.phone_down_fill,
-            label: 'Отбой',
-            onTap: _sipRuntime.hangup,
-            destructive: true,
-            size: keypadVisible ? (compact ? 80 : 84) : 84,
-            iconSize: 32,
-            labelFontSize: labelFontSize,
-            isDark: isDark,
+          child: IgnorePointer(
+            ignoring: _isHangupGestureGuarded,
+            child: Opacity(
+              opacity: _isHangupGestureGuarded ? 0.4 : 1,
+              child: _iosCircleAction(
+                icon: CupertinoIcons.phone_down_fill,
+                label: 'Отбой',
+                onTap: _requestHangup,
+                destructive: true,
+                size: keypadVisible ? (compact ? 80 : 84) : 84,
+                iconSize: 32,
+                labelFontSize: labelFontSize,
+                isDark: isDark,
+              ),
+            ),
           ),
         ),
       ],

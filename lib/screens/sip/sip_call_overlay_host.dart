@@ -95,7 +95,11 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
 
   bool _shouldShowOverlay(SipUiState state) {
     if (!kShowSip) return false;
+    // isSipScreenOpenClaimed covers the gap after lead/CRM claims the UI but
+    // before SipScreen.setSipScreenVisible(true) runs — otherwise the mini
+    // overlay flashes and can trigger deferred PIN redirect mid-call.
     return !_sipService.isSipScreenVisible &&
+        !_sipService.isSipScreenOpenClaimed &&
         (state.callStatus == SipCallUiStatus.incoming ||
             state.callStatus == SipCallUiStatus.calling ||
             state.callStatus == SipCallUiStatus.ringing ||
@@ -108,7 +112,12 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       _stopDurationTicker(reset: true);
       if (_hadVisibleCallOverlay) {
         _hadVisibleCallOverlay = false;
-        unawaited(_redirectToPinIfDeferredBySipCall());
+        // Only ask for PIN after a call fully ended. If overlay hid because
+        // SipScreen opened (or claim flipped), redirecting now would
+        // pushNamedAndRemoveUntil('/pin_screen') and tear down the call UI.
+        if (!_isProtectedSipCallActive()) {
+          unawaited(_redirectToPinIfDeferredBySipCall());
+        }
       }
       return;
     }
