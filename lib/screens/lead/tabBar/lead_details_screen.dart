@@ -231,7 +231,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _dealsDataReady = false;
   bool _ordersDataReady = false;
   bool _showAcceptDeclineButton = false;
-  bool _askReasonForRefusal = false;
   bool _isAcceptingLead = false;
   bool _isRejectingLead = false;
   int? _loadedLeadActionFunnelId;
@@ -270,7 +269,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final leadId = int.parse(widget.leadId);
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
-      _loadLeadActionSettings();
       context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: leadId));
 
       if (_canReadNotes) {
@@ -413,14 +411,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     if (!mounted) return false;
     Navigator.pop(context, _buildNavigationResult());
     return false;
-  }
-
-  Future<void> _loadLeadActionSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
-    });
   }
 
   Future<void> _loadLeadActionAvailability({LeadById? lead}) async {
@@ -1807,14 +1797,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final lead = currentLead;
     if (lead == null) return;
 
-    ReasonForRefusalSubmitData? refusalData;
-    if (_askReasonForRefusal) {
-      refusalData = await showReasonForRefusalDialog(
-        context: context,
-        type: 'lead',
-      );
-      if (refusalData == null) return;
-    }
+    final refusalData = await showReasonForRefusalDialog(
+      context: context,
+      type: 'lead',
+    );
+    if (refusalData == null) return;
 
     setState(() {
       _isRejectingLead = true;
@@ -1823,8 +1810,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     try {
       await _apiService.declineLead(
         lead.id,
-        reasonForRefusalId: refusalData?.reasonId,
-        reasonForRefusal: refusalData?.comment,
+        reasonForRefusalId: refusalData.reasonId,
+        reasonForRefusal: refusalData.comment,
       );
 
       if (!mounted) return;

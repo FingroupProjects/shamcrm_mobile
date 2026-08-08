@@ -11,7 +11,6 @@ import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> OrderDropdownBottomSheet(
   BuildContext context,
@@ -104,22 +103,19 @@ Future<void> OrderDropdownBottomSheet(
                             ),
                           )
                         : CustomButton(
-                            buttonText: AppLocalizations.of(context)!
-                                .translate('save'),
+                            buttonText:
+                                AppLocalizations.of(context)!.translate('save'),
                             buttonColor: colors.buttonPrimaryBg,
                             textColor: colors.textInverse,
                             onPressed: () async {
-                              if (isSubmittingSave || selectedStatusId == null) {
+                              if (isSubmittingSave ||
+                                  selectedStatusId == null) {
                                 return;
                               }
 
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              final askReasonForRefusal =
-                                  prefs.getBool('ask_reason_for_refusal') ??
-                                      false;
                               final selectedStatus = orderStatuses
-                                  .where((status) => status.id == selectedStatusId)
+                                  .where(
+                                      (status) => status.id == selectedStatusId)
                                   .cast<dynamic>()
                                   .firstWhere(
                                     (_) => true,
@@ -128,11 +124,9 @@ Future<void> OrderDropdownBottomSheet(
 
                               ReasonForRefusalSubmitData? refusalData;
                               if (selectedStatusId != order.orderStatus.id &&
-                                  askReasonForRefusal &&
                                   selectedStatus != null &&
                                   selectedStatus.isFailed == true) {
-                                refusalData =
-                                    await showReasonForRefusalDialog(
+                                refusalData = await showReasonForRefusalDialog(
                                   context: context,
                                   type: 'order',
                                 );

@@ -1556,7 +1556,9 @@ class _MyAppState extends State<MyApp> {
                   if (kDebugMode) const HttpInspectorFab(),
                 ],
               );
-              return appChild;
+              return SipCallOverlayHost(
+                child: appChild,
+              );
             },
             home: Builder(
               builder: (context) {

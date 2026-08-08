@@ -98,8 +98,11 @@ void DropdownBottomSheet(
                                           status?.id == selectedStatusId,
                                       orElse: () => null,
                                     );
-                            final requiresReason =
-                                targetStatus != null && targetStatus.isFailure;
+                            final statusChanged =
+                                selectedStatusId != lead.statusId;
+                            final requiresReason = statusChanged &&
+                                targetStatus != null &&
+                                targetStatus.isFailure;
 
                             ReasonForRefusalSubmitData? refusalData;
                             if (requiresReason) {
@@ -129,15 +132,15 @@ void DropdownBottomSheet(
                             )
                                 .then((_) {
                               ScaffoldMessenger.of(rootContext).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      AppLocalizations.of(context)!.translate(
+                                SnackBar(
+                                  content: Text(
+                                    AppLocalizations.of(context)!.translate(
                                         'status_changed_successfully'),
-                                      style: rootContext.appTextStyles.bodyMd
-                                          .copyWith(
-                                        color: rootContext.appColors.textInverse,
-                                      ),
+                                    style: rootContext.appTextStyles.bodyMd
+                                        .copyWith(
+                                      color: rootContext.appColors.textInverse,
                                     ),
+                                  ),
                                   behavior: SnackBarBehavior.floating,
                                   margin: EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
@@ -173,7 +176,8 @@ void DropdownBottomSheet(
                                       errorMessage,
                                       style: rootContext.appTextStyles.bodyMd
                                           .copyWith(
-                                        color: rootContext.appColors.textInverse,
+                                        color:
+                                            rootContext.appColors.textInverse,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,

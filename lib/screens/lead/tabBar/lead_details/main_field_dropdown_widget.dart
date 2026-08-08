@@ -15,7 +15,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
   final VoidCallback? onRemove;
   final int? initialEntryId;
 
-  MainFieldDropdownWidget({
+  const MainFieldDropdownWidget({
     super.key,
     required this.directoryId,
     required this.directoryName,
@@ -37,6 +37,11 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
   MainField? selectedFieldData;
   String? errorMessage;
   bool isLoading = true;
+
+  bool _isMissingResourceError(Object error) {
+    final message = error.toString().replaceFirst('Exception:', '').trim();
+    return message == 'Ресурс не найден';
+  }
 
   @override
   void initState() {
@@ -82,7 +87,9 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        errorMessage = e.toString();
+        errorMessage = _isMissingResourceError(e) ? null : e.toString();
+        mainFieldsList = [];
+        selectedFieldData = null;
         isLoading = false;
       });
     }
@@ -152,12 +159,14 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                               closedFillColor: fieldFill,
                               expandedFillColor: dropdownFill,
                               closedBorder: Border.all(
-                                color: field.hasError ? colors.error : fieldBorder,
+                                color:
+                                    field.hasError ? colors.error : fieldBorder,
                                 width: 1,
                               ),
                               closedBorderRadius: BorderRadius.circular(12),
                               expandedBorder: Border.all(
-                                color: field.hasError ? colors.error : fieldBorder,
+                                color:
+                                    field.hasError ? colors.error : fieldBorder,
                                 width: 1,
                               ),
                               expandedBorderRadius: BorderRadius.circular(12),

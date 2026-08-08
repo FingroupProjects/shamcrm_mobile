@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:crm_task_manager/app_feature_flags.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,8 +49,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       'sip_pin_required_after_call_v1';
 
   final SipService _sipService = SipService();
-  final PinAdaptiveContrastController _adaptiveContrast =
-      PinAdaptiveContrastController();
   late final AnimationController _pulseController;
   Timer? _durationTimer;
   SipCallUiStatus? _lastObservedStatus;
@@ -73,17 +71,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       duration: const Duration(milliseconds: 1600),
     )..repeat();
     unawaited(_sipService.initialize());
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _adaptiveContrast.syncWithContext(
-      context,
-      onChanged: () {
-        if (mounted) setState(() {});
-      },
-    );
   }
 
   @override
@@ -217,31 +204,6 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
-  }
-
-  bool _isDarkSipTheme(BuildContext context) {
-    final palette = _adaptiveContrast.resolve(
-      context,
-      isDark: Theme.of(context).brightness == Brightness.dark,
-    );
-    return palette.isDarkBackground(palette.keypadLuminance);
-  }
-
-  Color _accent(SipCallUiStatus status) {
-    switch (status) {
-      case SipCallUiStatus.incoming:
-        return const Color(0xFFF59E0B);
-      case SipCallUiStatus.calling:
-      case SipCallUiStatus.ringing:
-        return const Color(0xFF2563EB);
-      case SipCallUiStatus.inCall:
-        return const Color(0xFF10B981);
-      case SipCallUiStatus.failed:
-        return const Color(0xFFEF4444);
-      case SipCallUiStatus.idle:
-      case SipCallUiStatus.ended:
-        return const Color(0xFF64748B);
-    }
   }
 
   Future<bool> _openSipScreen() async {
@@ -405,8 +367,14 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   Widget _activeCallMiniOverlay(SipUiState state) {
-    final isDark = _isDarkSipTheme(context);
-    final accent = _accent(state.callStatus);
+    final colors = context.appColors;
+    final accent = switch (state.callStatus) {
+      SipCallUiStatus.incoming => colors.warning,
+      SipCallUiStatus.calling || SipCallUiStatus.ringing => colors.info,
+      SipCallUiStatus.inCall => colors.success,
+      SipCallUiStatus.failed => colors.error,
+      SipCallUiStatus.idle || SipCallUiStatus.ended => colors.textMuted,
+    };
     final identity = _displayIdentity(state);
     final statusText = state.callStatus == SipCallUiStatus.inCall
         ? _formatDuration(_connectedDuration)
@@ -480,23 +448,12 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                       vertical: compactMode ? 6 : 8,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF101826).withValues(alpha: 0.94)
-                          : Colors.white.withValues(alpha: 0.98),
+                      color: colors.surfaceElevated.withValues(alpha: 0.96),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.10)
-                            : const Color(0xFFE1EAF6),
+                        color: colors.borderSubtle.withValues(alpha: 0.72),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF111827)
-                              .withValues(alpha: compactMode ? 0.10 : 0.08),
-                          blurRadius: compactMode ? 16 : 14,
-                          offset: Offset(0, compactMode ? 8 : 6),
-                        ),
-                      ],
+                      boxShadow: context.appShadows.floating,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -506,8 +463,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                           width: compactMode ? 24 : 26,
                           height: compactMode ? 22 : 24,
                           decoration: BoxDecoration(
-                            color:
-                                accent.withValues(alpha: isDark ? 0.22 : 0.12),
+                            color: accent.withValues(alpha: 0.16),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -522,9 +478,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                             displayText,
                             maxLines: 1,
                             style: TextStyle(
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF0F172A),
+                              color: colors.textPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               decoration: TextDecoration.none,
@@ -537,9 +491,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
+                                color: colors.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 decoration: TextDecoration.none,
@@ -554,9 +506,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.74)
-                                    : const Color(0xFF64748B),
+                                color: colors.textSecondary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 decoration: TextDecoration.none,
