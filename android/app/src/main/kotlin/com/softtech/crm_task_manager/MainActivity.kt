@@ -357,7 +357,14 @@ class MainActivity : FlutterFragmentActivity() {
                 }
                 "acceptCall" -> result.success(NativeSipBridge.acceptCall())
                 "declineCall" -> result.success(NativeSipBridge.declineCall())
-                "hangup" -> result.success(NativeSipBridge.hangup())
+                "hangup" -> {
+                    val source = call.argument<String>("source")?.trim().orEmpty()
+                    result.success(
+                        NativeSipBridge.hangup(
+                            source = source.ifEmpty { "flutter" },
+                        ),
+                    )
+                }
                 "setMuted" -> {
                     val muted = call.argument<Boolean>("muted") ?: false
                     result.success(NativeSipBridge.setMuted(muted))

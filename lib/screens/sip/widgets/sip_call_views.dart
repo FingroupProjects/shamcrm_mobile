@@ -895,6 +895,7 @@ extension _SipCallViewsExtension on _SipScreenState {
           children: [
             Expanded(
               child: _iosCircleAction(
+                key: const ValueKey('sip_audio_route_action'),
                 icon: _audioRouteCupertinoIcon(audioRouteType),
                 label: audioRouteLabel,
                 onTap: () => _showAudioRoutePicker(context),
@@ -909,6 +910,7 @@ extension _SipCallViewsExtension on _SipScreenState {
             ),
             Expanded(
               child: _iosCircleAction(
+                key: const ValueKey('sip_keypad_action'),
                 icon: CupertinoIcons.circle_grid_3x3_fill,
                 label: 'Клавиши',
                 onTap: _toggleInCallKeypad,
@@ -921,6 +923,7 @@ extension _SipCallViewsExtension on _SipScreenState {
             ),
             Expanded(
               child: _iosCircleAction(
+                key: const ValueKey('sip_mute_action'),
                 icon: state.isMuted
                     ? CupertinoIcons.mic_slash_fill
                     : CupertinoIcons.mic_fill,
@@ -944,6 +947,7 @@ extension _SipCallViewsExtension on _SipScreenState {
             child: Opacity(
               opacity: _isHangupGestureGuarded ? 0.4 : 1,
               child: _iosCircleAction(
+                key: const ValueKey('sip_hangup_action'),
                 icon: CupertinoIcons.phone_down_fill,
                 label: 'Отбой',
                 onTap: _requestHangup,
@@ -977,6 +981,7 @@ extension _SipCallViewsExtension on _SipScreenState {
   }
 
   Widget _iosCircleAction({
+    Key? key,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
@@ -996,6 +1001,7 @@ extension _SipCallViewsExtension on _SipScreenState {
     final inactiveIconColor = isDark ? _G.textPrimary : _G.lightText;
 
     return CupertinoButton(
+      key: key,
       padding: EdgeInsets.zero,
       onPressed: onTap,
       child: Column(

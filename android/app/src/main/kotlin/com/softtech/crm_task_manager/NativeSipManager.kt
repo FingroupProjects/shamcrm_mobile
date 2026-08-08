@@ -334,7 +334,7 @@ class NativeSipManager(
     }
 
     @Synchronized
-    fun hangup(): Boolean {
+    fun hangup(source: String = "native"): Boolean {
         val call = currentCall?.takeUnless { candidate ->
             val state = candidate.getState().toString()
             state == "End" || state == "Released" || state == "Error"
@@ -354,18 +354,37 @@ class NativeSipManager(
             currentCall = null
             isSpeakerOn = false
             lastCallState = "ended"
-            emitCallState("ended", null, "Call already ended locally")
+            emitCallState(
+                state = "ended",
+                remoteIdentity = null,
+                message = "Call already ended locally",
+                diagnostics = hashMapOf(
+                    "terminationOrigin" to "local",
+                    "hangupSource" to source,
+                ),
+            )
             return true
         }
 
         return try {
             val remoteIdentity = remoteIdentityFor(call)
+            val callState = call.getState().toString()
+            Log.i(TAG, "hangup requested: source=$source state=$callState")
             call.terminate()
             // Do not leave the UI waiting for the PBX to echo End/Released.
             currentCall = null
             isSpeakerOn = false
             lastCallState = "ended"
-            emitCallState("ended", remoteIdentity, "Call ended locally")
+            emitCallState(
+                state = "ended",
+                remoteIdentity = remoteIdentity,
+                message = "Call ended locally",
+                diagnostics = hashMapOf(
+                    "terminationOrigin" to "local",
+                    "hangupSource" to source,
+                    "previousCallState" to callState,
+                ),
+            )
             true
         } catch (error: Throwable) {
             Log.e(TAG, "hangup failed: ${error.message}", error)

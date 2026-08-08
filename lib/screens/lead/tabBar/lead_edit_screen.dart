@@ -31,7 +31,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -153,7 +152,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   SupplierCurrency? _selectedCurrency;
   DuplicateOption? _duplicateOption;
   bool _showDuplicateOptions = false;
-  bool _askReasonForRefusal = false;
   LeadStatus? _selectedLeadStatusData;
   bool _isSubmittingSave = false;
 
@@ -172,13 +170,13 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     _selectedStatuses = widget.statusId;
     _selectedPriceType = widget.priceTypeId;
     selectedSalesFunnel = widget.salesFunnelId;
-    if (widget.currencyId != null || (widget.currencyName?.isNotEmpty ?? false)) {
+    if (widget.currencyId != null ||
+        (widget.currencyName?.isNotEmpty ?? false)) {
       _selectedCurrency = SupplierCurrency(
         id: widget.currencyId,
         name: widget.currencyName,
       );
     }
-    _loadAskReasonForRefusal();
     _loadCurrencies();
 
     if (selectedSalesFunnel != null &&
@@ -426,14 +424,6 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     );
   }
 
-  Future<void> _loadAskReasonForRefusal() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
-    });
-  }
-
   bool _leadStatusRequiresRefusalReason(LeadStatus? status) {
     if (status == null) return false;
     return status.isFailure;
@@ -455,15 +445,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
   }
 
   Future<ReasonForRefusalSubmitData?> _collectReasonForRefusalIfNeeded() async {
-    final prefs = await SharedPreferences.getInstance();
-    _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
-
-    final bool statusChanged = _selectedStatuses != null &&
-        _selectedStatuses != widget.statusId;
+    final bool statusChanged =
+        _selectedStatuses != null && _selectedStatuses != widget.statusId;
     final targetStatus = await _resolveSelectedLeadStatusData();
-    final bool requiresReason =
-        _leadStatusRequiresRefusalReason(targetStatus) &&
-        _askReasonForRefusal;
+    final bool requiresReason = _leadStatusRequiresRefusalReason(targetStatus);
 
     if (!statusChanged || !requiresReason) {
       return null;
@@ -2378,10 +2363,10 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                       if (!mounted) return;
                                       final resolvedLeadStatus =
                                           await _resolveSelectedLeadStatusData();
-                                      if (_selectedStatuses != widget.statusId &&
+                                      if (_selectedStatuses !=
+                                              widget.statusId &&
                                           _leadStatusRequiresRefusalReason(
                                               resolvedLeadStatus) &&
-                                          _askReasonForRefusal &&
                                           refusalData == null) {
                                         setState(() {
                                           _isSubmittingSave = false;

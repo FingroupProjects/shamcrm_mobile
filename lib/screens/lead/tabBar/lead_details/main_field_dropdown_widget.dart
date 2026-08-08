@@ -14,7 +14,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
   final VoidCallback? onRemove;
   final int? initialEntryId;
 
-  MainFieldDropdownWidget({
+  const MainFieldDropdownWidget({
     super.key,
     required this.directoryId,
     required this.directoryName,
@@ -36,6 +36,11 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
   MainField? selectedFieldData;
   String? errorMessage;
   bool isLoading = true;
+
+  bool _isMissingResourceError(Object error) {
+    final message = error.toString().replaceFirst('Exception:', '').trim();
+    return message == 'Ресурс не найден';
+  }
 
   final TextStyle fieldTextStyle = const TextStyle(
     fontSize: 16,
@@ -82,14 +87,15 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
             selectedFieldData = null;
           }
         } else {
-          if (widget.controller.text.isNotEmpty) {
-          }
+          if (widget.controller.text.isNotEmpty) {}
         }
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        errorMessage = e.toString();
+        errorMessage = _isMissingResourceError(e) ? null : e.toString();
+        mainFieldsList = [];
+        selectedFieldData = null;
         isLoading = false;
       });
     }
@@ -142,7 +148,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                         : CustomDropdown<MainField>.search(
                             closeDropDownOnClearFilterSearch: true,
                             items: mainFieldsList,
-                            searchHintText: AppLocalizations.of(context)!.translate('search'),
+                            searchHintText: AppLocalizations.of(context)!
+                                .translate('search'),
                             overlayHeight: 400,
                             decoration: CustomDropdownDecoration(
                               closedFillColor: const Color(0xffF4F7FD),
@@ -161,7 +168,8 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                             listItemBuilder:
                                 (context, item, isSelected, onItemSelect) {
                               return Padding(
-                                padding: const EdgeInsets.symmetric( horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 child: Text(
                                   item.value,
                                   style: fieldTextStyle,
@@ -224,13 +232,14 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
           ),
         ),
         // const SizedBox(height: 8),
-        if(widget.onRemove != null) IconButton(
-          icon: const Icon(
-            Icons.remove_circle,
-            color: Color.fromARGB(255, 236, 64, 16),
+        if (widget.onRemove != null)
+          IconButton(
+            icon: const Icon(
+              Icons.remove_circle,
+              color: Color.fromARGB(255, 236, 64, 16),
+            ),
+            onPressed: widget.onRemove,
           ),
-          onPressed: widget.onRemove,
-        ),
       ],
     );
   }

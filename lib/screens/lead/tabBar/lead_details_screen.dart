@@ -227,7 +227,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   bool _dealsDataReady = false;
   bool _ordersDataReady = false;
   bool _showAcceptDeclineButton = false;
-  bool _askReasonForRefusal = false;
   bool _isAcceptingLead = false;
   bool _isRejectingLead = false;
   int? _loadedLeadActionFunnelId;
@@ -253,7 +252,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final leadId = int.parse(widget.leadId);
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
-      _loadLeadActionSettings();
       context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: leadId));
 
       if (_canReadNotes) {
@@ -396,14 +394,6 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     if (!mounted) return false;
     Navigator.pop(context, _buildNavigationResult());
     return false;
-  }
-
-  Future<void> _loadLeadActionSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _askReasonForRefusal = prefs.getBool('ask_reason_for_refusal') ?? false;
-    });
   }
 
   Future<void> _loadLeadActionAvailability({LeadById? lead}) async {
@@ -1000,7 +990,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final resolvedCurrencyName =
         lead.currency?.name ?? widget.initialCurrencyName ?? '';
     details.add({
-      'label': '${AppLocalizations.of(context)!.translate('currency_label') ?? 'Валюта'}:',
+      'label':
+          '${AppLocalizations.of(context)!.translate('currency_label') ?? 'Валюта'}:',
       'value': resolvedCurrencyName,
       'fieldName': 'currency',
     });
@@ -1372,8 +1363,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                             // verificationCode: currentLead!.verification_code,
                             priceTypeId: currentLead!.priceType?.id.toString(),
                             priceTypeName: currentLead!.priceType?.name,
-                            currencyId:
-                                currentLead!.currencyId ?? widget.initialCurrencyId,
+                            currencyId: currentLead!.currencyId ??
+                                widget.initialCurrencyId,
                             currencyName: currentLead!.currency?.name ??
                                 widget.initialCurrencyName,
                           ),
@@ -1630,14 +1621,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final lead = currentLead;
     if (lead == null) return;
 
-    ReasonForRefusalSubmitData? refusalData;
-    if (_askReasonForRefusal) {
-      refusalData = await showReasonForRefusalDialog(
-        context: context,
-        type: 'lead',
-      );
-      if (refusalData == null) return;
-    }
+    final refusalData = await showReasonForRefusalDialog(
+      context: context,
+      type: 'lead',
+    );
+    if (refusalData == null) return;
 
     setState(() {
       _isRejectingLead = true;
@@ -1646,8 +1634,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     try {
       await _apiService.declineLead(
         lead.id,
-        reasonForRefusalId: refusalData?.reasonId,
-        reasonForRefusal: refusalData?.comment,
+        reasonForRefusalId: refusalData.reasonId,
+        reasonForRefusal: refusalData.comment,
       );
 
       if (!mounted) return;
@@ -1660,9 +1648,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final message = e is LeadStatusUpdateException
-          ? e.message
-          : friendlyError(e);
+      final message =
+          e is LeadStatusUpdateException ? e.message : friendlyError(e);
       showCustomSnackBar(
         context: context,
         message: message,
@@ -2172,7 +2159,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final canCallThroughTelephony = sipService.state.registrationStatus ==
         SipRegistrationUiStatus.registered;
 
-    await showModalBottomSheet<void>(
+    final selectedAction = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
@@ -2200,10 +2187,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     icon: Icons.phone_in_talk_rounded,
                     title: 'Через телефон',
                     subtitle: phoneNumber,
-                    onTap: () async {
-                      Navigator.pop(sheetContext);
-                      await _makeSystemPhoneCall(phoneNumber);
-                    },
+                    onTap: () => Navigator.pop(sheetContext, 'system'),
                   ),
                   if (canCallThroughTelephony) ...[
                     const SizedBox(height: 12),
@@ -2211,13 +2195,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                       icon: Icons.dialer_sip_rounded,
                       title: 'Через телефонию',
                       subtitle: 'Позвонить из shamCRM',
-                      onTap: () async {
-                        Navigator.pop(sheetContext);
-                        await _makeTelephonyCall(
-                          sipService,
-                          phoneNumber,
-                        );
-                      },
+                      onTap: () => Navigator.pop(sheetContext, 'telephony'),
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -2225,16 +2203,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     icon: Icons.sms_rounded,
                     title: 'Сообщение',
                     subtitle: 'Открыть SMS диалог',
-                    onTap: () async {
-                      Navigator.pop(sheetContext);
-                      await LeadSmsModal.show(
-                        context,
-                        leadId: int.tryParse(widget.leadId) ?? 0,
-                        leadName: currentLead?.name ?? widget.leadName,
-                        phone: phoneNumber,
-                        salesFunnelId: currentLead?.salesFunnel?.id,
-                      );
-                    },
+                    onTap: () => Navigator.pop(sheetContext, 'sms'),
                   ),
                 ],
               ),
@@ -2243,6 +2212,30 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         );
       },
     );
+
+    // Wait until the bottom-sheet route and its tap gesture are completely
+    // gone before opening the call UI. Pushing SipScreen from inside the tile
+    // callback could carry the closing gesture into the newly built controls
+    // and invoke Flutter hangup after the call connected.
+    if (!mounted || selectedAction == null) return;
+
+    switch (selectedAction) {
+      case 'system':
+        await _makeSystemPhoneCall(phoneNumber);
+        break;
+      case 'telephony':
+        await _makeTelephonyCall(sipService, phoneNumber);
+        break;
+      case 'sms':
+        await LeadSmsModal.show(
+          context,
+          leadId: int.tryParse(widget.leadId) ?? 0,
+          leadName: currentLead?.name ?? widget.leadName,
+          phone: phoneNumber,
+          salesFunnelId: currentLead?.salesFunnel?.id,
+        );
+        break;
+    }
   }
 
   Future<void> _makeTelephonyCall(

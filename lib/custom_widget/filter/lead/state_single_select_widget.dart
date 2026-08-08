@@ -55,6 +55,18 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
     }
   }
 
+  /// CustomDropdown asserts `items.contains(initialItem)`. RegionData has no
+  /// value equality, so a restored filter object is never identical to the
+  /// freshly loaded list item — resolve by id instead.
+  RegionData? get _resolvedInitialItem {
+    final selected = widget.selectedState;
+    if (selected == null || _states.isEmpty) return null;
+    for (final state in _states) {
+      if (state.id == selected.id) return state;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -78,7 +90,7 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
                 )
               : CustomDropdown<RegionData>.search(
                   items: _states,
-                  initialItem: widget.selectedState,
+                  initialItem: _resolvedInitialItem,
                   searchHintText:
                       AppLocalizations.of(context)!.translate('search'),
                   hintText:

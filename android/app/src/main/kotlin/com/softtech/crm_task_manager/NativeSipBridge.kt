@@ -345,8 +345,8 @@ object NativeSipBridge {
         return ensureManager().declineCall()
     }
 
-    fun hangup(): Boolean {
-        return ensureManager().hangup()
+    fun hangup(source: String = "native"): Boolean {
+        return ensureManager().hangup(source = source)
     }
 
     fun setMuted(muted: Boolean): Boolean {

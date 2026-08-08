@@ -1614,7 +1614,7 @@ class SipService extends ChangeNotifier
       return;
     }
 
-    final normalizedTarget = _restoreTajikPlusIfMissing(dialTarget);
+    final normalizedTarget = _normalizeOutgoingDialTarget(dialTarget);
     if (normalizedTarget.isEmpty) {
       _setError('Введите номер для звонка.');
       return;
@@ -1761,7 +1761,11 @@ class SipService extends ChangeNotifier
           _state.callStatus == SipCallUiStatus.calling ||
           _state.callStatus == SipCallUiStatus.ringing ||
           _state.callStatus == SipCallUiStatus.inCall;
-      final success = await _invokeNativeSipMethod<bool>('hangup') ?? false;
+      final success = await _invokeNativeSipMethod<bool>(
+            'hangup',
+            <String, dynamic>{'source': 'flutter_ui'},
+          ) ??
+          false;
       if (!success && !uiWasActive) {
         _setError('Не удалось завершить звонок телефонии.');
         return;
@@ -2383,6 +2387,31 @@ class SipService extends ChangeNotifier
     }
 
     return trimmed;
+  }
+
+  String _normalizeOutgoingDialTarget(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty ||
+        trimmed.toLowerCase().startsWith('sip:') ||
+        trimmed.contains('@')) {
+      return trimmed;
+    }
+
+    var compact = trimmed.replaceAll(RegExp(r'[\s().-]'), '');
+    if (compact.startsWith('00')) {
+      compact = '+${compact.substring(2)}';
+    }
+
+    final digits = compact.startsWith('+') ? compact.substring(1) : compact;
+
+    // The connected SIPuni route expects Tajik mobile destinations in the
+    // local 9-digit form. CRM leads are stored as E.164 (+992...), so convert
+    // both +992XXXXXXXXX and 992XXXXXXXXX before building the SIP URI.
+    if (RegExp(r'^992\d{9}$').hasMatch(digits)) {
+      return digits.substring(3);
+    }
+
+    return compact;
   }
 
   bool _isRemoteDeclineCause(String? rawCause) {

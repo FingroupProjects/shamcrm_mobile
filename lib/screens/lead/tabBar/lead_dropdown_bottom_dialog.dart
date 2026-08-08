@@ -5,7 +5,6 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void DropdownBottomSheet(
   BuildContext context,
@@ -95,22 +94,20 @@ void DropdownBottomSheet(
                         textColor: Colors.white,
                         onPressed: () async {
                           if (selectedStatusId != null) {
-                            final prefs = await SharedPreferences.getInstance();
-                            final askReason =
-                                prefs.getBool('ask_reason_for_refusal') ??
-                                    false;
                             final targetStatus =
                                 loadedStatuses.cast<LeadStatus?>().firstWhere(
                                       (status) =>
                                           status?.id == selectedStatusId,
                                       orElse: () => null,
                                     );
-                            final requiresReason =
-                                targetStatus != null && targetStatus.isFailure;
+                            final statusChanged =
+                                selectedStatusId != lead.statusId;
+                            final requiresReason = statusChanged &&
+                                targetStatus != null &&
+                                targetStatus.isFailure;
 
                             ReasonForRefusalSubmitData? refusalData;
-                            if (askReason &&
-                                requiresReason) {
+                            if (requiresReason) {
                               refusalData = await showReasonForRefusalDialog(
                                 context: context,
                                 type: 'lead',

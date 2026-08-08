@@ -103,6 +103,8 @@ class _SipScreenState extends State<SipScreen>
   bool _autoCallScheduled = false;
   bool _leadAutoCallPending = false;
   DateTime? _hangupEnabledAfter;
+  DateTime? _autoCallOpenedAt;
+  bool _hangupRequestInFlight = false;
   SipCallUiStatus? _lastObservedCallStatus;
   String? _lastShownSipNoticeKey;
   SipRegistrationUiStatus? _lastObservedRegistrationStatus;
@@ -259,7 +261,7 @@ class _SipScreenState extends State<SipScreen>
     )..repeat();
     final autoNumber = widget.autoCallNumber?.trim() ?? '';
     if (autoNumber.isNotEmpty) {
-      // Show the call UI immediately — never flash the dial pad for lead dials.
+      _autoCallOpenedAt = DateTime.now();
       _leadAutoCallPending = true;
       _hangupEnabledAfter =
           DateTime.now().add(const Duration(milliseconds: 2000));
@@ -288,29 +290,60 @@ class _SipScreenState extends State<SipScreen>
       }
       return;
     }
-    // Let the bottom-sheet tap finish before the hangup control exists.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+    // LeadDetails waits for its bottom sheet to close before pushing this
+    // screen. One additional frame keeps the dial identical to a normal
+    // SipScreen dial without adding a visible delay.
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
+    _setDialControllerText(number);
     _hangupEnabledAfter =
         DateTime.now().add(const Duration(milliseconds: 1500));
     await _sipService.makeCallTo(
       number,
       displayName: widget.autoCallDisplayName,
     );
-    if (mounted && _isActiveCallState(_sipService.state.callStatus)) {
+    if (mounted) {
       setState(() => _leadAutoCallPending = false);
     }
   }
 
   Future<void> _requestHangup() async {
+    if (_hangupRequestInFlight) return;
     final armedAfter = _hangupEnabledAfter;
     if (armedAfter != null && DateTime.now().isBefore(armedAfter)) {
+      unawaited(_sipService.recordUiDiagnostic(
+        'HANGUP_UI_IGNORED_GESTURE_GUARD',
+        <String, Object?>{
+          'auto_call': widget.autoCallNumber != null,
+          'call_state': _sipService.state.callStatus.name,
+        },
+      ));
       debugPrint(
         'SipScreen hangup ignored -> opening gesture guard active',
       );
       return;
     }
-    await _sipService.hangup();
+    _hangupRequestInFlight = true;
+    final openedAt = _autoCallOpenedAt;
+    final connectedAt = _sipService.currentCallStartedAt;
+    unawaited(_sipService.recordUiDiagnostic(
+      'HANGUP_UI_REQUESTED',
+      <String, Object?>{
+        'auto_call': widget.autoCallNumber != null,
+        'call_state': _sipService.state.callStatus.name,
+        'screen_age_ms': openedAt == null
+            ? null
+            : DateTime.now().difference(openedAt).inMilliseconds,
+        'connected_age_ms': connectedAt == null
+            ? null
+            : DateTime.now().difference(connectedAt).inMilliseconds,
+      },
+    ));
+    try {
+      await _sipService.hangup();
+    } finally {
+      _hangupRequestInFlight = false;
+    }
   }
 
   bool get _isHangupGestureGuarded {
@@ -401,8 +434,10 @@ class _SipScreenState extends State<SipScreen>
           }
 
           final state = _sipService.state;
-          final isActiveCall = _isActiveCallState(state.callStatus) ||
-              _leadAutoCallPending;
+          // Do not expose the hangup control while lead auto-dial is merely
+          // pending. It appears only after makeCallTo enters a real call state,
+          // matching the proven dialer flow.
+          final isActiveCall = _isActiveCallState(state.callStatus);
           final visibleBottomTabIndex =
               _hasContactsTab || _bottomTabIndex != 2 ? _bottomTabIndex : 1;
 
