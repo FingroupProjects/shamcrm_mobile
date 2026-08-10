@@ -105,31 +105,37 @@ class ShowCounter extends StatelessWidget {
 
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
+      child: SizedBox(
+        width: expandWave ? double.infinity : null,
         height: height.clamp(32.0, 56.0),
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 8 : 12,
-          vertical: compact ? 4 : 6,
-        ),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: Colors.redAccent.withValues(alpha: 0.22 + amp * 0.18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          width: expandWave ? double.infinity : null,
+          height: height.clamp(32.0, 56.0),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 8 : 10,
+            vertical: compact ? 4 : 6,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.redAccent.withValues(
-                alpha: pulse ? 0.12 + amp * 0.16 : 0.06 + amp * 0.1,
-              ),
-              blurRadius: 8 + (amp * 10),
-              spreadRadius: amp > 0.7 ? 0.8 : 0,
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: Colors.redAccent.withValues(alpha: 0.22 + amp * 0.18),
             ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.redAccent.withValues(
+                  alpha: pulse ? 0.12 + amp * 0.16 : 0.06 + amp * 0.1,
+                ),
+                blurRadius: 8 + (amp * 10),
+                spreadRadius: amp > 0.7 ? 0.8 : 0,
+              ),
+            ],
+          ),
+          child: content,
         ),
-        child: content,
       ),
     );
   }

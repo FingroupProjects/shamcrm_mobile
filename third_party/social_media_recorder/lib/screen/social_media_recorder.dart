@@ -195,9 +195,7 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
                 constraints.maxWidth > 0
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width - 24;
-        final targetWidth = recording
-            ? available
-            : widget.initRecordPackageWidth;
+        final targetWidth = recording ? available : widget.initRecordPackageWidth;
 
         return Listener(
           onPointerDown: (details) async {
@@ -265,48 +263,56 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            SizedBox(
-                              width: 72,
-                              child: ShowMicWithText(
-                                initRecordPackageWidth:
-                                    widget.initRecordPackageWidth,
-                                counterBackGroundColor:
-                                    widget.counterBackGroundColor,
-                                backGroundColor:
-                                    widget.recordIconBackGroundColor,
-                                fullRecordPackageHeight:
-                                    widget.fullRecordPackageHeight,
-                                recordIcon: widget.recordIcon,
-                                shouldShowText: true,
-                                soundRecorderState: state,
-                                slideToCancelTextStyle:
-                                    widget.slideToCancelTextStyle,
-                                slideToCancelText: widget.slideToCancelText,
-                                compactHint: true,
-                                showMic: false,
-                              ),
-                            ),
-                            Transform.translate(
-                              // Only the voice button slides on cancel gesture.
-                              offset: Offset(
-                                -state.edge.clamp(0.0, 72.0),
-                                0,
-                              ),
-                              child: ShowMicWithText(
-                                initRecordPackageWidth:
-                                    widget.initRecordPackageWidth,
-                                counterBackGroundColor:
-                                    widget.counterBackGroundColor,
-                                backGroundColor:
-                                    widget.recordIconBackGroundColor,
-                                fullRecordPackageHeight:
-                                    widget.fullRecordPackageHeight,
-                                recordIcon: widget.recordIcon,
-                                shouldShowText: false,
-                                soundRecorderState: state,
-                                slideToCancelTextStyle:
-                                    widget.slideToCancelTextStyle,
-                                slideToCancelText: widget.slideToCancelText,
+                            // Cancel label + mic slide together toward cancel.
+                            Flexible(
+                              child: Transform.translate(
+                                offset: Offset(
+                                  -state.edge.clamp(0.0, 72.0),
+                                  0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Flexible(
+                                      child: ShowMicWithText(
+                                        initRecordPackageWidth:
+                                            widget.initRecordPackageWidth,
+                                        counterBackGroundColor:
+                                            widget.counterBackGroundColor,
+                                        backGroundColor:
+                                            widget.recordIconBackGroundColor,
+                                        fullRecordPackageHeight:
+                                            widget.fullRecordPackageHeight,
+                                        recordIcon: widget.recordIcon,
+                                        shouldShowText: true,
+                                        soundRecorderState: state,
+                                        slideToCancelTextStyle:
+                                            widget.slideToCancelTextStyle,
+                                        slideToCancelText:
+                                            widget.slideToCancelText,
+                                        compactHint: true,
+                                        showMic: false,
+                                      ),
+                                    ),
+                                    ShowMicWithText(
+                                      initRecordPackageWidth:
+                                          widget.initRecordPackageWidth,
+                                      counterBackGroundColor:
+                                          widget.counterBackGroundColor,
+                                      backGroundColor:
+                                          widget.recordIconBackGroundColor,
+                                      fullRecordPackageHeight:
+                                          widget.fullRecordPackageHeight,
+                                      recordIcon: widget.recordIcon,
+                                      shouldShowText: false,
+                                      soundRecorderState: state,
+                                      slideToCancelTextStyle:
+                                          widget.slideToCancelTextStyle,
+                                      slideToCancelText:
+                                          widget.slideToCancelText,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],

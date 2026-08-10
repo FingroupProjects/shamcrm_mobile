@@ -1195,54 +1195,64 @@ class _InputFieldState extends State<InputField>
     return SizedBox(
       width: _voicePressed ? double.infinity : 56,
       height: _voicePressed ? 72 : 56,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.centerRight,
-        children: [
-          if (_voicePressed)
-            IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _micPulseController,
-                builder: (context, _) {
-                  final t = _micPulseController.value;
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Container(
-                      width: 96 + (t * 20),
-                      height: 96 + (t * 20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            accent.withValues(alpha: 0.28),
-                            accent.withValues(alpha: 0.0),
-                          ],
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          // Expand bar width on the same frame as press to avoid Row overflow.
+          _setVoicePressed(true);
+        },
+        onPointerCancel: (_) {
+          // Keep true while package still records; stopRecording clears it.
+        },
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.centerRight,
+          children: [
+            if (_voicePressed)
+              IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _micPulseController,
+                  builder: (context, _) {
+                    final t = _micPulseController.value;
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        width: 96 + (t * 20),
+                        height: 96 + (t * 20),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              accent.withValues(alpha: 0.28),
+                              accent.withValues(alpha: 0.0),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
+              )
+            else
+              IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _micPulseController,
+                  builder: (context, _) {
+                    final t = _micPulseController.value;
+                    return Container(
+                      width: 50 + (t * 5),
+                      height: 50 + (t * 5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: accent.withValues(alpha: 0.07 + (t * 0.04)),
+                      ),
+                    );
+                  },
+                ),
               ),
-            )
-          else
-            IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _micPulseController,
-                builder: (context, _) {
-                  final t = _micPulseController.value;
-                  return Container(
-                    width: 50 + (t * 5),
-                    height: 50 + (t * 5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accent.withValues(alpha: 0.07 + (t * 0.04)),
-                    ),
-                  );
-                },
-              ),
-            ),
-          recorder,
-        ],
+            recorder,
+          ],
+        ),
       ),
     );
   }

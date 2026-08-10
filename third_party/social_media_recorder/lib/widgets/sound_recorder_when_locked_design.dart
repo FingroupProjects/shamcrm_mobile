@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:social_media_recorder/provider/sound_record_notifier.dart';
 import 'package:social_media_recorder/widgets/show_counter.dart';
 
-/// Locked recording bar — single frosted capsule, Telegram+ quality.
+/// Locked recording bar — one capsule, no gap between cancel and wave.
 class SoundRecorderWhenLockedDesign extends StatelessWidget {
   final double fullRecordPackageHeight;
   final SoundRecordNotifier soundRecordNotifier;
@@ -53,13 +53,27 @@ class SoundRecorderWhenLockedDesign extends StatelessWidget {
     final barHeight = fullRecordPackageHeight.clamp(48.0, 64.0);
     final shell = cancelTextBackGroundColor ?? Colors.grey.shade100;
     final accent = recordIconWhenLockBackGroundColor;
+    final amp = soundRecordNotifier.currentAmplitude;
+    final pulse = soundRecordNotifier.second % 2 == 0;
+    final time =
+        '${soundRecordNotifier.minute.toString().padLeft(2, '0')}:'
+        '${soundRecordNotifier.second.toString().padLeft(2, '0')}';
+    final timeStyle = (counterTextStyle ??
+            const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ))
+        .copyWith(fontSize: 13, fontWeight: FontWeight.w700);
+    final waveColor =
+        (counterTextStyle?.color ?? Colors.redAccent).withValues(alpha: 0.95);
 
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Container(
         width: double.infinity,
         height: barHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: shell,
           borderRadius: BorderRadius.circular(barHeight / 2),
@@ -90,17 +104,51 @@ class SoundRecorderWhenLockedDesign extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ShowCounter(
-                soundRecorderState: soundRecordNotifier,
-                counterTextStyle: counterTextStyle,
-                counterBackGroundColor:
-                    counterBackGroundColor ?? accent.withValues(alpha: 0.12),
-                fullRecordPackageHeight: fullRecordPackageHeight,
-                expandWave: true,
+            const SizedBox(width: 6),
+            // Rec indicator + timer — tight against cancel, no nested pill gap.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Color.lerp(
+                  Colors.redAccent.shade200,
+                  Colors.redAccent,
+                  amp.clamp(0.0, 1.0),
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.redAccent.withValues(
+                      alpha: pulse ? 0.45 : 0.2,
+                    ),
+                    blurRadius: pulse ? 8 : 4,
+                  ),
+                ],
               ),
             ),
+            const SizedBox(width: 6),
+            Text(
+              time,
+              textDirection: TextDirection.ltr,
+              style: timeStyle,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 20,
+                child: LiveAmplitudeWaveform(
+                  samples: soundRecordNotifier.amplitudeSamples,
+                  currentAmplitude: amp,
+                  color: waveColor,
+                  barCount: 28,
+                  strokeWidth: 1.5,
+                  barGap: 1.0,
+                  maxHeightFactor: 0.88,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
             _CircleAction(
               size: barHeight - 6,
               onTap: _send,
