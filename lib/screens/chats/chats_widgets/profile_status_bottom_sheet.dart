@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -14,6 +15,7 @@ void showProfileStatusBottomSheet(
   String currentStatusTitle,
   Function() onStatusChanged,
 ) {
+  final rootContext = context;
   String selectedValue = currentStatusTitle;
   int? selectedStatusId = currentStatusId;
   bool isLoading = false;
@@ -44,7 +46,7 @@ void showProfileStatusBottomSheet(
                     borderRadius: BorderRadius.circular(1200),
                   ),
                 ),
-                
+
                 // Заголовок
                 Text(
                   AppLocalizations.of(context)!.translate('change_status'),
@@ -56,14 +58,15 @@ void showProfileStatusBottomSheet(
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Список статусов
                 Expanded(
                   child: cachedStatuses == null
                       ? FutureBuilder<List<LeadStatus>>(
                           future: ApiService().getLeadStatuses(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return Center(
                                 child: CircularProgressIndicator(
                                   color: context.appColors.buttonPrimaryBg,
@@ -72,7 +75,8 @@ void showProfileStatusBottomSheet(
                             } else if (snapshot.hasError) {
                               return Center(
                                 child: Text(
-                                  AppLocalizations.of(context)!.translate('error_text'),
+                                  AppLocalizations.of(context)!
+                                      .translate('error_text'),
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
@@ -80,10 +84,12 @@ void showProfileStatusBottomSheet(
                                   ),
                                 ),
                               );
-                            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            } else if (!snapshot.hasData ||
+                                snapshot.data!.isEmpty) {
                               return Center(
                                 child: Text(
-                                  AppLocalizations.of(context)!.translate('no_statuses'),
+                                  AppLocalizations.of(context)!
+                                      .translate('no_statuses'),
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 16,
@@ -95,10 +101,12 @@ void showProfileStatusBottomSheet(
 
                             // Кешируем статусы после первой загрузки
                             cachedStatuses = snapshot.data!
-                                .where((status) => status.lead_status_id == null)
+                                .where(
+                                    (status) => status.lead_status_id == null)
                                 .toList();
 
-                            return _buildStatusList(cachedStatuses!, selectedValue, (status) {
+                            return _buildStatusList(
+                                cachedStatuses!, selectedValue, (status) {
                               setState(() {
                                 selectedValue = status.title;
                                 selectedStatusId = status.id;
@@ -106,16 +114,17 @@ void showProfileStatusBottomSheet(
                             });
                           },
                         )
-                      : _buildStatusList(cachedStatuses!, selectedValue, (status) {
+                      : _buildStatusList(cachedStatuses!, selectedValue,
+                          (status) {
                           setState(() {
                             selectedValue = status.title;
                             selectedStatusId = status.id;
                           });
                         }),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Кнопка сохранения
                 CustomButton(
                   buttonText: isLoading
@@ -126,7 +135,28 @@ void showProfileStatusBottomSheet(
                   onPressed: isLoading
                       ? null
                       : () async {
-                          if (selectedStatusId != null && selectedStatusId != currentStatusId) {
+                          if (selectedStatusId != null &&
+                              selectedStatusId != currentStatusId) {
+                            final targetStatus = cachedStatuses
+                                ?.cast<LeadStatus?>()
+                                .firstWhere(
+                                  (status) => status?.id == selectedStatusId,
+                                  orElse: () => null,
+                                );
+                            final requiresReason =
+                                targetStatus != null && targetStatus.isFailure;
+
+                            ReasonForRefusalSubmitData? refusalData;
+                            if (requiresReason) {
+                              refusalData = await showReasonForRefusalDialog(
+                                context: context,
+                                type: 'lead',
+                              );
+                              if (refusalData == null) {
+                                return;
+                              }
+                            }
+
                             setState(() {
                               isLoading = true;
                             });
@@ -136,6 +166,8 @@ void showProfileStatusBottomSheet(
                                 leadId,
                                 currentStatusId,
                                 selectedStatusId!,
+                                reasonForRefusalId: refusalData?.reasonId,
+                                reasonForRefusal: refusalData?.comment,
                               );
 
                               // Закрываем модалку
@@ -143,25 +175,31 @@ void showProfileStatusBottomSheet(
                                 Navigator.pop(context);
 
                                 // Показываем успешное уведомление
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(rootContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      AppLocalizations.of(context)!.translate('status_changed_successfully'),
+                                      AppLocalizations.of(rootContext)!
+                                          .translate(
+                                              'status_changed_successfully'),
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
-                                        color: context.appColors.textInverse,
+                                        color:
+                                            rootContext.appColors.textInverse,
                                       ),
                                     ),
                                     behavior: SnackBarBehavior.floating,
-                                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    margin: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    backgroundColor: context.appColors.success,
+                                    backgroundColor:
+                                        rootContext.appColors.success,
                                     elevation: 3,
-                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
                                     duration: Duration(seconds: 3),
                                   ),
                                 );
@@ -179,16 +217,15 @@ void showProfileStatusBottomSheet(
                               // Получаем сообщение об ошибке
                               String errorMessage;
                               if (error is LeadStatusUpdateException) {
-                                // Используем message из exception
                                 errorMessage = error.message;
                               } else {
-                                // Общая ошибка
-                                errorMessage = AppLocalizations.of(context)!.translate('error_text');
+                                errorMessage = AppLocalizations.of(context)!
+                                    .translate('error_text');
                               }
 
                               Navigator.pop(context);
 
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(rootContext).showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     errorMessage,
@@ -196,17 +233,19 @@ void showProfileStatusBottomSheet(
                                       fontFamily: 'Gilroy',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
-                                      color: context.appColors.textInverse,
+                                      color: rootContext.appColors.textInverse,
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
-                                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  margin: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  backgroundColor: context.appColors.error,
+                                  backgroundColor: rootContext.appColors.error,
                                   elevation: 3,
-                                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
                                   duration: Duration(seconds: 3),
                                 ),
                               );
