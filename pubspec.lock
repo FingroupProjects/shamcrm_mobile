@@ -2203,10 +2203,9 @@ packages:
   social_media_recorder:
     dependency: "direct main"
     description:
-      name: social_media_recorder
-      sha256: c92f4a8ab4aef77fb501391cd9dfad2e01f73e6e3f120469dc362186db36e485
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/social_media_recorder"
+      relative: true
+    source: path
     version: "1.2.1"
   source_gen:
     dependency: transitive

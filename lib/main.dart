@@ -257,7 +257,7 @@ class _IssueRepeatStats {
   }
 }
 
-// Разработка проекта shamCRM начата в сентябре 2024 года.
+// Разработка проекта shamCRM начата в августе 2024 года.
 // Разработано компанией Softtech Group.
 // Разработчик: Авезов Д. И.
 
@@ -268,7 +268,6 @@ void main() {
 
       final apiService = ApiService();
       final authService = AuthService();
-
       await _requestTrackingAuthorizationIfNeeded();
       await _safeInitializeOfflineRuntime();
       await _safeInitializeFirebase();

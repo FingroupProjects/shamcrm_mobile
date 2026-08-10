@@ -72,8 +72,6 @@ class SocialMediaRecorder extends StatefulWidget {
   // use it to change send button when user lock the record
   final Widget? sendButtonIcon;
 
-  // this function called when cancel record function
-
   // use to set max record time in second
   final int? maxRecordTimeInSecond;
 
@@ -82,7 +80,6 @@ class SocialMediaRecorder extends StatefulWidget {
 
   final double initRecordPackageWidth;
 
-  // ignore: sort_constructors_first
   const SocialMediaRecorder({
     this.sendButtonIcon,
     this.initRecordPackageWidth = 40,
@@ -145,38 +142,26 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
     soundRecordNotifier.stopRecording = widget.stopRecording ?? (String x) {};
     soundRecordNotifier.sendRequestFunction = widget.sendRequestFunction;
     return MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (context) => soundRecordNotifier),
-        ],
-        child: Consumer<SoundRecordNotifier>(
-          builder: (context, value, _) {
-            return Directionality(
-                textDirection: TextDirection.rtl, child: makeBody(value));
-          },
-        ));
+      providers: [
+        ChangeNotifierProvider(create: (context) => soundRecordNotifier),
+      ],
+      child: Consumer<SoundRecordNotifier>(
+        builder: (context, value, _) {
+          return makeBody(value);
+        },
+      ),
+    );
   }
 
   Widget makeBody(SoundRecordNotifier state) {
-    return Column(
-      children: [
-        GestureDetector(
-          onHorizontalDragUpdate: (scrollEnd) {
-            state.updateScrollValue(scrollEnd.globalPosition, context);
-          },
-          onHorizontalDragEnd: (x) {
-            if (state.buttonPressed && !state.isLocked) state.finishRecording();
-          },
-          child: Container(
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: recordVoice(state),
-          ),
-        )
-      ],
+    return GestureDetector(
+      onHorizontalDragUpdate: (scrollEnd) {
+        state.updateScrollValue(scrollEnd.globalPosition, context);
+      },
+      onHorizontalDragEnd: (x) {
+        if (state.buttonPressed && !state.isLocked) state.finishRecording();
+      },
+      child: recordVoice(state),
     );
   }
 
@@ -185,7 +170,6 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
       return SoundRecorderWhenLockedDesign(
         cancelText: widget.cancelText,
         fullRecordPackageHeight: widget.fullRecordPackageHeight,
-        // cancelRecordFunction: widget.cacnelRecording ?? () {},
         sendButtonIcon: widget.sendButtonIcon,
         cancelTextBackGroundColor: widget.cancelTextBackGroundColor,
         cancelTextStyle: widget.cancelTextStyle,
@@ -200,87 +184,167 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
       );
     }
 
-    return Listener(
-      onPointerDown: (details) async {
-        state.setNewInitialDraggableHeight(details.position.dy);
-        state.resetEdgePadding();
+    final recording = soundRecordNotifier.isShow;
+    final height = recording
+        ? widget.fullRecordPackageHeight + 4
+        : widget.fullRecordPackageHeight;
 
-        soundRecordNotifier.isShow = true;
-        state.record(widget.startRecording);
-      },
-      onPointerUp: (details) async {
-        if (!state.isLocked) {
-          state.finishRecording();
-        }
-      },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: soundRecordNotifier.isShow ? 0 : 300),
-        height: widget.fullRecordPackageHeight,
-        width: soundRecordNotifier.isShow
-            ? (MediaQuery.of(context).size.width - 24).clamp(
-                widget.initRecordPackageWidth,
-                MediaQuery.of(context).size.width - 24,
-              )
-            : widget.initRecordPackageWidth,
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 24,
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: Padding(
-                padding: EdgeInsets.only(right: state.edge),
-                child: ClipRRect(
-                  borderRadius: soundRecordNotifier.isShow
-                      ? (widget.radius ?? BorderRadius.circular(20))
-                      : widget.radius != null && !soundRecordNotifier.isShow
-                          ? widget.radius!
-                          : BorderRadius.circular(999),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: widget.backGroundColor ?? Colors.grey.shade100,
-                    ),
-                    child: Stack(
-                      children: [
-                        Center(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxWidth.isFinite &&
+                constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width - 24;
+        final targetWidth = recording
+            ? available
+            : widget.initRecordPackageWidth;
+
+        return Listener(
+          onPointerDown: (details) async {
+            state.setNewInitialDraggableHeight(details.position.dy);
+            state.resetEdgePadding();
+            soundRecordNotifier.isShow = true;
+            state.record(widget.startRecording);
+          },
+          onPointerUp: (details) async {
+            if (!state.isLocked) {
+              state.finishRecording();
+            }
+          },
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: recording ? 0 : 260),
+            curve: Curves.easeOutCubic,
+            height: height,
+            width: targetWidth,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.centerRight,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  decoration: BoxDecoration(
+                    color: recording
+                        ? (widget.backGroundColor ?? Colors.grey.shade100)
+                        : Colors.transparent,
+                    borderRadius: widget.radius ?? BorderRadius.circular(999),
+                    border: recording
+                        ? Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          )
+                        : null,
+                    boxShadow: recording
+                        ? [
+                            BoxShadow(
+                              color: (widget.recordIconBackGroundColor ??
+                                      Colors.blue)
+                                  .withValues(alpha: 0.16),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  padding: recording
+                      ? const EdgeInsets.symmetric(horizontal: 6)
+                      : EdgeInsets.zero,
+                  clipBehavior: Clip.none,
+                  child: recording
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: ShowCounter(
+                                counterBackGroundColor:
+                                    widget.counterBackGroundColor,
+                                soundRecorderState: state,
+                                counterTextStyle: widget.counterTextStyle,
+                                fullRecordPackageHeight:
+                                    widget.fullRecordPackageHeight,
+                                compact: true,
+                                expandWave: true,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 72,
+                              child: ShowMicWithText(
+                                initRecordPackageWidth:
+                                    widget.initRecordPackageWidth,
+                                counterBackGroundColor:
+                                    widget.counterBackGroundColor,
+                                backGroundColor:
+                                    widget.recordIconBackGroundColor,
+                                fullRecordPackageHeight:
+                                    widget.fullRecordPackageHeight,
+                                recordIcon: widget.recordIcon,
+                                shouldShowText: true,
+                                soundRecorderState: state,
+                                slideToCancelTextStyle:
+                                    widget.slideToCancelTextStyle,
+                                slideToCancelText: widget.slideToCancelText,
+                                compactHint: true,
+                                showMic: false,
+                              ),
+                            ),
+                            Transform.translate(
+                              // Only the voice button slides on cancel gesture.
+                              offset: Offset(
+                                -state.edge.clamp(0.0, 72.0),
+                                0,
+                              ),
+                              child: ShowMicWithText(
+                                initRecordPackageWidth:
+                                    widget.initRecordPackageWidth,
+                                counterBackGroundColor:
+                                    widget.counterBackGroundColor,
+                                backGroundColor:
+                                    widget.recordIconBackGroundColor,
+                                fullRecordPackageHeight:
+                                    widget.fullRecordPackageHeight,
+                                recordIcon: widget.recordIcon,
+                                shouldShowText: false,
+                                soundRecorderState: state,
+                                slideToCancelTextStyle:
+                                    widget.slideToCancelTextStyle,
+                                slideToCancelText: widget.slideToCancelText,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Center(
                           child: ShowMicWithText(
-                            initRecordPackageWidth: widget.initRecordPackageWidth,
-                            counterBackGroundColor: widget.counterBackGroundColor,
+                            initRecordPackageWidth:
+                                widget.initRecordPackageWidth,
+                            counterBackGroundColor:
+                                widget.counterBackGroundColor,
                             backGroundColor: widget.recordIconBackGroundColor,
                             fullRecordPackageHeight:
                                 widget.fullRecordPackageHeight,
                             recordIcon: widget.recordIcon,
-                            shouldShowText: soundRecordNotifier.isShow,
+                            shouldShowText: false,
                             soundRecorderState: state,
-                            slideToCancelTextStyle: widget.slideToCancelTextStyle,
+                            slideToCancelTextStyle:
+                                widget.slideToCancelTextStyle,
                             slideToCancelText: widget.slideToCancelText,
                           ),
                         ),
-                        if (soundRecordNotifier.isShow)
-                          Center(
-                            child: ShowCounter(
-                                counterBackGroundColor:
-                                    widget.counterBackGroundColor,
-                                soundRecorderState: state,
-                                fullRecordPackageHeight:
-                                    widget.fullRecordPackageHeight),
-                          ),
-                      ],
+                ),
+                if (recording)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 48,
+                      child: LockRecord(
+                        soundRecorderState: state,
+                        lockIcon: widget.lockButton,
+                      ),
                     ),
                   ),
-                ),
-              ),
+              ],
             ),
-            SizedBox(
-              width: 60,
-              child: LockRecord(
-                soundRecorderState: state,
-                lockIcon: widget.lockButton,
-              ),
-            )
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

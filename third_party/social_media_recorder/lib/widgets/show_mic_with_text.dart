@@ -1,12 +1,14 @@
 library social_media_recorder;
 
-import 'package:animated_text_kit/animated_text_kit.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:social_media_recorder/provider/sound_record_notifier.dart';
 
-/// used to show mic and show dragg text when
-/// press into record icon
-class ShowMicWithText extends StatelessWidget {
+/// Mic button + optional slide-to-cancel hint.
+///
+/// [slideOffset] moves ONLY the mic button (cancel gesture), not the whole bar.
+class ShowMicWithText extends StatefulWidget {
   final bool shouldShowText;
   final String? slideToCancelText;
   final SoundRecordNotifier soundRecorderState;
@@ -16,9 +18,11 @@ class ShowMicWithText extends StatelessWidget {
   final Color? counterBackGroundColor;
   final double fullRecordPackageHeight;
   final double initRecordPackageWidth;
+  final bool compactHint;
+  final double slideOffset;
+  final bool showMic;
 
-  // ignore: sort_constructors_first
-  ShowMicWithText({
+  const ShowMicWithText({
     required this.backGroundColor,
     required this.initRecordPackageWidth,
     required this.fullRecordPackageHeight,
@@ -29,112 +33,140 @@ class ShowMicWithText extends StatelessWidget {
     required this.slideToCancelText,
     required this.recordIcon,
     required this.counterBackGroundColor,
+    this.compactHint = false,
+    this.slideOffset = 0,
+    this.showMic = true,
   }) : super(key: key);
-  final colorizeColors = [
-    Colors.black,
-    Colors.grey.shade200,
-    Colors.black,
-  ];
-  final colorizeTextStyle = const TextStyle(
-    fontSize: 14.0,
-    fontFamily: 'Horizon',
-  );
+
+  @override
+  State<ShowMicWithText> createState() => _ShowMicWithTextState();
+}
+
+class _ShowMicWithTextState extends State<ShowMicWithText>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _hintController;
+
+  @override
+  void initState() {
+    super.initState();
+    _hintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _hintController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final showWave = shouldShowText || soundRecorderState.buttonPressed;
+    final pressed = widget.soundRecorderState.buttonPressed;
+    final showHint = widget.shouldShowText;
+    final layoutSize = pressed
+        ? math.min(40.0, widget.fullRecordPackageHeight - 8)
+        : math.min(40.0, widget.initRecordPackageWidth - 4);
+    final hintStyle = (widget.slideToCancelTextStyle ??
+            TextStyle(
+              fontSize: widget.compactHint ? 11 : 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade700,
+            ))
+        .copyWith(fontSize: widget.compactHint ? 11 : 13);
 
-    return Row(
-      mainAxisAlignment: !soundRecorderState.buttonPressed
-          ? MainAxisAlignment.center
-          : MainAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Transform.scale(
-              key: soundRecorderState.key,
-              scale: soundRecorderState.buttonPressed ? 1.12 : 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(600),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeIn,
-                  width: soundRecorderState.buttonPressed
-                      ? fullRecordPackageHeight
-                      : initRecordPackageWidth - 5,
-                  height: fullRecordPackageHeight,
-                  child: Container(
-                    color: (soundRecorderState.buttonPressed)
-                        ? backGroundColor ??
-                            Theme.of(context).colorScheme.secondary
-                        : Colors.transparent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: recordIcon ??
-                          Icon(
-                            Icons.mic,
-                            size: 28,
-                            color: (soundRecorderState.buttonPressed)
-                                ? Colors.grey.shade200
-                                : Colors.black,
-                          ),
+    final mic = SizedBox(
+      key: widget.soundRecorderState.key,
+      width: layoutSize,
+      height: layoutSize,
+      child: OverflowBox(
+        minWidth: layoutSize,
+        minHeight: layoutSize,
+        maxWidth: 88,
+        maxHeight: 88,
+        alignment: Alignment.center,
+        child: Transform.scale(
+          scale: pressed ? 1.06 : 1.0,
+          child: Container(
+            width: layoutSize,
+            height: layoutSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: pressed
+                  ? (widget.backGroundColor ??
+                      Theme.of(context).colorScheme.secondary)
+                  : Colors.transparent,
+              boxShadow: pressed
+                  ? [
+                      BoxShadow(
+                        color: (widget.backGroundColor ?? Colors.blue)
+                            .withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: ClipOval(
+              child: Center(
+                child: widget.recordIcon ??
+                    Icon(
+                      Icons.mic_rounded,
+                      size: 22,
+                      color: pressed ? Colors.white : Colors.black87,
                     ),
-                  ),
-                ),
               ),
             ),
-          ],
+          ),
         ),
-        if (showWave)
+      ),
+    );
+
+    if (!showHint) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: mic,
+      );
+    }
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 10, right: 12),
-              child: Row(
-                children: List.generate(6, (index) {
-                  final height = (soundRecorderState.second % 4) + 4 + (index % 3);
-                  return Expanded(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      margin: EdgeInsets.symmetric(horizontal: 1.5),
-                      height: (showWave ? (height * 2.2) : 6).toDouble(),
-                      decoration: BoxDecoration(
-                        color: soundRecorderState.buttonPressed
-                            ? Colors.white.withValues(alpha: 0.92)
-                            : Colors.black.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+              padding: const EdgeInsets.only(left: 2, right: 4),
+              child: AnimatedBuilder(
+                animation: _hintController,
+                builder: (context, child) {
+                  final t = Curves.easeInOut.transform(_hintController.value);
+                  return Opacity(
+                    opacity: 0.5 + (t * 0.4),
+                    child: Transform.translate(
+                      offset: Offset(-3 * t, 0),
+                      child: child,
                     ),
                   );
-                }),
-              ),
-            ),
-          )
-        else
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8, right: 8),
-              child: DefaultTextStyle(
-                overflow: TextOverflow.clip,
-                maxLines: 1,
-                style: const TextStyle(
-                  fontSize: 14.0,
-                ),
-                child: AnimatedTextKit(
-                  animatedTexts: [
-                    ColorizeAnimatedText(
-                      slideToCancelText ?? "",
-                      textStyle: slideToCancelTextStyle ?? colorizeTextStyle,
-                      colors: colorizeColors,
-                    ),
-                  ],
-                  isRepeatingAnimation: true,
-                  onTap: () {},
+                },
+                child: Text(
+                  widget.slideToCancelText ?? '',
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: hintStyle,
                 ),
               ),
             ),
           ),
-      ],
+          if (widget.showMic)
+            Transform.translate(
+              offset: Offset(-widget.slideOffset, 0),
+              child: mic,
+            ),
+        ],
+      ),
     );
   }
 }

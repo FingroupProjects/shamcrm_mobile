@@ -871,7 +871,7 @@ class _InputFieldState extends State<InputField>
                 ),
               ),
 
-            // Поле ввода
+            // Поле ввода / голосовая запись
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: (context.watch<ListenSenderFileCubit>().state)
@@ -883,129 +883,154 @@ class _InputFieldState extends State<InputField>
                         strokeWidth: 2.5,
                       ),
                     )
-                  : Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            color: inputSurface.withValues(alpha: 0.88),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: borderColor,
-                              width: 1.0,
-                            ),
-                            boxShadow: context.appShadows.card,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              if (widget.isLeadChat)
-                                IconButton(
-                                  icon: Image.asset(
-                                    'assets/icons/chats/menu-button.png',
-                                    width: 20,
-                                    height: 20,
-                                    color: context.appColors.iconPrimary,
-                                  ),
-                                  iconSize: 20,
-                                  padding: EdgeInsets.all(8),
-                                  constraints: BoxConstraints(
-                                    minWidth: 36,
-                                    minHeight: 36,
-                                  ),
-                                  onPressed: () {
-                                    _showTemplatesPanel(context);
-                                  },
-                                ),
-                              Expanded(
-                                child: RichTextField(
-                                  controller: widget.messageController,
-                                  focusNode: widget.focusNode,
-                                  onChanged: _handleTextChange,
-                                  htmlContent: _htmlContent,
-                                  onLongPress: _showFormattingPanelOnLongPress,
-                                  hintText: AppLocalizations.of(context)!
-                                      .translate('enter_your_sms'),
-                                  style: context.appTextStyles.bodyMd.copyWith(
-                                    color: primaryText,
-                                    fontSize: appearance.scaledFont(15),
-                                    fontWeight: appearance.messageFontWeight,
-                                    height: 1.3,
-                                  ),
-                                  hintStyle: textStyles.bodyMd.copyWith(
-                                    color: hintText,
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.3,
-                                  ),
-                                  fillColor: context.appColors.overlay
-                                      .withValues(alpha: 0.0),
-                                  borderRadius: BorderRadius.circular(24),
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 15,
-                                  ),
-                                  maxVisibleLines: 5,
-                                  lineHeight: 20.0,
-                                ),
-                              ),
-                              IconButton(
-                                icon: Image.asset(
-                                  'assets/icons/chats/file.png',
-                                  width: 20,
-                                  height: 20,
-                                  color: context.appColors.iconPrimary,
-                                ),
-                                iconSize: 20,
-                                padding: EdgeInsets.all(8),
-                                constraints: BoxConstraints(
-                                  minWidth: 36,
-                                  minHeight: 36,
-                                ),
-                                onPressed: widget.onAttachFile,
-                              ),
-                              AnimatedSwitcher(
-                                duration: Duration(milliseconds: 250),
-                                transitionBuilder: (Widget child,
-                                    Animation<double> animation) {
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: ScaleTransition(
-                                      scale: animation,
-                                      child: child,
+                  : AnimatedSize(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        height: _voicePressed ? 78 : 56,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 180),
+                              opacity: _voicePressed ? 0 : 1,
+                              child: IgnorePointer(
+                                ignoring: _voicePressed,
+                                child: Container(
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        inputSurface.withValues(alpha: 0.88),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: borderColor,
+                                      width: 1.0,
                                     ),
-                                  );
-                                },
-                                child: _hasText
-                                    ? _buildSendButton(messagingCubit,
-                                        editingMessage, replyMsgId)
-                                    : SizedBox(
-                                        key: ValueKey('voice_placeholder'),
-                                        width: 36,
-                                        height: 36,
+                                    boxShadow: context.appShadows.card,
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      if (widget.isLeadChat)
+                                        IconButton(
+                                          icon: Image.asset(
+                                            'assets/icons/chats/menu-button.png',
+                                            width: 20,
+                                            height: 20,
+                                            color:
+                                                context.appColors.iconPrimary,
+                                          ),
+                                          iconSize: 20,
+                                          padding: const EdgeInsets.all(8),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 36,
+                                            minHeight: 36,
+                                          ),
+                                          onPressed: () {
+                                            _showTemplatesPanel(context);
+                                          },
+                                        ),
+                                      Expanded(
+                                        child: RichTextField(
+                                          controller:
+                                              widget.messageController,
+                                          focusNode: widget.focusNode,
+                                          onChanged: _handleTextChange,
+                                          htmlContent: _htmlContent,
+                                          onLongPress:
+                                              _showFormattingPanelOnLongPress,
+                                          hintText:
+                                              AppLocalizations.of(context)!
+                                                  .translate('enter_your_sms'),
+                                          style: context.appTextStyles.bodyMd
+                                              .copyWith(
+                                            color: primaryText,
+                                            fontSize:
+                                                appearance.scaledFont(15),
+                                            fontWeight:
+                                                appearance.messageFontWeight,
+                                            height: 1.3,
+                                          ),
+                                          hintStyle:
+                                              textStyles.bodyMd.copyWith(
+                                            color: hintText,
+                                            fontWeight: FontWeight.w400,
+                                            height: 1.3,
+                                          ),
+                                          fillColor: context
+                                              .appColors.overlay
+                                              .withValues(alpha: 0.0),
+                                          borderRadius:
+                                              BorderRadius.circular(24),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 15,
+                                          ),
+                                          maxVisibleLines: 5,
+                                          lineHeight: 20.0,
+                                        ),
                                       ),
-                              ),
-                              SizedBox(width: 4),
-                            ],
-                          ),
-                        ),
-                        if (!_hasText)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            top: 0,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 4,
-                                right: 4,
-                              ),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: _buildVoiceRecorder(),
+                                      IconButton(
+                                        icon: Image.asset(
+                                          'assets/icons/chats/file.png',
+                                          width: 20,
+                                          height: 20,
+                                          color:
+                                              context.appColors.iconPrimary,
+                                        ),
+                                        iconSize: 20,
+                                        padding: const EdgeInsets.all(8),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 36,
+                                          minHeight: 36,
+                                        ),
+                                        onPressed: widget.onAttachFile,
+                                      ),
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                            milliseconds: 250),
+                                        transitionBuilder: (Widget child,
+                                            Animation<double> animation) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: ScaleTransition(
+                                              scale: animation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: _hasText
+                                            ? _buildSendButton(
+                                                messagingCubit,
+                                                editingMessage,
+                                                replyMsgId)
+                                            : const SizedBox(
+                                                key: ValueKey(
+                                                    'voice_placeholder'),
+                                                width: 48,
+                                                height: 48,
+                                              ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                            if (!_hasText || _voicePressed)
+                              Positioned.fill(
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: _buildVoiceRecorder(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
             ),
           ],
@@ -1089,24 +1114,25 @@ class _InputFieldState extends State<InputField>
     final inputSurface = appearance.inputSurfaceColor(context);
     final borderColor = context.adaptiveBorderOn(inputSurface);
     final primaryText = context.adaptiveForegroundOn(inputSurface);
+    final cancelLabel = AppLocalizations.of(context)!.translate('cancel');
 
     final recorder = (context.watch<ListenSenderVoiceCubit>().state)
         ? Container(
             key: const ValueKey('voice_loading'),
-            width: 48,
-            height: 48,
+            width: _voicePressed ? double.infinity : 48,
+            height: 56,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: inputSurface.withValues(alpha: 0.96),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(28),
               border: Border.all(color: borderColor),
             ),
             child: SizedBox(
-              width: 20,
-              height: 20,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
-                color: context.appColors.buttonPrimaryBg,
-                strokeWidth: 2,
+                color: accent,
+                strokeWidth: 2.2,
               ),
             ),
           )
@@ -1114,158 +1140,122 @@ class _InputFieldState extends State<InputField>
             key: const ValueKey('voice_recorder'),
             maxRecordTimeInSecond: 180,
             initRecordPackageWidth: 48,
-            fullRecordPackageHeight: 48,
+            fullRecordPackageHeight: 52,
             startRecording: () {
+              HapticFeedback.lightImpact();
               _setVoicePressed(true);
             },
             stopRecording: (time) {
               _setVoicePressed(false);
             },
             sendRequestFunction: widget.sendRequestFunction,
-            cancelText: AppLocalizations.of(context)!.translate('cancel'),
+            cancelText: cancelLabel,
             cancelTextStyle: context.appTextStyles.bodyMd.copyWith(
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              color: primaryText.withValues(alpha: 0.72),
             ),
             slideToCancelText:
                 AppLocalizations.of(context)!.translate('cancel_chat_sms'),
             slideToCancelTextStyle: context.appTextStyles.bodyMd.copyWith(
               fontWeight: FontWeight.w500,
-              color: primaryText,
+              color: primaryText.withValues(alpha: 0.72),
+              letterSpacing: 0.1,
             ),
-            cancelTextBackGroundColor:
-                appearance.inputSurfaceColor(context).withValues(alpha: 0.94),
-            recordIconBackGroundColor:
-                appearance.accentColor(context).withValues(alpha: 0.14),
-            recordIconWhenLockBackGroundColor:
-                appearance.accentColor(context).withValues(alpha: 0.14),
-            backGroundColor:
-                appearance.inputSurfaceColor(context).withValues(alpha: 0.94),
-            counterBackGroundColor:
-                appearance.accentColor(context).withValues(alpha: 0.14),
-            counterTextStyle: context.appTextStyles.bodySm.copyWith(
-              fontWeight: FontWeight.w500,
+            cancelTextBackGroundColor: inputSurface.withValues(alpha: 0.96),
+            recordIconBackGroundColor: accent,
+            recordIconWhenLockBackGroundColor: accent,
+            backGroundColor: inputSurface.withValues(alpha: 0.96),
+            counterBackGroundColor: accent.withValues(alpha: 0.12),
+            counterTextStyle: context.appTextStyles.bodyMd.copyWith(
+              fontWeight: FontWeight.w700,
               color: primaryText,
+              letterSpacing: 0.4,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
             recordIcon: _buildVoiceMicOrb(
               accent: accent,
-              fill: appearance.accentColor(context).withValues(alpha: 0.16),
+              filled: true,
+              size: 36,
             ),
-            recordIconWhenLockedRecord: _buildVoiceMicOrb(
-              accent: accent,
-              fill: appearance.accentColor(context).withValues(alpha: 0.16),
+            recordIconWhenLockedRecord: null,
+            lockButton: Icon(
+              Icons.lock_rounded,
+              size: 14,
+              color: Colors.white.withValues(alpha: 0.95),
             ),
-            lockButton: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: inputSurface.withValues(alpha: 0.96),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: borderColor),
-              ),
-              child: Icon(
-                Icons.lock_outline_rounded,
-                size: 16,
-                color: primaryText,
-              ),
-            ),
-            sendButtonIcon: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: appearance.accentColor(context).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: accent.withValues(alpha: 0.32)),
-              ),
-              child: Icon(
-                Icons.send_rounded,
-                size: 16,
-                color: accent,
-              ),
+            sendButtonIcon: const Icon(
+              Icons.send_rounded,
+              size: 20,
+              color: Colors.white,
             ),
             encode: AudioEncoderType.AAC,
             radius: BorderRadius.circular(999),
           );
 
-    const voiceRecorderMaxWidth = 320.0;
-
     return SizedBox(
-      width: voiceRecorderMaxWidth,
-      height: 58,
-      child: Listener(
-        onPointerDown: (_) => _setVoicePressed(true),
-        onPointerUp: (_) => _setVoicePressed(false),
-        onPointerCancel: (_) => _setVoicePressed(false),
-        child: Stack(
-          alignment: Alignment.centerRight,
-          clipBehavior: Clip.none,
-          children: [
-            AnimatedOpacity(
-              opacity: _voicePressed ? 1 : 0,
-              duration: const Duration(milliseconds: 160),
-              child: IgnorePointer(
-                child: Container(
-                  margin: const EdgeInsets.only(right: 56),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(
-                      6,
-                      (index) => AnimatedScale(
-                        scale:
-                            _voicePressed ? 0.75 + ((index % 3) * 0.18) : 0.7,
-                        duration: Duration(milliseconds: 220 + index * 30),
-                        curve: Curves.easeOutCubic,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Container(
-                            width: 3,
-                            height: 14 + (index.isEven ? 10 : 4),
-                            decoration: BoxDecoration(
-                              color: accent.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
+      width: _voicePressed ? double.infinity : 56,
+      height: _voicePressed ? 72 : 56,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.centerRight,
+        children: [
+          if (_voicePressed)
+            IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _micPulseController,
+                builder: (context, _) {
+                  final t = _micPulseController.value;
+                  return Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      width: 96 + (t * 20),
+                      height: 96 + (t * 20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            accent.withValues(alpha: 0.28),
+                            accent.withValues(alpha: 0.0),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
+              ),
+            )
+          else
+            IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _micPulseController,
+                builder: (context, _) {
+                  final t = _micPulseController.value;
+                  return Container(
+                    width: 50 + (t * 5),
+                    height: 50 + (t * 5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accent.withValues(alpha: 0.07 + (t * 0.04)),
+                    ),
+                  );
+                },
               ),
             ),
-            AnimatedScale(
-              scale: _voicePressed ? 1.04 : 1.0,
-              duration: const Duration(milliseconds: 140),
-              curve: Curves.easeOut,
-              child: OverflowBox(
-                minWidth: 0,
-                maxWidth: voiceRecorderMaxWidth,
-                minHeight: 0,
-                maxHeight: 58,
-                alignment: Alignment.centerRight,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: recorder,
-                ),
-              ),
-            ),
-          ],
-        ),
+          recorder,
+        ],
       ),
     );
   }
 
   Widget _buildVoiceMicOrb({
     required Color accent,
-    required Color fill,
+    required bool filled,
+    double size = 36,
   }) {
+    final ringPad = _voicePressed ? 20.0 : 0.0;
     return SizedBox(
-      width: 72,
-      height: 72,
+      width: size + ringPad,
+      height: size + ringPad,
       child: AnimatedBuilder(
         animation: _micPulseController,
         builder: (context, _) {
@@ -1274,20 +1264,37 @@ class _InputFieldState extends State<InputField>
             alignment: Alignment.center,
             clipBehavior: Clip.none,
             children: [
-              _pulseRing(accent: accent, progress: t),
-              _pulseRing(accent: accent, progress: (t + 0.5) % 1.0),
+              if (_voicePressed) ...[
+                _pulseRing(accent: accent, progress: t, size: size + 20),
+                _pulseRing(
+                  accent: accent,
+                  progress: (t + 0.5) % 1.0,
+                  size: size + 20,
+                ),
+              ],
               Container(
-                width: 48,
-                height: 48,
+                width: size,
+                height: size,
                 decoration: BoxDecoration(
-                  color: fill,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: accent.withValues(alpha: 0.32)),
+                  shape: BoxShape.circle,
+                  color: filled ? accent : accent.withValues(alpha: 0.16),
+                  border: Border.all(
+                    color: accent.withValues(alpha: filled ? 0.55 : 0.32),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          accent.withValues(alpha: _voicePressed ? 0.4 : 0.18),
+                      blurRadius: _voicePressed ? 14 : 8,
+                      spreadRadius: _voicePressed ? 1 : 0,
+                    ),
+                  ],
                 ),
                 child: Icon(
                   Icons.mic_rounded,
-                  size: 20,
-                  color: accent,
+                  size: size * 0.48,
+                  color: filled ? Colors.white : accent,
                 ),
               ),
             ],
@@ -1300,22 +1307,23 @@ class _InputFieldState extends State<InputField>
   Widget _pulseRing({
     required Color accent,
     required double progress,
+    required double size,
   }) {
-    if (!_voicePressed) {
-      return const SizedBox.shrink();
-    }
-    final scale = 0.7 + progress * 0.7;
-    final opacity = (1 - progress) * 0.35;
+    final scale = 0.72 + progress * 0.78;
+    final opacity = (1 - progress) * 0.42;
     return Transform.scale(
       scale: scale,
       child: Opacity(
         opacity: opacity,
         child: Container(
-          width: 72,
-          height: 72,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: accent,
+            border: Border.all(
+              color: accent,
+              width: 2.2 * (1 - progress * 0.6),
+            ),
           ),
         ),
       ),

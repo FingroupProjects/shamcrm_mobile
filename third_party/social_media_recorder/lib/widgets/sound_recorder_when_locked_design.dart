@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:social_media_recorder/provider/sound_record_notifier.dart';
 import 'package:social_media_recorder/widgets/show_counter.dart';
 
-// ignore: must_be_immutable
+/// Locked recording bar — single frosted capsule, Telegram+ quality.
 class SoundRecorderWhenLockedDesign extends StatelessWidget {
   final double fullRecordPackageHeight;
   final SoundRecordNotifier soundRecordNotifier;
@@ -18,7 +18,7 @@ class SoundRecorderWhenLockedDesign extends StatelessWidget {
   final Color? counterBackGroundColor;
   final Color? cancelTextBackGroundColor;
   final Widget? sendButtonIcon;
-  // ignore: sort_constructors_first
+
   const SoundRecorderWhenLockedDesign({
     Key? key,
     required this.fullRecordPackageHeight,
@@ -35,89 +35,134 @@ class SoundRecorderWhenLockedDesign extends StatelessWidget {
     required this.cancelTextBackGroundColor,
   }) : super(key: key);
 
+  void _cancel() {
+    soundRecordNotifier.isShow = false;
+    final time =
+        '${soundRecordNotifier.minute}:${soundRecordNotifier.second}';
+    stopRecording?.call(time);
+    soundRecordNotifier.resetEdgePadding();
+  }
+
+  void _send() {
+    soundRecordNotifier.isShow = false;
+    soundRecordNotifier.finishRecording();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(
-        color: cancelTextBackGroundColor ?? Colors.grey.shade100,
-        borderRadius: const BorderRadius.only(
-          bottomRight: Radius.circular(24),
-          topRight: Radius.circular(24),
+    final barHeight = fullRecordPackageHeight.clamp(48.0, 64.0);
+    final shell = cancelTextBackGroundColor ?? Colors.grey.shade100;
+    final accent = recordIconWhenLockBackGroundColor;
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        width: double.infinity,
+        height: barHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: shell,
+          borderRadius: BorderRadius.circular(barHeight / 2),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.14),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-      ),
-      child: InkWell(
-        onTap: () {
-          soundRecordNotifier.isShow = false;
-          soundRecordNotifier.resetEdgePadding();
-        },
         child: Row(
           children: [
-            InkWell(
-              onTap: () async {
-                soundRecordNotifier.isShow = false;
-                soundRecordNotifier.finishRecording();
-              },
-              child: Transform.scale(
-                scale: 1.2,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(600),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeIn,
-                    width: fullRecordPackageHeight,
-                    height: fullRecordPackageHeight,
-                    child: Container(
-                      color: recordIconWhenLockBackGroundColor,
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: recordIconWhenLockedRecord ??
-                            sendButtonIcon ??
-                            Icon(
-                              Icons.send,
-                              textDirection: TextDirection.ltr,
-                              size: 28,
-                              color: (soundRecordNotifier.buttonPressed)
-                                  ? Colors.grey.shade200
-                                  : Colors.black,
-                            ),
-                      ),
-                    ),
-                  ),
+            _CircleAction(
+              size: barHeight - 10,
+              onTap: _cancel,
+              background: Colors.redAccent.withValues(alpha: 0.14),
+              border: Colors.redAccent.withValues(alpha: 0.28),
+              child: Tooltip(
+                message: cancelText ?? 'Cancel',
+                child: const Icon(
+                  Icons.delete_rounded,
+                  size: 20,
+                  color: Colors.redAccent,
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             Expanded(
-              child: InkWell(
-                  onTap: () {
-                    soundRecordNotifier.isShow = false;
-                    String _time = soundRecordNotifier.minute.toString() +
-                        ":" +
-                        soundRecordNotifier.second.toString();
-                    if (stopRecording != null) stopRecording!(_time);
-                    soundRecordNotifier.resetEdgePadding();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      cancelText ?? "",
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.clip,
-                      style: cancelTextStyle ??
-                          const TextStyle(
-                            color: Colors.black,
-                          ),
-                    ),
-                  )),
+              child: ShowCounter(
+                soundRecorderState: soundRecordNotifier,
+                counterTextStyle: counterTextStyle,
+                counterBackGroundColor:
+                    counterBackGroundColor ?? accent.withValues(alpha: 0.12),
+                fullRecordPackageHeight: fullRecordPackageHeight,
+                expandWave: true,
+              ),
             ),
-            ShowCounter(
-              soundRecorderState: soundRecordNotifier,
-              counterTextStyle: counterTextStyle,
-              counterBackGroundColor: counterBackGroundColor,
-              fullRecordPackageHeight: fullRecordPackageHeight,
+            _CircleAction(
+              size: barHeight - 6,
+              onTap: _send,
+              background: accent,
+              border: accent.withValues(alpha: 0.5),
+              glow: accent.withValues(alpha: 0.35),
+              child: sendButtonIcon ??
+                  const Icon(
+                    Icons.send_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleAction extends StatelessWidget {
+  final double size;
+  final VoidCallback onTap;
+  final Color background;
+  final Color border;
+  final Color? glow;
+  final Widget child;
+
+  const _CircleAction({
+    required this.size,
+    required this.onTap,
+    required this.background,
+    required this.border,
+    required this.child,
+    this.glow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: background,
+            shape: BoxShape.circle,
+            border: Border.all(color: border),
+            boxShadow: glow == null
+                ? null
+                : [
+                    BoxShadow(
+                      color: glow!,
+                      blurRadius: 16,
+                      spreadRadius: 0.5,
+                    ),
+                  ],
+          ),
+          child: Center(child: child),
         ),
       ),
     );
