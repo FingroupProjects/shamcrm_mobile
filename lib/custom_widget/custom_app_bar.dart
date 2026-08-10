@@ -19,7 +19,6 @@ import 'package:crm_task_manager/models/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
-import 'package:crm_task_manager/screens/my-task/my_task_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
@@ -1413,53 +1412,53 @@ class _CustomAppBarState extends State<CustomAppBar>
                         navigateToTaskManagerFilterScreen(context);
                       },
                     ),
-                  if (widget.showSeparateMyTasks)
-                    Transform.translate(
-                      offset: const Offset(6, 0),
-                      child: Tooltip(
-                        message: AppLocalizations.of(context)!
-                            .translate('appbar_my_tasks'),
-                        preferBelow: false,
-                        decoration: tooltipDecoration,
-                        textStyle: tooltipTextStyle,
-                        child: IconButton(
-                          key: widget.MyTaskIconKey,
-                          padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(),
-                          icon: Stack(
-                            children: [
-                              _buildAppBarAssetIcon(
-                                context,
-                                'assets/icons/AppBar/my-task.png',
-                              ),
-                              if (_hasOverdueTasks)
-                                Positioned(
-                                  right: 0,
-                                  child: FadeTransition(
-                                    opacity: _blinkAnimation,
-                                    child: Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: BoxDecoration(
-                                        color: alertColor,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MyTaskScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                  // if (widget.showSeparateMyTasks)
+                  //   Transform.translate(
+                  //     offset: const Offset(6, 0),
+                  //     child: Tooltip(
+                  //       message: AppLocalizations.of(context)!
+                  //           .translate('appbar_my_tasks'),
+                  //       preferBelow: false,
+                  //       decoration: tooltipDecoration,
+                  //       textStyle: tooltipTextStyle,
+                  //       child: IconButton(
+                  //         key: widget.MyTaskIconKey,
+                  //         padding: EdgeInsets.zero,
+                  //         constraints: BoxConstraints(),
+                  //         icon: Stack(
+                  //           children: [
+                  //             _buildAppBarAssetIcon(
+                  //               context,
+                  //               'assets/icons/AppBar/my-task.png',
+                  //             ),
+                  //             if (_hasOverdueTasks)
+                  //               Positioned(
+                  //                 right: 0,
+                  //                 child: FadeTransition(
+                  //                   opacity: _blinkAnimation,
+                  //                   child: Container(
+                  //                     width: 10,
+                  //                     height: 10,
+                  //                     decoration: BoxDecoration(
+                  //                       color: alertColor,
+                  //                       shape: BoxShape.circle,
+                  //                     ),
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //           ],
+                  //         ),
+                  //         onPressed: () {
+                  //           Navigator.push(
+                  //             context,
+                  //             MaterialPageRoute(
+                  //               builder: (context) => MyTaskScreen(),
+                  //             ),
+                  //           );
+                  //         },
+                  //       ),
+                  //     ),
+                  //   ),
 
                   if (widget.showCalendarDashboard && _canReadCalendar)
                     Transform.translate(
@@ -1542,14 +1541,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     ),
                                   );
                                   break;
-                                case 'my_tasks':
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MyTaskScreen(),
-                                    ),
-                                  );
-                                  break;
+                                // case 'my_tasks':
+                                //   Navigator.push(
+                                //     context,
+                                //     MaterialPageRoute(
+                                //       builder: (context) => MyTaskScreen(),
+                                //     ),
+                                //   );
+                                //   break;
                                 case 'calendar':
                                   Navigator.push(
                                     context,
@@ -1729,40 +1728,40 @@ class _CustomAppBarState extends State<CustomAppBar>
                                         ],
                                       ),
                                     ),
-                                  if (widget.showMyTaskIcon)
-                                    PopupMenuItem<String>(
-                                      value: 'my_tasks',
-                                      child: Row(
-                                        children: [
-                                          Stack(
-                                            children: [
-                                              _buildAppBarAssetIcon(
-                                                context,
-                                                'assets/icons/AppBar/my-task.png',
-                                              ),
-                                              if (_hasOverdueTasks)
-                                                Positioned(
-                                                  right: 0,
-                                                  child: FadeTransition(
-                                                    opacity: _blinkAnimation,
-                                                    child: Container(
-                                                      width: 10,
-                                                      height: 10,
-                                                      decoration: BoxDecoration(
-                                                        color: alertColor,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(AppLocalizations.of(context)!
-                                              .translate('appbar_my_tasks')),
-                                        ],
-                                      ),
-                                    ),
+                                  // if (widget.showMyTaskIcon)
+                                  //   PopupMenuItem<String>(
+                                  //     value: 'my_tasks',
+                                  //     child: Row(
+                                  //       children: [
+                                  //         Stack(
+                                  //           children: [
+                                  //             _buildAppBarAssetIcon(
+                                  //               context,
+                                  //               'assets/icons/AppBar/my-task.png',
+                                  //             ),
+                                  //             if (_hasOverdueTasks)
+                                  //               Positioned(
+                                  //                 right: 0,
+                                  //                 child: FadeTransition(
+                                  //                   opacity: _blinkAnimation,
+                                  //                   child: Container(
+                                  //                     width: 10,
+                                  //                     height: 10,
+                                  //                     decoration: BoxDecoration(
+                                  //                       color: alertColor,
+                                  //                       shape: BoxShape.circle,
+                                  //                     ),
+                                  //                   ),
+                                  //                 ),
+                                  //               ),
+                                  //           ],
+                                  //         ),
+                                  //         SizedBox(width: 8),
+                                  //         Text(AppLocalizations.of(context)!
+                                  //             .translate('appbar_my_tasks')),
+                                  //       ],
+                                  //     ),
+                                  //   ),
                                   if (widget.showCalendar && _canReadCalendar)
                                     PopupMenuItem<String>(
                                       value: 'calendar',
