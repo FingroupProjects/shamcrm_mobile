@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette_presets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -95,6 +97,33 @@ class AppThemeController extends ChangeNotifier {
     }
     _isInitialized = true;
     notifyListeners();
+  }
+
+  /// Warm the wallpaper image cache before the first Flutter frame so the
+  /// PIN/login screens don't flash the solid theme color.
+  Future<void> precacheBackground() async {
+    if (_backgroundPreset != AppBackgroundPreset.custom) return;
+
+    try {
+      if (_backgroundImagePath != null && _backgroundImagePath!.isNotEmpty) {
+        final file = File(_backgroundImagePath!);
+        if (!file.existsSync()) return;
+        final bytes = await file.readAsBytes();
+        final codec = await ui.instantiateImageCodec(bytes);
+        await codec.getNextFrame();
+        return;
+      }
+
+      if (_backgroundAssetPath != null && _backgroundAssetPath!.isNotEmpty) {
+        final data = await rootBundle.load(_backgroundAssetPath!);
+        final codec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(),
+        );
+        await codec.getNextFrame();
+      }
+    } catch (_) {
+      // Best-effort: a failed precache must never block app start.
+    }
   }
 
   Future<void> toggleTheme() async {

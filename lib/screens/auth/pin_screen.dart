@@ -740,7 +740,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    final colors = context.appColors;
     final textStyles = context.appTextStyles;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final adaptivePalette = _adaptiveContrast.resolve(
@@ -774,33 +773,22 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       'assets/icons/playstore.png',
       fit: BoxFit.contain,
     );
-    final backgroundImagePath =
-        isDark ? 'assets/images/night.png' : 'assets/images/day.png';
 
     if (localizations == null) {
       return Scaffold(
-        backgroundColor: colors.backgroundPrimary,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
-            Center(
-              child: SizedBox(
-                width: 1,
-                height: 1,
-              ),
-            ),
-          ],
-        ),
+        backgroundColor: Colors.transparent,
+        body: const SizedBox.expand(),
       );
     }
 
     if (_showIntro) {
       return Scaffold(
-        backgroundColor: colors.backgroundPrimary,
+        backgroundColor: Colors.transparent,
         body: Stack(
           fit: StackFit.expand,
           children: [
+            // Keep the same wallpaper as the rest of the app during intro
+            // so we never flash the solid theme color / day-night assets.
             AnimatedBuilder(
               animation: _introController,
               builder: (context, child) {
@@ -809,11 +797,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
                   child: child,
                 );
               },
-              child: Image.asset(
-                backgroundImagePath,
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
-                filterQuality: FilterQuality.medium,
+              child: const AppBackgroundOverlay(
+                preset: AppBackgroundPreset.aurora,
+                forceRender: true,
               ),
             ),
           ],
@@ -822,11 +808,12 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     }
 
     return Scaffold(
-      backgroundColor: colors.backgroundPrimary,
+      backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
+          // Parent MaterialApp already draws the wallpaper; keep PIN chrome
+          // transparent so the solid blue scaffold never flashes underneath.
           SafeArea(
             child: Padding(
               padding:

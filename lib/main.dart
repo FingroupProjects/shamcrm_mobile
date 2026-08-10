@@ -8,6 +8,7 @@ import 'package:crm_task_manager/api/service/widget_service.dart';
 import 'package:crm_task_manager/core/theme/app_theme.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/My-Task_Status_Name/statusName_bloc.dart';
 import 'package:crm_task_manager/bloc/Task_Status_Name/statusName_bloc.dart';
@@ -293,6 +294,7 @@ void main() {
 
       final initialMessage = await _safeLoadInitialMessage();
       await AppThemeController.instance.initialize();
+      await AppThemeController.instance.precacheBackground();
       _safeConfigureSystemUi();
       final savedLocale = await _safeLoadLocale();
       runApp(MyApp(
@@ -1540,13 +1542,26 @@ class _MyAppState extends State<MyApp> {
             builder: (context, child) {
               final colors = context.appColors;
               final themeController = context.watch<AppThemeController>();
+              final hasCustomWallpaper =
+                  themeController.backgroundPreset ==
+                      AppBackgroundPreset.custom &&
+                  ((themeController.backgroundImagePath != null &&
+                          themeController.backgroundImagePath!.isNotEmpty) ||
+                      (themeController.backgroundAssetPath != null &&
+                          themeController.backgroundAssetPath!.isNotEmpty));
               final appChild = Stack(
                 fit: StackFit.expand,
                 children: [
-                  ColoredBox(color: colors.backgroundPrimary),
+                  // Avoid flashing the solid theme blue while wallpaper paints.
+                  ColoredBox(
+                    color: hasCustomWallpaper
+                        ? Colors.black
+                        : colors.backgroundPrimary,
+                  ),
                   AppBackgroundOverlay(
                     preset: themeController.backgroundPreset,
                     imagePath: themeController.backgroundImagePath,
+                    assetPath: themeController.backgroundAssetPath,
                   ),
                   NativeInternetAwareWrapper(
                     child: child ?? const SizedBox.shrink(),

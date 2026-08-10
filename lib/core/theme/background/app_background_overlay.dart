@@ -66,12 +66,16 @@ class AppBackgroundOverlay extends StatelessWidget {
                     child: Image.file(
                       file,
                       fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                      filterQuality: FilterQuality.medium,
                     ),
                   )
-                else
+                  else
                   Image.file(
                     file,
                     fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    filterQuality: FilterQuality.medium,
                   ),
                 if (resolvedBlurSigma > 0)
                   DecoratedBox(
@@ -114,12 +118,16 @@ class AppBackgroundOverlay extends StatelessWidget {
                   child: Image.asset(
                     resolvedAssetPath,
                     fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    filterQuality: FilterQuality.medium,
                   ),
                 )
               else
                 Image.asset(
                   resolvedAssetPath,
                   fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                  filterQuality: FilterQuality.medium,
                 ),
               if (resolvedBlurSigma > 0)
                 DecoratedBox(
