@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class WareHouse {
   final int id;
   final String name;
@@ -17,19 +19,19 @@ class WareHouse {
 
   factory WareHouse.fromJson(Map<String, dynamic> json) {
     List<int>? userIds;
-    if (json['users'] != null) {
-      final usersList = json['users'] as List<dynamic>?;
-      if (usersList != null && usersList.isNotEmpty) {
-        userIds = usersList.map((user) => user['user_id'] as int).toList();
-      }
+    final usersList = SafeConverters.toList(json['users']);
+    if (usersList.isNotEmpty) {
+      userIds = usersList
+          .map((user) => SafeConverters.toInt(SafeConverters.toMap(user)['user_id']))
+          .toList();
     }
 
     return WareHouse(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      showOnSite: (json['show_on_site'] as int?) == 1,
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      showOnSite: SafeConverters.toIntOrNull(json['show_on_site']) == 1,
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
       userIds: userIds,
     );
   }

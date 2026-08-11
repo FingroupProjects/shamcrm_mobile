@@ -1,4 +1,20 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // DashboardStats модель
+Map<String, dynamic> _statsDataFor(List<dynamic> result, String name) {
+  for (final item in result) {
+    final map = SafeConverters.toMapOrNull(item);
+    if (map != null && SafeConverters.toSafeString(map['name']) == name) {
+      final datas = SafeConverters.toList(map['datas']);
+      if (datas.isNotEmpty) {
+        return SafeConverters.toMap(datas.first);
+      }
+      return {};
+    }
+  }
+  return {};
+}
+
 class DashboardStats {
   final LeadStats leadStats;
   final DealStats dealStats;
@@ -11,33 +27,24 @@ class DashboardStats {
   });
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
-    final result = json['result'] as List<dynamic>? ?? [];
-    final leadData = result.firstWhere(
-      (e) => e['name'] == 'Lead',
-      orElse: () => {'datas': [{}]},
-    )['datas'][0] as Map<String, dynamic>? ?? {};
-    final dealData = result.firstWhere(
-      (e) => e['name'] == 'Deals',
-      orElse: () => {'datas': [{}]},
-    )['datas'][0] as Map<String, dynamic>? ?? {};
-    final taskData = result.firstWhere(
-      (e) => e['name'] == 'Tasks',
-      orElse: () => {'datas': [{}]},
-    )['datas'][0] as Map<String, dynamic>? ?? {};
+    final result = SafeConverters.toList(json['result']);
+    final leadData = _statsDataFor(result, 'Lead');
+    final dealData = _statsDataFor(result, 'Deals');
+    final taskData = _statsDataFor(result, 'Tasks');
 
     return DashboardStats(
       leadStats: LeadStats(
-        unknown: leadData['unknownLeads'] as int? ?? 0,
-        atWork: leadData['atWorkLeads'] as int? ?? 0,
-        finished: leadData['finishedLeads'] as int? ?? 0,
+        unknown: SafeConverters.toInt(leadData['unknownLeads']),
+        atWork: SafeConverters.toInt(leadData['atWorkLeads']),
+        finished: SafeConverters.toInt(leadData['finishedLeads']),
       ),
       dealStats: DealStats(
-        finished: dealData['finishedDeals'] as int? ?? 0,
+        finished: SafeConverters.toInt(dealData['finishedDeals']),
       ),
       taskStats: TaskStats(
-        all: taskData['allTasks'] as int? ?? 0,
-        outDated: taskData['outDatedTasks'] as int? ?? 0,
-        finished: taskData['finishedTasks'] as int? ?? 0,
+        all: SafeConverters.toInt(taskData['allTasks']),
+        outDated: SafeConverters.toInt(taskData['outDatedTasks']),
+        finished: SafeConverters.toInt(taskData['finishedTasks']),
       ),
     );
   }

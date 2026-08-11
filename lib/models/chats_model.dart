@@ -4,6 +4,7 @@ import 'package:crm_task_manager/models/message_reaction_model.dart'; // Из в
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/main.dart';
 
 class Integration {
@@ -15,9 +16,9 @@ class Integration {
 
   factory Integration.fromJson(Map<String, dynamic> json) {
     return Integration(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-      username: json['username'] as String?,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      username: SafeConverters.toStringOrNull(json['username']),
     );
   }
 }
@@ -100,42 +101,53 @@ class Chats {
     }
 
     return Chats(
-      id: json['id'] ?? 0,
-      uniqueId: json['unique_id'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      uniqueId: SafeConverters.toStringOrNull(json['unique_id']),
       name: json['user'] != null
-          ? json['user']['name'] ?? 'Без имени'
+          ? SafeConverters.toSafeString(json['user']['name'],
+              defaultValue: 'Без имени')
           : json['task'] != null
-              ? json['task']['name'] ?? ''
+              ? SafeConverters.toSafeString(json['task']['name'])
               : json['lead'] != null
-                  ? json['lead']['name'] ?? 'Без имени'
+                  ? SafeConverters.toSafeString(json['lead']['name'],
+                      defaultValue: 'Без имени')
                   : '',
-      image: json['image'] ?? '',
+      image: SafeConverters.toSafeString(json['image']),
       user: user,
       customName: customName,
       customImage: customImage,
       createDate: json['lastMessage'] != null
-          ? json['lastMessage']['created_at'] ?? ''
+          ? SafeConverters.toSafeString(json['lastMessage']['created_at'])
           : '',
-      unreadCount: json['unread_count'] ?? 0,
-      taskFrom: json['task'] != null ? json['task']['from'] ?? '' : '',
-      taskTo: json['task'] != null ? json['task']['to'] ?? '' : '',
-      description:
-          json['task'] != null ? json['task']['description'] ?? '' : '',
-      channel: json['channel'] != null ? json['channel']['name'] ?? '' : '',
+      unreadCount: SafeConverters.toInt(json['unread_count']),
+      taskFrom: json['task'] != null
+          ? SafeConverters.toSafeString(json['task']['from'])
+          : '',
+      taskTo: json['task'] != null
+          ? SafeConverters.toSafeString(json['task']['to'])
+          : '',
+      description: json['task'] != null
+          ? SafeConverters.toSafeString(json['task']['description'])
+          : '',
+      channel: json['channel'] != null
+          ? SafeConverters.toSafeString(json['channel']['name'])
+          : '',
       lastMessage: json['lastMessage'] != null
-          ? _getLastMessageText(json['lastMessage'])
+          ? _getLastMessageText(SafeConverters.toMap(json['lastMessage']))
           : '',
-      messageType:
-          json['lastMessage'] != null ? json['lastMessage']['type'] ?? '' : '',
-      canSendMessage: json['can_send_message'] ?? false,
-      type: json['type'],
+      messageType: json['lastMessage'] != null
+          ? SafeConverters.toSafeString(json['lastMessage']['type'])
+          : '',
+      canSendMessage: SafeConverters.toBool(json['can_send_message']),
+      type: SafeConverters.toStringOrNull(json['type']),
       chatUsers: users,
       group: group,
       task: task,
-      channelObj:
-          json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      channelObj: json['channel'] != null
+          ? Channel.fromJson(SafeConverters.toMap(json['channel']))
+          : null,
       integration: json['integration'] != null
-          ? Integration.fromJson(json['integration'])
+          ? Integration.fromJson(SafeConverters.toMap(json['integration']))
           : null,
     );
   }

@@ -1,6 +1,6 @@
-// Response model to hold both data and pagination
-import 'package:flutter/material.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
+// Response model to hold both data and pagination
 class GoodDashboardWarehouseResponse {
   final List<GoodDashboardWarehouse> data;
   final Pagination? pagination;
@@ -21,16 +21,10 @@ class GoodDashboardWarehouse {
   });
 
   factory GoodDashboardWarehouse.fromJson(Map<String, dynamic> json) {
-    try {
-      return GoodDashboardWarehouse(
-        id: json['id'] as int,
-        name: json['name'] as String,
-      );
-    } catch (e) {
-      debugPrint('Error parsing GoodDashboardWarehouse: $e');
-      debugPrint('JSON data: $json');
-      rethrow;
-    }
+    return GoodDashboardWarehouse(
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+    );
   }
 }
 
@@ -51,11 +45,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'] as int,
-      count: json['count'] as int,
-      perPage: json['per_page'] as int,
-      currentPage: json['current_page'] as int,
-      totalPages: json['total_pages'] as int,
+      total: SafeConverters.toInt(json['total']),
+      count: SafeConverters.toInt(json['count']),
+      perPage: SafeConverters.toInt(json['per_page']),
+      currentPage: SafeConverters.toInt(json['current_page']),
+      totalPages: SafeConverters.toInt(json['total_pages']),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class Project {
   final int id;
   final String name;
@@ -16,13 +18,11 @@ class Project {
   });
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
-        id: json["id"],
-        name: json['name'] is String ? json['name'] : 'Без имени',
-        startDate: json['start_date'],
-        endDate: json['end_date'],
-        statusId: json['status_id'] is int
-            ? json['status_id']
-            : int.tryParse(json['status_id']?.toString() ?? ''),
+        id: SafeConverters.toInt(json["id"]),
+        name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+        startDate: SafeConverters.toStringOrNull(json['start_date']),
+        endDate: SafeConverters.toStringOrNull(json['end_date']),
+        statusId: SafeConverters.toIntOrNull(json['status_id']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,13 +58,18 @@ class ProjectsDataResponse {
 
   factory ProjectsDataResponse.fromJson(Map<String, dynamic> json) {
     return ProjectsDataResponse(
-      result: json["result"] != null && json["result"]["data"] != null
-          ? List<Project>.from(
-              (json["result"]["data"] as List).map((x) => Project.fromJson(x)))
+      result: SafeConverters.toMapOrNull(json["result"]) != null &&
+              SafeConverters.toList(json["result"]["data"]).isNotEmpty
+          ? SafeConverters.toList(json["result"]["data"])
+              .whereType<Map<String, dynamic>>()
+              .map((x) => Project.fromJson(x))
+              .toList()
           : [],
       errors: json["errors"],
-      pagination: json["result"]?["pagination"] is Map<String, dynamic>
-          ? ProjectPagination.fromJson(json["result"]["pagination"])
+      pagination: SafeConverters.toMapOrNull(json["result"]?["pagination"]) !=
+              null
+          ? ProjectPagination.fromJson(
+              SafeConverters.toMap(json["result"]["pagination"]))
           : null,
     );
   }
@@ -85,7 +90,7 @@ class ProjectPagination {
 
   factory ProjectPagination.fromJson(Map<String, dynamic> json) =>
       ProjectPagination(
-        currentPage: json['current_page'] as int?,
-        totalPages: json['total_pages'] as int?,
+        currentPage: SafeConverters.toIntOrNull(json['current_page']),
+        totalPages: SafeConverters.toIntOrNull(json['total_pages']),
       );
 }

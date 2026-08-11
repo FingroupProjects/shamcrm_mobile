@@ -5,6 +5,7 @@ import 'package:crm_task_manager/models/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class LeadById {
   final int id;
@@ -76,92 +77,74 @@ class LeadById {
   });
 
   factory LeadById.fromJson(Map<String, dynamic> json, int leadStatusId) {
-    //print('LeadById: Parsing JSON for leadId: ${json['id']}');
-    final directoryValues = (json['directory_values'] as List<dynamic>?)
-            ?.map((item) => DirectoryValue.fromJson(item))
-            .toList() ??
-        [];
-    final chats = (json['chats'] as List<dynamic>?)
-            ?.map((item) => LeadChat.fromJson(item))
-            .toList() ??
-        [];
-    final files = (json['files'] as List<dynamic>?)
-            ?.map((item) => LeadFiles.fromJson(item))
-            .toList() ??
-        [];
-    //print('LeadById: Parsed directoryValues: $directoryValues');
-    //print('LeadById: Parsed chats: $chats');
-    //print('LeadById: Parsed files: $files');
+    final directoryValues = SafeConverters.toList(json['directory_values'])
+        .map((item) => DirectoryValue.fromJson(SafeConverters.toMap(item)))
+        .toList();
+    final chats = SafeConverters.toList(json['chats'])
+        .map((item) => LeadChat.fromJson(SafeConverters.toMap(item)))
+        .toList();
+    final files = SafeConverters.toList(json['files'])
+        .map((item) => LeadFiles.fromJson(SafeConverters.toMap(item)))
+        .toList();
+
     final lead = LeadById(
-      id: json['id'] is int ? json['id'] : 0,
-      name: json['name'] is String ? json['name'] : 'Без имени',
-      source: json['source'] != null && json['source'] is Map<String, dynamic>
-          ? Source.fromJson(json['source'])
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+      source: SafeConverters.toMapOrNull(json['source']) != null
+          ? Source.fromJson(SafeConverters.toMap(json['source']))
           : null,
-      createdAt: json['created_at'] is String ? json['created_at'] : null,
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
       statusId: leadStatusId,
-      region: json['region'] != null && json['region'] is Map<String, dynamic>
-          ? RegionData.fromJson(json['region'])
+      region: SafeConverters.toMapOrNull(json['region']) != null
+          ? RegionData.fromJson(SafeConverters.toMap(json['region']))
           : null,
-      manager:
-          json['manager'] != null && json['manager'] is Map<String, dynamic>
-              ? ManagerData.fromJson(json['manager'])
-              : null,
-      sourceLead: json['source_lead'] != null &&
-              json['source_lead'] is Map<String, dynamic>
-          ? SourceLead.fromJson(json['source_lead'])
+      manager: SafeConverters.toMapOrNull(json['manager']) != null
+          ? ManagerData.fromJson(SafeConverters.toMap(json['manager']))
           : null,
-      birthday: json['birthday'] is String ? json['birthday'] : '',
-      cityId: json['city_id'] != null ? json['city_id'].toString() : null,
-      instagram: json['insta_login'] is String ? json['insta_login'] : '',
-      facebook: json['facebook_login'] is String ? json['facebook_login'] : '',
-      telegram: json['tg_nick'] is String ? json['tg_nick'] : '',
-      whatsApp: json['wa_phone'] is String ? json['wa_phone'] : '',
-      phone: json['phone'] is String ? json['phone'] : '',
-      email: json['email'] is String ? json['email'] : '',
-      author: json['author'] != null && json['author'] is Map<String, dynamic>
-          ? Author.fromJson(json['author'])
+      sourceLead: SafeConverters.toMapOrNull(json['source_lead']) != null
+          ? SourceLead.fromJson(SafeConverters.toMap(json['source_lead']))
           : null,
-      salesFunnel: json['salesFunnel'] != null &&
-              json['salesFunnel'] is Map<String, dynamic>
-          ? SalesFunnel.fromJson(json['salesFunnel'])
+      birthday: SafeConverters.toSafeString(json['birthday']),
+      cityId: SafeConverters.toStringOrNull(json['city_id']),
+      instagram: SafeConverters.toSafeString(json['insta_login']),
+      facebook: SafeConverters.toSafeString(json['facebook_login']),
+      telegram: SafeConverters.toSafeString(json['tg_nick']),
+      whatsApp: SafeConverters.toSafeString(json['wa_phone']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      email: SafeConverters.toSafeString(json['email']),
+      author: SafeConverters.toMapOrNull(json['author']) != null
+          ? Author.fromJson(SafeConverters.toMap(json['author']))
           : null,
-      description: json['description'] is String ? json['description'] : '',
-      leadStatus: json['leadStatus'] != null &&
-              json['leadStatus'] is Map<String, dynamic>
-          ? LeadStatusById.fromJson(json['leadStatus'])
+      salesFunnel: SafeConverters.toMapOrNull(json['salesFunnel']) != null
+          ? SalesFunnel.fromJson(SafeConverters.toMap(json['salesFunnel']))
           : null,
-      leadCustomFieldValues: (json['customFieldValues'] as List<dynamic>?)
-              ?.map((field) => LeadCustomFieldValues.fromJson(field))
-              .toList() ??
-          [],
+      description: SafeConverters.toSafeString(json['description']),
+      leadStatus: SafeConverters.toMapOrNull(json['leadStatus']) != null
+          ? LeadStatusById.fromJson(SafeConverters.toMap(json['leadStatus']))
+          : null,
+      leadCustomFieldValues: SafeConverters.toList(json['customFieldValues'])
+          .map((field) =>
+              LeadCustomFieldValues.fromJson(SafeConverters.toMap(field)))
+          .toList(),
       directoryValues: directoryValues,
       chats: chats,
       files: files,
-      phone_verified_at: json['phone_verified_at'] is String
-          ? json['phone_verified_at']
+      phone_verified_at:
+          SafeConverters.toStringOrNull(json['phone_verified_at']),
+      verification_code: SafeConverters.toStringOrNull(json['verification_code']),
+      priceType: SafeConverters.toMapOrNull(json['priceType']) != null
+          ? PriceType.fromJson(SafeConverters.toMap(json['priceType']))
           : null,
-      verification_code: json['verification_code'] != null
-          ? json['verification_code'].toString()
+      currencyId: SafeConverters.toIntOrNull(json['currency_id']),
+      currency: SafeConverters.toMapOrNull(json['currency']) != null
+          ? LeadCurrency.fromJson(SafeConverters.toMap(json['currency']))
           : null,
-      priceType:
-          json['priceType'] != null && json['priceType'] is Map<String, dynamic>
-              ? PriceType.fromJson(json['priceType'])
-              : null,
-      currencyId: json['currency_id'] is int
-          ? json['currency_id'] as int
-          : int.tryParse('${json['currency_id']}'),
-      currency:
-          json['currency'] != null && json['currency'] is Map<String, dynamic>
-              ? LeadCurrency.fromJson(json['currency'])
-              : null,
-      reasonForRefusalId: json['reason_for_refusal_id'] is int
-          ? json['reason_for_refusal_id'] as int
-          : int.tryParse('${json['reason_for_refusal_id']}'),
-      reasonForRefusalComment: json['reason_for_refusal']?.toString(),
+      reasonForRefusalId:
+          SafeConverters.toIntOrNull(json['reason_for_refusal_id']),
+      reasonForRefusalComment:
+          SafeConverters.toStringOrNull(json['reason_for_refusal']),
       refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
     );
-    //print('LeadById: Lead object created: id=${lead.id}, name=${lead.name}, directoryValues length=${lead.directoryValues.length}, chats length=${lead.chats.length}, files length=${lead.files?.length ?? 0}');
     return lead;
   }
 }
@@ -190,15 +173,12 @@ class LeadChat {
   });
 
   factory LeadChat.fromJson(Map<String, dynamic> json) {
-    //print('LeadChat: Parsing JSON for chat ID: ${json['id']}');
     final chat = LeadChat(
-      id: json['id'] is int ? json['id'] : 0,
-      integration: json['integration'] != null &&
-              json['integration'] is Map<String, dynamic>
-          ? Integration.fromJson(json['integration'])
+      id: SafeConverters.toInt(json['id']),
+      integration: SafeConverters.toMapOrNull(json['integration']) != null
+          ? Integration.fromJson(SafeConverters.toMap(json['integration']))
           : null,
     );
-    //print('LeadChat: Chat created: id=${chat.id}, integration=${chat.integration?.username}');
     return chat;
   }
 }
@@ -215,13 +195,11 @@ class Integration {
   });
 
   factory Integration.fromJson(Map<String, dynamic> json) {
-    //print('Integration: Parsing JSON: $json');
     final integration = Integration(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      username: json['username'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      username: SafeConverters.toSafeString(json['username']),
     );
-    //print('Integration: Integration created: id=${integration.id}, name=${integration.name}, username=${integration.username}');
     return integration;
   }
 }
@@ -236,12 +214,10 @@ class Author {
   });
 
   factory Author.fromJson(Map<String, dynamic> json) {
-    //print('Author: Parsing JSON for author: ${json['id']}');
     final author = Author(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указан',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Не указан'),
     );
-    //print('Author: Author created: id=${author.id}, name=${author.name}');
     return author;
   }
 }
@@ -258,13 +234,11 @@ class LeadFiles {
   });
 
   factory LeadFiles.fromJson(Map<String, dynamic> json) {
-    //print('LeadFiles: Parsing JSON for file ID: ${json['id']}');
     final file = LeadFiles(
-      id: json['id'] is int ? json['id'] : 0,
-      name: json['name'] is String ? json['name'] : '',
-      path: json['path'] is String ? json['path'] : '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
     );
-    //print('LeadFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
     return file;
   }
 }
@@ -276,14 +250,11 @@ class Source {
   Source({required this.name, required this.id});
 
   factory Source.fromJson(Map<String, dynamic> json) {
-    //print('Source: Parsing JSON for source: ${json['id']}');
+    final rawName = SafeConverters.toSafeString(json['name']);
     final source = Source(
-      name: json['name']?.toString().trim().toLowerCase() == 'green_api'
-          ? 'WhatsApp'
-          : (json['name'] ?? ''),
-      id: json['id'],
+      name: rawName.trim().toLowerCase() == 'green_api' ? 'WhatsApp' : rawName,
+      id: SafeConverters.toInt(json['id']),
     );
-    //print('Source: Source created: id=${source.id}, name=${source.name}');
     return source;
   }
 }
@@ -341,18 +312,18 @@ class LeadCustomFieldValues {
 
   factory LeadCustomFieldValues.fromJson(Map<String, dynamic> json) {
     return LeadCustomFieldValues(
-      id: json['id'] ?? 0,
-      customFieldId: json['custom_field_id'] ?? 0,
-      organizationId: json['organization_id'],
-      modelId: json['model_id'],
-      modelType: json['model_type'],
-      value: json['value']?.toString() ?? '',
-      type: json['type'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      customField: json['custom_field'] != null &&
-              json['custom_field'] is Map<String, dynamic>
-          ? LeadCustomFieldMeta.fromJson(json['custom_field'])
+      id: SafeConverters.toInt(json['id']),
+      customFieldId: SafeConverters.toInt(json['custom_field_id']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      modelId: SafeConverters.toIntOrNull(json['model_id']),
+      modelType: SafeConverters.toStringOrNull(json['model_type']),
+      value: SafeConverters.toSafeString(json['value']),
+      type: SafeConverters.toStringOrNull(json['type']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      customField: SafeConverters.toMapOrNull(json['custom_field']) != null
+          ? LeadCustomFieldMeta.fromJson(
+              SafeConverters.toMap(json['custom_field']))
           : null,
     );
   }
@@ -377,12 +348,12 @@ class LeadCustomFieldMeta {
 
   factory LeadCustomFieldMeta.fromJson(Map<String, dynamic> json) {
     return LeadCustomFieldMeta(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      isActive: json['is_active'] == 1 || json['is_active'] == true,
-      type: json['type'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      isActive: SafeConverters.toBool(json['is_active']),
+      type: SafeConverters.toStringOrNull(json['type']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 }
@@ -401,15 +372,15 @@ class LeadStatusById {
   });
 
   factory LeadStatusById.fromJson(Map<String, dynamic> json) {
-    //print('LeadStatusById: Parsing JSON for status: ${json['id']}');
     final status = LeadStatusById(
-      id: json['id'],
-      title: json['title'] ?? json['name'] ?? 'Не указан',
-      color: json['color'],
-      isUnassembled:
-          json['is_unassembled'] == true || json['is_unassembled'] == 1,
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(
+        json['title'] ?? json['name'],
+        defaultValue: 'Не указан',
+      ),
+      color: SafeConverters.toStringOrNull(json['color']),
+      isUnassembled: SafeConverters.toBool(json['is_unassembled']),
     );
-    //print('LeadStatusById: Status created: id=${status.id}, title=${status.title}, color=${status.color}');
     return status;
   }
 }
@@ -424,14 +395,12 @@ class DirectoryValue {
   });
 
   factory DirectoryValue.fromJson(Map<String, dynamic> json) {
-    //print('DirectoryValue: Parsing JSON for directory value: ${json['id']}');
     final value = DirectoryValue(
-      id: json['id'] ?? 0,
-      entry: json['entry'] != null && json['entry'] is Map<String, dynamic>
-          ? DirectoryEntry.fromJson(json['entry'])
-          : null, // Безопасный парсинг с проверкой на null
+      id: SafeConverters.toInt(json['id']),
+      entry: SafeConverters.toMapOrNull(json['entry']) != null
+          ? DirectoryEntry.fromJson(SafeConverters.toMap(json['entry']))
+          : null,
     );
-    //print('DirectoryValue: Directory value created: id=${value.id}, entry=${value.entry != null ? "not null" : "null"}');
     return value;
   }
 }
@@ -451,13 +420,13 @@ class DirectoryEntry {
 
   factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
     return DirectoryEntry(
-      id: json['id'] ?? 0,
-      directory: DirectoryByLead.fromJson(json['directory']),
-      values: (json['values'] as List<dynamic>?)
-              ?.map((item) => DirectoryFieldValue.fromJson(item))
-              .toList() ??
-          [],
-      createdAt: json['created_at'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      directory: DirectoryByLead.fromJson(SafeConverters.toMap(json['directory'])),
+      values: SafeConverters.toList(json['values'])
+          .map((item) =>
+              DirectoryFieldValue.fromJson(SafeConverters.toMap(item)))
+          .toList(),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
     );
   }
 }
@@ -474,8 +443,8 @@ class DirectoryFieldValue {
 
   factory DirectoryFieldValue.fromJson(Map<String, dynamic> json) {
     return DirectoryFieldValue(
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
+      key: SafeConverters.toSafeString(json['key']),
+      value: SafeConverters.toSafeString(json['value']),
     );
   }
 }
@@ -501,13 +470,13 @@ class DirectoryByLead {
 
   factory DirectoryByLead.fromJson(Map<String, dynamic> json) {
     return DirectoryByLead(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      createdAt: json['created_at'],
-      isMain: json['is_main'],
-      showToIndex: json['show_to_index'],
-      fieldsCount: json['fields_count'],
-      entriesCount: json['entries_count'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      isMain: SafeConverters.toBoolOrNull(json['is_main']),
+      showToIndex: SafeConverters.toBoolOrNull(json['show_to_index']),
+      fieldsCount: SafeConverters.toIntOrNull(json['fields_count']),
+      entriesCount: SafeConverters.toIntOrNull(json['entries_count']),
     );
   }
 }

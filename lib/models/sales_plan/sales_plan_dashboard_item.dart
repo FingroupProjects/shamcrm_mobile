@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/sales_plan/sales_plan_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class SalesPlanDashboardItem {
   final int id;
@@ -16,20 +17,14 @@ class SalesPlanDashboardItem {
   });
 
   factory SalesPlanDashboardItem.fromJson(Map<String, dynamic> json) {
-    final usersJson = json['users'];
     return SalesPlanDashboardItem(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
-      name: json['name']?.toString() ?? '',
-      percent: json['percent'] is num
-          ? (json['percent'] as num).toDouble()
-          : double.tryParse('${json['percent'] ?? 0}') ?? 0,
-      status: SalesPlanStatus.fromString(json['status']?.toString()),
-      users: usersJson is List
-          ? usersJson
-              .whereType<Map>()
-              .map((e) => SalesPlanUser.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
-          : const [],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      percent: SafeConverters.toDouble(json['percent']),
+      status: SalesPlanStatus.fromString(SafeConverters.toStringOrNull(json['status'])),
+      users: SafeConverters.toList(json['users'])
+          .map((e) => SalesPlanUser.fromJson(SafeConverters.toMap(e)))
+          .toList(),
     );
   }
 }

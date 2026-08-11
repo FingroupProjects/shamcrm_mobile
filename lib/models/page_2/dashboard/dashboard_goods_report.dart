@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import '../../../utils/global_fun.dart';
 
 class ResultDashboardGoodsReport {
@@ -7,18 +8,11 @@ class ResultDashboardGoodsReport {
   ResultDashboardGoodsReport({required this.data, required this.pagination});
 
   factory ResultDashboardGoodsReport.fromJson(Map<String, dynamic> json) {
-    final rawItems = json['data'] as List? ?? const [];
-
     return ResultDashboardGoodsReport(
-      data: rawItems
-          .whereType<Map>()
-          .map(
-            (item) => DashboardGoods.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
-          )
+      data: SafeConverters.toList(json['data'])
+          .map((item) => DashboardGoods.fromJson(SafeConverters.toMap(item)))
           .toList(),
-      pagination: Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
+      pagination: Pagination.fromJson(SafeConverters.toMap(json['pagination'])),
     );
   }
 }
@@ -40,11 +34,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: (json['total'] as num?)?.toInt() ?? 0,
-      count: (json['count'] as num?)?.toInt() ?? 0,
-      per_page: (json['per_page'] as num?)?.toInt() ?? 0,
-      current_page: (json['current_page'] as num?)?.toInt() ?? 0,
-      total_pages: (json['total_pages'] as num?)?.toInt() ?? 0,
+      total: SafeConverters.toInt(json['total']),
+      count: SafeConverters.toInt(json['count']),
+      per_page: SafeConverters.toInt(json['per_page']),
+      current_page: SafeConverters.toInt(json['current_page']),
+      total_pages: SafeConverters.toInt(json['total_pages']),
     );
   }
 }
@@ -71,23 +65,16 @@ class DashboardGoods {
   });
 
   factory DashboardGoods.fromJson(Map<String, dynamic> json) {
-    final rawStorages = json['storages'] as List? ?? const [];
-
     return DashboardGoods(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      goodVariantId: (json['good_variant_id'] as num?)?.toInt(),
-      name: json['name'] as String? ?? '',
-      category: json['category'] as String? ?? '',
-      totalQuantity: json['total_quantity'] as String? ?? '0',
+      id: SafeConverters.toInt(json['id']),
+      goodVariantId: SafeConverters.toIntOrNull(json['good_variant_id']),
+      name: SafeConverters.toSafeString(json['name']),
+      category: SafeConverters.toSafeString(json['category']),
+      totalQuantity: SafeConverters.toSafeString(json['total_quantity'], defaultValue: '0'),
       price: parseNumberToString(json['price'], nullValue: '0'),
       totalSum: parseNumberToString(json['total_sum'], nullValue: '0'),
-      storages: rawStorages
-          .whereType<Map>()
-          .map(
-            (item) => Storage.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
-          )
+      storages: SafeConverters.toList(json['storages'])
+          .map((item) => Storage.fromJson(SafeConverters.toMap(item)))
           .toList(),
     );
   }
@@ -110,8 +97,8 @@ class Storage {
 
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
       quantity: parseNumberToString(json['quantity'], nullValue: '0'),
       price: parseNumberToString(json['price'], nullValue: '0'),
       sum: parseNumberToString(json['sum'], nullValue: '0'),

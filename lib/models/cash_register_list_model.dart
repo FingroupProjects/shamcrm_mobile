@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class CashRegisterData {
   final int id;
   final String name;
@@ -14,13 +16,11 @@ class CashRegisterData {
   });
 
   factory CashRegisterData.fromJson(Map<String, dynamic> json) => CashRegisterData(
-    id: json["id"],
-    name: json['name'] is String ? json['name'] : 'Без имени',
-    currencyId: json['currency_id'] is int
-        ? json['currency_id'] as int
-        : int.tryParse('${json['currency_id']}'),
-    currency: json['currency'] is Map<String, dynamic>
-        ? CashRegisterCurrency.fromJson(json['currency'] as Map<String, dynamic>)
+    id: SafeConverters.toInt(json["id"]),
+    name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+    currencyId: SafeConverters.toIntOrNull(json['currency_id']),
+    currency: SafeConverters.toMapOrNull(json['currency']) != null
+        ? CashRegisterCurrency.fromJson(SafeConverters.toMap(json['currency']))
         : null,
   );
 
@@ -50,9 +50,9 @@ class CashRegisterCurrency {
 
   factory CashRegisterCurrency.fromJson(Map<String, dynamic> json) {
     return CashRegisterCurrency(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}'),
-      name: json['name']?.toString(),
-      symbolCode: json['symbol_code']?.toString(),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      symbolCode: SafeConverters.toStringOrNull(json['symbol_code']),
     );
   }
 
@@ -80,9 +80,12 @@ class CashRegistersDataResponse {
 
   factory CashRegistersDataResponse.fromJson(Map<String, dynamic> json) {
     return CashRegistersDataResponse(
-      result: json["result"] != null && json["result"]["data"] != null
-          ? List<CashRegisterData>.from(
-          (json["result"]["data"] as List).map((x) => CashRegisterData.fromJson(x)))
+      result: SafeConverters.toMapOrNull(json["result"]) != null &&
+              SafeConverters.toList(json["result"]["data"]).isNotEmpty
+          ? SafeConverters.toList(json["result"]["data"])
+              .whereType<Map<String, dynamic>>()
+              .map((x) => CashRegisterData.fromJson(x))
+              .toList()
           : [],
       errors: json["errors"],
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class MyTask {
   final int id;
@@ -41,35 +42,33 @@ class MyTask {
   factory MyTask.fromJson(Map<String, dynamic> json, int taskStatusId) {
     try {
       return MyTask(
-        id: json['id'] ?? 0,
-        name: json['name'] ?? 'Без имени',
-        taskNumber: json['task_number'] is int ? json['task_number'] : 0,
-        startDate: json['from'],
-        endDate: json['to'],
-        description: json['description'] ?? '',
+        id: SafeConverters.toInt(json['id']),
+        name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+        taskNumber: SafeConverters.toIntOrNull(json['task_number']),
+        startDate: SafeConverters.toStringOrNull(json['from']),
+        endDate: SafeConverters.toStringOrNull(json['to']),
+        description: SafeConverters.toSafeString(json['description']),
         statusId: taskStatusId,
-        taskStatus: json['taskStatus'] != null
-            ? MyTaskStatus.fromJson(json['taskStatus'])
+        taskStatus: SafeConverters.toMapOrNull(json['taskStatus']) != null
+            ? MyTaskStatus.fromJson(SafeConverters.toMap(json['taskStatus']))
             : null,
-        file: json['file'] != null && json['file'] is Map<String, dynamic>
-            ? MyTaskFile.fromJson(json['file'])
+        file: SafeConverters.toMapOrNull(json['file']) != null
+            ? MyTaskFile.fromJson(SafeConverters.toMap(json['file']))
             : null,
-        taskCustomFields: json['task_custom_fields'] != null
-            ? (json['task_custom_fields'] as List)
-                .map((field) => MyTaskCustomField.fromJson(field))
-                .toList()
-            : [],
-        overdue: json['overdue'] is int ? json['overdue'] : 0,
-        priority: json['priority'] is int ? json['priority'] : null,
-        project: json['project'] != null
-            ? Project.fromJson(json['project'])
+        taskCustomFields: SafeConverters.toList(json['task_custom_fields'])
+            .map((field) => MyTaskCustomField.fromJson(SafeConverters.toMap(field)))
+            .toList(),
+        overdue: SafeConverters.toIntOrNull(json['overdue']),
+        priority: SafeConverters.toIntOrNull(json['priority']),
+        project: SafeConverters.toMapOrNull(json['project']) != null
+            ? Project.fromJson(SafeConverters.toMap(json['project']))
             : null,
         usersImage: json['users_image'] != null
-            ? (json['users_image'] as List)
-                .map((u) => UserTaskImage.fromJson(u))
+            ? SafeConverters.toList(json['users_image'])
+                .map((u) => UserTaskImage.fromJson(SafeConverters.toMap(u)))
                 .toList()
             : null,
-        userName: json['user']?['name'],
+        userName: SafeConverters.toStringOrNull(SafeConverters.toMapOrNull(json['user'])?['name']),
       );
     } catch (e) {
       debugPrint('Error parsing MyTask: $e, JSON: $json');
@@ -119,9 +118,9 @@ class MyTaskCustomField {
   factory MyTaskCustomField.fromJson(Map<String, dynamic> json) {
     try {
       return MyTaskCustomField(
-        id: json['id'] ?? 0,
-        key: json['key'] ?? '',
-        value: json['value'] ?? '',
+        id: SafeConverters.toInt(json['id']),
+        key: SafeConverters.toSafeString(json['key']),
+        value: SafeConverters.toSafeString(json['value']),
       );
     } catch (e) {
       debugPrint('Error parsing MyTaskCustomField: $e');
@@ -152,8 +151,8 @@ class MyTaskFile {
   factory MyTaskFile.fromJson(Map<String, dynamic> json) {
     try {
       return MyTaskFile(
-        name: json["name"] ?? 'Unknown',
-        size: json["size"] ?? 'Unknown',
+        name: SafeConverters.toSafeString(json["name"], defaultValue: 'Unknown'),
+        size: SafeConverters.toSafeString(json["size"], defaultValue: 'Unknown'),
       );
     } catch (e) {
       return MyTaskFile(name: 'Unknown', size: 'Unknown');
@@ -184,14 +183,14 @@ class MyTaskStatus {
 
   factory MyTaskStatus.fromJson(Map<String, dynamic> json) {
     return MyTaskStatus(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? 'Без статуса',
-      finalStep: json['final_step'] == true || json['final_step'] == 1,
-      color: json['color'] ?? '#FFFFFF',
-      organizationId: json['organization_id'] as int?,
-      position: json['position'] ?? 0,
-      authorId: json['author_id'] ?? 0,
-      tasksCount: json['tasks_count'] ?? 0,
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title'], defaultValue: 'Без статуса'),
+      finalStep: SafeConverters.toBool(json['final_step']),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#FFFFFF'),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      position: SafeConverters.toInt(json['position']),
+      authorId: SafeConverters.toIntOrNull(json['author_id']),
+      tasksCount: SafeConverters.toInt(json['tasks_count']),
     );
   }
 

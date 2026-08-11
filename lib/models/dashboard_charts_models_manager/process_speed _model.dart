@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class ProcessSpeedManager {
   final double speed;
 
@@ -7,7 +9,7 @@ class ProcessSpeedManager {
 
   factory ProcessSpeedManager.fromJson(Map<String, dynamic> json) {
     return ProcessSpeedManager(
-      speed: (json['result'] as num?)?.toDouble() ?? 0.0,
+      speed: SafeConverters.toDouble(json['result']),
     );
   }
 }

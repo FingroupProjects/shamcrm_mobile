@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class PaginationDTO<T> {
   final List<T> data;
@@ -19,15 +20,17 @@ class PaginationDTO<T> {
 
   factory PaginationDTO.fromJson(
       Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJson) {
-    final data = (json['data'] as List).map((e) => fromJson(e)).toList();
-    // print('PaginationDTO.fromJson: Parsed ${data.length} chats for page ${json['pagination']['current_page']}');
+    final pagination = SafeConverters.toMap(json['pagination']);
+    final data = SafeConverters.toList(json['data'])
+        .map((e) => fromJson(SafeConverters.toMap(e)))
+        .toList();
     return PaginationDTO(
       data: data,
-      count: json['pagination']['count'] as int,
-      total: json['pagination']['total'] as int,
-      perPage: json['pagination']['per_page'] as int,
-      currentPage: json['pagination']['current_page'] as int,
-      totalPage: json['pagination']['total_pages'] as int,
+      count: SafeConverters.toInt(pagination['count']),
+      total: SafeConverters.toInt(pagination['total']),
+      perPage: SafeConverters.toInt(pagination['per_page']),
+      currentPage: SafeConverters.toInt(pagination['current_page']),
+      totalPage: SafeConverters.toInt(pagination['total_pages']),
     );
   }
 

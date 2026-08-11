@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // Class to represent the entire response
 class NetProfitResponse {
   final NetProfitResult result;
@@ -10,7 +12,7 @@ class NetProfitResponse {
 
   factory NetProfitResponse.fromJson(Map<String, dynamic> json) {
     return NetProfitResponse(
-      result: NetProfitResult.fromJson(json['result']),
+      result: NetProfitResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -27,7 +29,7 @@ class NetProfitResponse {
 class NetProfitResult {
   final int year;
   final List<MonthData> months;
-  final num totalNetProfit; // Keeping as int to preserve decimal format
+  final num totalNetProfit; // Keep numeric type to preserve decimals
 
   NetProfitResult({
     required this.year,
@@ -37,11 +39,11 @@ class NetProfitResult {
 
   factory NetProfitResult.fromJson(Map<String, dynamic> json) {
     return NetProfitResult(
-      year: json['year'],
-      months: (json['months'] as List)
-          .map((month) => MonthData.fromJson(month))
+      year: SafeConverters.toInt(json['year']),
+      months: SafeConverters.toList(json['months'])
+          .map((month) => MonthData.fromJson(SafeConverters.toMap(month)))
           .toList(),
-      totalNetProfit: json['total_net_profit'],
+      totalNetProfit: SafeConverters.toNum(json['total_net_profit']),
     );
   }
 
@@ -67,18 +69,15 @@ class MonthData {
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
-    String totalAmount = "0.00";
-
-    if (json['net_profit'] is String) {
-      totalAmount = json['net_profit'];
-    } else if (json['net_profit'] is num) {
-      totalAmount = (json['net_profit'] as num).toString();
-    }
+    final netProfitRaw = json['net_profit'];
+    final netProfit = netProfitRaw is String
+        ? SafeConverters.toSafeString(netProfitRaw)
+        : SafeConverters.toSafeString(netProfitRaw, defaultValue: '0.00');
 
     return MonthData(
-      month: json['month'],
-      monthName: json['month_name'],
-      netProfit: totalAmount,
+      month: SafeConverters.toInt(json['month']),
+      monthName: SafeConverters.toSafeString(json['month_name']),
+      netProfit: netProfit,
     );
   }
 

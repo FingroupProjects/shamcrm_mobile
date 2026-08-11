@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 
 class CallById {
@@ -54,10 +55,6 @@ class CallById {
   });
 
   factory CallById.fromJson(Map<String, dynamic> json) {
-    bool parseBool(dynamic value) {
-      return value == true || value == 1 || value == '1';
-    }
-
     DateTime? parseCustomDate(String? dateStr) {
       if (dateStr == null) return null;
       try {
@@ -84,53 +81,39 @@ class CallById {
     }
 
     return CallById(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      linkedId: json['linked_id']?.toString() ?? '',
-      caller: json['caller']?.toString() ?? '',
-      destinationNumber: json['destination_number']?.toString() ?? '',
-      trunk: json['trunk']?.toString() ?? '',
-      organizationId: json['organization_id'] is int
-          ? json['organization_id']
-          : int.parse(json['organization_id']?.toString() ?? '0'),
-      lead: LeadByCall.fromJson(json['lead'] as Map<String, dynamic>),
-      callRecordUrl: json['call_record_url']?.toString() ?? '',
-      user: json['user'] != null
-          ? UserByCall.fromJson(json['user'] as Map<String, dynamic>)
+      id: SafeConverters.toInt(json['id']),
+      linkedId: SafeConverters.toSafeString(json['linked_id']),
+      caller: SafeConverters.toSafeString(json['caller']),
+      destinationNumber: SafeConverters.toSafeString(json['destination_number']),
+      trunk: SafeConverters.toSafeString(json['trunk']),
+      organizationId: SafeConverters.toInt(json['organization_id']),
+      lead: LeadByCall.fromJson(SafeConverters.toMap(json['lead'])),
+      callRecordUrl: SafeConverters.toSafeString(json['call_record_url']),
+      user: SafeConverters.toMapOrNull(json['user']) != null
+          ? UserByCall.fromJson(SafeConverters.toMap(json['user']))
           : null,
-      internalNumber: json['internal_number'] != null
-          ? json['internal_number'] is int
-              ? json['internal_number']
-              : int.tryParse(json['internal_number'].toString())
-          : null,
-      callDuration: json['call_duration'] != null
-          ? json['call_duration'] is int
-              ? json['call_duration']
-              : int.tryParse(json['call_duration'].toString())
-          : null,
-      callRingingDuration: json['call_ringing_duration'] != null
-          ? json['call_ringing_duration'] is int
-              ? json['call_ringing_duration']
-              : int.tryParse(json['call_ringing_duration'].toString())
-          : null,
-      incoming: parseBool(json['incoming']),
-      missed: parseBool(json['missed']),
-      answered: parseBool(json['answered']),
-      callStatus: json['call_status']?.toString() ?? '',
-      callStartedAt: parseCustomDate(json['call_started_at']?.toString()) ??
+      internalNumber: SafeConverters.toIntOrNull(json['internal_number']),
+      callDuration: SafeConverters.toIntOrNull(json['call_duration']),
+      callRingingDuration: SafeConverters.toIntOrNull(json['call_ringing_duration']),
+      incoming: SafeConverters.toBool(json['incoming']),
+      missed: SafeConverters.toBool(json['missed']),
+      answered: SafeConverters.toBool(json['answered']),
+      callStatus: SafeConverters.toSafeString(json['call_status']),
+      callStartedAt: parseCustomDate(SafeConverters.toStringOrNull(json['call_started_at'])) ??
           DateTime.utc(1970, 1, 1, 0, 0),
-      callAnsweredAt: json['call_answered_at'] != null
-          ? parseCustomDate(json['call_answered_at']?.toString())
+      callAnsweredAt: SafeConverters.toStringOrNull(json['call_answered_at']) != null
+          ? parseCustomDate(SafeConverters.toStringOrNull(json['call_answered_at']))
           : null,
-      callEndedAt: parseCustomDate(json['call_ended_at']?.toString()) ??
+      callEndedAt: parseCustomDate(SafeConverters.toStringOrNull(json['call_ended_at'])) ??
           DateTime.utc(1970, 1, 1, 0, 0),
-      additionalData: json['additional_data'] != null
+      additionalData: SafeConverters.toMapOrNull(json['additional_data']) != null
           ? AdditionalData.fromJson(
-              json['additional_data'] as Map<String, dynamic>)
+              SafeConverters.toMap(json['additional_data']))
           : null,
-      rating: json['rating']?.toString(),
-      report: json['report']?.toString(),
-      createdAt: json['created_at']?.toString() ?? '',
-      updatedAt: json['updated_at']?.toString() ?? '',
+      rating: SafeConverters.toStringOrNull(json['rating']),
+      report: SafeConverters.toStringOrNull(json['report']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      updatedAt: SafeConverters.toSafeString(json['updated_at']),
     );
   }
 }
@@ -196,45 +179,35 @@ class LeadByCall {
 
   factory LeadByCall.fromJson(Map<String, dynamic> json) {
     return LeadByCall(
-      id: json['id'] is int
-          ? json['id']
-          : int.parse(json['id']?.toString() ?? '0'),
-      name: json['name']?.toString() ?? '',
-      facebookLogin: json['facebook_login']?.toString(),
-      instaLogin: json['insta_login']?.toString(),
-      tgNick: json['tg_nick']?.toString(),
-      tgId: json['tg_id']?.toString(),
-      channels: json['channels'] as List<dynamic>? ?? [],
-      position: json['position']?.toString(),
-      waName: json['wa_name']?.toString(),
-      waPhone: json['wa_phone']?.toString(),
-      address: json['address']?.toString(),
-      phone: json['phone']?.toString() ?? '',
-      birthday: json['birthday']?.toString(),
-      description: json['description']?.toString(),
-      createdAt: json['created_at']?.toString() ?? '',
-      dealsCount: json['deals_count'] is int
-          ? json['deals_count']
-          : int.tryParse(json['deals_count']?.toString() ?? ''),
-      email: json['email']?.toString(),
-      inProgressDealsCount: json['in_progress_deals_count'] is int
-          ? json['in_progress_deals_count']
-          : int.tryParse(json['in_progress_deals_count']?.toString() ?? ''),
-      successfulDealsCount: json['successful_deals_count'] is int
-          ? json['successful_deals_count']
-          : int.tryParse(json['successful_deals_count']?.toString() ?? ''),
-      failedDealsCount: json['failed_deals_count'] is int
-          ? json['failed_deals_count']
-          : int.tryParse(json['failed_deals_count']?.toString() ?? ''),
-      sentTo1c: json['sent_to_1c'] as bool? ?? false,
-      lastUpdate: json['last_update'] is int
-          ? json['last_update']
-          : int.parse(json['last_update']?.toString() ?? '0'),
-      messageStatus: json['messageStatus']?.toString() ?? '',
-      file: json['file']?.toString(),
-      verificationCode: json['verification_code']?.toString(),
-      phoneVerifiedAt: json['phone_verified_at']?.toString(),
-      bonus: json['bonus']?.toString() ?? '0.00',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      facebookLogin: SafeConverters.toStringOrNull(json['facebook_login']),
+      instaLogin: SafeConverters.toStringOrNull(json['insta_login']),
+      tgNick: SafeConverters.toStringOrNull(json['tg_nick']),
+      tgId: SafeConverters.toStringOrNull(json['tg_id']),
+      channels: SafeConverters.toList(json['channels']),
+      position: SafeConverters.toStringOrNull(json['position']),
+      waName: SafeConverters.toStringOrNull(json['wa_name']),
+      waPhone: SafeConverters.toStringOrNull(json['wa_phone']),
+      address: SafeConverters.toStringOrNull(json['address']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      birthday: SafeConverters.toStringOrNull(json['birthday']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      dealsCount: SafeConverters.toIntOrNull(json['deals_count']),
+      email: SafeConverters.toStringOrNull(json['email']),
+      inProgressDealsCount:
+          SafeConverters.toIntOrNull(json['in_progress_deals_count']),
+      successfulDealsCount:
+          SafeConverters.toIntOrNull(json['successful_deals_count']),
+      failedDealsCount: SafeConverters.toIntOrNull(json['failed_deals_count']),
+      sentTo1c: SafeConverters.toBool(json['sent_to_1c']),
+      lastUpdate: SafeConverters.toInt(json['last_update']),
+      messageStatus: SafeConverters.toSafeString(json['messageStatus']),
+      file: SafeConverters.toStringOrNull(json['file']),
+      verificationCode: SafeConverters.toStringOrNull(json['verification_code']),
+      phoneVerifiedAt: SafeConverters.toStringOrNull(json['phone_verified_at']),
+      bonus: SafeConverters.toSafeString(json['bonus'], defaultValue: '0.00'),
     );
   }
 }
@@ -275,15 +248,11 @@ class UserByCall {
   });
 
   factory UserByCall.fromJson(Map<String, dynamic> json) {
-    String text(dynamic value) => sanitizeUtf16(value?.toString() ?? '');
-
-    int number(dynamic value) =>
-        value is int ? value : int.tryParse(value?.toString() ?? '') ?? 0;
-
-    bool flag(dynamic value) => value == true || value == 1 || value == '1';
+    String text(dynamic value) =>
+        sanitizeUtf16(SafeConverters.toSafeString(value));
 
     return UserByCall(
-      id: number(json['id']),
+      id: SafeConverters.toInt(json['id']),
       name: text(json['name']),
       lastname: text(json['lastname']),
       login: text(json['login']),
@@ -294,9 +263,9 @@ class UserByCall {
       deletedAt: json['deleted_at'] == null ? null : text(json['deleted_at']),
       telegramUserId: text(json['telegram_user_id']),
       jobTitle: text(json['job_title']),
-      online: flag(json['online']),
+      online: SafeConverters.toBool(json['online']),
       fullName: text(json['full_name']),
-      isFirstLogin: number(json['is_first_login']),
+      isFirstLogin: SafeConverters.toInt(json['is_first_login']),
       uniqueId: text(json['unique_id']),
     );
   }
@@ -315,9 +284,9 @@ class AdditionalData {
 
   factory AdditionalData.fromJson(Map<String, dynamic> json) {
     return AdditionalData(
-      userId: json['user_id']?.toString() ?? '',
-      treeName: json['treeName']?.toString() ?? '',
-      treeNumber: json['treeNumber']?.toString() ?? '',
+      userId: SafeConverters.toSafeString(json['user_id']),
+      treeName: SafeConverters.toSafeString(json['treeName']),
+      treeNumber: SafeConverters.toSafeString(json['treeNumber']),
     );
   }
 }

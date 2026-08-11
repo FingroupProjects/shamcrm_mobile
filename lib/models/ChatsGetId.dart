@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class ChatsGetId {
   final int id;
@@ -28,8 +29,8 @@ class ChatsGetId {
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
     // Теперь json - это уже 'result'
     return ChatsGetId(
-      id: json['id'] ?? 0,
-      uniqueId: json['unique_id'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      uniqueId: SafeConverters.toStringOrNull(json['unique_id']),
       channel: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
       group: json['group'] != null ? Group.fromJson(json['group']) : null,
       user: json['user'] != null ? ChatUser.fromJson({'participant': json['user']}) : null,

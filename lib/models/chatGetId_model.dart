@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:flutter/material.dart';
 
 class ChatsGetId {
@@ -44,12 +45,13 @@ class ChatsGetId {
     debugPrint('   chatUsers type: ${data['chatUsers']?.runtimeType}');
 
     if (data['chatUsers'] != null && data['chatUsers'] is List) {
-      final chatUsersRaw = data['chatUsers'] as List;
+      final chatUsersRaw = SafeConverters.toList(data['chatUsers']);
       debugPrint('   chatUsers length: ${chatUsersRaw.length}');
 
       for (var i = 0; i < chatUsersRaw.length; i++) {
         try {
-          final chatUser = ChatUser.fromJson(chatUsersRaw[i]);
+          final chatUser =
+              ChatUser.fromJson(SafeConverters.toMap(chatUsersRaw[i]));
           chatUsersList.add(chatUser);
           debugPrint('   ✅ Parsed chatUser[$i]: ${chatUser.participant.name}');
         } catch (e) {
@@ -58,16 +60,16 @@ class ChatsGetId {
       }
     } else if (data['user'] != null) {
       debugPrint('   Found single user object');
-      final userJson = data['user'];
+      final userJson = SafeConverters.toMap(data['user']);
       final participant = Participant(
-        id: userJson['id'] ?? 0,
-        name: userJson['name'] ?? '',
-        login: userJson['login'] ?? '',
-        email: userJson['email'] ?? '',
-        phone: userJson['phone'] ?? '',
-        image: userJson['image'] ?? '',
-        lastSeen: userJson['last_seen'],
-        deletedAt: userJson['deleted_at'],
+        id: SafeConverters.toInt(userJson['id']),
+        name: SafeConverters.toSafeString(userJson['name']),
+        login: SafeConverters.toSafeString(userJson['login']),
+        email: SafeConverters.toSafeString(userJson['email']),
+        phone: SafeConverters.toSafeString(userJson['phone']),
+        image: SafeConverters.toSafeString(userJson['image']),
+        lastSeen: SafeConverters.toStringOrNull(userJson['last_seen']),
+        deletedAt: SafeConverters.toStringOrNull(userJson['deleted_at']),
       );
       chatUsersList = [
         ChatUser(
@@ -89,29 +91,36 @@ class ChatsGetId {
     debugPrint('   group: ${data['group']}');
 
     if (data['type'] == 'lead') {
-      String channelName = data['channel']?['name'] ?? 'telegram_account';
-      name = data['integration']?['name'] ?? channelName;
+      final channelMap = SafeConverters.toMapOrNull(data['channel']);
+      String channelName = SafeConverters.toSafeString(
+        channelMap?['name'],
+        defaultValue: 'telegram_account',
+      );
+      final integrationMap = SafeConverters.toMapOrNull(data['integration']);
+      name = SafeConverters.toSafeString(integrationMap?['name'], defaultValue: channelName);
       debugPrint('   ✅ Lead name: $name');
     } else if (data['type'] == 'corporate') {
-      name = data['name']?.toString() ?? '';
+      name = SafeConverters.toSafeString(data['name']);
       debugPrint('   ✅ Corporate raw name: "$name"');
 
-      // Если name пустой, но есть group
       if (name.isEmpty && data['group'] != null) {
-        name = data['group']['name'] ?? '';
+        name = SafeConverters.toSafeString(SafeConverters.toMap(data['group'])['name']);
         debugPrint('   ✅ Using group name: $name');
       }
     } else if (data['type'] == 'task') {
-      name = data['task']?['name'] ?? '';
+      name = SafeConverters.toSafeString(SafeConverters.toMapOrNull(data['task'])?['name']);
       debugPrint('   ✅ Task name: $name');
     } else {
-      name = data['name']?.toString() ?? '';
+      name = SafeConverters.toSafeString(data['name']);
       debugPrint('   ✅ Default name: $name');
     }
 
     String channelName = '';
     if (data['type'] == 'lead') {
-      channelName = data['channel']?['name'] ?? 'telegram_account';
+      channelName = SafeConverters.toSafeString(
+        SafeConverters.toMapOrNull(data['channel'])?['name'],
+        defaultValue: 'telegram_account',
+      );
     }
 
     debugPrint('🔧 [ChatsGetId.fromJson] Final values:');
@@ -124,19 +133,19 @@ class ChatsGetId {
     debugPrint('════════════════════════════════════════════════════════');
 
     return ChatsGetId(
-      id: data['id'] ?? 0,
-      uniqueId: data['unique_id'] as String?,
+      id: SafeConverters.toInt(data['id']),
+      uniqueId: SafeConverters.toStringOrNull(data['unique_id']),
       name: name,
-      canSendMessage: data["can_send_message"] ?? false,
-      type: data['type'],
+      canSendMessage: SafeConverters.toBool(data['can_send_message']),
+      type: SafeConverters.toStringOrNull(data['type']),
       chatUsers: chatUsersList,
-      group: data['group'] != null ? Group.fromJson(data['group']) : null,
+      group: SafeConverters.toMapOrNull(data['group']) != null
+          ? Group.fromJson(SafeConverters.toMap(data['group']))
+          : null,
       channelName: channelName,
-      referralBody: data['referral_body'],
-      advertising: data['advertising'] != null
-          ? ChatAdvertising.fromJson(
-              Map<String, dynamic>.from(data['advertising'] as Map),
-            )
+      referralBody: SafeConverters.toStringOrNull(data['referral_body']),
+      advertising: SafeConverters.toMapOrNull(data['advertising']) != null
+          ? ChatAdvertising.fromJson(SafeConverters.toMap(data['advertising']))
           : null,
     );
   }
@@ -175,21 +184,19 @@ class ChatAdvertising {
 
   factory ChatAdvertising.fromJson(Map<String, dynamic> json) {
     return ChatAdvertising(
-      id: json['id'] ?? 0,
-      externalAdId: json['external_ad_id']?.toString(),
-      name: json['name']?.toString() ?? '',
-      type: json['type']?.toString(),
-      source: json['source']?.toString(),
-      status: json['status']?.toString(),
-      cost: json['cost'] as num?,
-      description: json['description']?.toString(),
-      mediaUrl: json['media_url']?.toString(),
-      postId: json['post_id']?.toString(),
-      metadata: json['metadata'] is Map
-          ? Map<String, dynamic>.from(json['metadata'] as Map)
-          : null,
-      createdAt: json['created_at']?.toString(),
-      updatedAt: json['updated_at']?.toString(),
+      id: SafeConverters.toInt(json['id']),
+      externalAdId: SafeConverters.toStringOrNull(json['external_ad_id']),
+      name: SafeConverters.toSafeString(json['name']),
+      type: SafeConverters.toStringOrNull(json['type']),
+      source: SafeConverters.toStringOrNull(json['source']),
+      status: SafeConverters.toStringOrNull(json['status']),
+      cost: SafeConverters.toNumOrNull(json['cost']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      mediaUrl: SafeConverters.toStringOrNull(json['media_url']),
+      postId: SafeConverters.toStringOrNull(json['post_id']),
+      metadata: SafeConverters.toMapOrNull(json['metadata']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 
@@ -219,9 +226,9 @@ class ChatUser {
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(
-      type: json['type'] ?? '',
-      participant: json['participant'] != null
-          ? Participant.fromJson(json['participant'])
+      type: SafeConverters.toSafeString(json['type']),
+      participant: SafeConverters.toMapOrNull(json['participant']) != null
+          ? Participant.fromJson(SafeConverters.toMap(json['participant']))
           : Participant.empty(),
     );
   }
@@ -250,14 +257,14 @@ class Participant {
 
   factory Participant.fromJson(Map<String, dynamic> json) {
     return Participant(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      login: json['login'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      image: json['image'] ?? '',
-      lastSeen: json['last_seen'],
-      deletedAt: json['deleted_at'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      login: SafeConverters.toSafeString(json['login']),
+      email: SafeConverters.toSafeString(json['email']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      image: SafeConverters.toSafeString(json['image']),
+      lastSeen: SafeConverters.toStringOrNull(json['last_seen']),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at']),
     );
   }
 

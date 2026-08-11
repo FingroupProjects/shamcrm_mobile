@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class Branch {
   final int id;
   final String name;
@@ -19,22 +21,22 @@ class Branch {
     double? latitude;
     double? longitude;
 
-    if (json['location_coordinates'] != null &&
-        json['location_coordinates'] is Map<String, dynamic>) {
-      latitude = double.tryParse(json['location_coordinates']['latitude'].toString());
-      longitude = double.tryParse(json['location_coordinates']['longitude'].toString());
+    final locationCoordinates = SafeConverters.toMapOrNull(json['location_coordinates']);
+    if (locationCoordinates != null) {
+      latitude = SafeConverters.toDoubleOrNull(locationCoordinates['latitude']);
+      longitude = SafeConverters.toDoubleOrNull(locationCoordinates['longitude']);
     } else {
-      latitude = json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null;
-      longitude = json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null;
+      latitude = SafeConverters.toDoubleOrNull(json['latitude']);
+      longitude = SafeConverters.toDoubleOrNull(json['longitude']);
     }
 
     return Branch(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      address: json['address'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      address: SafeConverters.toSafeString(json['address']),
       latitude: latitude,
       longitude: longitude,
-      isActive: json['is_active'] as int? ?? 0, // Значение по умолчанию 0
+      isActive: SafeConverters.toInt(json['is_active']),
     );
   }
 

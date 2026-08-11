@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class OrderDashboardResponse {
   final ChartResult result;
   final dynamic errors;
@@ -6,7 +8,7 @@ class OrderDashboardResponse {
 
   factory OrderDashboardResponse.fromJson(Map<String, dynamic> json) {
     return OrderDashboardResponse(
-      result: ChartResult.fromJson(json['result'] as Map<String, dynamic>),
+      result: ChartResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -26,8 +28,9 @@ class ChartResult {
 
   factory ChartResult.fromJson(Map<String, dynamic> json) {
     return ChartResult(
-      chartData:
-          (json['chart_data'] as List<dynamic>).map((item) => OrderChartData.fromJson(item as Map<String, dynamic>)).toList(),
+      chartData: SafeConverters.toList(json['chart_data'])
+          .map((item) => OrderChartData.fromJson(SafeConverters.toMap(item)))
+          .toList(),
     );
   }
 
@@ -46,8 +49,10 @@ class OrderChartData {
 
   factory OrderChartData.fromJson(Map<String, dynamic> json) {
     return OrderChartData(
-      name: json['name'] as String,
-      data: (json['data'] as List<dynamic>).map((item) => DataPoint.fromJson(item as Map<String, dynamic>)).toList(),
+      name: SafeConverters.toSafeString(json['name']),
+      data: SafeConverters.toList(json['data'])
+          .map((item) => DataPoint.fromJson(SafeConverters.toMap(item)))
+          .toList(),
     );
   }
 
@@ -68,9 +73,9 @@ class DataPoint {
 
   factory DataPoint.fromJson(Map<String, dynamic> json) {
     return DataPoint(
-      id: json['id'] as int,
-      label: json['label'] as String,
-      amount: json['amount'] as int,
+      id: SafeConverters.toInt(json['id']),
+      label: SafeConverters.toSafeString(json['label']),
+      amount: SafeConverters.toNum(json['amount']),
     );
   }
 

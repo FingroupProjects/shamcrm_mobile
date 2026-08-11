@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
-import 'package:crm_task_manager/utils/parser.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
@@ -16,12 +16,12 @@ class ExpenseResponse {
   factory ExpenseResponse.fromJson(Map<String, dynamic> json) {
     return ExpenseResponse(
       data: json['data'] != null
-          ? (json['data'] as List)
-              .map((i) => ExpenseDocumentDetail.fromJson(i))
+          ? SafeConverters.toList(json['data'])
+              .map((i) => ExpenseDocumentDetail.fromJson(SafeConverters.toMap(i)))
               .toList()
           : null,
-      pagination: json['pagination'] != null
-          ? Pagination.fromJson(json['pagination'])
+      pagination: SafeConverters.toMapOrNull(json['pagination']) != null
+          ? Pagination.fromJson(SafeConverters.toMap(json['pagination']))
           : null,
     );
   }
@@ -94,46 +94,52 @@ class ExpenseDocumentDetail extends Equatable {
 
   factory ExpenseDocumentDetail.fromJson(Map<String, dynamic> json) {
     return ExpenseDocumentDetail(
-      id: parseInt(json['id']),
-      date: parseDate(json['date']),
-      modelType: json['model_type'],
-      modelId: parseInt(json['model_id']),
-      counterpartyAgreementId: parseInt(json['counterparty_agreement_id']),
-      organizationId: parseInt(json['organization_id']),
-      storage:
-          json['storage'] != null ? WareHouse.fromJson(json['storage']) : null,
-      article: json['article'] != null
-          ? ArticleGood.fromJson(json['article'])
+      id: SafeConverters.toIntOrNull(json['id']),
+      date: SafeConverters.toDateTimeOrNull(json['date']),
+      modelType: SafeConverters.toStringOrNull(json['model_type']),
+      modelId: SafeConverters.toIntOrNull(json['model_id']),
+      counterpartyAgreementId: SafeConverters.toIntOrNull(json['counterparty_agreement_id']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      storage: SafeConverters.toMapOrNull(json['storage']) != null
+          ? WareHouse.fromJson(SafeConverters.toMap(json['storage']))
           : null,
-      sender_storage_id: json['sender_storage_id'] != null
-          ? WareHouse.fromJson(json['sender_storage_id'])
+      article: SafeConverters.toMapOrNull(json['article']) != null
+          ? ArticleGood.fromJson(SafeConverters.toMap(json['article']))
           : null,
-      recipient_storage_id: json['recipient_storage_id'] != null
-          ? WareHouse.fromJson(json['recipient_storage_id'])
+      sender_storage_id: SafeConverters.toMapOrNull(json['sender_storage_id']) != null
+          ? WareHouse.fromJson(SafeConverters.toMap(json['sender_storage_id']))
           : null,
-      comment: json['comment'],
-      currency:
-          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
+      recipient_storage_id: SafeConverters.toMapOrNull(json['recipient_storage_id']) != null
+          ? WareHouse.fromJson(SafeConverters.toMap(json['recipient_storage_id']))
+          : null,
+      comment: SafeConverters.toStringOrNull(json['comment']),
+      currency: SafeConverters.toMapOrNull(json['currency']) != null
+          ? Currency.fromJson(SafeConverters.toMap(json['currency']))
+          : null,
       documentGoods: json['document_goods'] != null
-          ? (json['document_goods'] as List)
-              .map((i) => DocumentGood.fromJson(i))
+          ? SafeConverters.toList(json['document_goods'])
+              .map((i) => DocumentGood.fromJson(SafeConverters.toMap(i)))
               .toList()
           : null,
-      author: json['author'] != null ? Author.fromJson(json['author']) : null,
-      model: json['model'] != null ? Model.fromJson(json['model']) : null,
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
-      deletedAt: parseDate(json['deleted_at']),
-      docNumber: json['doc_number'],
-      approved: parseInt(json['approved']),
-      type: json['type'],
-      storageId: parseInt(json['storage_id']),
-      currencyId: parseInt(json['currency_id']),
-      authorId: parseInt(json['author_id']),
-      exchangeRate: json['exchangeRate'] != null
-          ? ExchangeRate.fromJson(json['exchangeRate'])
-          : (json['exchange_rate'] != null
-              ? ExchangeRate.fromJson(json['exchange_rate'])
+      author: SafeConverters.toMapOrNull(json['author']) != null
+          ? Author.fromJson(SafeConverters.toMap(json['author']))
+          : null,
+      model: SafeConverters.toMapOrNull(json['model']) != null
+          ? Model.fromJson(SafeConverters.toMap(json['model']))
+          : null,
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      deletedAt: SafeConverters.toDateTimeOrNull(json['deleted_at']),
+      docNumber: SafeConverters.toStringOrNull(json['doc_number']),
+      approved: SafeConverters.toIntOrNull(json['approved']),
+      type: SafeConverters.toStringOrNull(json['type']),
+      storageId: SafeConverters.toIntOrNull(json['storage_id']),
+      currencyId: SafeConverters.toIntOrNull(json['currency_id']),
+      authorId: SafeConverters.toIntOrNull(json['author_id']),
+      exchangeRate: SafeConverters.toMapOrNull(json['exchangeRate']) != null
+          ? ExchangeRate.fromJson(SafeConverters.toMap(json['exchangeRate']))
+          : (SafeConverters.toMapOrNull(json['exchange_rate']) != null
+              ? ExchangeRate.fromJson(SafeConverters.toMap(json['exchange_rate']))
               : null),
     );
   }
@@ -345,31 +351,30 @@ class Author {
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
-      id: parseInt(json['id']),
-      name: json['name'],
-      lastname: json['lastname'],
-      login: json['login'],
-      email: json['email'],
-      phone: json['phone'],
-      telegramUserId: json['telegram_user_id'],
-      emailVerifiedAt: parseDate(json['email_verified_at']),
-      image: json['image'],
-      lastSeen: parseDate(json['last_seen']),
-      deletedAt: parseDate(json['deleted_at']),
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
-      managerId: parseInt(json['manager_id']),
-      jobTitle: json['job_title'],
-      hasImage: parseInt(json['has_image']),
-      isFirstLogin: parseInt(json['is_first_login']),
-      internalNumber:
-          json['internal_number']?.toString(), // ← Добавлена конвертация
-      departmentId: parseInt(json['department_id']),
-      uniqueId: json['unique_id'],
-      shiftId: parseInt(json['shift_id']),
-      weekendPatternId: parseInt(json['weekend_pattern_id']),
-      workBreakId: parseInt(json['work_break_id']),
-      oneCId: json['one_c_id'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      lastname: SafeConverters.toStringOrNull(json['lastname']),
+      login: SafeConverters.toStringOrNull(json['login']),
+      email: SafeConverters.toStringOrNull(json['email']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      telegramUserId: SafeConverters.toStringOrNull(json['telegram_user_id']),
+      emailVerifiedAt: SafeConverters.toDateTimeOrNull(json['email_verified_at']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      lastSeen: SafeConverters.toDateTimeOrNull(json['last_seen']),
+      deletedAt: SafeConverters.toDateTimeOrNull(json['deleted_at']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      managerId: SafeConverters.toIntOrNull(json['manager_id']),
+      jobTitle: SafeConverters.toStringOrNull(json['job_title']),
+      hasImage: SafeConverters.toIntOrNull(json['has_image']),
+      isFirstLogin: SafeConverters.toIntOrNull(json['is_first_login']),
+      internalNumber: SafeConverters.toStringOrNull(json['internal_number']),
+      departmentId: SafeConverters.toIntOrNull(json['department_id']),
+      uniqueId: SafeConverters.toStringOrNull(json['unique_id']),
+      shiftId: SafeConverters.toIntOrNull(json['shift_id']),
+      weekendPatternId: SafeConverters.toIntOrNull(json['weekend_pattern_id']),
+      workBreakId: SafeConverters.toIntOrNull(json['work_break_id']),
+      oneCId: SafeConverters.toStringOrNull(json['one_c_id']),
     );
   }
 
@@ -413,14 +418,10 @@ class Storage {
 
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
-      id: parseInt(json['id']),
-      name: json['name'],
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -455,17 +456,13 @@ class Currency {
 
   factory Currency.fromJson(Map<String, dynamic> json) {
     return Currency(
-      id: parseInt(json['id']),
-      name: json['name'],
-      digitalCode: parseInt(json['digital_code']),
-      symbolCode: json['symbol_code'],
-      organizationId: parseInt(json['organization_id']),
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      digitalCode: SafeConverters.toIntOrNull(json['digital_code']),
+      symbolCode: SafeConverters.toStringOrNull(json['symbol_code']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -526,31 +523,33 @@ class DocumentGood {
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
-    // Parse the unit object first
-    final unitObj = json['unit'] != null ? Unit.fromJson(json['unit']) : null;
+    final unitObj = SafeConverters.toMapOrNull(json['unit']) != null
+        ? Unit.fromJson(SafeConverters.toMap(json['unit']))
+        : null;
 
     return DocumentGood(
-      id: parseInt(json['id']),
-      documentId: parseInt(json['document_id']),
-      variantId: parseInt(json['variant_id']),
-      good: json['good'] != null ? Good.fromJson(json['good']) : null,
-      quantity: parseNum(json['quantity']),
-      price: json['price'],
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      documentId: SafeConverters.toIntOrNull(json['document_id']),
+      variantId: SafeConverters.toIntOrNull(json['variant_id']),
+      good: SafeConverters.toMapOrNull(json['good']) != null
+          ? Good.fromJson(SafeConverters.toMap(json['good']))
+          : null,
+      quantity: SafeConverters.toNumOrNull(json['quantity']),
+      price: SafeConverters.toStringOrNull(json['price']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
       attributes: json['attributes'] != null
-          ? (json['attributes'] as List)
-              .map((i) => Attribute.fromJson(i))
+          ? SafeConverters.toList(json['attributes'])
+              .map((i) => Attribute.fromJson(SafeConverters.toMap(i)))
               .toList()
           : null,
-      fullName: json['full_name'] as String?,
-      // FIXED: Extract unit_id from the unit object if unit_id field doesn't exist
-      unitId: parseInt(json['unit_id']) ?? unitObj?.id,
-      goodVariant: json['good_variant'] != null
-          ? GoodVariant.fromJson(json['good_variant'])
+      fullName: SafeConverters.toStringOrNull(json['full_name']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']) ?? unitObj?.id,
+      goodVariant: SafeConverters.toMapOrNull(json['good_variant']) != null
+          ? GoodVariant.fromJson(SafeConverters.toMap(json['good_variant']))
           : null,
-      goodVariantId: parseInt(json['good_variant_id']),
-      sum: json['sum'] as String?,
+      goodVariantId: SafeConverters.toIntOrNull(json['good_variant_id']),
+      sum: SafeConverters.toStringOrNull(json['sum']),
       unit: unitObj,
     );
   }
@@ -622,32 +621,36 @@ class Good {
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
       units: json['units'] != null
-          ? (json['units'] as List).map((i) => Unit.fromJson(i)).toList()
+          ? SafeConverters.toList(json['units'])
+              .map((i) => Unit.fromJson(SafeConverters.toMap(i)))
+              .toList()
           : null,
-      unitId: json['unit_id'] is int
-          ? json['unit_id']
-          : (json['unit_id'] is String ? int.tryParse(json['unit_id']) : null),
-      id: parseInt(json['id']),
-      oneCId: json['one_c_id'],
-      name: json['name'],
-      categoryId: parseInt(json['category_id']),
-      description: json['description'],
-      price: json['price'],
-      quantity: parseInt(json['quantity']),
-      deletedAt: parseDate(json['deleted_at']),
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
-      isActive: json['is_active'],
-      article: json['article'],
-      labelId: parseInt(json['label_id']),
-      getImage: json['get_image'],
-      cip: json['cip'],
-      packageCode: json['package_code'],
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      oneCId: SafeConverters.toStringOrNull(json['one_c_id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      categoryId: SafeConverters.toIntOrNull(json['category_id']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      price: SafeConverters.toStringOrNull(json['price']),
+      quantity: SafeConverters.toIntOrNull(json['quantity']),
+      deletedAt: SafeConverters.toDateTimeOrNull(json['deleted_at']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      isActive: SafeConverters.toBoolOrNull(json['is_active']),
+      article: SafeConverters.toStringOrNull(json['article']),
+      labelId: SafeConverters.toIntOrNull(json['label_id']),
+      getImage: SafeConverters.toBoolOrNull(json['get_image']),
+      cip: SafeConverters.toStringOrNull(json['cip']),
+      packageCode: SafeConverters.toStringOrNull(json['package_code']),
       files: json['files'] != null
-          ? (json['files'] as List).map((i) => GoodFile.fromJson(i)).toList()
+          ? SafeConverters.toList(json['files'])
+              .map((i) => GoodFile.fromJson(SafeConverters.toMap(i)))
+              .toList()
           : null,
       category: json['category'],
-      unit: json['unit'] != null ? Unit.fromJson(json['unit']) : null,
+      unit: SafeConverters.toMapOrNull(json['unit']) != null
+          ? Unit.fromJson(SafeConverters.toMap(json['unit']))
+          : null,
     );
   }
 
@@ -719,11 +722,11 @@ class GoodFile {
 
   factory GoodFile.fromJson(Map<String, dynamic> json) {
     return GoodFile(
-      id: parseInt(json['id']),
-      path: json['path'],
-      type: json['type'],
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      path: SafeConverters.toStringOrNull(json['path']),
+      type: SafeConverters.toStringOrNull(json['type']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -765,20 +768,20 @@ class GoodVariant {
 
   factory GoodVariant.fromJson(Map<String, dynamic> json) {
     return GoodVariant(
-      id: parseInt(json['id']),
-      goodId: parseInt(json['good_id']),
-      isActive: json['is_active'] is int
-          ? json['is_active'] == 1
-          : json['is_active'] as bool?,
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
-      oneCUid: json['one_c_uid'],
-      barcode: json['barcode'],
-      fullName: json['full_name'],
-      good: json['good'] != null ? Good.fromJson(json['good']) : null,
+      id: SafeConverters.toIntOrNull(json['id']),
+      goodId: SafeConverters.toIntOrNull(json['good_id']),
+      isActive: SafeConverters.toBoolOrNull(json['is_active']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      oneCUid: SafeConverters.toStringOrNull(json['one_c_uid']),
+      barcode: SafeConverters.toStringOrNull(json['barcode']),
+      fullName: SafeConverters.toStringOrNull(json['full_name']),
+      good: SafeConverters.toMapOrNull(json['good']) != null
+          ? Good.fromJson(SafeConverters.toMap(json['good']))
+          : null,
       attributeValues: json['attribute_values'] != null
-          ? (json['attribute_values'] as List)
-              .map((i) => AttributeValue.fromJson(i))
+          ? SafeConverters.toList(json['attribute_values'])
+              .map((i) => AttributeValue.fromJson(SafeConverters.toMap(i)))
               .toList()
           : null,
     );
@@ -850,20 +853,16 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: parseInt(json['id']),
-      categoryAttributeId: parseInt(json['category_attribute_id']),
-      value: json['value'],
-      unitId: parseInt(json['unit_id']),
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
-      variantAttributeId: parseInt(json['variant_attribute_id']),
-      variantId: parseInt(json['variant_id']),
-      categoryAttribute: json['category_attribute'] != null
-          ? CategoryAttribute.fromJson(json['category_attribute'])
+      id: SafeConverters.toIntOrNull(json['id']),
+      categoryAttributeId: SafeConverters.toIntOrNull(json['category_attribute_id']),
+      value: SafeConverters.toStringOrNull(json['value']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      variantAttributeId: SafeConverters.toIntOrNull(json['variant_attribute_id']),
+      variantId: SafeConverters.toIntOrNull(json['variant_id']),
+      categoryAttribute: SafeConverters.toMapOrNull(json['category_attribute']) != null
+          ? CategoryAttribute.fromJson(SafeConverters.toMap(json['category_attribute']))
           : null,
     );
   }
@@ -906,19 +905,15 @@ class CategoryAttribute {
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
     return CategoryAttribute(
-      id: parseInt(json['id']),
-      categoryId: parseInt(json['category_id']),
-      attributeId: parseInt(json['attribute_id']),
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
-      isIndividual: json['is_individual'],
-      showToSite: json['show_to_site'],
-      attribute: json['attribute'] != null
-          ? AttributeModel.fromJson(json['attribute'])
+      id: SafeConverters.toIntOrNull(json['id']),
+      categoryId: SafeConverters.toIntOrNull(json['category_id']),
+      attributeId: SafeConverters.toIntOrNull(json['attribute_id']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      isIndividual: SafeConverters.toBoolOrNull(json['is_individual']),
+      showToSite: SafeConverters.toBoolOrNull(json['show_to_site']),
+      attribute: SafeConverters.toMapOrNull(json['attribute']) != null
+          ? AttributeModel.fromJson(SafeConverters.toMap(json['attribute']))
           : null,
     );
   }
@@ -947,14 +942,10 @@ class AttributeModel {
 
   factory AttributeModel.fromJson(Map<String, dynamic> json) {
     return AttributeModel(
-      id: parseInt(json['id']),
-      name: json['name'],
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -993,20 +984,17 @@ class Model {
 
   factory Model.fromJson(Map<String, dynamic> json) {
     return Model(
-      id: parseInt(json['id']),
-      name: json['name'],
-      phone: json['phone'],
-      inn: parseInt(json['inn']),
-      currencyId: parseInt(json['currency_id']),
-      currency:
-          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
-      note: json['note'],
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      inn: SafeConverters.toIntOrNull(json['inn']),
+      currencyId: SafeConverters.toIntOrNull(json['currency_id']),
+      currency: SafeConverters.toMapOrNull(json['currency']) != null
+          ? Currency.fromJson(SafeConverters.toMap(json['currency']))
           : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      note: SafeConverters.toStringOrNull(json['note']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -1046,13 +1034,13 @@ class ExchangeRate {
 
   factory ExchangeRate.fromJson(Map<String, dynamic> json) {
     return ExchangeRate(
-      id: parseInt(json['id']),
-      date: parseDate(json['date']),
-      currencyId: parseInt(json['currency_id']),
-      value: json['value']?.toString(),
-      deletedAt: parseDate(json['deleted_at']),
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      date: SafeConverters.toDateTimeOrNull(json['date']),
+      currencyId: SafeConverters.toIntOrNull(json['currency_id']),
+      value: SafeConverters.toStringOrNull(json['value']),
+      deletedAt: SafeConverters.toDateTimeOrNull(json['deleted_at']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -1085,11 +1073,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: parseInt(json['total']),
-      count: parseInt(json['count']),
-      perPage: parseInt(json['per_page']),
-      currentPage: parseInt(json['current_page']),
-      totalPages: parseInt(json['total_pages']),
+      total: SafeConverters.toIntOrNull(json['total']),
+      count: SafeConverters.toIntOrNull(json['count']),
+      perPage: SafeConverters.toIntOrNull(json['per_page']),
+      currentPage: SafeConverters.toIntOrNull(json['current_page']),
+      totalPages: SafeConverters.toIntOrNull(json['total_pages']),
     );
   }
 
@@ -1129,16 +1117,16 @@ class AttributeValue {
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
     return AttributeValue(
-      id: parseInt(json['id']),
-      categoryAttributeId: parseInt(json['category_attribute_id']),
-      value: json['value'],
-      unitId: parseInt(json['unit_id']),
-      createdAt: parseDate(json['created_at']),
-      updatedAt: parseDate(json['updated_at']),
-      variantAttributeId: parseInt(json['variant_attribute_id']),
-      variantId: parseInt(json['variant_id']),
-      categoryAttribute: json['category_attribute'] != null
-          ? CategoryAttribute.fromJson(json['category_attribute'])
+      id: SafeConverters.toIntOrNull(json['id']),
+      categoryAttributeId: SafeConverters.toIntOrNull(json['category_attribute_id']),
+      value: SafeConverters.toStringOrNull(json['value']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      variantAttributeId: SafeConverters.toIntOrNull(json['variant_attribute_id']),
+      variantId: SafeConverters.toIntOrNull(json['variant_id']),
+      categoryAttribute: SafeConverters.toMapOrNull(json['category_attribute']) != null
+          ? CategoryAttribute.fromJson(SafeConverters.toMap(json['category_attribute']))
           : null,
     );
   }
@@ -1166,9 +1154,9 @@ class ArticleGood {
   ArticleGood({this.id, this.name, this.type});
   factory ArticleGood.fromJson(Map<String, dynamic> json) {
     return ArticleGood(
-      id: parseInt(json['id']),
-      name: json['name'],
-      type: json['type'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      type: SafeConverters.toStringOrNull(json['type']),
     );
   }
 

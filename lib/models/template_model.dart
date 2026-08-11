@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class Template {
   final int id;
   final String title;
@@ -30,21 +32,22 @@ class Template {
   });
 
   factory Template.fromJson(Map<String, dynamic> json) {
+    final channelsRaw = SafeConverters.toList(json['channels']);
     return Template(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      body: json['body'] as String,
-      waName: json['wa_name'] as String?,
-      waLanguage: json['wa_language'] as String?,
-      waCategory: json['wa_category'] as String?,
-      waRemoteId: json['wa_remote_id'] as String?,
-      waStatus: json['wa_status'] as String?,
-      integrationId: json['integration_id'] as int?,
-      organizationId: json['organization_id'] as int,
-      isActive: json['is_active'] as bool,
-      deletedAt: json['deleted_at'] as String?,
-      channels: (json['channels'] as List<dynamic>)
-          .map((channel) => Channel.fromJson(channel as Map<String, dynamic>))
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title']),
+      body: SafeConverters.toSafeString(json['body']),
+      waName: SafeConverters.toStringOrNull(json['wa_name']),
+      waLanguage: SafeConverters.toStringOrNull(json['wa_language']),
+      waCategory: SafeConverters.toStringOrNull(json['wa_category']),
+      waRemoteId: SafeConverters.toStringOrNull(json['wa_remote_id']),
+      waStatus: SafeConverters.toStringOrNull(json['wa_status']),
+      integrationId: SafeConverters.toIntOrNull(json['integration_id']),
+      organizationId: SafeConverters.toInt(json['organization_id']),
+      isActive: SafeConverters.toBool(json['is_active']),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at']),
+      channels: channelsRaw
+          .map((channel) => Channel.fromJson(SafeConverters.toMap(channel)))
           .toList(),
     );
   }
@@ -67,11 +70,11 @@ class Channel {
 
   factory Channel.fromJson(Map<String, dynamic> json) {
     return Channel(
-      id: json['id'] as int,
-      templateId: json['template_id'] as int,
-      channel: json['channel'] as String,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      id: SafeConverters.toInt(json['id']),
+      templateId: SafeConverters.toInt(json['template_id']),
+      channel: SafeConverters.toSafeString(json['channel']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      updatedAt: SafeConverters.toSafeString(json['updated_at']),
     );
   }
 }
@@ -86,8 +89,8 @@ class TemplateResponse {
   });
 
   factory TemplateResponse.fromJson(Map<String, dynamic> json) {
-    final result = json['result'];
-    if (result is! Map<String, dynamic>) {
+    final result = SafeConverters.toMapOrNull(json['result']);
+    if (result == null) {
       return TemplateResponse(
         templates: const [],
         pagination: Pagination.empty(),
@@ -98,14 +101,14 @@ class TemplateResponse {
     final rawPagination = result['pagination'];
 
     return TemplateResponse(
-      templates: rawTemplates is List<dynamic>
+      templates: rawTemplates is List
           ? rawTemplates
-              .whereType<Map<String, dynamic>>()
-              .map(Template.fromJson)
+              .whereType<Map>()
+              .map((e) => Template.fromJson(SafeConverters.toMap(e)))
               .toList()
           : const [],
-      pagination: rawPagination is Map<String, dynamic>
-          ? Pagination.fromJson(rawPagination)
+      pagination: rawPagination is Map
+          ? Pagination.fromJson(SafeConverters.toMap(rawPagination))
           : Pagination.empty(),
     );
   }
@@ -128,11 +131,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: (json['total'] as num?)?.toInt() ?? 0,
-      count: (json['count'] as num?)?.toInt() ?? 0,
-      perPage: (json['per_page'] as num?)?.toInt() ?? 0,
-      currentPage: (json['current_page'] as num?)?.toInt() ?? 1,
-      totalPages: (json['total_pages'] as num?)?.toInt() ?? 0,
+      total: SafeConverters.toInt(json['total']),
+      count: SafeConverters.toInt(json['count']),
+      perPage: SafeConverters.toInt(json['per_page']),
+      currentPage: SafeConverters.toInt(json['current_page'], defaultValue: 1),
+      totalPages: SafeConverters.toInt(json['total_pages']),
     );
   }
 

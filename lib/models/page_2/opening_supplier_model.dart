@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 /// Модель ответа API для списка поставщиков (используется в диалоге выбора)
 class SuppliersForOpeningsResponse {
@@ -12,7 +13,9 @@ class SuppliersForOpeningsResponse {
   factory SuppliersForOpeningsResponse.fromJson(Map<String, dynamic> json) {
     return SuppliersForOpeningsResponse(
       result: json['result'] != null
-          ? (json['result'] as List).map((item) => Supplier.fromJson(item)).toList()
+          ? SafeConverters.toList(json['result'])
+              .map((item) => Supplier.fromJson(SafeConverters.toMap(item)))
+              .toList()
           : null,
       errors: json['errors'],
     );
@@ -47,17 +50,13 @@ class Supplier {
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
     return Supplier(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-      phone: json['phone'] as String?,
-      inn: json['inn'] as int?,
-      note: json['note'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      inn: SafeConverters.toIntOrNull(json['inn']),
+      note: SafeConverters.toStringOrNull(json['note']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -132,7 +131,9 @@ class SupplierList {
 
   factory SupplierList.fromJson(List<dynamic> json) {
     return SupplierList(
-      suppliers: json.map((item) => Supplier.fromJson(item)).toList(),
+      suppliers: json
+          .map((item) => Supplier.fromJson(SafeConverters.toMap(item)))
+          .toList(),
     );
   }
 
@@ -140,6 +141,5 @@ class SupplierList {
     return suppliers.map((supplier) => supplier.toJson()).toList();
   }
 }
-
 
 

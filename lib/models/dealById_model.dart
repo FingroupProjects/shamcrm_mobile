@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 /// Main Deal model representing a deal by ID
 class DealById {
@@ -52,71 +53,62 @@ class DealById {
   });
 
   factory DealById.fromJson(Map<String, dynamic> json, int dealStatusId) {
-    // ✅ НОВОЕ: Парсинг users
-    List<DealUser>? usersList;
-    if (json['users'] != null && json['users'] is List) {
-      usersList = (json['users'] as List)
-          .where((item) => item != null)
-          .map(
-              (userJson) => DealUser.fromJson(userJson as Map<String, dynamic>))
-          .toList();
-    }
+    final usersList = SafeConverters.toList(json['users'])
+        .where((item) => item != null)
+        .map((userJson) => DealUser.fromJson(SafeConverters.toMap(userJson)))
+        .toList();
+
     return DealById(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? 'Без имени',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
       statusId: dealStatusId,
-      startDate: json['start_date'] as String?,
-      endDate: json['end_date'] as String?,
-      createdAt: json['created_at'] as String?,
-      description: json['description'] as String?,
-      sum: json['sum'] as String?,
-      dealNumber: json['deal_number'] as int?,
-      manager: json['manager'] != null
-          ? ManagerData.fromJson(json['manager'] as Map<String, dynamic>)
+      startDate: SafeConverters.toStringOrNull(json['start_date']),
+      endDate: SafeConverters.toStringOrNull(json['end_date']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      sum: SafeConverters.toStringOrNull(json['sum']),
+      dealNumber: SafeConverters.toIntOrNull(json['deal_number']),
+      manager: SafeConverters.toMapOrNull(json['manager']) != null
+          ? ManagerData.fromJson(SafeConverters.toMap(json['manager']))
           : null,
-      lead: json['lead'] != null
+      lead: SafeConverters.toMapOrNull(json['lead']) != null
           ? Lead.fromJson(
-              json['lead'] as Map<String, dynamic>,
-              json['lead']['status_id'] as int? ?? 0,
+              SafeConverters.toMap(json['lead']),
+              SafeConverters.toInt(SafeConverters.toMap(json['lead'])['status_id']),
             )
           : null,
-      author: json['author'] != null && json['author'] is Map<String, dynamic>
-          ? AuthorDeal.fromJson(json['author'] as Map<String, dynamic>)
+      author: SafeConverters.toMapOrNull(json['author']) != null
+          ? AuthorDeal.fromJson(SafeConverters.toMap(json['author']))
           : null,
-      dealStatus: json['deal_status'] != null
-          ? DealStatusById.fromJson(json['deal_status'] as Map<String, dynamic>)
+      dealStatus: SafeConverters.toMapOrNull(json['deal_status']) != null
+          ? DealStatusById.fromJson(SafeConverters.toMap(json['deal_status']))
           : null,
       dealStatuses: _parseList<DealStatusById>(
         json['deal_statuses'],
-        (item) => DealStatusById.fromJson(item as Map<String, dynamic>),
+        (item) => DealStatusById.fromJson(SafeConverters.toMap(item)),
       ),
-      // ✅ НОВОЕ: парсим customFieldValues
       customFieldValues: _parseList<CustomFieldValue>(
         json['customFieldValues'],
-        (item) => CustomFieldValue.fromJson(item as Map<String, dynamic>),
+        (item) => CustomFieldValue.fromJson(SafeConverters.toMap(item)),
       ),
       directoryValues: _parseList<DirectoryValue>(
         json['directory_values'],
-        (item) => DirectoryValue.fromJson(item as Map<String, dynamic>),
+        (item) => DirectoryValue.fromJson(SafeConverters.toMap(item)),
       ),
       files: _parseList<DealFiles>(
         json['files'],
-        (item) => DealFiles.fromJson(item as Map<String, dynamic>),
+        (item) => DealFiles.fromJson(SafeConverters.toMap(item)),
       ),
-      users: usersList,
-      reasonForRefusalId: json['reason_for_refusal_id'] is int
-          ? json['reason_for_refusal_id'] as int
-          : int.tryParse('${json['reason_for_refusal_id']}'),
-      reasonForRefusalComment: json['reason_for_refusal']?.toString(),
+      users: usersList.isEmpty ? null : usersList,
+      reasonForRefusalId: SafeConverters.toIntOrNull(json['reason_for_refusal_id']),
+      reasonForRefusalComment: SafeConverters.toStringOrNull(json['reason_for_refusal']),
       refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
     );
   }
 
   /// Helper method to safely parse lists from JSON
   static List<T> _parseList<T>(dynamic json, T Function(dynamic) parser) {
-    if (json == null) return [];
-    if (json is! List) return [];
-    return json.map(parser).toList();
+    return SafeConverters.toList(json).map(parser).toList();
   }
 
   Map<String, dynamic> toJson() => {
@@ -223,13 +215,13 @@ class DealUser {
 
   factory DealUser.fromJson(Map<String, dynamic> json) {
     return DealUser(
-      id: json['id'] as int? ?? 0,
-      dealId: json['deal_id'] as int? ?? 0,
-      userId: json['user_id'] as int? ?? 0,
-      createdAt: json['created_at'] as String? ?? '',
-      updatedAt: json['updated_at'] as String? ?? '',
-      user: json['user'] != null
-          ? UserData.fromJson(json['user'] as Map<String, dynamic>)
+      id: SafeConverters.toInt(json['id']),
+      dealId: SafeConverters.toIntOrNull(json['deal_id']),
+      userId: SafeConverters.toIntOrNull(json['user_id']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      user: SafeConverters.toMapOrNull(json['user']) != null
+          ? UserData.fromJson(SafeConverters.toMap(json['user']))
           : null,
     );
   }
@@ -274,18 +266,17 @@ class CustomFieldValue {
 
   factory CustomFieldValue.fromJson(Map<String, dynamic> json) {
     return CustomFieldValue(
-      id: json['id'] as int? ?? 0,
-      customFieldId: json['custom_field_id'] as int? ?? 0,
-      organizationId: json['organization_id'] as int? ?? 0,
-      modelId: json['model_id'] as int? ?? 0,
-      modelType: json['model_type'] as String? ?? '',
-      value: json['value'] as String? ?? '',
-      type: json['type'] as String? ?? 'string',
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      customField: json['custom_field'] != null
-          ? CustomFieldInfo.fromJson(
-              json['custom_field'] as Map<String, dynamic>)
+      id: SafeConverters.toInt(json['id']),
+      customFieldId: SafeConverters.toInt(json['custom_field_id']),
+      organizationId: SafeConverters.toInt(json['organization_id']),
+      modelId: SafeConverters.toInt(json['model_id']),
+      modelType: SafeConverters.toSafeString(json['model_type']),
+      value: SafeConverters.toSafeString(json['value']),
+      type: SafeConverters.toSafeString(json['type'], defaultValue: 'string'),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      customField: SafeConverters.toMapOrNull(json['custom_field']) != null
+          ? CustomFieldInfo.fromJson(SafeConverters.toMap(json['custom_field']))
           : null,
     );
   }
@@ -324,12 +315,12 @@ class CustomFieldInfo {
 
   factory CustomFieldInfo.fromJson(Map<String, dynamic> json) {
     return CustomFieldInfo(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      isActive: json['is_active'] as int? ?? 0,
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      type: json['type'] as String? ?? 'deals',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      isActive: SafeConverters.toInt(json['is_active']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      type: SafeConverters.toSafeString(json['type'], defaultValue: 'deals'),
     );
   }
 
@@ -357,9 +348,9 @@ class DealFiles {
 
   factory DealFiles.fromJson(Map<String, dynamic> json) {
     return DealFiles(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      path: json['path'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
     );
   }
 
@@ -382,8 +373,8 @@ class AuthorDeal {
 
   factory AuthorDeal.fromJson(Map<String, dynamic> json) {
     return AuthorDeal(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? 'Не указан',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Не указан'),
     );
   }
 
@@ -411,11 +402,11 @@ class DealStatusById {
 
   factory DealStatusById.fromJson(Map<String, dynamic> json) {
     return DealStatusById(
-      id: json['id'] as int? ?? 0,
-      title: json['title'] as String? ?? 'Без имени',
-      color: json['color'] as String? ?? '#000000',
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title'], defaultValue: 'Без имени'),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 
@@ -450,8 +441,8 @@ class DirectoryValue {
 
   factory DirectoryValue.fromJson(Map<String, dynamic> json) {
     return DirectoryValue(
-      id: json['id'] as int? ?? 0,
-      entry: Entry.fromJson(json['entry'] as Map<String, dynamic>),
+      id: SafeConverters.toInt(json['id']),
+      entry: Entry.fromJson(SafeConverters.toMap(json['entry'])),
     );
   }
 
@@ -477,26 +468,28 @@ class Entry {
     final parsedValues = _parseValues(json['values']);
 
     return Entry(
-      id: json['id'] as int? ?? 0,
-      directory: json['directory'] != null
-          ? DirectoryByDeal.fromJson(json['directory'] as Map<String, dynamic>)
+      id: SafeConverters.toInt(json['id']),
+      directory: SafeConverters.toMapOrNull(json['directory']) != null
+          ? DirectoryByDeal.fromJson(SafeConverters.toMap(json['directory']))
           : const DirectoryByDeal(id: 0, name: ''),
       values: parsedValues,
     );
   }
 
   static Map<String, dynamic> _parseValues(dynamic valuesRaw) {
-    if (valuesRaw is Map<String, dynamic>) {
-      return valuesRaw;
+    final map = SafeConverters.toMapOrNull(valuesRaw);
+    if (map != null) {
+      return map;
     }
 
     if (valuesRaw is List<dynamic>) {
       final result = <String, dynamic>{};
       for (final item in valuesRaw) {
-        if (item is Map<String, dynamic>) {
-          final key = item['key'];
+        final itemMap = SafeConverters.toMapOrNull(item);
+        if (itemMap != null) {
+          final key = itemMap['key'];
           if (key is String) {
-            result[key] = item['value'] ?? '';
+            result[key] = itemMap['value'] ?? '';
           }
         }
       }
@@ -525,8 +518,8 @@ class DirectoryByDeal {
 
   factory DirectoryByDeal.fromJson(Map<String, dynamic> json) {
     return DirectoryByDeal(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
     );
   }
 

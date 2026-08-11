@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class SubCategoryAttributesData with CustomDropdownListFilter {
   final int id;
@@ -21,16 +22,16 @@ class SubCategoryAttributesData with CustomDropdownListFilter {
 
   factory SubCategoryAttributesData.fromJson(Map<String, dynamic> json) {
     return SubCategoryAttributesData(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      image: json['image'] as String?,
-      displayType: json['display_type'] as String?,
-      hasPriceCharacteristics: json['has_price_characteristics'] as bool,
-      parent: json['parent'] != null
-          ? ParentCategory.fromJson(json['parent'] as Map<String, dynamic>)
-          : null, // Handle null parent
-      attributes: (json['attributes'] as List? ?? [])
-          .map((attribute) => Attribute.fromJson(attribute as Map<String, dynamic>))
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      displayType: SafeConverters.toStringOrNull(json['display_type']),
+      hasPriceCharacteristics: SafeConverters.toBool(json['has_price_characteristics']),
+      parent: SafeConverters.toMapOrNull(json['parent']) != null
+          ? ParentCategory.fromJson(SafeConverters.toMap(json['parent']))
+          : null,
+      attributes: SafeConverters.toList(json['attributes'])
+          .map((attribute) => Attribute.fromJson(SafeConverters.toMap(attribute)))
           .toList(),
     );
   }
@@ -72,9 +73,9 @@ class ParentCategory {
 
   factory ParentCategory.fromJson(Map<String, dynamic> json) {
     return ParentCategory(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      image: json['image'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
     );
   }
 }
@@ -93,13 +94,14 @@ class Attribute {
   });
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
+    final attributeMap = SafeConverters.toMapOrNull(json['attribute']);
     return Attribute(
-      id: (json['id'] as int?) ?? 0,
-      name: json['attribute'] != null
-          ? (json['attribute']['name'] as String?) ?? ''
-          : (json['name'] as String?) ?? '',
-      value: json['value'] as String?,
-      isIndividual: json['is_individual'] as bool? ?? false,
+      id: SafeConverters.toInt(json['id']),
+      name: attributeMap != null
+          ? SafeConverters.toSafeString(attributeMap['name'])
+          : SafeConverters.toSafeString(json['name']),
+      value: SafeConverters.toStringOrNull(json['value']),
+      isIndividual: SafeConverters.toBool(json['is_individual']),
     );
   }
 }

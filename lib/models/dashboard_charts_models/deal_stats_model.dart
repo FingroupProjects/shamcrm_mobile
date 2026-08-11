@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class DealStatsResponse {
   final List<MonthData> data;
 
@@ -16,8 +18,9 @@ class DealStatsResponse {
       throw Exception('Отсутствует ключ "result" или "data" в JSON');
     }
 
-    List<dynamic> rawData = json['result']['data'] as List<dynamic>;
-    List<MonthData> monthlyData = rawData.map((item) => MonthData.fromJson(item)).toList();
+    final rawData = SafeConverters.toList(json['result']['data']);
+    final monthlyData =
+        rawData.map((item) => MonthData.fromJson(SafeConverters.toMap(item))).toList();
 
     final response = DealStatsResponse(
       data: monthlyData,
@@ -39,8 +42,8 @@ class MonthData {
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
     return MonthData(
-      totalSum: (json['total_sum'] as num).toDouble(),
-      successfulSum: (json['successful_sum'] as num).toDouble(),
+      totalSum: SafeConverters.toDouble(json['total_sum']),
+      successfulSum: SafeConverters.toDouble(json['successful_sum']),
     );
   }
 

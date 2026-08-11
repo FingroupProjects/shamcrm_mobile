@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class CategoryDataById {
   final int id;
   final String name;
@@ -43,17 +45,19 @@ class CategoryDataById {
 
   factory CategoryDataById.fromJson(Map<String, dynamic> json) {
     return CategoryDataById(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      image: json['image'] as String?,
-      displayType: json['display_type'] as String?,
-      hasPriceCharacteristics: json['has_price_characteristics'] as bool,
-      parent: json['parent'] != null ? ParentCategory.fromJson(json['parent']) : null,
-      attributes: (json['attributes'] as List<dynamic>)
-          .map((attr) => Attribute.fromJson(attr as Map<String, dynamic>))
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      displayType: SafeConverters.toStringOrNull(json['display_type']),
+      hasPriceCharacteristics: SafeConverters.toBool(json['has_price_characteristics']),
+      parent: SafeConverters.toMapOrNull(json['parent']) != null
+          ? ParentCategory.fromJson(SafeConverters.toMap(json['parent']))
+          : null,
+      attributes: SafeConverters.toList(json['attributes'])
+          .map((attr) => Attribute.fromJson(SafeConverters.toMap(attr)))
           .toList(),
-      subcategories: (json['subcategories'] as List<dynamic>)
-          .map((subcat) => CategoryDataById.fromJson(subcat as Map<String, dynamic>))
+      subcategories: SafeConverters.toList(json['subcategories'])
+          .map((subcat) => CategoryDataById.fromJson(SafeConverters.toMap(subcat)))
           .toList(),
     );
   }
@@ -72,9 +76,9 @@ class ParentCategory {
 
   factory ParentCategory.fromJson(Map<String, dynamic> json) {
     return ParentCategory(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      image: json['image'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
     );
   }
 }
@@ -91,10 +95,11 @@ class Attribute {
   });
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
+    final attributeMap = SafeConverters.toMap(json['attribute']);
     return Attribute(
-      id: json['id'] as int,
-      name: json['attribute']['name'] as String,
-      isIndividual: json['is_individual'] as bool,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(attributeMap['name']),
+      isIndividual: SafeConverters.toBool(json['is_individual']),
     );
   }
 }
@@ -105,8 +110,8 @@ class SubCategoryResponseASD {
 
   factory SubCategoryResponseASD.fromJson(Map<String, dynamic> json) {
     return SubCategoryResponseASD(
-      categories: (json['data'] as List<dynamic>)
-          .map((item) => CategoryDataById.fromJson(item as Map<String, dynamic>))
+      categories: SafeConverters.toList(json['data'])
+          .map((item) => CategoryDataById.fromJson(SafeConverters.toMap(item)))
           .toList(),
     );
   }

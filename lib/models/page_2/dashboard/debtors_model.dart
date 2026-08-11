@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:equatable/equatable.dart';
 
 class DebtorsResponse extends Equatable {
@@ -11,10 +12,10 @@ class DebtorsResponse extends Equatable {
 
   factory DebtorsResponse.fromJson(Map<String, dynamic> json) {
     return DebtorsResponse(
-      result: json['result'] != null
-          ? DebtorsResult.fromJson(json['result'] as Map<String, dynamic>)
+      result: SafeConverters.toMapOrNull(json['result']) != null
+          ? DebtorsResult.fromJson(SafeConverters.toMap(json['result']))
           : null,
-      errors: json['errors'] as String?, // Updated to String?
+      errors: SafeConverters.toStringOrNull(json['errors']),
     );
   }
 
@@ -48,18 +49,15 @@ class DebtorsResult extends Equatable {
 
   factory DebtorsResult.fromJson(Map<String, dynamic> json) {
     return DebtorsResult(
-      totalDebt: json['total_debt'] as num,
-      debtors: ((json['debtors'] as List<dynamic>?) ?? [])
-          .map((e) => Debtor.fromJson(e as Map<String, dynamic>))
+      totalDebt: SafeConverters.toNum(json['total_debt']),
+      debtors: SafeConverters.toList(json['debtors'])
+          .map((e) => Debtor.fromJson(SafeConverters.toMap(e)))
           .toList(),
-      period: Period.fromJson(json['period'] as Map<String, dynamic>),
-      percentageChange:
-          (json['percentage_change'] as num).toDouble(), // Handle int or double
-      isPositiveChange: json['is_positive_change'] as bool,
-      pagination: json['pagination'] != null
-          ? DebtorsPagination.fromJson(
-              json['pagination'] as Map<String, dynamic>,
-            )
+      period: Period.fromJson(SafeConverters.toMap(json['period'])),
+      percentageChange: SafeConverters.toDouble(json['percentage_change']),
+      isPositiveChange: SafeConverters.toBool(json['is_positive_change']),
+      pagination: SafeConverters.toMapOrNull(json['pagination']) != null
+          ? DebtorsPagination.fromJson(SafeConverters.toMap(json['pagination']))
           : null,
     );
   }
@@ -101,10 +99,10 @@ class Debtor extends Equatable {
 
   factory Debtor.fromJson(Map<String, dynamic> json) {
     return Debtor(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      phone: json['phone'] as String?,
-      debtAmount: json['debt_amount'] as num,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      debtAmount: SafeConverters.toNum(json['debt_amount']),
     );
   }
 
@@ -132,8 +130,8 @@ class Period extends Equatable {
 
   factory Period.fromJson(Map<String, dynamic> json) {
     return Period(
-      current: DateRange.fromJson(json['current'] as Map<String, dynamic>),
-      previous: DateRange.fromJson(json['previous'] as Map<String, dynamic>),
+      current: DateRange.fromJson(SafeConverters.toMap(json['current'])),
+      previous: DateRange.fromJson(SafeConverters.toMap(json['previous'])),
     );
   }
 
@@ -159,8 +157,8 @@ class DateRange extends Equatable {
 
   factory DateRange.fromJson(Map<String, dynamic> json) {
     return DateRange(
-      from: json['from'] as String?, // Cast to String?
-      to: json['to'] as String?, // Cast to String?
+      from: SafeConverters.toStringOrNull(json['from']),
+      to: SafeConverters.toStringOrNull(json['to']),
     );
   }
 
@@ -190,10 +188,10 @@ class DebtorsPagination extends Equatable {
 
   factory DebtorsPagination.fromJson(Map<String, dynamic> json) {
     return DebtorsPagination(
-      currentPage: (json['current_page'] as num?)?.toInt() ?? 1,
-      totalPages: (json['total_pages'] as num?)?.toInt() ?? 1,
-      total: (json['total'] as num?)?.toInt() ?? 0,
-      perPage: (json['per_page'] as num?)?.toInt() ?? 20,
+      currentPage: SafeConverters.toInt(json['current_page'], defaultValue: 1),
+      totalPages: SafeConverters.toInt(json['total_pages'], defaultValue: 1),
+      total: SafeConverters.toInt(json['total']),
+      perPage: SafeConverters.toInt(json['per_page'], defaultValue: 20),
     );
   }
 

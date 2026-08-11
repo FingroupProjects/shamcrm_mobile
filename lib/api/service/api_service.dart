@@ -44,6 +44,7 @@ import 'package:crm_task_manager/models/directory_model.dart';
 import 'package:crm_task_manager/models/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/models/history_model_my-task.dart';
 import 'package:crm_task_manager/models/integration_model.dart';
 import 'package:crm_task_manager/models/lead_deal_model.dart';
@@ -4821,10 +4822,12 @@ class ApiService {
     String message = 'error_delete_lead';
     try {
       final decoded = json.decode(response.body);
-      if (decoded is Map<String, dynamic> &&
-          decoded['message'] is String &&
-          (decoded['message'] as String).trim().isNotEmpty) {
-        message = decoded['message'] as String;
+      if (decoded is Map<String, dynamic>) {
+        final serverMessage =
+            SafeConverters.toSafeString(decoded['message']).trim();
+        if (serverMessage.isNotEmpty) {
+          message = serverMessage;
+        }
       }
     } catch (_) {}
 
@@ -9062,9 +9065,9 @@ class ApiService {
             (filters['managers'] as List).isNotEmpty) {
           List<int> managerIds = (filters['managers'] as List).map((m) {
             if (m is Map) {
-              return m['id'] as int;
+              return SafeConverters.toInt(m['id']);
             }
-            return m.id as int; // Для объектов ManagerData
+            return SafeConverters.toInt(m.id); // Для объектов ManagerData
           }).toList();
           for (int managerId in managerIds) {
             path += '&managers[]=$managerId';
@@ -9076,9 +9079,9 @@ class ApiService {
             (filters['regions'] as List).isNotEmpty) {
           List<int> regionIds = (filters['regions'] as List).map((r) {
             if (r is Map) {
-              return r['id'] as int;
+              return SafeConverters.toInt(r['id']);
             }
-            return r.id as int; // Для объектов RegionData
+            return SafeConverters.toInt(r.id); // Для объектов RegionData
           }).toList();
           for (int regionId in regionIds) {
             path += '&regions[]=$regionId';
@@ -9090,9 +9093,9 @@ class ApiService {
             (filters['sources'] as List).isNotEmpty) {
           List<int> sourceIds = (filters['sources'] as List).map((s) {
             if (s is Map) {
-              return s['id'] as int;
+              return SafeConverters.toInt(s['id']);
             }
-            return s.id as int; // Для объектов SourceData
+            return SafeConverters.toInt(s.id); // Для объектов SourceData
           }).toList();
           for (int sourceId in sourceIds) {
             path += '&sources[]=$sourceId';
@@ -17097,7 +17100,7 @@ class ApiService {
     final data = json.decode(response.body);
 
     if (response.statusCode == 200) {
-      return data['result']['deleted'] as bool;
+      return SafeConverters.toBool(data['result']['deleted']);
     } else {
       if (data['errors'] != null) {
         throw Exception(data['errors'] ?? 'Ошибка удаления кассы');
@@ -17180,7 +17183,7 @@ class ApiService {
     final data = json.decode(response.body);
 
     if (response.statusCode == 200) {
-      return data['result']['deleted'] as bool;
+      return SafeConverters.toBool(data['result']['deleted']);
     } else {
       if (data['errors'] != null) {
         throw Exception(data['errors'] ?? 'Ошибка удаления расхода');
@@ -17262,7 +17265,7 @@ class ApiService {
     final data = json.decode(response.body);
 
     if (response.statusCode == 200) {
-      return data['result']['deleted'] as bool;
+      return SafeConverters.toBool(data['result']['deleted']);
     } else {
       if (data['errors'] != null) {
         throw Exception(data['errors'] ?? 'Ошибка удаления дохода');

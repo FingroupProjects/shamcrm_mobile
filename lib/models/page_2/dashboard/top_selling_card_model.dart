@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class TopSellingCardModel {
   /*
   response: result.data:
@@ -27,12 +29,12 @@ class TopSellingCardModel {
   // from json and to json methods
   factory TopSellingCardModel.fromJson(Map<String, dynamic> json) {
     return TopSellingCardModel(
-      id: json['id'] as int,
-      name: json['name'].toString(),
-      category: json['category'].toString(),
-      totalQuantity: json['total_quantity'] as num,
-      totalAmount: json['total_amount'].toString(),
-      avgPrice: json['avg_price'].toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      category: SafeConverters.toSafeString(json['category']),
+      totalQuantity: SafeConverters.toNum(json['total_quantity']),
+      totalAmount: SafeConverters.toSafeString(json['total_amount']),
+      avgPrice: SafeConverters.toSafeString(json['avg_price']),
     );
   }
 

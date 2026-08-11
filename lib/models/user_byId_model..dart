@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/role_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class UserByIdProfile {
   final int id;
@@ -30,26 +31,23 @@ class UserByIdProfile {
   });
 
   factory UserByIdProfile.fromJson(Map<String, dynamic> json) {
-    final internalNumberRaw = json['internal_number'];
-    final int? internalNumber = internalNumberRaw is int
-        ? internalNumberRaw
-        : int.tryParse(internalNumberRaw?.toString() ?? '');
-
     return UserByIdProfile(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указано',
-      lastname: json['lastname'] ?? '',
-      Pname: json['patronymic'] ?? 'Не указано',
-      login: json['login'] ?? 'Не указано',
-      email: json['email'] ?? 'Не указано',
-      phone: json['phone'] ?? '',
-      image: json['image'] as String?,
-      lastSeen: json['last_seen'] as String?,
-      uniqueId: json['unique_id'] as String?, // Парсим unique_id
-      internalNumber: internalNumber,
-      role: (json['roles'] as List<dynamic>?)
-          ?.map((roleJson) => Role.fromJson(roleJson))
-          .toList(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Не указано'),
+      lastname: SafeConverters.toSafeString(json['lastname']),
+      Pname: SafeConverters.toSafeString(json['patronymic'], defaultValue: 'Не указано'),
+      login: SafeConverters.toSafeString(json['login'], defaultValue: 'Не указано'),
+      email: SafeConverters.toSafeString(json['email'], defaultValue: 'Не указано'),
+      phone: SafeConverters.toSafeString(json['phone']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      lastSeen: SafeConverters.toStringOrNull(json['last_seen']),
+      uniqueId: SafeConverters.toStringOrNull(json['unique_id']),
+      internalNumber: SafeConverters.toIntOrNull(json['internal_number']),
+      role: json['roles'] != null
+          ? SafeConverters.toList(json['roles'])
+              .map((roleJson) => Role.fromJson(SafeConverters.toMap(roleJson)))
+              .toList()
+          : null,
     );
   }
 }

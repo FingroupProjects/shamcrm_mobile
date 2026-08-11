@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class CashRegisterOpeningsResponse {
   final List<CashRegisterOpening>? result;
   final dynamic errors;
@@ -22,7 +24,7 @@ class CashRegisterOpeningsResponse {
         // Формат: {"result": {"data": [...], "pagination": {...}}}
         // ignore: avoid_print
         print('🟢 CashRegisterOpeningsResponse.fromJson - формат: result.data');
-        final rawList = resultData["data"] as List?;
+        final rawList = SafeConverters.toList(resultData["data"]);
         if (rawList == null) {
           // ignore: avoid_print
           print('🟡 CashRegisterOpeningsResponse.fromJson - rawList is null');
@@ -128,13 +130,14 @@ class CashRegisterOpening {
       print('🔵 CashRegisterOpening.fromJson - используем формат 1 (с cash_register)');
       try {
         final opening = CashRegisterOpening(
-          id: _parseInt(json["id"]),
-          cashRegisterId: _parseInt(json["cash_register_id"]),
-          sum: json["sum"]?.toString(),
-          createdAt: _parseDateTime(json["created_at"]),
-          updatedAt: _parseDateTime(json["updated_at"]),
-          cashId: _parseInt(json["cash_id"]),
-          cashRegister: CashRegister.fromJson(json["cash_register"] as Map<String, dynamic>),
+          id: SafeConverters.toIntOrNull(json["id"]),
+          cashRegisterId: SafeConverters.toIntOrNull(json["cash_register_id"]),
+          sum: SafeConverters.toStringOrNull(json["sum"]),
+          createdAt: SafeConverters.toDateTimeOrNull(json["created_at"]),
+          updatedAt: SafeConverters.toDateTimeOrNull(json["updated_at"]),
+          cashId: SafeConverters.toIntOrNull(json["cash_id"]),
+          cashRegister: CashRegister.fromJson(
+              SafeConverters.toMap(json["cash_register"])),
         );
         // ignore: avoid_print
         print('🔵 CashRegisterOpening.fromJson - формат 1 успешно распарсен');
@@ -151,7 +154,7 @@ class CashRegisterOpening {
     // ignore: avoid_print
     print('🔵 CashRegisterOpening.fromJson - используем формат 2 (прямой объект кассы)');
     try {
-      final id = _parseInt(json["id"]);
+      final id = SafeConverters.toIntOrNull(json["id"]);
       // ignore: avoid_print
       print('🔵 CashRegisterOpening.fromJson - parsed id: $id');
       
@@ -162,9 +165,9 @@ class CashRegisterOpening {
       final opening = CashRegisterOpening(
         id: id,
         cashRegisterId: id,
-        sum: json["sum"]?.toString(),
-        createdAt: _parseDateTime(json["created_at"]),
-        updatedAt: _parseDateTime(json["updated_at"]),
+        sum: SafeConverters.toStringOrNull(json["sum"]),
+        createdAt: SafeConverters.toDateTimeOrNull(json["created_at"]),
+        updatedAt: SafeConverters.toDateTimeOrNull(json["updated_at"]),
         cashId: id,
         cashRegister: cashReg,
       );
@@ -214,12 +217,14 @@ class CashRegister {
       // ignore: avoid_print
       print('🟣 CashRegister.fromJson - входные keys: ${json.keys.toList()}');
       final cashReg = CashRegister(
-        id: _parseInt(json["id"]),
-        name: _parseString(json["name"]),
-        organizationId: _parseInt(json["organization_id"]),
-        createdAt: _parseDateTime(json["created_at"]),
-        updatedAt: _parseDateTime(json["updated_at"]),
-        users: json["users"] is List ? json["users"] as List<dynamic> : null,
+        id: SafeConverters.toIntOrNull(json["id"]),
+        name: SafeConverters.toStringOrNull(json["name"]),
+        organizationId: SafeConverters.toIntOrNull(json["organization_id"]),
+        createdAt: SafeConverters.toDateTimeOrNull(json["created_at"]),
+        updatedAt: SafeConverters.toDateTimeOrNull(json["updated_at"]),
+        users: SafeConverters.toList(json["users"]).isEmpty
+            ? null
+            : SafeConverters.toList(json["users"]),
       );
       // ignore: avoid_print
       print('🟣 CashRegister.fromJson - успешно распарсен, id: ${cashReg.id}, name: ${cashReg.name}');
@@ -240,31 +245,4 @@ class CashRegister {
         "created_at": createdAt?.toIso8601String(),
         "updated_at": updatedAt?.toIso8601String(),
       };
-}
-
-int? _parseInt(dynamic v) {
-  if (v == null) return null;
-  if (v is int) return v;
-  if (v is num) return v.toInt();
-  if (v is String) return int.tryParse(v);
-  return null;
-}
-
-String? _parseString(dynamic v) {
-  if (v == null) return null;
-  if (v is String) return v;
-  return v.toString();
-}
-
-DateTime? _parseDateTime(dynamic v) {
-  if (v == null) return null;
-  if (v is DateTime) return v;
-  if (v is String) {
-    try {
-      return DateTime.parse(v);
-    } catch (_) {
-      return null;
-    }
-  }
-  return null;
 }

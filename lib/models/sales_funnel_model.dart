@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class SalesFunnel {
   final int id;
   final String name;
@@ -21,14 +23,16 @@ class SalesFunnel {
 
   factory SalesFunnel.fromJson(Map<String, dynamic> json) {
     return SalesFunnel(
-      id: _asInt(json['id']) ?? 0,
-      name: json['name']?.toString() ?? '',
-      organizationId: _asInt(json['organization_id']),
-      isActive: json['is_active'] != null ? _asBool(json['is_active']) : null,
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      acceptLeadStatusId: _asInt(json['accept_lead_status_id']),
-      showAcceptDeclineButton: _asBool(json['show_accept_decline_button']),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      isActive: SafeConverters.toBoolOrNull(json['is_active']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      acceptLeadStatusId:
+          SafeConverters.toIntOrNull(json['accept_lead_status_id']),
+      showAcceptDeclineButton:
+          SafeConverters.toBool(json['show_accept_decline_button']),
     );
   }
 
@@ -44,20 +48,4 @@ class SalesFunnel {
       'show_accept_decline_button': showAcceptDeclineButton ? 1 : 0,
     };
   }
-}
-
-int? _asInt(dynamic value) {
-  if (value is int) return value;
-  if (value is String) return int.tryParse(value);
-  return int.tryParse('$value');
-}
-
-bool _asBool(dynamic value) {
-  if (value is bool) return value;
-  if (value is int) return value == 1;
-  if (value is String) {
-    final normalized = value.trim().toLowerCase();
-    return normalized == '1' || normalized == 'true';
-  }
-  return false;
 }

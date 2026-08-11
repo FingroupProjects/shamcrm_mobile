@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class MyStatusName {
   final int id;
   final String name;
@@ -11,9 +13,9 @@ class MyStatusName {
 
   factory MyStatusName.fromJson(Map<String, dynamic> json) {
     return MyStatusName(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      needsPermission: json['needs_permission'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      needsPermission: SafeConverters.toStringOrNull(json['needs_permission']),
     );
   }
 

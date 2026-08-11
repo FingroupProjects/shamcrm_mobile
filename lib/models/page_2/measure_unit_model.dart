@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class MeasureUnitModel {
   final int id;
   final String name;
@@ -15,11 +17,11 @@ class MeasureUnitModel {
 
   factory MeasureUnitModel.fromJson(Map<String, dynamic> json) {
     return MeasureUnitModel(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      shortName: json['short_name'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      createdAt: SafeConverters.toDateTime(json['created_at']),
+      updatedAt: SafeConverters.toDateTime(json['updated_at']),
+      shortName: SafeConverters.toStringOrNull(json['short_name']),
     );
   }
 
@@ -37,5 +39,5 @@ class MeasureUnitModel {
 // Helper for list parsing
 List<MeasureUnitModel> measureUnitListFromJson(List<dynamic> jsonList) =>
     jsonList
-        .map((e) => MeasureUnitModel.fromJson(e as Map<String, dynamic>))
+        .map((e) => MeasureUnitModel.fromJson(SafeConverters.toMap(e)))
         .toList();

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // Model
 class UserTaskCompletionManager {
   final List<double> finishedTasksPercent;
@@ -7,10 +9,10 @@ class UserTaskCompletionManager {
   });
 
   factory UserTaskCompletionManager.fromJson(Map<String, dynamic> json) {
-    // Обработка массива данных из ключа 'result'
-    List<dynamic> results = json['result'] ?? [];
     return UserTaskCompletionManager(
-      finishedTasksPercent: results.map((e) => (e as num).toDouble()).toList(),
+      finishedTasksPercent: SafeConverters.toList(json['result'])
+          .map(SafeConverters.toDouble)
+          .toList(),
     );
   }
 

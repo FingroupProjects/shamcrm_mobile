@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/organization_model.dart';
 import 'package:crm_task_manager/models/source_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 
 class Lead {
@@ -48,47 +49,48 @@ class Lead {
 
   factory Lead.fromJson(Map<String, dynamic> json, int leadStatusId) {
     return Lead(
-      id: json['id'] ?? 0,
-      name: sanitizeUtf16(json['name']?.toString() ?? 'Без имени'),
-      source: json['source'] != null ? Source.fromJson(json['source']) : null,
-      createdAt: json['created_at']?.toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: sanitizeUtf16(
+          SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени')),
+      source: SafeConverters.toMapOrNull(json['source']) != null
+          ? Source.fromJson(SafeConverters.toMap(json['source']))
+          : null,
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
       statusId: leadStatusId,
-      manager: json['manager'] != null
-          ? ManagerData.fromJson(json['manager'])
+      manager: SafeConverters.toMapOrNull(json['manager']) != null
+          ? ManagerData.fromJson(SafeConverters.toMap(json['manager']))
           : null,
-      sourceLead:
-          json['source'] != null ? SourceLead.fromJson(json['source']) : null,
-      organization: json['organization'] != null
-          ? Organization.fromJson(json['organization'])
+      sourceLead: SafeConverters.toMapOrNull(json['source']) != null
+          ? SourceLead.fromJson(SafeConverters.toMap(json['source']))
           : null,
-      leadStatus: json['leadStatus'] != null
-          ? LeadStatus.fromJson(json['leadStatus'])
+      organization: SafeConverters.toMapOrNull(json['organization']) != null
+          ? Organization.fromJson(SafeConverters.toMap(json['organization']))
           : null,
-      phone: sanitizeUtf16(json['phone']?.toString() ?? ''),
-      inProgressDealsCount: json['in_progress_deals_count'] != null
-          ? int.tryParse(json['in_progress_deals_count'].toString())
+      leadStatus: SafeConverters.toMapOrNull(json['leadStatus']) != null
+          ? LeadStatus.fromJson(SafeConverters.toMap(json['leadStatus']))
           : null,
-      successefullyDealsCount: json['successful_deals_count'] != null
-          ? int.tryParse(json['successful_deals_count'].toString())
-          : null,
-      failedDealsCount: json['failed_deals_count'] != null
-          ? int.tryParse(json['failed_deals_count'].toString())
-          : null,
-      lastUpdate: json['last_update'],
-      messageStatus: json['messageStatus']?.toString(),
-      chats: json['chats'] != null
-          ? (json['chats'] as List<dynamic>)
-              .map((chat) => chat as Map<String, dynamic>)
-              .toList()
-          : null,
-      mainPageDeals: json['main_page_deals'] != null
-          ? (json['main_page_deals'] as List<dynamic>)
-              .map((deal) => MainPageDeal.fromJson(deal))
-              .toList()
-          : null,
-      debt: json['debt'] is num ? json['debt'] : null,
-      currency: json['currency'] != null
-          ? LeadCurrency.fromJson(json['currency'])
+      phone: sanitizeUtf16(SafeConverters.toSafeString(json['phone'])),
+      inProgressDealsCount:
+          SafeConverters.toIntOrNull(json['in_progress_deals_count']),
+      successefullyDealsCount:
+          SafeConverters.toIntOrNull(json['successful_deals_count']),
+      failedDealsCount: SafeConverters.toIntOrNull(json['failed_deals_count']),
+      lastUpdate: SafeConverters.toIntOrNull(json['last_update']),
+      messageStatus: SafeConverters.toStringOrNull(json['messageStatus']),
+      chats: SafeConverters.toList(json['chats']).isEmpty
+          ? null
+          : SafeConverters.toList(json['chats'])
+              .map((chat) => SafeConverters.toMap(chat))
+              .toList(),
+      mainPageDeals: SafeConverters.toList(json['main_page_deals']).isEmpty
+          ? null
+          : SafeConverters.toList(json['main_page_deals'])
+              .map((deal) =>
+                  MainPageDeal.fromJson(SafeConverters.toMap(deal)))
+              .toList(),
+      debt: SafeConverters.toNumOrNull(json['debt']),
+      currency: SafeConverters.toMapOrNull(json['currency']) != null
+          ? LeadCurrency.fromJson(SafeConverters.toMap(json['currency']))
           : null,
     );
   }
@@ -139,13 +141,13 @@ class LeadCurrency {
 
   factory LeadCurrency.fromJson(Map<String, dynamic> json) {
     return LeadCurrency(
-      id: json['id'],
-      name: json['name']?.toString(),
-      digitalCode: json['digital_code'],
-      symbolCode: json['symbol_code']?.toString(),
-      organizationId: json['organization_id'],
-      createdAt: json['created_at']?.toString(),
-      updatedAt: json['updated_at']?.toString(),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      digitalCode: SafeConverters.toIntOrNull(json['digital_code']),
+      symbolCode: SafeConverters.toStringOrNull(json['symbol_code']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 
@@ -178,10 +180,10 @@ class MainPageDeal {
 
   factory MainPageDeal.fromJson(Map<String, dynamic> json) {
     return MainPageDeal(
-      statusId: json['status_id'] ?? 0,
-      statusTitle: json['status_title'] ?? '',
-      statusColor: json['status_color'] ?? '#000000',
-      count: json['count'] ?? 0,
+      statusId: SafeConverters.toInt(json['status_id']),
+      statusTitle: SafeConverters.toSafeString(json['status_title']),
+      statusColor: SafeConverters.toSafeString(json['status_color'], defaultValue: '#000000'),
+      count: SafeConverters.toInt(json['count']),
     );
   }
 
@@ -229,19 +231,19 @@ class Author {
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      lastname: json['lastname'],
-      login: json['login'],
-      email: json['email'],
-      phone: json['phone'],
-      image: json['image'], // Accept image as-is without type conversion
-      lastSeen: json['last_seen'],
-      deletedAt: json['deleted_at'],
-      telegramUserId: json['telegram_user_id']?.toString(),
-      jobTitle: json['job_title'],
-      online: json['online'],
-      fullName: json['full_name'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      lastname: SafeConverters.toStringOrNull(json['lastname']),
+      login: SafeConverters.toStringOrNull(json['login']),
+      email: SafeConverters.toStringOrNull(json['email']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      image: json['image'],
+      lastSeen: SafeConverters.toStringOrNull(json['last_seen']),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at']),
+      telegramUserId: SafeConverters.toStringOrNull(json['telegram_user_id']),
+      jobTitle: SafeConverters.toStringOrNull(json['job_title']),
+      online: SafeConverters.toBoolOrNull(json['online']),
+      fullName: SafeConverters.toStringOrNull(json['full_name']),
     );
   }
 }
@@ -253,7 +255,7 @@ class Source {
 
   factory Source.fromJson(Map<String, dynamic> json) {
     return Source(
-      name: json['name'],
+      name: SafeConverters.toSafeString(json['name']),
     );
   }
 
@@ -277,16 +279,17 @@ class LeadStatusUser {
 
   factory LeadStatusUser.fromJson(dynamic json) {
     if (json is int) {
-      return LeadStatusUser(userId: json);
+      return LeadStatusUser(userId: SafeConverters.toInt(json));
     }
     if (json is String) {
-      return LeadStatusUser(userId: int.tryParse(json) ?? 0);
+      return LeadStatusUser(userId: SafeConverters.toInt(json));
     }
-    if (json is Map<String, dynamic>) {
+    if (json is Map) {
+      final map = SafeConverters.toMap(json);
       return LeadStatusUser(
-        userId: json['user_id'] ?? json['id'] ?? 0,
-        name: json['name']?.toString(),
-        lastname: json['lastname']?.toString(),
+        userId: SafeConverters.toInt(map['user_id'] ?? map['id']),
+        name: SafeConverters.toStringOrNull(map['name']),
+        lastname: SafeConverters.toStringOrNull(map['lastname']),
       );
     }
     return LeadStatusUser(userId: 0);
@@ -330,25 +333,25 @@ class LeadStatus {
 
   factory LeadStatus.fromJson(Map<String, dynamic> json) {
     return LeadStatus(
-      id: json['id'],
-      title: json['title'] ?? json['name'] ?? '',
-      color: json['color'],
-      lead_status_id: json['lead_status_id'] ?? null,
-      leadsCount:
-          json['leads_count'] ?? 0, // Убедимся, что leads_count читается
-      isSuccess: json['is_success'] == true || json['is_success'] == 1,
-      position: json['position'] ?? 0,
-      isFailure: json['is_failure'] == true || json['is_failure'] == 1,
-      isUnassembled:
-          json['is_unassembled'] == true || json['is_unassembled'] == 1,
-      users: (json['users'] as List<dynamic>?)
-          ?.map(LeadStatusUser.fromJson)
-          .where((user) => user.userId > 0)
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title'] ?? json['name']),
+      color: SafeConverters.toStringOrNull(json['color']),
+      lead_status_id: SafeConverters.toStringOrNull(json['lead_status_id']),
+      leadsCount: SafeConverters.toInt(json['leads_count']),
+      isSuccess: SafeConverters.toBool(json['is_success']),
+      position: SafeConverters.toInt(json['position']),
+      isFailure: SafeConverters.toBool(json['is_failure']),
+      isUnassembled: SafeConverters.toBool(json['is_unassembled']),
+      users: json['users'] == null
+          ? null
+          : SafeConverters.toList(json['users'])
+              .map(LeadStatusUser.fromJson)
+              .where((user) => user.userId > 0)
+              .toList(),
+      leads: SafeConverters.toList(json['leads'])
+          .map((lead) => Lead.fromJson(
+              SafeConverters.toMap(lead), SafeConverters.toInt(json['id'])))
           .toList(),
-      leads: (json['leads'] as List<dynamic>?)
-              ?.map((lead) => Lead.fromJson(lead, json['id']))
-              .toList() ??
-          [],
     );
   }
 
@@ -381,9 +384,9 @@ class LeadCustomField {
 
   factory LeadCustomField.fromJson(Map<String, dynamic> json) {
     return LeadCustomField(
-      id: json['id'] ?? 0,
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      key: SafeConverters.toSafeString(json['key']),
+      value: SafeConverters.toSafeString(json['value']),
     );
   }
 

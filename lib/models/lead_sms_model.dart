@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class SmsSenderIntegration {
   final int id;
   final String username;
@@ -19,16 +21,12 @@ class SmsSenderIntegration {
 
   factory SmsSenderIntegration.fromJson(Map<String, dynamic> json) {
     return SmsSenderIntegration(
-      id: json['id'] is int
-          ? json['id'] as int
-          : int.tryParse('${json['id']}') ?? 0,
-      username: (json['username'] ?? '').toString(),
-      name: (json['name'] ?? '').toString(),
-      type: (json['type'] ?? '').toString(),
-      isActive: json['is_active'] == true || json['is_active'] == 1,
-      salesFunnelId: json['sales_funnel_id'] is int
-          ? json['sales_funnel_id'] as int
-          : int.tryParse('${json['sales_funnel_id']}'),
+      id: SafeConverters.toInt(json['id']),
+      username: SafeConverters.toSafeString(json['username']),
+      name: SafeConverters.toSafeString(json['name']),
+      type: SafeConverters.toSafeString(json['type']),
+      isActive: SafeConverters.toBool(json['is_active']),
+      salesFunnelId: SafeConverters.toIntOrNull(json['sales_funnel_id']),
     );
   }
 }
@@ -64,10 +62,10 @@ class LeadSmsMessage {
         json['updated_at'];
 
     return LeadSmsMessage(
-      text: (rawText ?? '').toString(),
-      status: (rawStatus ?? '').toString(),
-      author: _normalizeAuthor((rawAuthor ?? '').toString()),
-      sentAt: _tryParseDate(rawDate),
+      text: SafeConverters.toSafeString(rawText),
+      status: SafeConverters.toSafeString(rawStatus),
+      author: _normalizeAuthor(SafeConverters.toSafeString(rawAuthor)),
+      sentAt: SafeConverters.toDateTimeOrNull(rawDate),
     );
   }
 
@@ -104,12 +102,5 @@ class LeadSmsMessage {
 
     final cleaned = trimmed.replaceAll(RegExp(r'^\d+\s*[-:]\s*'), '');
     return cleaned;
-  }
-
-  static DateTime? _tryParseDate(dynamic value) {
-    if (value == null) return null;
-    final raw = value.toString().trim();
-    if (raw.isEmpty) return null;
-    return DateTime.tryParse(raw);
   }
 }

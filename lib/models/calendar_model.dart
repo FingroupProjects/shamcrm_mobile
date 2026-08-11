@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class CalendarEvent {
   final int id;
   final String name;
@@ -15,11 +17,11 @@ class CalendarEvent {
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     return CalendarEvent(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      date: DateTime.parse(json['date'] as String),
-      type: json['type'] as String,
-      isFinished: json['is_finished'] as bool,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      date: SafeConverters.toDateTime(json['date']),
+      type: SafeConverters.toSafeString(json['type']),
+      isFinished: SafeConverters.toBool(json['is_finished']),
     );
   }
 }

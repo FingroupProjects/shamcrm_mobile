@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class LeadConversion {
   final List<double> monthlyData;
 
@@ -6,9 +8,10 @@ class LeadConversion {
   });
 
   factory LeadConversion.fromJson(Map<String, dynamic> json) {
-    final result = json['result'] as List<dynamic>;
     return LeadConversion(
-      monthlyData: result.map((value) => (value as num).toDouble()).toList(),
+      monthlyData: SafeConverters.toList(json['result'])
+          .map(SafeConverters.toDouble)
+          .toList(),
     );
   }
 }

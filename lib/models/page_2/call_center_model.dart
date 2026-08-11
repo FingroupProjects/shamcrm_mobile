@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
 
 enum CallType { incoming, outgoing, missed, outgoingMissed }
@@ -41,9 +42,9 @@ class CallLogEntry {
   }
 
   factory CallLogEntry.fromJson(Map<String, dynamic> json) {
-    final lead = json['lead'] as Map<String, dynamic>?;
-    final isMissed = json['missed'] == true || json['missed'] == 1;
-    final isIncoming = json['incoming'] == true || json['incoming'] == 1;
+    final lead = SafeConverters.toMapOrNull(json['lead']);
+    final isMissed = SafeConverters.toBool(json['missed']);
+    final isIncoming = SafeConverters.toBool(json['incoming']);
     final callType = isMissed
         ? (isIncoming ? CallType.missed : CallType.outgoingMissed)
         : isIncoming
@@ -76,7 +77,8 @@ class CallLogEntry {
     // Логика выбора даты
     DateTime callDate;
     if (json['call_started_at'] != null) {
-      callDate = DateTime.parse(json['call_started_at']);
+      callDate = SafeConverters.toDateTimeOrNull(json['call_started_at']) ??
+          DateTime.now();
     } else {
       callDate = parseCustomDate(json['created_at']) ??
           parseCustomDate(json['updated_at']) ??
@@ -86,10 +88,8 @@ class CallLogEntry {
     final trunkRaw = json['trunk']?.toString().trim();
 
     return CallLogEntry(
-      id: json['id'].toString(),
-      leadId: lead?['id'] is int
-          ? lead!['id'] as int
-          : int.tryParse(lead?['id']?.toString() ?? ''),
+      id: SafeConverters.toSafeString(json['id']),
+      leadId: SafeConverters.toIntOrNull(lead?['id']),
       leadName: sanitizeUtf16(
         lead != null && lead['name'] != null
             ? lead['name'].toString()
@@ -108,7 +108,7 @@ class CallLogEntry {
       callDate: callDate,
       callType: callType,
       duration: json['call_duration'] != null
-          ? Duration(seconds: json['call_duration'])
+          ? Duration(seconds: SafeConverters.toInt(json['call_duration']))
           : null,
       operatorName: json['user']?['name'] == null
           ? null

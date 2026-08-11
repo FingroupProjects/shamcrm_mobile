@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // Class to represent the entire response
 class SalesResponse {
   final SalesResult result;
@@ -10,7 +12,7 @@ class SalesResponse {
 
   factory SalesResponse.fromJson(Map<String, dynamic> json) {
     return SalesResponse(
-      result: SalesResult.fromJson(json['result']),
+      result: SalesResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -37,11 +39,11 @@ class SalesResult {
 
   factory SalesResult.fromJson(Map<String, dynamic> json) {
     return SalesResult(
-      year: json['year'],
-      months: (json['months'] as List)
-          .map((month) => MonthData.fromJson(month))
+      year: SafeConverters.toInt(json['year']),
+      months: SafeConverters.toList(json['months'])
+          .map((month) => MonthData.fromJson(SafeConverters.toMap(month)))
           .toList(),
-      summary: Summary.fromJson(json['summary']),
+      summary: Summary.fromJson(SafeConverters.toMap(json['summary'])),
     );
   }
 
@@ -71,19 +73,16 @@ class MonthData {
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
-    String totalAmount = "0.00";
-
-    if (json['total_amount'] is String) {
-      totalAmount = json['total_amount'];
-    } else if (json['total_amount'] is num) {
-      totalAmount = (json['total_amount'] as num).toString();
-    }
+    final totalAmountRaw = json['total_amount'];
+    final totalAmount = totalAmountRaw is String
+        ? SafeConverters.toSafeString(totalAmountRaw)
+        : SafeConverters.toSafeString(totalAmountRaw, defaultValue: '0.00');
 
     return MonthData(
-      month: json['month'],
-      monthName: json['month_name'],
-      salesCount: json['sales_count'],
-      totalQuantity: json['total_quantity'],
+      month: SafeConverters.toInt(json['month']),
+      monthName: SafeConverters.toSafeString(json['month_name']),
+      salesCount: SafeConverters.toNum(json['sales_count']),
+      totalQuantity: SafeConverters.toNum(json['total_quantity']),
       totalAmount: totalAmount,
     );
   }
@@ -112,17 +111,14 @@ class Summary {
   });
 
   factory Summary.fromJson(Map<String, dynamic> json) {
-    String totalAmount = "0.00";
-
-    if (json['total_amount'] is String) {
-      totalAmount = json['total_amount'];
-    } else if (json['total_amount'] is num) {
-      totalAmount = (json['total_amount'] as num).toString();
-    }
+    final totalAmountRaw = json['total_amount'];
+    final totalAmount = totalAmountRaw is String
+        ? SafeConverters.toSafeString(totalAmountRaw)
+        : SafeConverters.toSafeString(totalAmountRaw, defaultValue: '0.00');
 
     return Summary(
-      totalSalesCount: json['total_sales_count'],
-      totalQuantity: json['total_quantity'],
+      totalSalesCount: SafeConverters.toNum(json['total_sales_count']),
+      totalQuantity: SafeConverters.toNum(json['total_quantity']),
       totalAmount: totalAmount,
     );
   }

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class ChartDataContent {
   final int id;
   final String name;
@@ -11,9 +13,9 @@ class ChartDataContent {
 
   factory ChartDataContent.fromJson(Map<String, dynamic> json) {
     return ChartDataContent(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      amount: json['amount'] as int,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      amount: SafeConverters.toNum(json['amount']),
     );
   }
 
@@ -35,8 +37,8 @@ class Result {
 
   factory Result.fromJson(Map<String, dynamic> json) {
     return Result(
-      chartData: (json['chart_data'] as List)
-          .map((item) => ChartDataContent.fromJson(item as Map<String, dynamic>))
+      chartData: SafeConverters.toList(json['chart_data'])
+          .map((item) => ChartDataContent.fromJson(SafeConverters.toMap(item)))
           .toList(),
     );
   }
@@ -59,7 +61,7 @@ class OrderQuantityContent {
 
   factory OrderQuantityContent.fromJson(Map<String, dynamic> json) {
     return OrderQuantityContent(
-      result: Result.fromJson(json['result'] as Map<String, dynamic>),
+      result: Result.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }

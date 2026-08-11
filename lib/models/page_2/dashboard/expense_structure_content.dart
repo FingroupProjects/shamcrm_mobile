@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class DashboardExpenseResponse {
   final ExpenseResult result;
   final dynamic errors;
@@ -9,7 +11,7 @@ class DashboardExpenseResponse {
 
   factory DashboardExpenseResponse.fromJson(Map<String, dynamic> json) {
     return DashboardExpenseResponse(
-      result: ExpenseResult.fromJson(json['result'] as Map<String, dynamic>),
+      result: ExpenseResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -37,14 +39,14 @@ class ExpenseResult {
 
   factory ExpenseResult.fromJson(Map<String, dynamic> json) {
     return ExpenseResult(
-      totalExpenses: json['total_expenses'] as int,
-      expenseStructure: (json['expense_structure'] as List<dynamic>)
-          .map((e) => ExpenseItem.fromJson(e as Map<String, dynamic>))
+      totalExpenses: SafeConverters.toNum(json['total_expenses']),
+      expenseStructure: SafeConverters.toList(json['expense_structure'])
+          .map((e) => ExpenseItem.fromJson(SafeConverters.toMap(e)))
           .toList(),
-      topExpenses: (json['top_expenses'] as List<dynamic>)
-          .map((e) => ExpenseItem.fromJson(e as Map<String, dynamic>))
+      topExpenses: SafeConverters.toList(json['top_expenses'])
+          .map((e) => ExpenseItem.fromJson(SafeConverters.toMap(e)))
           .toList(),
-      period: Period.fromJson(json['period'] as Map<String, dynamic>),
+      period: Period.fromJson(SafeConverters.toMap(json['period'])),
     );
   }
 
@@ -75,11 +77,11 @@ class ExpenseItem {
 
   factory ExpenseItem.fromJson(Map<String, dynamic> json) {
     return ExpenseItem(
-      articleName: json['article_name'] as String,
-      articleType: json['article_type'] as String,
-      sum: json['sum'] as int,
-      formattedSum: json['formatted_sum'] as String,
-      percentage: json['percentage'] as int,
+      articleName: SafeConverters.toSafeString(json['article_name']),
+      articleType: SafeConverters.toSafeString(json['article_type']),
+      sum: SafeConverters.toNum(json['sum']),
+      formattedSum: SafeConverters.toSafeString(json['formatted_sum']),
+      percentage: SafeConverters.toNum(json['percentage']),
     );
   }
 
@@ -105,8 +107,8 @@ class Period {
 
   factory Period.fromJson(Map<String, dynamic> json) {
     return Period(
-      from: json['from'] as String,
-      to: json['to'] as String,
+      from: SafeConverters.toSafeString(json['from']),
+      to: SafeConverters.toSafeString(json['to']),
     );
   }
 

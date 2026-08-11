@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class ManufactureReportResponse extends Equatable {
   final List<ManufactureGoodsReportItem> data;
@@ -10,15 +11,15 @@ class ManufactureReportResponse extends Equatable {
   });
 
   factory ManufactureReportResponse.fromJson(Map<String, dynamic> json) {
-    final result = json['result'] as Map<String, dynamic>? ?? json;
+    final result = SafeConverters.toMapOrNull(json['result']) ?? json;
 
     return ManufactureReportResponse(
-      data: (result['data'] as List<dynamic>? ?? const [])
+      data: SafeConverters.toList(result['data'])
           .whereType<Map<String, dynamic>>()
           .map(ManufactureGoodsReportItem.fromJson)
           .toList(),
       pagination: ManufactureReportPagination.fromJson(
-        result['pagination'] as Map<String, dynamic>? ?? const {},
+        SafeConverters.toMap(result['pagination']),
       ),
     );
   }
@@ -54,16 +55,16 @@ class ManufactureGoodsReportItem extends Equatable {
 
   factory ManufactureGoodsReportItem.fromJson(Map<String, dynamic> json) {
     return ManufactureGoodsReportItem(
-      date: json['date']?.toString() ?? '',
-      document: json['document']?.toString() ?? '',
-      goodId: _asInt(json['good_id']),
-      good: json['good']?.toString() ?? '',
-      quantity: _asDouble(json['quantity']),
-      unit: json['unit']?.toString() ?? '',
-      costPricePerUnit: _asDouble(json['cost_price_per_unit']),
-      totalCost: _asDouble(json['total_cost']),
-      authorId: _asInt(json['author_id']),
-      author: json['author']?.toString() ?? '',
+      date: SafeConverters.toSafeString(json['date']),
+      document: SafeConverters.toSafeString(json['document']),
+      goodId: SafeConverters.toInt(json['good_id']),
+      good: SafeConverters.toSafeString(json['good']),
+      quantity: SafeConverters.toDouble(json['quantity']),
+      unit: SafeConverters.toSafeString(json['unit']),
+      costPricePerUnit: SafeConverters.toDouble(json['cost_price_per_unit']),
+      totalCost: SafeConverters.toDouble(json['total_cost']),
+      authorId: SafeConverters.toInt(json['author_id']),
+      author: SafeConverters.toSafeString(json['author']),
     );
   }
 
@@ -94,15 +95,15 @@ class ManufactureMaterialsReportResponse extends Equatable {
   factory ManufactureMaterialsReportResponse.fromJson(
     Map<String, dynamic> json,
   ) {
-    final result = json['result'] as Map<String, dynamic>? ?? json;
+    final result = SafeConverters.toMapOrNull(json['result']) ?? json;
 
     return ManufactureMaterialsReportResponse(
-      data: (result['data'] as List<dynamic>? ?? const [])
+      data: SafeConverters.toList(result['data'])
           .whereType<Map<String, dynamic>>()
           .map(ManufactureMaterialsReportItem.fromJson)
           .toList(),
       pagination: ManufactureReportPagination.fromJson(
-        result['pagination'] as Map<String, dynamic>? ?? const {},
+        SafeConverters.toMap(result['pagination']),
       ),
     );
   }
@@ -132,13 +133,13 @@ class ManufactureMaterialsReportItem extends Equatable {
 
   factory ManufactureMaterialsReportItem.fromJson(Map<String, dynamic> json) {
     return ManufactureMaterialsReportItem(
-      materialVariantId: _asInt(json['material_variant_id']),
-      materialGoodId: _asInt(json['material_good_id']),
-      rawMaterial: json['raw_material']?.toString() ?? '',
-      quantityUsed: _asDouble(json['quantity_used']),
-      unit: json['unit']?.toString() ?? '',
-      price: _asDouble(json['price']),
-      sum: _asDouble(json['sum']),
+      materialVariantId: SafeConverters.toInt(json['material_variant_id']),
+      materialGoodId: SafeConverters.toInt(json['material_good_id']),
+      rawMaterial: SafeConverters.toSafeString(json['raw_material']),
+      quantityUsed: SafeConverters.toDouble(json['quantity_used']),
+      unit: SafeConverters.toSafeString(json['unit']),
+      price: SafeConverters.toDouble(json['price']),
+      sum: SafeConverters.toDouble(json['sum']),
     );
   }
 
@@ -171,27 +172,14 @@ class ManufactureReportPagination extends Equatable {
 
   factory ManufactureReportPagination.fromJson(Map<String, dynamic> json) {
     return ManufactureReportPagination(
-      total: _asInt(json['total']),
-      count: _asInt(json['count']),
-      perPage: _asInt(json['per_page']),
-      currentPage: _asInt(json['current_page']),
-      totalPages: _asInt(json['total_pages']),
+      total: SafeConverters.toInt(json['total']),
+      count: SafeConverters.toInt(json['count']),
+      perPage: SafeConverters.toInt(json['per_page']),
+      currentPage: SafeConverters.toInt(json['current_page']),
+      totalPages: SafeConverters.toInt(json['total_pages']),
     );
   }
 
   @override
   List<Object?> get props => [total, count, perPage, currentPage, totalPages];
-}
-
-int _asInt(dynamic value) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
-  return int.tryParse(value?.toString() ?? '') ?? 0;
-}
-
-double _asDouble(dynamic value) {
-  if (value is double) return value;
-  if (value is int) return value.toDouble();
-  if (value is num) return value.toDouble();
-  return double.tryParse(value?.toString() ?? '') ?? 0;
 }

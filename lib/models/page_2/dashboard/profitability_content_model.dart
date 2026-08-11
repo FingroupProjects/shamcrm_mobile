@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // Class to represent the entire response
 class ProfitabilityResponse {
   final ProfitabilityResult result;
@@ -10,7 +12,7 @@ class ProfitabilityResponse {
 
   factory ProfitabilityResponse.fromJson(Map<String, dynamic> json) {
     return ProfitabilityResponse(
-      result: ProfitabilityResult.fromJson(json['result']),
+      result: ProfitabilityResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -35,8 +37,9 @@ class ProfitabilityResult {
 
   factory ProfitabilityResult.fromJson(Map<String, dynamic> json) {
     return ProfitabilityResult(
-      year: json['year'],
-      months: (json['months'] as List)
+      year: SafeConverters.toInt(json['year']),
+      months: SafeConverters.toList(json['months'])
+          .whereType<Map<String, dynamic>>()
           .map((month) => MonthData.fromJson(month))
           .toList(),
     );
@@ -63,19 +66,11 @@ class MonthData {
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
-    // Handle profitability_percentage, which can be String or num
-    double profitabilityPercentage = 0.0;
-    if (json['profitability_percentage'] is String) {
-      profitabilityPercentage =
-          double.tryParse(json['profitability_percentage']) ?? 0.0;
-    } else if (json['profitability_percentage'] is num) {
-      profitabilityPercentage = (json['profitability_percentage'] as num).toDouble();
-    }
-
     return MonthData(
-      month: json['month'],
-      monthName: json['month_name'],
-      profitabilityPercentage: profitabilityPercentage,
+      month: SafeConverters.toInt(json['month']),
+      monthName: SafeConverters.toSafeString(json['month_name']),
+      profitabilityPercentage:
+          SafeConverters.toDouble(json['profitability_percentage']),
     );
   }
 

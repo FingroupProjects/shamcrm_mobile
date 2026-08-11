@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:flutter/material.dart';
 
 class Channel {
@@ -13,9 +14,9 @@ class Channel {
 
   factory Channel.fromJson(Map<String, dynamic> json) {
     return Channel(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-      organizationId: json['organization_id'] as int?,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
     );
   }
 }
@@ -59,23 +60,26 @@ class IntegrationForLead {
 
   factory IntegrationForLead.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing IntegrationForLead: $json'); // Лог для отладки
+    final integration = SafeConverters.toMap(json['integration']);
     return IntegrationForLead(
-      id: json['integration']['id'] as int?,
-      type: json['integration']['type'] as String?,
-      organizationId: json['integration']['organization_id'] as int?,
-      token: json['integration']['token'] as String?,
-      externalId: json['integration']['external_id'] as String?,
-      username: json['integration']['username'] as String?,
-      name: json['integration']['name'] as String?,
-      appId: json['integration']['app_id'] as String?,
-      appSecret: json['integration']['app_secret'] as String?,
-      appUrl: json['integration']['app_url'] as String?,
-      isActive: json['integration']['is_active'] as bool?,
-      createdAt: json['integration']['created_at'] as String?,
-      updatedAt: json['integration']['updated_at'] as String?,
-      deletedAt: json['integration']['deleted_at'] as String?,
-      data: json['integration']['data'] as Map<String, dynamic>?,
-      channel: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
+      id: SafeConverters.toIntOrNull(integration['id']),
+      type: SafeConverters.toStringOrNull(integration['type']),
+      organizationId: SafeConverters.toIntOrNull(integration['organization_id']),
+      token: SafeConverters.toStringOrNull(integration['token']),
+      externalId: SafeConverters.toStringOrNull(integration['external_id']),
+      username: SafeConverters.toStringOrNull(integration['username']),
+      name: SafeConverters.toStringOrNull(integration['name']),
+      appId: SafeConverters.toStringOrNull(integration['app_id']),
+      appSecret: SafeConverters.toStringOrNull(integration['app_secret']),
+      appUrl: SafeConverters.toStringOrNull(integration['app_url']),
+      isActive: SafeConverters.toBoolOrNull(integration['is_active']),
+      createdAt: SafeConverters.toStringOrNull(integration['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(integration['updated_at']),
+      deletedAt: SafeConverters.toStringOrNull(integration['deleted_at']),
+      data: SafeConverters.toMapOrNull(integration['data']),
+      channel: SafeConverters.toMapOrNull(json['channel']) != null
+          ? Channel.fromJson(SafeConverters.toMap(json['channel']))
+          : null,
     );
   }
 }

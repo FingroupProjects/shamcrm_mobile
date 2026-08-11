@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class Lead {
   final int? id;
   final int? leadId;
@@ -87,59 +89,47 @@ class Lead {
 
   factory Lead.fromJson(Map<String, dynamic> json) {
     return Lead(
-      id: json['id'] as int?,
-      leadId: json['lead_id'] as int?,
-      name: json['name'] as String?,
-      sourceId: json['source_id'] as int?,
-      instaId: json['insta_id'] as String?,
-      instaLogin: json['insta_login'] as String?,
-      tgNick: json['tg_nick'] as String?,
-      tgId: json['tg_id'] as String?,
-      regionId: json['region_id'] as int?,
-      birthday: json['birthday'] as String?,
-      description: json['description'] as String?,
-      leadStatusId: json['lead_status_id'] as int?,
-      // Fix: position can be int or null in JSON
-      position: json['position']?.toString(),
-      managerId: json['manager_id'] as int?,
-      waName: json['wa_name'] as String?,
-      waPhone: json['wa_phone'] as String?,
-      address: json['address'] as String?,
-      phone: json['phone'] as String?,
-      lead: json['lead'] as String?,
-      email: json['email'] as String?,
-      dialogState: json['dialog_state'] as String?,
-      organizationId: json['organization_id'] as int?,
-      sentTo1c: json['sent_to_1c'] as bool?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
-      instagramPlatformIdId: json['instagram_platform_id_id'] as int?,
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.parse(json['deleted_at'] as String)
-          : null,
-      authorId: json['author_id'] as int?,
-      // Fix: processing_speed can be int or null in JSON
-      processingSpeed: json['processing_speed']?.toString(),
-      isClient: json['is_client'] as int?,
-      messageStatus: json['messageStatus'] as String?,
-      firstResponseAt: json['first_response_at'] != null
-          ? DateTime.parse(json['first_response_at'] as String)
-          : null,
-      shamId: json['sham_id'] as int?,
-      priceTypeId: json['price_type_id'] as int?,
-      verificationCode: json['verification_code'] as String?,
-      phoneVerifiedAt: json['phone_verified_at'] != null
-          ? DateTime.parse(json['phone_verified_at'] as String)
-          : null,
-      bonus: json['bonus'] as String?,
-      salesFunnelId: json['sales_funnel_id'] as int?,
-      activeScenarioExecutionId: json['active_scenario_execution_id'] as int?,
-      tiktokCommenterId: json['tiktok_commenter_id'] as int?,
-      token: json['token'] as String?,
+      id: SafeConverters.toIntOrNull(json['id']),
+      leadId: SafeConverters.toIntOrNull(json['lead_id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      sourceId: SafeConverters.toIntOrNull(json['source_id']),
+      instaId: SafeConverters.toStringOrNull(json['insta_id']),
+      instaLogin: SafeConverters.toStringOrNull(json['insta_login']),
+      tgNick: SafeConverters.toStringOrNull(json['tg_nick']),
+      tgId: SafeConverters.toStringOrNull(json['tg_id']),
+      regionId: SafeConverters.toIntOrNull(json['region_id']),
+      birthday: SafeConverters.toStringOrNull(json['birthday']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      leadStatusId: SafeConverters.toIntOrNull(json['lead_status_id']),
+      position: SafeConverters.toStringOrNull(json['position']),
+      managerId: SafeConverters.toIntOrNull(json['manager_id']),
+      waName: SafeConverters.toStringOrNull(json['wa_name']),
+      waPhone: SafeConverters.toStringOrNull(json['wa_phone']),
+      address: SafeConverters.toStringOrNull(json['address']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      lead: SafeConverters.toStringOrNull(json['lead']),
+      email: SafeConverters.toStringOrNull(json['email']),
+      dialogState: SafeConverters.toStringOrNull(json['dialog_state']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
+      sentTo1c: SafeConverters.toBoolOrNull(json['sent_to_1c']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
+      instagramPlatformIdId: SafeConverters.toIntOrNull(json['instagram_platform_id_id']),
+      deletedAt: SafeConverters.toDateTimeOrNull(json['deleted_at']),
+      authorId: SafeConverters.toIntOrNull(json['author_id']),
+      processingSpeed: SafeConverters.toStringOrNull(json['processing_speed']),
+      isClient: SafeConverters.toIntOrNull(json['is_client']),
+      messageStatus: SafeConverters.toStringOrNull(json['messageStatus']),
+      firstResponseAt: SafeConverters.toDateTimeOrNull(json['first_response_at']),
+      shamId: SafeConverters.toIntOrNull(json['sham_id']),
+      priceTypeId: SafeConverters.toIntOrNull(json['price_type_id']),
+      verificationCode: SafeConverters.toStringOrNull(json['verification_code']),
+      phoneVerifiedAt: SafeConverters.toDateTimeOrNull(json['phone_verified_at']),
+      bonus: SafeConverters.toStringOrNull(json['bonus']),
+      salesFunnelId: SafeConverters.toIntOrNull(json['sales_funnel_id']),
+      activeScenarioExecutionId: SafeConverters.toIntOrNull(json['active_scenario_execution_id']),
+      tiktokCommenterId: SafeConverters.toIntOrNull(json['tiktok_commenter_id']),
+      token: SafeConverters.toStringOrNull(json['token']),
     );
   }
 

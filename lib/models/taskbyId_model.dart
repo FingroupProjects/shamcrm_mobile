@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class TaskById {
   final int id;
@@ -57,70 +58,54 @@ class TaskById {
   });
 
   factory TaskById.fromJson(Map<String, dynamic> json, int taskStatusId) {
-    final rawPriority = json['priority_level'];
-    final int priorityLevel;
-    if (rawPriority is int) {
-      priorityLevel = rawPriority;
-    } else if (rawPriority is String) {
-      priorityLevel = int.tryParse(rawPriority) ?? 0;
-    } else {
-      priorityLevel = 0;
-    }
-
     return TaskById(
-      id: json['id'] is int ? json['id'] : 0,
-      taskNumber: json['task_number'] is int ? json['task_number'] : 0,
-      name: json['name'] is String ? json['name'] : 'Без имени',
-      startDate: json['from'],
-      endDate: json['to'],
-      createdAt: json['created_at'] is String ? json['created_at'] : null,
-      description: json['description'] is String ? json['description'] : '',
+      id: SafeConverters.toInt(json['id']),
+      taskNumber: SafeConverters.toInt(json['task_number']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+      startDate: SafeConverters.toStringOrNull(json['from']),
+      endDate: SafeConverters.toStringOrNull(json['to']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      description: SafeConverters.toSafeString(json['description']),
       statusId: taskStatusId,
-      priority: priorityLevel,
-      taskStatus: json['taskStatus'] != null &&
-              json['taskStatus'] is Map<String, dynamic>
-          ? TaskStatusById.fromJson(json['taskStatus'])
+      priority: SafeConverters.toInt(json['priority_level']),
+      taskStatus: SafeConverters.toMapOrNull(json['taskStatus']) != null
+          ? TaskStatusById.fromJson(SafeConverters.toMap(json['taskStatus']))
           : null,
-      project:
-          json['project'] != null && json['project'] is Map<String, dynamic>
-              ? Project.fromJson(json['project'])
-              : null,
-      user: json['users'] != null && json['users'] is List
-          ? (json['users'] as List)
-              .map((userJson) => UserById.fromJson(userJson))
+      project: SafeConverters.toMapOrNull(json['project']) != null
+          ? Project.fromJson(SafeConverters.toMap(json['project']))
+          : null,
+      user: json['users'] != null
+          ? SafeConverters.toList(json['users'])
+              .map((userJson) => UserById.fromJson(SafeConverters.toMap(userJson)))
               .toList()
           : null,
-      deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
-          ? DealById.fromJson(json['deal'], 0)
+      deal: SafeConverters.toMapOrNull(json['deal']) != null
+          ? DealById.fromJson(SafeConverters.toMap(json['deal']), 0)
           : null,
-      color: json['color'] is String ? json['color'] : null,
-      taskFile: json['file'],
-      files: json['files'] != null && json['files'] is List
-          ? (json['files'] as List)
-              .map((fileJson) => TaskFiles.fromJson(fileJson))
+      color: SafeConverters.toStringOrNull(json['color']),
+      taskFile: SafeConverters.toStringOrNull(json['file']),
+      files: json['files'] != null
+          ? SafeConverters.toList(json['files'])
+              .map((fileJson) => TaskFiles.fromJson(SafeConverters.toMap(fileJson)))
               .toList()
           : null,
-      chat: json['chat'] != null && json['chat'] is Map<String, dynamic>
-          ? ChatById.fromJson(json['chat'])
+      chat: SafeConverters.toMapOrNull(json['chat']) != null
+          ? ChatById.fromJson(SafeConverters.toMap(json['chat']))
           : null,
-      author: json['author'] != null && json['author'] is Map<String, dynamic>
-          ? AuthorTask.fromJson(json['author'])
+      author: SafeConverters.toMapOrNull(json['author']) != null
+          ? AuthorTask.fromJson(SafeConverters.toMap(json['author']))
           : null,
-      customFields: (json['custom_fields'] as List<dynamic>?)
-              ?.map((field) => CustomFieldsById.fromJson(field))
-              .toList() ??
-          [],
-      isFinished: json['is_finished'] is int ? json['is_finished'] : 0,
-      directoryValues:
-          json['directory_values'] != null && json['directory_values'] is List
-              ? (json['directory_values'] as List)
-                  .map((dirJson) => DirectoryValues.fromJson(dirJson))
-                  .toList()
-              : null, // Парсинг directory_values
-      reasonForRefusalId: json['reason_for_refusal_id'] is int
-          ? json['reason_for_refusal_id'] as int
-          : int.tryParse('${json['reason_for_refusal_id']}'),
-      reasonForRefusalComment: json['reason_for_refusal']?.toString(),
+      customFields: SafeConverters.toList(json['custom_fields'])
+          .map((field) => CustomFieldsById.fromJson(SafeConverters.toMap(field)))
+          .toList(),
+      isFinished: SafeConverters.toInt(json['is_finished']),
+      directoryValues: json['directory_values'] != null
+          ? SafeConverters.toList(json['directory_values'])
+              .map((dirJson) => DirectoryValues.fromJson(SafeConverters.toMap(dirJson)))
+              .toList()
+          : null,
+      reasonForRefusalId: SafeConverters.toIntOrNull(json['reason_for_refusal_id']),
+      reasonForRefusalComment: SafeConverters.toStringOrNull(json['reason_for_refusal']),
       refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
     );
   }
@@ -129,12 +114,14 @@ class TaskById {
 String? _extractRefusalReasonText(dynamic raw) {
   if (raw == null) return null;
   if (raw is String) {
-    return raw.trim().isEmpty ? null : raw.trim();
+    final text = raw.trim();
+    return text.isEmpty ? null : text;
   }
-  if (raw is Map<String, dynamic>) {
-    final text = raw['text']?.toString().trim();
+  final map = SafeConverters.toMapOrNull(raw);
+  if (map != null) {
+    final text = SafeConverters.toStringOrNull(map['text'])?.trim();
     if (text != null && text.isNotEmpty) return text;
-    final name = raw['name']?.toString().trim();
+    final name = SafeConverters.toStringOrNull(map['name'])?.trim();
     if (name != null && name.isNotEmpty) return name;
   }
   return null;
@@ -155,10 +142,10 @@ class AuthorTask {
 
   factory AuthorTask.fromJson(Map<String, dynamic> json) {
     return AuthorTask(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Не указан',
-      lastname: json['lastname'],
-      fullName: json['full_name'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Не указан'),
+      lastname: SafeConverters.toStringOrNull(json['lastname']),
+      fullName: SafeConverters.toStringOrNull(json['full_name']),
     );
   }
 }
@@ -176,9 +163,9 @@ class TaskFiles {
 
   factory TaskFiles.fromJson(Map<String, dynamic> json) {
     return TaskFiles(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      path: json['path'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
     );
   }
 }
@@ -198,10 +185,10 @@ class CustomFieldsById {
 
   factory CustomFieldsById.fromJson(Map<String, dynamic> json) {
     return CustomFieldsById(
-      id: json['field_id'] ?? 0,
-      name: json['name'] ?? '',
-      value: json['value'] ?? '',
-      type: json['type'] ?? '',
+      id: SafeConverters.toInt(json['field_id']),
+      name: SafeConverters.toSafeString(json['name']),
+      value: SafeConverters.toSafeString(json['value']),
+      type: SafeConverters.toSafeString(json['type']),
     );
   }
 }
@@ -223,11 +210,11 @@ class ChatById {
 
   factory ChatById.fromJson(Map<String, dynamic> json) {
     return ChatById(
-      id: json['id'] ?? 0,
-      lead: json['lead'] as String?,
-      type: json['type'] as String? ?? 'unknown',
-      user: json['user'] as String?,
-      canSendMessage: json["can_send_message"] ?? false,
+      id: SafeConverters.toInt(json['id']),
+      lead: SafeConverters.toStringOrNull(json['lead']),
+      type: SafeConverters.toSafeString(json['type'], defaultValue: 'unknown'),
+      user: SafeConverters.toStringOrNull(json['user']),
+      canSendMessage: SafeConverters.toBool(json['can_send_message']),
     );
   }
 
@@ -260,11 +247,11 @@ class UserById {
 
   factory UserById.fromJson(Map<String, dynamic> json) {
     return UserById(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      lastname: json['lastname'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      lastname: SafeConverters.toSafeString(json['lastname']),
+      email: SafeConverters.toSafeString(json['email']),
+      phone: SafeConverters.toSafeString(json['phone']),
     );
   }
 }
@@ -281,8 +268,8 @@ class TaskFileById {
       };
 
   factory TaskFileById.fromJson(Map<String, dynamic> json) => TaskFileById(
-        name: json["name"] as String,
-        size: json["size"] as String,
+        name: SafeConverters.toSafeString(json["name"]),
+        size: SafeConverters.toSafeString(json["size"]),
       );
 }
 
@@ -299,12 +286,11 @@ class TaskStatusById {
 
   factory TaskStatusById.fromJson(Map<String, dynamic> json) {
     return TaskStatusById(
-      id: json['id'] ?? 0,
-      taskStatus: json['taskStatus'] != null &&
-              json['taskStatus'] is Map<String, dynamic>
-          ? TaskStatusNameById.fromJson(json['taskStatus'])
-          : null, // Handle null case
-      color: json['color'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      taskStatus: SafeConverters.toMapOrNull(json['taskStatus']) != null
+          ? TaskStatusNameById.fromJson(SafeConverters.toMap(json['taskStatus']))
+          : null,
+      color: SafeConverters.toSafeString(json['color']),
     );
   }
 
@@ -333,10 +319,10 @@ class TaskStatusNameById {
   // Метод для создания вложенного объекта из JSON
   factory TaskStatusNameById.fromJson(Map<String, dynamic> json) {
     return TaskStatusNameById(
-      id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 
@@ -362,8 +348,8 @@ class DirectoryValues {
 
   factory DirectoryValues.fromJson(Map<String, dynamic> json) {
     return DirectoryValues(
-      id: json['id'] ?? 0,
-      entry: DirectoryEntry.fromJson(json['entry']),
+      id: SafeConverters.toInt(json['id']),
+      entry: DirectoryEntry.fromJson(SafeConverters.toMap(json['entry'])),
     );
   }
 }
@@ -382,16 +368,13 @@ class DirectoryEntry {
   });
 
   factory DirectoryEntry.fromJson(Map<String, dynamic> json) {
-    final valuesJson = json['values'];
-    final valuesList = valuesJson is List
-        ? valuesJson.map((v) => DirectoryValuePair.fromJson(v)).toList()
-        : <DirectoryValuePair>[];
-
     return DirectoryEntry(
-      id: json['id'] ?? 0,
-      directory: DirectoryVV.fromJson(json['directory']),
-      values: valuesList,
-      createdAt: json['created_at'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      directory: DirectoryVV.fromJson(SafeConverters.toMap(json['directory'])),
+      values: SafeConverters.toList(json['values'])
+          .map((v) => DirectoryValuePair.fromJson(SafeConverters.toMap(v)))
+          .toList(),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
     );
   }
 }
@@ -407,8 +390,8 @@ class DirectoryValuePair {
 
   factory DirectoryValuePair.fromJson(Map<String, dynamic> json) {
     return DirectoryValuePair(
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
+      key: SafeConverters.toSafeString(json['key']),
+      value: SafeConverters.toSafeString(json['value']),
     );
   }
 }
@@ -426,9 +409,9 @@ class DirectoryVV {
 
   factory DirectoryVV.fromJson(Map<String, dynamic> json) {
     return DirectoryVV(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      createdAt: json['created_at'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
     );
   }
 }

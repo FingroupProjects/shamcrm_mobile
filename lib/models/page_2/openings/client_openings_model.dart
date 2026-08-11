@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class ClientOpeningsResponse {
   final List<ClientOpening>? result;
   final dynamic errors;
@@ -13,15 +15,19 @@ class ClientOpeningsResponse {
       if (resultData is Map<String, dynamic> && resultData["data"] != null) {
         // Формат: {"result": {"data": [...]}}
         return ClientOpeningsResponse(
-          result: (resultData["data"] as List?)
-              ?.map((x) => ClientOpening.fromJson(x as Map<String, dynamic>))
-              .toList() ?? [],
+          result: SafeConverters.toList(resultData["data"])
+              .whereType<Map<String, dynamic>>()
+              .map((x) => ClientOpening.fromJson(x))
+              .toList(),
           errors: json["errors"],
         );
       } else if (resultData is List) {
         // Формат: {"result": [...]}
     return ClientOpeningsResponse(
-          result: resultData.map((x) => ClientOpening.fromJson(x as Map<String, dynamic>)).toList(),
+          result: resultData
+              .whereType<Map<String, dynamic>>()
+              .map((x) => ClientOpening.fromJson(x))
+              .toList(),
       errors: json["errors"],
     );
       }
@@ -57,7 +63,7 @@ class ClientOpening {
 
   factory ClientOpening.fromJson(Map<String, dynamic> json) {
     return ClientOpening(
-      id: json['id'],
+      id: SafeConverters.toIntOrNull(json['id']),
       counterpartyType: json['counterparty_type'],
       counterpartyId: json['counterparty_id'],
       ourDuty: json['our_duty'],
@@ -68,7 +74,8 @@ class ClientOpening {
       updatedAt: json['updated_at'],
       counterparty: json['counterparty'] == null
           ? null
-          : ClientCounterparty.fromJson(json['counterparty'] as Map<String, dynamic>),
+          : ClientCounterparty.fromJson(
+              SafeConverters.toMap(json['counterparty'])),
     );
   }
 }
@@ -162,26 +169,26 @@ class ClientCounterparty {
 
   factory ClientCounterparty.fromJson(Map<String, dynamic> json) {
     return ClientCounterparty(
-      id: json['id'],
+      id: SafeConverters.toIntOrNull(json['id']),
       leadId: json['lead_id'],
-      name: json['name'],
+      name: SafeConverters.toStringOrNull(json['name']),
       sourceId: json['source_id'],
       instaId: json['insta_id'],
       instaLogin: json['insta_login'],
       tgNick: json['tg_nick'],
       tgId: json['tg_id'],
       regionId: json['region_id'],
-      birthday: json['birthday'],
-      description: json['description'],
+      birthday: SafeConverters.toStringOrNull(json['birthday']),
+      description: SafeConverters.toStringOrNull(json['description']),
       leadStatusId: json['lead_status_id'],
-      position: json['position'],
+      position: SafeConverters.toIntOrNull(json['position']),
       managerId: json['manager_id'],
       waName: json['wa_name'],
       waPhone: json['wa_phone'],
-      address: json['address'],
-      phone: json['phone'],
-      lead: json['lead'],
-      email: json['email'],
+      address: SafeConverters.toStringOrNull(json['address']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      lead: SafeConverters.toStringOrNull(json['lead']),
+      email: SafeConverters.toStringOrNull(json['email']),
       dialogState: json['dialog_state'],
       organizationId: json['organization_id'],
       sentTo1c: json['sent_to_1c'],
@@ -192,17 +199,17 @@ class ClientCounterparty {
       authorId: json['author_id'],
       processingSpeed: json['processing_speed'],
       isClient: json['is_client'],
-      messageStatus: json['messageStatus'],
+      messageStatus: SafeConverters.toStringOrNull(json['messageStatus']),
       firstResponseAt: json['first_response_at'],
       shamId: json['sham_id'],
       priceTypeId: json['price_type_id'],
       verificationCode: json['verification_code'],
       phoneVerifiedAt: json['phone_verified_at'],
-      bonus: json['bonus'],
+      bonus: SafeConverters.toStringOrNull(json['bonus']),
       salesFunnelId: json['sales_funnel_id'],
       activeScenarioExecutionId: json['active_scenario_execution_id'],
       tiktokCommenterId: json['tiktok_commenter_id'],
-      token: json['token'],
+      token: SafeConverters.toStringOrNull(json['token']),
     );
   }
 }
@@ -223,10 +230,10 @@ class LeadForOpenings {
 
   factory LeadForOpenings.fromJson(Map<String, dynamic> json) {
     return LeadForOpenings(
-      id: json['id'],
-      name: json['name'],
-      phone: json['phone'],
-      email: json['email'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      email: SafeConverters.toStringOrNull(json['email']),
     );
   }
 
@@ -253,7 +260,7 @@ class LeadsForOpeningsResponse {
   factory LeadsForOpeningsResponse.fromJson(Map<String, dynamic> json) {
     return LeadsForOpeningsResponse(
       result: json['result'] != null
-          ? (json['result'] as List).map((item) => LeadForOpenings.fromJson(item)).toList()
+          ? SafeConverters.toList(json['result']).whereType<Map<String, dynamic>>().map((item) => LeadForOpenings.fromJson(item)).toList()
           : null,
       errors: json['errors'],
     );

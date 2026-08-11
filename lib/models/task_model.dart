@@ -2,6 +2,7 @@ import 'package:crm_task_manager/models/dealById_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/models/project_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class Task {
   final int id;
@@ -45,55 +46,47 @@ class Task {
   });
 
   factory Task.fromJson(Map<String, dynamic> json, int taskStatusId) {
-    final rawPriority = json['priority_level'];
-    final int priorityLevel;
-    if (rawPriority is int) {
-      priorityLevel = rawPriority;
-    } else if (rawPriority is String) {
-      priorityLevel = int.tryParse(rawPriority) ?? 0;
-    } else {
-      priorityLevel = 0;
-    }
+    final priorityLevel = SafeConverters.toInt(json['priority_level']);
     try {
       return Task(
-        id: json['id'] is int ? json['id'] : 0,
-        taskNumber: json['task_number'] is int ? json['task_number'] : 0,
-        name: json['name'] is String ? json['name'] : 'Без имени',
-        startDate: json['from'] is String ? json['from'] : null,
-        endDate: json['to'] is String ? json['to'] : null,
-        description: json['description'] is String ? json['description'] : '',
+        id: SafeConverters.toInt(json['id']),
+        taskNumber: SafeConverters.toIntOrNull(json['task_number']),
+        name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+        startDate: SafeConverters.toStringOrNull(json['from']),
+        endDate: SafeConverters.toStringOrNull(json['to']),
+        description: SafeConverters.toSafeString(json['description']),
         statusId: taskStatusId,
         priority: priorityLevel,
-        overdue: json['overdue'] is int ? json['overdue'] : 0,
-        taskStatus: json['taskStatus'] != null &&
-                json['taskStatus'] is Map<String, dynamic>
-            ? TaskStatus.fromJson(json['taskStatus'])
+        overdue: SafeConverters.toIntOrNull(json['overdue']),
+        taskStatus: SafeConverters.toMapOrNull(json['taskStatus']) != null
+            ? TaskStatus.fromJson(SafeConverters.toMap(json['taskStatus']))
             : null,
-        project:
-            json['project'] != null ? Project.fromJson(json['project']) : null,
-        usersImage: (json['users'] as List?)
-            ?.map((userJson) => UserTaskImage.fromJson(userJson))
-            .toList(),
-        user: json['user'] != null && json['user'] is Map<String, dynamic>
-            ? UserData.fromJson(json['user'])
+        project: SafeConverters.toMapOrNull(json['project']) != null
+            ? Project.fromJson(SafeConverters.toMap(json['project']))
             : null,
-        deal: json['deal'] != null && json['deal'] is Map<String, dynamic>
-            ? Deal.fromJson(json['deal'], 0)
+        usersImage: json['users'] == null
+            ? null
+            : SafeConverters.toList(json['users'])
+                .map((userJson) =>
+                    UserTaskImage.fromJson(SafeConverters.toMap(userJson)))
+                .toList(),
+        user: SafeConverters.toMapOrNull(json['user']) != null
+            ? UserData.fromJson(SafeConverters.toMap(json['user']))
             : null,
-        color: json['color'] is String ? json['color'] : null,
+        deal: SafeConverters.toMapOrNull(json['deal']) != null
+            ? Deal.fromJson(SafeConverters.toMap(json['deal']), 0)
+            : null,
+        color: SafeConverters.toStringOrNull(json['color']),
         file: json['file'] != null
-            ? (json['file'] is Map<String, dynamic>
-                ? TaskFile.fromJson(json['file'])
-                : TaskFile(name: json['file'].toString(), size: 'Неизвестно'))
+            ? (SafeConverters.toMapOrNull(json['file']) != null
+                ? TaskFile.fromJson(SafeConverters.toMap(json['file']))
+                : TaskFile(
+                    name: SafeConverters.toSafeString(json['file']),
+                    size: 'Неизвестно'))
             : null,
-        // taskCustomFields: (json['task_custom_fields'] as List?)
-        //         ?.map((field) => TaskCustomField.fromJson(field))
-        //         .toList() ??
-        //     [],
-        customFields: (json['custom_fields'] as List?)
-                ?.map((field) => CustomFields.fromJson(field))
-                .toList() ??
-            [],
+        customFields: SafeConverters.toList(json['custom_fields'])
+            .map((field) => CustomFields.fromJson(SafeConverters.toMap(field)))
+            .toList(),
       );
     } catch (e) {
       //print('Error parsing Task: $e');
@@ -147,10 +140,10 @@ class CustomFields {
 
   factory CustomFields.fromJson(Map<String, dynamic> json) {
     return CustomFields(
-      name: json['name'] is String ? json['name'] : '',
-      value: json['value'] is String ? json['value'] : '',
-      fieldId: json['field_id'] is int ? json['field_id'] : 0,
-      type: json['type'] is String ? json['type'] : null,
+      name: SafeConverters.toSafeString(json['name']),
+      value: SafeConverters.toSafeString(json['value']),
+      fieldId: SafeConverters.toInt(json['field_id']),
+      type: SafeConverters.toStringOrNull(json['type']),
     );
   }
 
@@ -182,11 +175,11 @@ class UserTaskImage {
   factory UserTaskImage.fromJson(Map<String, dynamic> json) {
     try {
       return UserTaskImage(
-        id: json['id'] ?? 0,
-        name: json['name'] is String ? json['name'] : 'Не указано',
-        email: json['email'] is String ? json['email'] : 'Не указано',
-        phone: json['phone'] is String ? json['phone'] : 'Не указано',
-        image: json['image'] is String ? json['image'] : '',
+        id: SafeConverters.toInt(json['id']),
+        name: SafeConverters.toSafeString(json['name'], defaultValue: 'Не указано'),
+        email: SafeConverters.toSafeString(json['email'], defaultValue: 'Не указано'),
+        phone: SafeConverters.toSafeString(json['phone'], defaultValue: 'Не указано'),
+        image: SafeConverters.toSafeString(json['image']),
       );
     } catch (e) {
       //print('Error parsing UserTaskImage: $e');
@@ -225,8 +218,8 @@ class TaskFile {
   factory TaskFile.fromJson(Map<String, dynamic> json) {
     try {
       return TaskFile(
-        name: json["name"] ?? 'Unknown',
-        size: json["size"] ?? 'Unknown',
+        name: SafeConverters.toSafeString(json['name'], defaultValue: 'Unknown'),
+        size: SafeConverters.toSafeString(json['size'], defaultValue: 'Unknown'),
       );
     } catch (e) {
       return TaskFile(name: 'Unknown', size: 'Unknown');
@@ -259,23 +252,19 @@ class TaskStatus {
 
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
     return TaskStatus(
-      id: json['id'] as int,
-      needsPermission:
-          json['needs_permission'] == true || json['needs_permission'] == 1,
-      finalStep: json['final_step'] == true || json['final_step'] == 1,
-      checkingStep: json['checking_step'] == true || json['checking_step'] == 1,
-      isUnassembled:
-          json['is_unassembled'] == true || json['is_unassembled'] == 1,
-      taskStatus: json['taskStatus'] != null &&
-              json['taskStatus'] is Map<String, dynamic>
-          ? TaskStatusName.fromJson(json['taskStatus'])
+      id: SafeConverters.toInt(json['id']),
+      needsPermission: SafeConverters.toBool(json['needs_permission']),
+      finalStep: SafeConverters.toBool(json['final_step']),
+      checkingStep: SafeConverters.toBool(json['checking_step']),
+      isUnassembled: SafeConverters.toBool(json['is_unassembled']),
+      taskStatus: SafeConverters.toMapOrNull(json['taskStatus']) != null
+          ? TaskStatusName.fromJson(SafeConverters.toMap(json['taskStatus']))
           : null,
-      color: json['color'] is String ? json['color'] : 'Неизвестный цвет',
-      tasksCount: json['tasks_amount']?.toString() ?? '0',
-      roles: (json['roles'] as List<dynamic>?)
-              ?.map((role) => role.toString())
-              .toList() ??
-          [], // Parse roles as a list of strings
+      color: SafeConverters.toSafeString(json['color'], defaultValue: 'Неизвестный цвет'),
+      tasksCount: SafeConverters.toSafeString(json['tasks_amount'], defaultValue: '0'),
+      roles: SafeConverters.toList(json['roles'])
+          .map((role) => SafeConverters.toSafeString(role))
+          .toList(),
     );
   }
 
@@ -309,10 +298,10 @@ class TaskStatusName {
 
   factory TaskStatusName.fromJson(Map<String, dynamic> json) {
     return TaskStatusName(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] is String ? json['name'] : 'Неизвестное имя',
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Неизвестное имя'),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 

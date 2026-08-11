@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class OverdueTasksResponse {
   final Result? result;
   final dynamic errors;
@@ -6,7 +8,9 @@ class OverdueTasksResponse {
 
   factory OverdueTasksResponse.fromJson(Map<String, dynamic> json) {
     return OverdueTasksResponse(
-      result: json['result'] != null ? Result.fromJson(json['result']) : null,
+      result: SafeConverters.toMapOrNull(json['result']) != null
+          ? Result.fromJson(SafeConverters.toMap(json['result']))
+          : null,
       errors: json['errors'],
     );
   }
@@ -50,23 +54,29 @@ class Result {
 
   factory Result.fromJson(Map<String, dynamic> json) {
     return Result(
-      currentPage: json['current_page'],
-      data: (json['data'] as List<dynamic>?)
-          ?.map((e) => OverdueTask.fromJson(e))
-          .toList(),
-      firstPageUrl: json['first_page_url'],
-      from: json['from'],
-      lastPage: json['last_page'],
-      lastPageUrl: json['last_page_url'],
-      links: (json['links'] as List<dynamic>?)
-          ?.map((e) => Link.fromJson(e))
-          .toList(),
-      nextPageUrl: json['next_page_url'],
-      path: json['path'],
-      perPage: json['per_page'],
-      prevPageUrl: json['prev_page_url'],
-      to: json['to'],
-      total: json['total'],
+      currentPage: SafeConverters.toNumOrNull(json['current_page']),
+      data: SafeConverters.toList(json['data']).isEmpty
+          ? null
+          : SafeConverters.toList(json['data'])
+              .whereType<Map<String, dynamic>>()
+              .map((e) => OverdueTask.fromJson(e))
+              .toList(),
+      firstPageUrl: SafeConverters.toStringOrNull(json['first_page_url']),
+      from: SafeConverters.toNumOrNull(json['from']),
+      lastPage: SafeConverters.toNumOrNull(json['last_page']),
+      lastPageUrl: SafeConverters.toStringOrNull(json['last_page_url']),
+      links: SafeConverters.toList(json['links']).isEmpty
+          ? null
+          : SafeConverters.toList(json['links'])
+              .whereType<Map<String, dynamic>>()
+              .map((e) => Link.fromJson(e))
+              .toList(),
+      nextPageUrl: SafeConverters.toStringOrNull(json['next_page_url']),
+      path: SafeConverters.toStringOrNull(json['path']),
+      perPage: SafeConverters.toNumOrNull(json['per_page']),
+      prevPageUrl: SafeConverters.toStringOrNull(json['prev_page_url']),
+      to: SafeConverters.toNumOrNull(json['to']),
+      total: SafeConverters.toNumOrNull(json['total']),
     );
   }
 
@@ -116,20 +126,23 @@ class OverdueTask {
 
   factory OverdueTask.fromJson(Map<String, dynamic> json) {
     return OverdueTask(
-      id: json['id'],
-      name: json['name'],
-      taskNumber: json['task_number'],
-      description: json['description'],
-      from: json['from'],
-      to: json['to'],
-      overdue: json['overdue'],
-      priorityLevel: json['priority_level'],
-      taskStatus: json['task_status'] != null
-          ? OverdueTaskStatus.fromJson(json['task_status'])
+      id: SafeConverters.toNumOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      taskNumber: SafeConverters.toNumOrNull(json['task_number']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      from: SafeConverters.toStringOrNull(json['from']),
+      to: SafeConverters.toStringOrNull(json['to']),
+      overdue: SafeConverters.toNumOrNull(json['overdue']),
+      priorityLevel: SafeConverters.toStringOrNull(json['priority_level']),
+      taskStatus: SafeConverters.toMapOrNull(json['task_status']) != null
+          ? OverdueTaskStatus.fromJson(SafeConverters.toMap(json['task_status']))
           : null,
-      project:
-      json['project'] != null ? Project.fromJson(json['project']) : null,
-      author: json['author'] != null ? Author.fromJson(json['author']) : null,
+      project: SafeConverters.toMapOrNull(json['project']) != null
+          ? Project.fromJson(SafeConverters.toMap(json['project']))
+          : null,
+      author: SafeConverters.toMapOrNull(json['author']) != null
+          ? Author.fromJson(SafeConverters.toMap(json['author']))
+          : null,
     );
   }
 
@@ -157,9 +170,9 @@ class OverdueTaskStatus {
 
   factory OverdueTaskStatus.fromJson(Map<String, dynamic> json) {
     return OverdueTaskStatus(
-      id: json['id'],
-      name: json['name'],
-      color: json['color'],
+      id: SafeConverters.toNumOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      color: SafeConverters.toStringOrNull(json['color']),
     );
   }
 
@@ -178,8 +191,8 @@ class Project {
 
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
-      id: json['id'],
-      name: json['name'],
+      id: SafeConverters.toNumOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
     );
   }
 
@@ -197,8 +210,8 @@ class Author {
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
-      id: json['id'],
-      name: json['name'],
+      id: SafeConverters.toNumOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
     );
   }
 
@@ -217,9 +230,9 @@ class Link {
 
   factory Link.fromJson(Map<String, dynamic> json) {
     return Link(
-      url: json['url'],
-      label: json['label'],
-      active: json['active'],
+      url: SafeConverters.toStringOrNull(json['url']),
+      label: SafeConverters.toStringOrNull(json['label']),
+      active: SafeConverters.toBoolOrNull(json['active']),
     );
   }
 

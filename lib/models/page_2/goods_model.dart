@@ -1,6 +1,9 @@
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
+List<T>? _nullableList<T>(List<T> list) => list.isEmpty ? null : list;
 
 class Discount {
   final int id;
@@ -25,14 +28,14 @@ class Discount {
 
   factory Discount.fromJson(Map<String, dynamic> json) {
     return Discount(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      from: json['from'] as String? ?? '',
-      to: json['to'] as String? ?? '',
-      percent: json['percent'] as int? ?? 0,
-      deletedAt: json['deleted_at'] as String?,
-      createdAt: json['created_at'] as String? ?? '',
-      updatedAt: json['updated_at'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      from: SafeConverters.toSafeString(json['from']),
+      to: SafeConverters.toSafeString(json['to']),
+      percent: SafeConverters.toInt(json['percent']),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      updatedAt: SafeConverters.toSafeString(json['updated_at']),
     );
   }
 }
@@ -58,13 +61,13 @@ class Unit {
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
-      id: _parseInt(json['id']),
-      name: json['name'],
-      shortName: json['short_name'],
-      isBase: json['is_base'],
-      amount: _parseNum(json['amount']),
-      createdAt: _parseDate(json['created_at']),
-      updatedAt: _parseDate(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      shortName: SafeConverters.toStringOrNull(json['short_name']),
+      isBase: SafeConverters.toBoolOrNull(json['is_base']),
+      amount: SafeConverters.toNumOrNull(json['amount']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(json['updated_at']),
     );
   }
 
@@ -80,58 +83,9 @@ class Unit {
     };
   }
 
-  static int? _parseInt(dynamic value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is String) {
-      try {
-        return int.parse(value);
-      } catch (e) {
-        //print('Error parsing int from string "$value": $e');
-        return null;
-      }
-    }
-    return null;
-  }
+  static int? _parseInt(dynamic value) => SafeConverters.toIntOrNull(value);
 
-  static DateTime? _parseDate(dynamic dateStr) {
-    if (dateStr == null || dateStr == '' || dateStr is! String) return null;
-    try {
-      return DateTime.parse(dateStr);
-    } catch (e) {
-      //print('Error parsing date $dateStr: $e');
-      return null;
-    }
-  }
-
-  static num? _parseNum(dynamic value) {
-    if (value == null) return null;
-    if (value is num) {
-      if (value is int) return value;
-      if (value is double) {
-        if (value == value.toInt()) {
-          return value.toInt();
-        }
-        return value;
-      }
-      return value;
-    }
-    if (value is String) {
-      if (value.isEmpty) return null;
-      try {
-        double parsed = double.parse(value.replaceAll(',', '.'));
-
-        if (parsed == parsed.toInt()) {
-          return parsed.toInt(); // Return as int (1, 2, 3, etc.)
-        }
-        return parsed; // Return as double (1.23, 90.30, etc.)
-      } catch (e) {
-        //print('Error parsing num from string "$value": $e');
-        return null;
-      }
-    }
-    return null;
-  }
+  static num? _parseNum(dynamic value) => SafeConverters.toNumOrNull(value);
 
   toString() {
     return 'Unit(id: $id, name: $name, shortName: $shortName, isBase: $isBase, amount: $amount, createdAt: $createdAt, updatedAt: $updatedAt)';
@@ -154,24 +108,13 @@ class Measurement {
   });
 
   factory Measurement.fromJson(Map<String, dynamic> json) {
-    // ИСПРАВЛЕНО: Безопасное преобразование amount из String в num
-    num? parsedAmount;
-    if (json['amount'] != null) {
-      if (json['amount'] is num) {
-        parsedAmount = json['amount'] as num;
-      } else if (json['amount'] is String) {
-        parsedAmount = num.tryParse(json['amount'] as String);
-      }
-    }
-
     return Measurement(
-      id: json['id'] as int? ?? 0,
-      goodId: json['good_id'] as int? ?? 0,
-      unitId: json['unit_id'] as int? ?? 0,
-      amount:
-          parsedAmount, // ИСПРАВЛЕНО: используем безопасно распарсенное значение
-      unit: json['unit'] != null
-          ? Unit.fromJson(json['unit'] as Map<String, dynamic>)
+      id: SafeConverters.toInt(json['id']),
+      goodId: SafeConverters.toInt(json['good_id']),
+      unitId: SafeConverters.toInt(json['unit_id']),
+      amount: SafeConverters.toNumOrNull(json['amount']),
+      unit: SafeConverters.toMapOrNull(json['unit']) != null
+          ? Unit.fromJson(SafeConverters.toMap(json['unit']))
           : null,
     );
   }
@@ -253,44 +196,27 @@ class Goods {
   factory Goods.fromJson(Map<String, dynamic> json) {
     try {
       final Map<String, dynamic> data =
-          json.containsKey('good') ? json['good'] : json;
+          json.containsKey('good') ? SafeConverters.toMap(json['good']) : json;
 
-      int? quantity;
-      if (data['quantity'] != null) {
-        if (data['quantity'] is int) {
-          quantity = data['quantity'];
-        } else if (data['quantity'] is String) {
-          quantity = int.tryParse(data['quantity']);
-        }
-      }
+      final quantity = SafeConverters.toIntOrNull(data['quantity']);
+      final unitId = SafeConverters.toIntOrNull(data['unit_id']);
 
-      int? unitId;
-      if (data['unit_id'] != null) {
-        if (data['unit_id'] is int) {
-          unitId = data['unit_id'];
-        } else if (data['unit_id'] is String) {
-          unitId = int.tryParse(data['unit_id']);
-        }
-      }
-
-      dynamic priceRaw = json['price'];
+      final priceRaw = json['price'];
       String? priceString;
       double? discountPrice;
-      if (priceRaw is String) {
-        priceString = priceRaw;
-        discountPrice = double.tryParse(priceRaw);
-      } else if (priceRaw is num) {
-        priceString = priceRaw.toString();
-        discountPrice = priceRaw.toDouble();
+      if (priceRaw != null) {
+        priceString = SafeConverters.toSafeString(priceRaw);
+        discountPrice = SafeConverters.toDoubleOrNull(priceRaw);
       }
 
       int? discountPercent;
       double? discountedPrice;
 
       List<Discount>? discounts;
-      if (json['discount'] != null && json['discount'] is List) {
-        discounts = (json['discount'] as List)
-            .map((d) => Discount.fromJson(d))
+      final discountList = SafeConverters.toList(json['discount']);
+      if (discountList.isNotEmpty) {
+        discounts = discountList
+            .map((d) => Discount.fromJson(SafeConverters.toMap(d)))
             .toList();
         if (discounts.isNotEmpty && discountPrice != null) {
           final now = DateTime.now();
@@ -304,49 +230,37 @@ class Goods {
                 break;
               }
             } catch (e) {
-              //print('Ошибка парсинга даты скидки: $e');
+              // ignore discount date parse errors
             }
           }
         }
       }
 
-      bool? isActive;
-      if (json['is_active'] != null) {
-        if (json['is_active'] is bool) {
-          isActive = json['is_active'] as bool?;
-        } else if (json['is_active'] is int) {
-          isActive = json['is_active'] == 1;
-        }
-      }
-
-      bool? isService;
-      if (json['is_service'] != null) {
-        if (json['is_service'] is bool) {
-          isService = json['is_service'] as bool?;
-        } else if (json['is_service'] is int) {
-          isService = json['is_service'] == 1;
-        }
-      }
+      final isActive = SafeConverters.toBoolOrNull(json['is_active']);
+      final isService = SafeConverters.toBoolOrNull(json['is_service']);
 
       List<Unit>? units;
-      if (data['units'] != null && data['units'] is List) {
-        units = (data['units'] as List)
-            .map((u) => Unit.fromJson(u as Map<String, dynamic>))
+      final unitsList = SafeConverters.toList(data['units']);
+      if (unitsList.isNotEmpty) {
+        units = unitsList
+            .map((u) => Unit.fromJson(SafeConverters.toMap(u)))
             .toList();
       }
 
       List<Measurement>? measurements;
-      if (data['measurements'] != null && data['measurements'] is List) {
-        measurements = (data['measurements'] as List)
-            .where((m) => m['unit'] != null) // Фильтруем элементы с null unit
-            .map((m) => Measurement.fromJson(m as Map<String, dynamic>))
+      final measurementsList = SafeConverters.toList(data['measurements']);
+      if (measurementsList.isNotEmpty) {
+        measurements = measurementsList
+            .where((m) => SafeConverters.toMap(m)['unit'] != null)
+            .map((m) => Measurement.fromJson(SafeConverters.toMap(m)))
             .toList();
       }
 
       List<MaterialGood>? materialGoods;
-      if (data['material_goods'] != null && data['material_goods'] is List) {
-        materialGoods = (data['material_goods'] as List)
-            .map((m) => MaterialGood.fromJson(m as Map<String, dynamic>))
+      final materialGoodsList = SafeConverters.toList(data['material_goods']);
+      if (materialGoodsList.isNotEmpty) {
+        materialGoods = materialGoodsList
+            .map((m) => MaterialGood.fromJson(SafeConverters.toMap(m)))
             .toList();
       }
 
@@ -355,9 +269,10 @@ class Goods {
           json['related_goods'] ??
           data['relateds'] ??
           json['relateds'];
-      if (relatedsData != null && relatedsData is List) {
-        relatedGoods = relatedsData
-            .map((r) => RelatedGood.fromJson(r as Map<String, dynamic>))
+      final relatedsList = SafeConverters.toList(relatedsData);
+      if (relatedsList.isNotEmpty) {
+        relatedGoods = relatedsList
+            .map((r) => RelatedGood.fromJson(SafeConverters.toMap(r)))
             .toList();
       }
 
@@ -367,35 +282,14 @@ class Goods {
           final text = value.toString().trim();
           return text.isEmpty ? null : text;
         }
-        if (value is Map<String, dynamic>) {
+        final valueMap = SafeConverters.toMapOrNull(value);
+        if (valueMap != null) {
           for (final key in ['name', 'title', 'value', 'label', 'status']) {
-            final nested = parseStatus(value[key]);
+            final nested = parseStatus(valueMap[key]);
             if (nested != null) return nested;
           }
         }
         return null;
-      }
-
-      int? parseSortOrder(dynamic value) {
-        if (value == null) return null;
-        if (value is int) return value;
-        if (value is num) return value.toInt();
-        if (value is String) return int.tryParse(value.trim());
-        return null;
-      }
-
-      int? parseInt(dynamic value) {
-        if (value == null) return null;
-        if (value is int) return value;
-        if (value is num) return value.toInt();
-        if (value is String) return int.tryParse(value.trim());
-        return null;
-      }
-
-      String? parseString(dynamic value) {
-        if (value == null) return null;
-        final text = value.toString().trim();
-        return text.isEmpty ? null : text;
       }
 
       final availabilityStatus = parseStatus(data['status']) ??
@@ -409,34 +303,33 @@ class Goods {
           parseStatus(data['apartment_status']) ??
           parseStatus(json['apartment_status']);
 
-      // Парсим файлы: проверяем несколько возможных мест
       List<GoodsFile> files = [];
-      if (json['files'] != null && json['files'] is List) {
-        files = (json['files'] as List<dynamic>).map((f) {
-          return GoodsFile.fromJson(f as Map<String, dynamic>);
-        }).toList();
-      } else if (data['files'] != null && data['files'] is List) {
-        files = (data['files'] as List<dynamic>).map((f) {
-          return GoodsFile.fromJson(f as Map<String, dynamic>);
-        }).toList();
-      } else if (json.containsKey('good') &&
-          json['good'] is Map &&
-          (json['good'] as Map)['files'] != null) {
-        final goodData = json['good'] as Map<String, dynamic>;
-        if (goodData['files'] is List) {
-          files = (goodData['files'] as List<dynamic>).map((f) {
-            return GoodsFile.fromJson(f as Map<String, dynamic>);
-          }).toList();
+      final filesSources = [
+        json['files'],
+        data['files'],
+        if (json.containsKey('good'))
+          SafeConverters.toMapOrNull(json['good'])?['files'],
+      ];
+      for (final source in filesSources) {
+        final sourceList = SafeConverters.toList(source);
+        if (sourceList.isNotEmpty) {
+          files = sourceList
+              .map((f) => GoodsFile.fromJson(SafeConverters.toMap(f)))
+              .toList();
+          break;
         }
       }
 
+      final attributesRaw = SafeConverters.toList(
+          json['attribute_values'] ?? data['attributes']);
+
       return Goods(
-        id: json['id'] as int? ?? data['id'] as int? ?? 0,
-        name: data['name'] as String? ?? '',
-        category: data['category'] != null
-            ? CategoryData.fromJson(data['category'])
+        id: SafeConverters.toInt(json['id'] != null ? json['id'] : data['id']),
+        name: SafeConverters.toSafeString(data['name']),
+        category: SafeConverters.toMapOrNull(data['category']) != null
+            ? CategoryData.fromJson(SafeConverters.toMap(data['category']))
             : CategoryData(id: 0, name: 'Без категории', subcategories: []),
-        description: data['description'] as String?,
+        description: SafeConverters.toStringOrNull(data['description']),
         unitId: unitId,
         quantity: quantity,
         price: priceString,
@@ -446,48 +339,48 @@ class Goods {
         isActive: isActive,
         isService: isService,
         files: files,
-        attributes: ((json['attribute_values'] as List<dynamic>?) ??
-                (data['attributes'] as List<dynamic>?) ??
-                const [])
-            .map((attr) {
-          return GoodsAttribute.fromJson(attr as Map<String, dynamic>);
-        }).toList(),
-        variants: (json['variants'] as List<dynamic>?)?.map((v) {
-          return GoodsVariant.fromJson(v as Map<String, dynamic>);
-        }).toList(),
-        branches: (data['branches'] as List<dynamic>?)?.map((b) {
-          return Branch.fromJson(b as Map<String, dynamic>);
-        }).toList(),
-        comments: data['comments'] as String?,
-        isNew: data['is_new'] == 1 || data['is_new'] == true,
-        isPopular: data['is_popular'] == 1 || data['is_popular'] == true,
-        isSale: data['is_sale'] == 1 || data['is_sale'] == true,
-        label: data['label'] != null ? Label.fromJson(data['label']) : null,
+        attributes: attributesRaw
+            .map((attr) => GoodsAttribute.fromJson(SafeConverters.toMap(attr)))
+            .toList(),
+        variants: _nullableList(SafeConverters.toList(json['variants'])
+            .map((v) => GoodsVariant.fromJson(SafeConverters.toMap(v)))
+            .toList()),
+        branches: _nullableList(SafeConverters.toList(data['branches'])
+            .map((b) => Branch.fromJson(SafeConverters.toMap(b)))
+            .toList()),
+        comments: SafeConverters.toStringOrNull(data['comments']),
+        isNew: SafeConverters.toBool(data['is_new']),
+        isPopular: SafeConverters.toBool(data['is_popular']),
+        isSale: SafeConverters.toBool(data['is_sale']),
+        label: SafeConverters.toMapOrNull(data['label']) != null
+            ? Label.fromJson(SafeConverters.toMap(data['label']))
+            : null,
         discount: discounts,
-        barcode: data['barcode'] as String? ?? data['article'] as String?,
-        article: data['article'] as String?,
+        barcode: SafeConverters.toStringOrNull(data['barcode']) ??
+            SafeConverters.toStringOrNull(data['article']),
+        article: SafeConverters.toStringOrNull(data['article']),
         units: units,
         measurements: measurements,
-        unit: data['unit'] != null
-            ? Unit.fromJson(data['unit'])
-            : null, // Инициализируем поле unit
-        productionType: data['production_type'] as String?,
+        unit: SafeConverters.toMapOrNull(data['unit']) != null
+            ? Unit.fromJson(SafeConverters.toMap(data['unit']))
+            : null,
+        productionType: SafeConverters.toStringOrNull(data['production_type']),
         materialGoods: materialGoods,
         relatedGoods: relatedGoods,
         availabilityStatus: availabilityStatus,
-        sortOrder: parseSortOrder(data['sort']) ??
-            parseSortOrder(json['sort']) ??
-            parseSortOrder(data['sort_order']) ??
-            parseSortOrder(json['sort_order']) ??
-            parseSortOrder(data['order']) ??
-            parseSortOrder(json['order']),
-        orderId: parseInt(data['order_id']) ?? parseInt(json['order_id']),
-        orderNumber: parseString(data['order_number']) ??
-            parseString(json['order_number']),
+        sortOrder: SafeConverters.toIntOrNull(data['sort']) ??
+            SafeConverters.toIntOrNull(json['sort']) ??
+            SafeConverters.toIntOrNull(data['sort_order']) ??
+            SafeConverters.toIntOrNull(json['sort_order']) ??
+            SafeConverters.toIntOrNull(data['order']) ??
+            SafeConverters.toIntOrNull(json['order']),
+        orderId: SafeConverters.toIntOrNull(data['order_id']) ??
+            SafeConverters.toIntOrNull(json['order_id']),
+        orderNumber: SafeConverters.toStringOrNull(data['order_number'],
+                emptyAsNull: true) ??
+            SafeConverters.toStringOrNull(json['order_number'], emptyAsNull: true),
       );
-    } catch (e, stackTrace) {
-      //print('GoodsModel: Ошибка парсинга товара: $e');
-      //print(stackTrace);
+    } catch (e) {
       rethrow;
     }
   }
@@ -571,21 +464,22 @@ class MaterialGood {
   });
 
   factory MaterialGood.fromJson(Map<String, dynamic> json) {
-    final parsedGood = json['good'] != null
-        ? Goods.fromJson(json['good'] as Map<String, dynamic>)
+    final parsedGood = SafeConverters.toMapOrNull(json['good']) != null
+        ? Goods.fromJson(SafeConverters.toMap(json['good']))
         : null;
     final variantId = Unit._parseInt(json['variant_id']);
-    final parsedPrice = json['price'] != null
-        ? (json['price'] is Map<String, dynamic>
-            ? VariantPrice.fromJson(json['price'] as Map<String, dynamic>)
+    final priceRaw = json['price'];
+    final parsedPrice = priceRaw != null
+        ? (SafeConverters.toMapOrNull(priceRaw) != null
+            ? VariantPrice.fromJson(SafeConverters.toMap(priceRaw))
             : VariantPrice(
                 id: 0,
                 variantId: variantId ?? 0,
-                price: Unit._parseNum(json['price'])?.toDouble() ?? 0,
+                price: SafeConverters.toDouble(priceRaw),
               ))
         : null;
-    final parsedPivot = json['pivot'] != null
-        ? MaterialGoodPivot.fromJson(json['pivot'] as Map<String, dynamic>)
+    final parsedPivot = SafeConverters.toMapOrNull(json['pivot']) != null
+        ? MaterialGoodPivot.fromJson(SafeConverters.toMap(json['pivot']))
         : (json['norm'] != null
             ? MaterialGoodPivot(
                 producedGoodId: Unit._parseInt(json['produced_good_id']),
@@ -599,7 +493,8 @@ class MaterialGood {
     return MaterialGood(
       id: Unit._parseInt(json['id']) ?? variantId ?? 0,
       goodId: Unit._parseInt(json['good_id']) ?? parsedGood?.id,
-      fullName: json['full_name'] as String? ?? json['name'] as String?,
+      fullName: SafeConverters.toStringOrNull(json['full_name']) ??
+          SafeConverters.toStringOrNull(json['name']),
       good: parsedGood,
       price: parsedPrice,
       pivot: parsedPivot,
@@ -632,31 +527,27 @@ class RelatedGood {
 
   factory RelatedGood.fromJson(Map<String, dynamic> json) {
     final variantData = _extractVariantData(json);
-    final pivotData = json['pivot'] is Map<String, dynamic>
-        ? json['pivot'] as Map<String, dynamic>
-        : null;
+    final pivotData = SafeConverters.toMapOrNull(json['pivot']);
+    final goodMap = SafeConverters.toMapOrNull(json['good']);
     final parsedPrice = _parsePrice(json['price']) ??
         _parsePrice(variantData?['price']) ??
-        _parsePrice((json['good'] is Map<String, dynamic>)
-            ? (json['good'] as Map<String, dynamic>)['price']
-            : null);
+        _parsePrice(goodMap?['price']);
 
     String? displayName =
-        json['full_name']?.toString() ?? json['name']?.toString();
+        SafeConverters.toStringOrNull(json['full_name']) ??
+            SafeConverters.toStringOrNull(json['name']);
 
     if ((displayName == null || displayName.isEmpty) && variantData != null) {
-      displayName = variantData['full_name']?.toString() ??
-          variantData['name']?.toString();
-      final nestedGood = variantData['good'];
-      if ((displayName == null || displayName.isEmpty) &&
-          nestedGood is Map<String, dynamic>) {
-        displayName = nestedGood['name']?.toString();
+      displayName = SafeConverters.toStringOrNull(variantData['full_name']) ??
+          SafeConverters.toStringOrNull(variantData['name']);
+      final nestedGood = SafeConverters.toMapOrNull(variantData['good']);
+      if ((displayName == null || displayName.isEmpty) && nestedGood != null) {
+        displayName = SafeConverters.toStringOrNull(nestedGood['name']);
       }
     }
 
-    if ((displayName == null || displayName.isEmpty) &&
-        json['good'] is Map<String, dynamic>) {
-      displayName = (json['good'] as Map<String, dynamic>)['name']?.toString();
+    if ((displayName == null || displayName.isEmpty) && goodMap != null) {
+      displayName = SafeConverters.toStringOrNull(goodMap['name']);
     }
 
     return RelatedGood(
@@ -664,8 +555,8 @@ class RelatedGood {
       variantId: Unit._parseInt(json['variant_id']) ??
           Unit._parseInt(variantData?['id']) ??
           (variantData == null ? Unit._parseInt(json['id']) : null),
-      isRequired: _parseBool(json['is_required']) ||
-          _parseBool(pivotData?['is_required']),
+      isRequired: SafeConverters.toBool(json['is_required']) ||
+          SafeConverters.toBool(pivotData?['is_required']),
       fullName: displayName,
       price: parsedPrice,
     );
@@ -689,31 +580,19 @@ class RelatedGood {
     ];
 
     for (final candidate in candidates) {
-      if (candidate is Map<String, dynamic>) {
-        return candidate;
-      }
+      final map = SafeConverters.toMapOrNull(candidate);
+      if (map != null) return map;
     }
 
     return null;
   }
 
-  static bool _parseBool(dynamic value) {
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      return normalized == '1' || normalized == 'true';
-    }
-    return false;
-  }
-
   static double? _parsePrice(dynamic value) {
     if (value == null) return null;
     if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value);
-    if (value is Map<String, dynamic>) {
-      return _parsePrice(value['price']);
-    }
+    if (value is String) return SafeConverters.toDoubleOrNull(value);
+    final map = SafeConverters.toMapOrNull(value);
+    if (map != null) return _parsePrice(map['price']);
     return null;
   }
 }
@@ -733,10 +612,10 @@ class GoodsFile {
 
   factory GoodsFile.fromJson(Map<String, dynamic> json) {
     return GoodsFile(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      path: json['path'] as String? ?? '',
-      isMain: json['is_main'] as bool? ?? false,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
+      isMain: SafeConverters.toBool(json['is_main']),
     );
   }
 }
@@ -757,33 +636,48 @@ class GoodsAttribute {
   });
 
   factory GoodsAttribute.fromJson(Map<String, dynamic> json) {
-    String attributeName = '';
-    if (json['category_attribute'] != null &&
-        json['category_attribute']['attribute'] != null) {
-      attributeName =
-          json['category_attribute']['attribute']['name'] as String? ??
-              'Неизвестная характеристика';
-    } else if (json['attribute'] != null &&
-        json['attribute'] is Map<String, dynamic> &&
-        json['attribute']['attribute'] != null) {
-      attributeName = json['attribute']['attribute']['name'] as String? ??
-          'Неизвестная характеристика';
+    String attributeName = 'Неизвестная характеристика';
+    final categoryAttribute = SafeConverters.toMapOrNull(json['category_attribute']);
+    if (categoryAttribute != null) {
+      final attribute = SafeConverters.toMapOrNull(categoryAttribute['attribute']);
+      if (attribute != null) {
+        attributeName = SafeConverters.toSafeString(attribute['name'],
+            defaultValue: 'Неизвестная характеристика');
+      }
     } else {
-      attributeName = 'Неизвестная характеристика';
+      final attribute = SafeConverters.toMapOrNull(json['attribute']);
+      if (attribute != null) {
+        final nestedAttribute = SafeConverters.toMapOrNull(attribute['attribute']);
+        if (nestedAttribute != null) {
+          attributeName = SafeConverters.toSafeString(nestedAttribute['name'],
+              defaultValue: 'Неизвестная характеристика');
+        }
+      }
     }
 
+    final nestedAttributeId = SafeConverters.toMapOrNull(json['attribute']);
+    final deepAttributeId =
+        nestedAttributeId != null
+            ? SafeConverters.toMapOrNull(nestedAttributeId['attribute'])
+            : null;
+
     return GoodsAttribute(
-      id: json['attribute_id'] as int? ??
-          (json['attribute']?['attribute']?['id'] as int?) ??
-          0,
+      id: SafeConverters.toInt(json['attribute_id'] != null
+          ? json['attribute_id']
+          : deepAttributeId?['id']),
       name: attributeName,
-      value: json['value'] as String? ?? '',
-      isIndividual: json['category_attribute']?['is_individual'] as bool? ??
-          json['attribute']?['is_individual'] as bool? ??
-          false,
-      images: (json['images'] as List<dynamic>?)?.cast<String>(),
+      value: SafeConverters.toSafeString(json['value']),
+      isIndividual: SafeConverters.toBool(
+          categoryAttribute?['is_individual'] ?? nestedAttributeId?['is_individual']),
+      images: _parseStringList(json['images']),
     );
   }
+}
+
+List<String>? _parseStringList(dynamic value) {
+  final raw = SafeConverters.toList(value);
+  if (raw.isEmpty) return null;
+  return raw.map((f) => SafeConverters.toSafeString(f)).toList();
 }
 
 class GoodsVariant {
@@ -808,30 +702,22 @@ class GoodsVariant {
   });
 
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
-    final attributeValues = (json['attributes'] as List<dynamic>?)?.map((v) {
-          return AttributeValue.fromJson(v as Map<String, dynamic>);
-        }).toList() ??
-        [];
+    final attributeValues = SafeConverters.toList(json['attributes'])
+        .map((v) => AttributeValue.fromJson(SafeConverters.toMap(v)))
+        .toList();
+
+    final filesList = SafeConverters.toList(json['files'])
+        .map((f) => GoodsFile.fromJson(SafeConverters.toMap(f)))
+        .toList();
 
     return GoodsVariant(
-      id: json['id'] as int? ?? 0,
-      goodId: json['good_id'] as int? ?? 0,
-      isActive: json['is_active'] == 1,
+      id: SafeConverters.toInt(json['id']),
+      goodId: SafeConverters.toInt(json['good_id']),
+      isActive: SafeConverters.toBool(json['is_active']),
       attributeValues: attributeValues,
-      // variantPrice:
-      //     json['price'] != null ? VariantPrice.fromJson(json['price']) : null,
-      price: json['price'] != null
-          ? (json['price'] is String
-              ? json['price'] as String
-              : (json['price'] is num
-                  ? (json['price'] as num).toString()
-                  : '0'))
-          : '0',
-      files: (json['files'] as List<dynamic>?)?.map((f) {
-            return GoodsFile.fromJson(f as Map<String, dynamic>);
-          }).toList() ??
-          [],
-      barcode: json['barcode']?.toString(),
+      price: SafeConverters.toSafeString(json['price'], defaultValue: '0'),
+      files: filesList.isEmpty ? null : filesList,
+      barcode: SafeConverters.toStringOrNull(json['barcode']),
     );
   }
 }
@@ -855,14 +741,14 @@ class AttributeValue {
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
     return AttributeValue(
-      id: json['id'] as int? ?? 0,
-      categoryAttributeId: json['category_attribute_id'] as int? ?? 0,
-      value: json['value'] as String? ?? '',
-      unitId: json['unit_id'] as int?,
-      files: (json['files'] as List<dynamic>?)?.cast<String>(),
-      categoryAttribute: json['category_attribute'] != null
+      id: SafeConverters.toInt(json['id']),
+      categoryAttributeId: SafeConverters.toInt(json['category_attribute_id']),
+      value: SafeConverters.toSafeString(json['value']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      files: _parseStringList(json['files']),
+      categoryAttribute: SafeConverters.toMapOrNull(json['category_attribute']) != null
           ? CategoryAttribute.fromJson(
-              json['category_attribute'] as Map<String, dynamic>)
+              SafeConverters.toMap(json['category_attribute']))
           : null,
     );
   }
@@ -881,11 +767,11 @@ class CategoryAttribute {
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
     return CategoryAttribute(
-      id: json['id'] as int? ?? 0,
-      attribute: json['attribute'] != null
-          ? Attribute.fromJson(json['attribute'] as Map<String, dynamic>)
+      id: SafeConverters.toInt(json['id']),
+      attribute: SafeConverters.toMapOrNull(json['attribute']) != null
+          ? Attribute.fromJson(SafeConverters.toMap(json['attribute']))
           : null,
-      isIndividual: json['is_individual'] as bool? ?? false,
+      isIndividual: SafeConverters.toBool(json['is_individual']),
     );
   }
 }
@@ -901,8 +787,9 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? 'Неизвестная характеристика',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'],
+          defaultValue: 'Неизвестная характеристика'),
     );
   }
 }
@@ -923,21 +810,12 @@ class VariantPrice {
   });
 
   factory VariantPrice.fromJson(Map<String, dynamic> json) {
-    double price = 0;
-    if (json['price'] != null) {
-      if (json['price'] is double) {
-        price = json['price'];
-      } else if (json['price'] is String) {
-        price = double.tryParse(json['price']) ?? 0.0;
-      }
-    }
-
     return VariantPrice(
-      id: json['id'] as int? ?? 0,
-      variantId: json['variant_id'] as int? ?? 0,
-      price: price,
-      startDate: json['start_date'] as String?,
-      endDate: json['end_date'] as String?,
+      id: SafeConverters.toInt(json['id']),
+      variantId: SafeConverters.toInt(json['variant_id']),
+      price: SafeConverters.toDouble(json['price']),
+      startDate: SafeConverters.toStringOrNull(json['start_date']),
+      endDate: SafeConverters.toStringOrNull(json['end_date']),
     );
   }
 }

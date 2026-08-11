@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class UserTaskCompletion {
   final int id;
   final String name;
@@ -11,12 +13,9 @@ class UserTaskCompletion {
 
   factory UserTaskCompletion.fromJson(Map<String, dynamic> json) {
     return UserTaskCompletion(
-      id: json['user_id'] as int,
-      name: json['name'] as String,
-      // Обработка случая, когда процент может прийти как int или double
-      finishedTasksprocent: json['finishedTasksprocent'] is int 
-          ? (json['finishedTasksprocent'] as int).toDouble()
-          : (json['finishedTasksprocent'] as num).toDouble(),
+      id: SafeConverters.toInt(json['user_id']),
+      name: SafeConverters.toSafeString(json['name']),
+      finishedTasksprocent: SafeConverters.toDouble(json['finishedTasksprocent']),
     );
   }
 

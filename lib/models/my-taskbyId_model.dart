@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class MyTaskById {
   final int id;
   final String name;
@@ -24,29 +26,30 @@ class MyTaskById {
   });
 
   factory MyTaskById.fromJson(Map<String, dynamic> json, [int statusId = 0]) {
-    try {
-      return MyTaskById(
-        id: json['id'] ?? 0,
-        taskNumber: json['task_number'] ?? 0,
-        name: json['name'] ?? 'Без имени',
-        startDate: json['from']?.toString(),
-        endDate: json['to']?.toString(),
-        description: json['description'] ?? '',
-        statusId: json['taskStatus']?['id'] ?? statusId, // Изменено здесь
-        taskStatus: json['taskStatus'] != null 
-            ? MyTaskStatusById.fromJson(json['taskStatus'] as Map<String, dynamic>)
-            : null,
-        taskFile: json['file']?.toString(),
-        files: json['files'] != null
-            ? List<MyTaskFiles>.from(
-                (json['files'] as List).map((x) => MyTaskFiles.fromJson(x as Map<String, dynamic>)))
-            : null,
-      );
-    } catch (e, stackTrace) {
-      rethrow;
-    }
+    final taskStatusMap = SafeConverters.toMapOrNull(json['taskStatus']);
+    return MyTaskById(
+      id: SafeConverters.toInt(json['id']),
+      taskNumber: SafeConverters.toIntOrNull(json['task_number']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+      startDate: SafeConverters.toStringOrNull(json['from']),
+      endDate: SafeConverters.toStringOrNull(json['to']),
+      description: SafeConverters.toSafeString(json['description']),
+      statusId: taskStatusMap != null
+          ? SafeConverters.toInt(taskStatusMap['id'], defaultValue: statusId)
+          : statusId,
+      taskStatus: taskStatusMap != null
+          ? MyTaskStatusById.fromJson(taskStatusMap)
+          : null,
+      taskFile: SafeConverters.toStringOrNull(json['file']),
+      files: json['files'] != null
+          ? SafeConverters.toList(json['files'])
+              .map((x) => MyTaskFiles.fromJson(SafeConverters.toMap(x)))
+              .toList()
+          : null,
+    );
   }
 }
+
 class MyTaskFileById {
   final String name;
   final String size;
@@ -59,10 +62,11 @@ class MyTaskFileById {
       };
 
   factory MyTaskFileById.fromJson(Map<String, dynamic> json) => MyTaskFileById(
-        name: json["name"] as String,
-        size: json["size"] as String,
+        name: SafeConverters.toSafeString(json["name"]),
+        size: SafeConverters.toSafeString(json["size"]),
       );
 }
+
 class MyTaskFiles {
   final int id;
   final String name;
@@ -76,12 +80,13 @@ class MyTaskFiles {
 
   factory MyTaskFiles.fromJson(Map<String, dynamic> json) {
     return MyTaskFiles(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      path: json['path'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
     );
   }
 }
+
 class MyTaskStatusById {
   final int id;
   final String title;
@@ -98,29 +103,15 @@ class MyTaskStatusById {
   });
 
   factory MyTaskStatusById.fromJson(Map<String, dynamic> json) {
-    try {
-      return MyTaskStatusById(
-        id: json['id'] ?? 0,
-        title: json['title'] ?? '',
-        color: json['color'] ?? '#000000',
-        position: json['position'] ?? 0,
-        taskStatus: json['title']?.toString(), // Используем title как taskStatus
-      );
-    } catch (e) {
-      rethrow;
-    }
+    return MyTaskStatusById(
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title']),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
+      position: SafeConverters.toInt(json['position']),
+      taskStatus: SafeConverters.toStringOrNull(json['title']),
+    );
   }
 }
-
-//   // Метод для преобразования объекта в JSON
-//   Map<String, dynamic> toJson() {
-//     return {
-//       'id': id,
-//       'taskStatus': taskStatus.toJson(),
-//       'color': color,
-//     };
-//   }
-// }
 
 class MyTaskStatusNameById {
   final int id;
@@ -135,17 +126,15 @@ class MyTaskStatusNameById {
     this.updatedAt,
   });
 
-  // Метод для создания вложенного объекта из JSON
   factory MyTaskStatusNameById.fromJson(Map<String, dynamic> json) {
     return MyTaskStatusNameById(
-      id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 
-  // Метод для преобразования вложенного объекта в JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class BatchData {
   final String batch;
   final String price;
@@ -13,10 +15,10 @@ class BatchData {
 
   factory BatchData.fromJson(Map<String, dynamic> json) {
     return BatchData(
-      batch: json['batch'] as String,
-      price: json['price'] as String,
-      date: json['date'] as String,
-      quantity: json['quantity'] as int,
+      batch: SafeConverters.toSafeString(json['batch']),
+      price: SafeConverters.toSafeString(json['price']),
+      date: SafeConverters.toSafeString(json['date']),
+      quantity: SafeConverters.toInt(json['quantity']),
     );
   }
 

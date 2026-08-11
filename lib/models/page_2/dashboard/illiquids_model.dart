@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:equatable/equatable.dart';
 
 class IlliquidGoodsResponse extends Equatable {
@@ -11,10 +12,14 @@ class IlliquidGoodsResponse extends Equatable {
 
   factory IlliquidGoodsResponse.fromJson(Map<String, dynamic> json) {
     return IlliquidGoodsResponse(
-      result: json['result'] != null
-          ? IlliquidGoodsResult.fromJson(json['result'] as Map<String, dynamic>)
+      result: SafeConverters.toMapOrNull(json['result']) != null
+          ? IlliquidGoodsResult.fromJson(SafeConverters.toMap(json['result']))
           : null,
-      errors: json['errors'] as List<String>?,
+      errors: json['errors'] != null
+          ? SafeConverters.toList(json['errors'])
+              .map((e) => SafeConverters.toSafeString(e))
+              .toList()
+          : null,
     );
   }
 
@@ -42,9 +47,9 @@ class IlliquidGoodsResult extends Equatable {
 
   factory IlliquidGoodsResult.fromJson(Map<String, dynamic> json) {
     return IlliquidGoodsResult(
-      liquidGoods: json['liquidGoods'] as num?,
-      liquidChange: json['liquidChange'] as num?,
-      liquidChangeFormatted: json['liquidChangeFormatted'] as String?,
+      liquidGoods: SafeConverters.toNumOrNull(json['liquidGoods']),
+      liquidChange: SafeConverters.toNumOrNull(json['liquidChange']),
+      liquidChangeFormatted: SafeConverters.toStringOrNull(json['liquidChangeFormatted']),
     );
   }
 

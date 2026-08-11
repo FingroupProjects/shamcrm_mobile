@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class NoticeSmsSample {
   final int? id;
   final String name;
@@ -15,12 +17,10 @@ class NoticeSmsSample {
 
   factory NoticeSmsSample.fromJson(Map<String, dynamic> json) {
     return NoticeSmsSample(
-      id: json['id'] as int?,
-      name: (json['name'] ?? '').toString(),
-      text: (json['text'] ?? '').toString(),
-      paramsAmount: json['params_amount'] is int
-          ? json['params_amount'] as int
-          : int.tryParse('${json['params_amount']}') ?? 0,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      text: SafeConverters.toSafeString(json['text']),
+      paramsAmount: SafeConverters.toInt(json['params_amount']),
     );
   }
 

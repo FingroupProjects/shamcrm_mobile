@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 // Основная модель профиля чата
 class ChatProfile {
@@ -35,20 +36,22 @@ class ChatProfile {
 
   factory ChatProfile.fromJson(Map<String, dynamic> json) {
     return ChatProfile(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? "Без имени",
-      facebookLogin: json['facebook_login'],
-      instaLogin: json['insta_login'],
-      tgNick: json['tg_nick'],
-      waName: json['wa_name'],
-      waPhone: json['wa_phone'],
-      phone: json['phone'],
-      address: json['address'],
-      description: json['description'],
-      createdAt: json['created_at'] ?? "",
-      manager: json['manager'] != null ? ManagerChatProfile.fromJson(json['manager']) : null,
-      leadStatus: json['leadStatus'] != null
-          ? LeadStatus.fromJson(json['leadStatus'])
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+      facebookLogin: SafeConverters.toStringOrNull(json['facebook_login']),
+      instaLogin: SafeConverters.toStringOrNull(json['insta_login']),
+      tgNick: SafeConverters.toStringOrNull(json['tg_nick']),
+      waName: SafeConverters.toStringOrNull(json['wa_name']),
+      waPhone: SafeConverters.toStringOrNull(json['wa_phone']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      address: SafeConverters.toStringOrNull(json['address']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      manager: SafeConverters.toMapOrNull(json['manager']) != null
+          ? ManagerChatProfile.fromJson(SafeConverters.toMap(json['manager']))
+          : null,
+      leadStatus: SafeConverters.toMapOrNull(json['leadStatus']) != null
+          ? LeadStatus.fromJson(SafeConverters.toMap(json['leadStatus']))
           : null,
     );
   }
@@ -76,13 +79,13 @@ class ManagerChatProfile {
 
   factory ManagerChatProfile.fromJson(Map<String, dynamic> json) {
     return ManagerChatProfile(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? "Без имени",
-      login: json['login'] ?? "",
-      email: json['email'] ?? "",
-      phone: json['phone'] ?? "",
-      image: json['image'] ?? "",
-      lastSeen: json['last_seen'] ?? "",
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+      login: SafeConverters.toSafeString(json['login']),
+      email: SafeConverters.toSafeString(json['email']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      image: SafeConverters.toSafeString(json['image']),
+      lastSeen: SafeConverters.toSafeString(json['last_seen']),
     );
   }
 }
@@ -101,9 +104,9 @@ class Channel {
 
   factory Channel.fromJson(Map<String, dynamic> json) {
     return Channel(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-      organizationId: json['organization_id'] as int?,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      organizationId: SafeConverters.toIntOrNull(json['organization_id']),
     );
   }
 
@@ -128,9 +131,9 @@ class Integration {
   factory Integration.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing Integration: $json');
     return Integration(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-      username: json['username'] as String?,
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      username: SafeConverters.toStringOrNull(json['username']),
     );
   }
 
@@ -166,15 +169,17 @@ class ChatById {
   factory ChatById.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing ChatById: $json');
     return ChatById(
-      id: json['id'] ?? 0,
-      uniqueId: json['unique_id'] as String?,
-      channel: json['channel'] != null ? Channel.fromJson(json['channel']) : null,
-      canSendMessage: json['can_send_message'] ?? false,
-      type: json['type'] ?? '',
-      unreadCount: json['unread_count'] ?? 0,
-      referralBody: json['referral_body'],
-      integration: json['integration'] != null 
-          ? Integration.fromJson(json['integration']) 
+      id: SafeConverters.toInt(json['id']),
+      uniqueId: SafeConverters.toStringOrNull(json['unique_id']),
+      channel: SafeConverters.toMapOrNull(json['channel']) != null
+          ? Channel.fromJson(SafeConverters.toMap(json['channel']))
+          : null,
+      canSendMessage: SafeConverters.toBool(json['can_send_message']),
+      type: SafeConverters.toSafeString(json['type']),
+      unreadCount: SafeConverters.toInt(json['unread_count']),
+      referralBody: SafeConverters.toStringOrNull(json['referral_body']),
+      integration: SafeConverters.toMapOrNull(json['integration']) != null
+          ? Integration.fromJson(SafeConverters.toMap(json['integration']))
           : null,
     );
   }

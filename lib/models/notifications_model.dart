@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class Notifications {
   final int id;
   final int notificationMessageId;
@@ -5,7 +7,7 @@ class Notifications {
   final int modelId;
   final String modelType;
   final String message;
-  final bool isRead; // Изменено с int на bool
+  final bool isRead;
   final int userId;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -27,17 +29,17 @@ class Notifications {
 
   factory Notifications.fromJson(Map<String, dynamic> json) {
     return Notifications(
-      id: json['id'] as int,
-      notificationMessageId: json['notification_message_id'] as int,
-      type: json['type'] as String,
-      modelId: json['model_id'] as int,
-      modelType: json['model_type'] as String,
-      message: json['message'] as String,
-      isRead: json['is_read'] as bool, // Изменено на bool
-      userId: json['user_id'] as int,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      organizationId: json['organization_id'] as int,
+      id: SafeConverters.toInt(json['id']),
+      notificationMessageId: SafeConverters.toInt(json['notification_message_id']),
+      type: SafeConverters.toSafeString(json['type']),
+      modelId: SafeConverters.toInt(json['model_id']),
+      modelType: SafeConverters.toSafeString(json['model_type']),
+      message: SafeConverters.toSafeString(json['message']),
+      isRead: SafeConverters.toBool(json['is_read']),
+      userId: SafeConverters.toInt(json['user_id']),
+      createdAt: SafeConverters.toDateTime(json['created_at']),
+      updatedAt: SafeConverters.toDateTime(json['updated_at']),
+      organizationId: SafeConverters.toInt(json['organization_id']),
     );
   }
 

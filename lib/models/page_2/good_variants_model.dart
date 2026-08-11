@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class GoodVariantsResponse {
   final GoodVariantsResult? result;
   final dynamic errors;
@@ -11,7 +13,7 @@ class GoodVariantsResponse {
     return GoodVariantsResponse(
       result: json['result'] == null
           ? null
-          : GoodVariantsResult.fromJson(json['result'] as Map<String, dynamic>),
+          : GoodVariantsResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -31,10 +33,10 @@ class GoodVariantsResult {
       data: json['data'] == null
           ? []
           : List<GoodVariantItem>.from(
-              json['data']!.map((x) => GoodVariantItem.fromJson(x))),
+              SafeConverters.toList(json['data']).whereType<Map<String, dynamic>>().map((x) => GoodVariantItem.fromJson(x))),
       pagination: json['pagination'] == null
           ? null
-          : Pagination.fromJson(json['pagination'] as Map<String, dynamic>),
+          : Pagination.fromJson(SafeConverters.toMap(json['pagination'])),
     );
   }
 }
@@ -56,11 +58,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'],
-      count: json['count'],
-      perPage: json['per_page'],
-      currentPage: json['current_page'],
-      totalPages: json['total_pages'],
+      total: SafeConverters.toIntOrNull(json['total']),
+      count: SafeConverters.toIntOrNull(json['count']),
+      perPage: SafeConverters.toIntOrNull(json['per_page']),
+      currentPage: SafeConverters.toIntOrNull(json['current_page']),
+      totalPages: SafeConverters.toIntOrNull(json['total_pages']),
     );
   }
 }
@@ -94,24 +96,25 @@ class GoodVariantItem {
 
   factory GoodVariantItem.fromJson(Map<String, dynamic> json) {
     return GoodVariantItem(
-      id: json['id'],
-      goodId: json['good_id'],
-      isActive: json['is_active'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      oneCUid: json['one_c_uid'],
-      barcode: json['barcode'],
-      fullName: json['full_name'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      goodId: SafeConverters.toIntOrNull(json['good_id']),
+      isActive: SafeConverters.toIntOrNull(json['is_active']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      oneCUid: SafeConverters.toStringOrNull(json['one_c_uid']),
+      barcode: SafeConverters.toStringOrNull(json['barcode']),
+      fullName: SafeConverters.toStringOrNull(json['full_name']),
       good: json['good'] == null
           ? null
-          : VariantGood.fromJson(json['good'] as Map<String, dynamic>),
-      attributeValues: (json['attribute_values'] as List?)
-              ?.map((i) => VariantAttributeValue.fromJson(i))
+          : VariantGood.fromJson(SafeConverters.toMap(json['good'])),
+      attributeValues: SafeConverters.toList(json['attribute_values'])
+              .whereType<Map<String, dynamic>>()
+              .map((i) => VariantAttributeValue.fromJson(i))
               .toList() ??
           [],
       price: json['price'] == null
           ? null
-          : VariantPrice.fromJson(json['price'] as Map<String, dynamic>),
+          : VariantPrice.fromJson(SafeConverters.toMap(json['price'])),
     );
   }
 }
@@ -171,43 +174,46 @@ class VariantGood {
 
   factory VariantGood.fromJson(Map<String, dynamic> json) {
     return VariantGood(
-      id: json['id'],
-      oneCId: json['one_c_id'],
-      name: json['name'],
-      categoryId: json['category_id'],
-      description: json['description'],
-      price: json['price'],
-      unitId: json['unit_id'],
-      quantity: json['quantity'],
-      deletedAt: json['deleted_at'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      isActive: json['is_active'],
-      article: json['article'],
-      labelId: json['label_id'],
-      getImage: json['get_image'],
-      cip: json['cip'],
-      packageCode: json['package_code'],
-      units: (json['units'] as List?)
-              ?.map((i) => VariantUnit.fromJson(i))
+      id: SafeConverters.toIntOrNull(json['id']),
+      oneCId: SafeConverters.toStringOrNull(json['one_c_id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      categoryId: SafeConverters.toIntOrNull(json['category_id']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      price: SafeConverters.toStringOrNull(json['price']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      quantity: SafeConverters.toIntOrNull(json['quantity']),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      isActive: SafeConverters.toBoolOrNull(json['is_active']),
+      article: SafeConverters.toStringOrNull(json['article']),
+      labelId: SafeConverters.toIntOrNull(json['label_id']),
+      getImage: SafeConverters.toBoolOrNull(json['get_image']),
+      cip: SafeConverters.toStringOrNull(json['cip']),
+      packageCode: SafeConverters.toStringOrNull(json['package_code']),
+      units: SafeConverters.toList(json['units'])
+              .whereType<Map<String, dynamic>>()
+              .map((i) => VariantUnit.fromJson(i))
               .toList() ??
           [],
       category: json['category'] == null
           ? null
-          : VariantCategory.fromJson(json['category'] as Map<String, dynamic>),
-      files: (json['files'] as List?)
-              ?.map((i) => VariantFile.fromJson(i))
+          : VariantCategory.fromJson(SafeConverters.toMap(json['category'])),
+      files: SafeConverters.toList(json['files'])
+              .whereType<Map<String, dynamic>>()
+              .map((i) => VariantFile.fromJson(i))
               .toList() ??
           [],
-      discounts: json['discounts'] as List?,
+      discounts: SafeConverters.toList(json['discounts']),
       goodPrice: json['good_price'] == null
           ? null
-          : VariantGoodPrice.fromJson(json['good_price'] as Map<String, dynamic>),
+          : VariantGoodPrice.fromJson(SafeConverters.toMap(json['good_price'])),
       unit: json['unit'] == null
           ? null
-          : VariantUnit.fromJson(json['unit'] as Map<String, dynamic>),
-      measurements: (json['measurements'] as List?)
-              ?.map((i) => VariantMeasurement.fromJson(i))
+          : VariantUnit.fromJson(SafeConverters.toMap(json['unit'])),
+      measurements: SafeConverters.toList(json['measurements'])
+              .whereType<Map<String, dynamic>>()
+              .map((i) => VariantMeasurement.fromJson(i))
               .toList() ??
           [],
     );
@@ -235,13 +241,13 @@ class VariantUnit {
 
   factory VariantUnit.fromJson(Map<String, dynamic> json) {
     return VariantUnit(
-      id: json['id'],
-      name: json['name'],
-      isBase: json['is_base'],
-      amount: json['amount'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      shortName: json['short_name'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      isBase: SafeConverters.toBoolOrNull(json['is_base']),
+      amount: SafeConverters.toStringOrNull(json['amount']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      shortName: SafeConverters.toStringOrNull(json['short_name']),
     );
   }
 }
@@ -273,16 +279,16 @@ class VariantCategory {
 
   factory VariantCategory.fromJson(Map<String, dynamic> json) {
     return VariantCategory(
-      id: json['id'],
-      name: json['name'],
-      image: json['image'],
-      parentId: json['parent_id'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      isActive: json['is_active'],
-      hasPriceCharacteristics: json['has_price_characteristics'],
-      displayType: json['display_type'],
-      isParent: json['is_parent'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      parentId: SafeConverters.toIntOrNull(json['parent_id']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      isActive: SafeConverters.toBoolOrNull(json['is_active']),
+      hasPriceCharacteristics: SafeConverters.toBoolOrNull(json['has_price_characteristics']),
+      displayType: SafeConverters.toStringOrNull(json['display_type']),
+      isParent: SafeConverters.toIntOrNull(json['is_parent']),
     );
   }
 }
@@ -314,18 +320,16 @@ class VariantFile {
 
   factory VariantFile.fromJson(Map<String, dynamic> json) {
     return VariantFile(
-      id: json['id'],
-      name: json['name'],
-      path: json['path'],
-      modelType: json['model_type'],
-      modelId: json['model_id'] == null
-          ? null
-          : int.tryParse(json['model_id'].toString()),
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      externalId: json['external_id']?.toString(),
-      externalUrl: json['external_url'],
-      isMain: json['is_main'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      path: SafeConverters.toStringOrNull(json['path']),
+      modelType: SafeConverters.toStringOrNull(json['model_type']),
+      modelId: SafeConverters.toIntOrNull(json['model_id']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      externalId: SafeConverters.toStringOrNull(json['external_id']),
+      externalUrl: SafeConverters.toStringOrNull(json['external_url']),
+      isMain: SafeConverters.toBoolOrNull(json['is_main']),
     );
   }
 }
@@ -357,16 +361,16 @@ class VariantGoodPrice {
 
   factory VariantGoodPrice.fromJson(Map<String, dynamic> json) {
     return VariantGoodPrice(
-      id: json['id'],
-      variantId: json['variant_id'],
-      price: json['price'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      goodId: json['good_id'],
-      pricingId: json['pricing_id'],
-      priceTypeId: json['price_type_id'],
-      startDate: json['start_date'],
-      laravelThroughKey: json['laravel_through_key'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      variantId: SafeConverters.toIntOrNull(json['variant_id']),
+      price: SafeConverters.toStringOrNull(json['price']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      goodId: SafeConverters.toIntOrNull(json['good_id']),
+      pricingId: SafeConverters.toIntOrNull(json['pricing_id']),
+      priceTypeId: SafeConverters.toIntOrNull(json['price_type_id']),
+      startDate: SafeConverters.toStringOrNull(json['start_date']),
+      laravelThroughKey: SafeConverters.toIntOrNull(json['laravel_through_key']),
     );
   }
 }
@@ -392,15 +396,15 @@ class VariantMeasurement {
 
   factory VariantMeasurement.fromJson(Map<String, dynamic> json) {
     return VariantMeasurement(
-      id: json['id'],
-      goodId: json['good_id'],
-      unitId: json['unit_id'],
-      amount: json['amount'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      goodId: SafeConverters.toIntOrNull(json['good_id']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      amount: SafeConverters.toStringOrNull(json['amount']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
       unit: json['unit'] == null
           ? null
-          : VariantUnit.fromJson(json['unit'] as Map<String, dynamic>),
+          : VariantUnit.fromJson(SafeConverters.toMap(json['unit'])),
     );
   }
 }
@@ -430,18 +434,17 @@ class VariantAttributeValue {
 
   factory VariantAttributeValue.fromJson(Map<String, dynamic> json) {
     return VariantAttributeValue(
-      id: json['id'],
-      categoryAttributeId: json['category_attribute_id'],
-      value: json['value'],
-      unitId: json['unit_id'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      variantAttributeId: json['variant_attribute_id'],
-      variantId: json['variant_id'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      categoryAttributeId: SafeConverters.toIntOrNull(json['category_attribute_id']),
+      value: SafeConverters.toStringOrNull(json['value']),
+      unitId: SafeConverters.toIntOrNull(json['unit_id']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      variantAttributeId: SafeConverters.toIntOrNull(json['variant_attribute_id']),
+      variantId: SafeConverters.toIntOrNull(json['variant_id']),
       categoryAttribute: json['category_attribute'] == null
           ? null
-          : VariantCategoryAttribute.fromJson(
-              json['category_attribute'] as Map<String, dynamic>),
+          : VariantCategoryAttribute.fromJson(SafeConverters.toMap(json['category_attribute'])),
     );
   }
 }
@@ -469,16 +472,16 @@ class VariantCategoryAttribute {
 
   factory VariantCategoryAttribute.fromJson(Map<String, dynamic> json) {
     return VariantCategoryAttribute(
-      id: json['id'],
-      categoryId: json['category_id'],
-      attributeId: json['attribute_id'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      isIndividual: json['is_individual'],
-      showToSite: json['show_to_site'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      categoryId: SafeConverters.toIntOrNull(json['category_id']),
+      attributeId: SafeConverters.toIntOrNull(json['attribute_id']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      isIndividual: SafeConverters.toBoolOrNull(json['is_individual']),
+      showToSite: SafeConverters.toBoolOrNull(json['show_to_site']),
       attribute: json['attribute'] == null
           ? null
-          : VariantAttribute.fromJson(json['attribute'] as Map<String, dynamic>),
+          : VariantAttribute.fromJson(SafeConverters.toMap(json['attribute'])),
     );
   }
 }
@@ -498,10 +501,10 @@ class VariantAttribute {
 
   factory VariantAttribute.fromJson(Map<String, dynamic> json) {
     return VariantAttribute(
-      id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
     );
   }
 }
@@ -529,14 +532,14 @@ class VariantPrice {
 
   factory VariantPrice.fromJson(Map<String, dynamic> json) {
     return VariantPrice(
-      id: json['id'],
-      variantId: json['variant_id'],
-      price: json['price'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
-      goodId: json['good_id'],
-      pricingId: json['pricing_id'],
-      priceTypeId: json['price_type_id'],
+      id: SafeConverters.toIntOrNull(json['id']),
+      variantId: SafeConverters.toIntOrNull(json['variant_id']),
+      price: SafeConverters.toStringOrNull(json['price']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      goodId: SafeConverters.toIntOrNull(json['good_id']),
+      pricingId: SafeConverters.toIntOrNull(json['pricing_id']),
+      priceTypeId: SafeConverters.toIntOrNull(json['price_type_id']),
     );
   }
 }

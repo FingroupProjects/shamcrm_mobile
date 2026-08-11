@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 enum TopSellingTimePeriod { day, week, month, year }
 
 class TopSellingGoodsResponse {
@@ -8,7 +10,7 @@ class TopSellingGoodsResponse {
 
   factory TopSellingGoodsResponse.fromJson(Map<String, dynamic> json) {
     return TopSellingGoodsResponse(
-      result: TopSellingResult.fromJson(json['result'] as Map<String, dynamic>),
+      result: TopSellingResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -54,23 +56,23 @@ class TopSellingResult {
 
   factory TopSellingResult.fromJson(Map<String, dynamic> json) {
     return TopSellingResult(
-      currentPage: json['current_page'] as int?,
-      data: (json['data'] as List<dynamic>? ?? [])
-          .map((item) => TopSellingData.fromJson(item as Map<String, dynamic>))
+      currentPage: SafeConverters.toIntOrNull(json['current_page']),
+      data: SafeConverters.toList(json['data'])
+          .map((item) => TopSellingData.fromJson(SafeConverters.toMap(item)))
           .toList(),
-      firstPageUrl: json['first_page_url'] as String? ?? '',
-      from: json['from'] as int? ?? 0, // Default to 0 if null
-      lastPage: json['last_page'] as int? ?? 0, // Default to 0 if null
-      lastPageUrl: json['last_page_url'] as String? ?? '',
-      links: (json['links'] as List<dynamic>? ?? [])
-          .map((item) => Link.fromJson(item as Map<String, dynamic>))
+      firstPageUrl: SafeConverters.toSafeString(json['first_page_url']),
+      from: SafeConverters.toInt(json['from']),
+      lastPage: SafeConverters.toInt(json['last_page']),
+      lastPageUrl: SafeConverters.toSafeString(json['last_page_url']),
+      links: SafeConverters.toList(json['links'])
+          .map((item) => Link.fromJson(SafeConverters.toMap(item)))
           .toList(),
-      nextPageUrl: json['next_page_url'] as String?,
-      path: json['path'] as String? ?? '',
-      perPage: json['per_page'] as int? ?? 0, // Default to 0 if null
-      prevPageUrl: json['prev_page_url'] as String?,
-      to: json['to'] as int? ?? 0, // Default to 0 if null
-      total: json['total'] as int? ?? 0, // Default to 0 if null
+      nextPageUrl: SafeConverters.toStringOrNull(json['next_page_url']),
+      path: SafeConverters.toSafeString(json['path']),
+      perPage: SafeConverters.toInt(json['per_page']),
+      prevPageUrl: SafeConverters.toStringOrNull(json['prev_page_url']),
+      to: SafeConverters.toNum(json['to']),
+      total: SafeConverters.toNum(json['total']),
     );
   }
 
@@ -112,12 +114,12 @@ class TopSellingData {
 
   factory TopSellingData.fromJson(Map<String, dynamic> json) {
     return TopSellingData(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      category: json['category'] as String,
-      totalQuantity: json['total_quantity'] as int,
-      totalAmount: json['total_amount'].toString(),
-      avgPrice: json['avg_price'].toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      category: SafeConverters.toSafeString(json['category']),
+      totalQuantity: SafeConverters.toNum(json['total_quantity']),
+      totalAmount: SafeConverters.toSafeString(json['total_amount']),
+      avgPrice: SafeConverters.toSafeString(json['avg_price']),
     );
   }
 
@@ -142,9 +144,9 @@ class Link {
 
   factory Link.fromJson(Map<String, dynamic> json) {
     return Link(
-      url: json['url'] as String?,
-      label: json['label'] as String,
-      active: json['active'] as bool,
+      url: SafeConverters.toStringOrNull(json['url']),
+      label: SafeConverters.toSafeString(json['label']),
+      active: SafeConverters.toBool(json['active']),
     );
   }
 

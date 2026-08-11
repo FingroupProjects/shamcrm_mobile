@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class ChatMessagesPagination {
   final int count;
@@ -21,18 +22,14 @@ class ChatMessagesPagination {
   }) {
     final source = json ?? const <String, dynamic>{};
 
-    int parseInt(dynamic value, int fallback) {
-      if (value is int) return value;
-      if (value is num) return value.toInt();
-      return int.tryParse(value?.toString() ?? '') ?? fallback;
-    }
-
-    final count = parseInt(source['count'], fallbackCount);
-    final total = parseInt(source['total'], count);
-    final perPage =
-        parseInt(source['per_page'], count == 0 ? fallbackCount : count);
-    final currentPage = parseInt(source['current_page'], 1);
-    final totalPages = parseInt(source['total_pages'], 1);
+    final count = SafeConverters.toInt(source['count'], defaultValue: fallbackCount);
+    final total = SafeConverters.toInt(source['total'], defaultValue: count);
+    final perPage = SafeConverters.toInt(
+      source['per_page'],
+      defaultValue: count == 0 ? fallbackCount : count,
+    );
+    final currentPage = SafeConverters.toInt(source['current_page'], defaultValue: 1);
+    final totalPages = SafeConverters.toInt(source['total_pages'], defaultValue: 1);
 
     return ChatMessagesPagination(
       count: count,
@@ -59,33 +56,25 @@ class ChatMessagesPage {
   }) {
     final result = json['result'];
 
-    final Map<String, dynamic> resultMap =
-        result is Map<String, dynamic> ? result : const <String, dynamic>{};
+    final resultMap = SafeConverters.toMapOrNull(result) ?? const <String, dynamic>{};
 
     final rawData = result is List
-        ? result
-        : resultMap['data'] is List
-            ? resultMap['data'] as List
-            : json['data'] is List
-                ? json['data'] as List
-                : const [];
+        ? SafeConverters.toList(result)
+        : SafeConverters.toList(resultMap['data']).isNotEmpty
+            ? SafeConverters.toList(resultMap['data'])
+            : SafeConverters.toList(json['data']);
 
     final messages = rawData
-        .whereType<Map>()
+        .map((item) => SafeConverters.toMapOrNull(item))
+        .whereType<Map<String, dynamic>>()
         .map(
-          (item) => Message.fromJson(
-            Map<String, dynamic>.from(item),
-            chatType: chatType,
-          ),
+          (item) => Message.fromJson(item, chatType: chatType),
         )
         .toList()
       ..sort((a, b) => _compareMessagesByCreatedAtDesc(a, b));
 
-    final paginationJson = resultMap['pagination'] is Map<String, dynamic>
-        ? resultMap['pagination'] as Map<String, dynamic>
-        : json['pagination'] is Map<String, dynamic>
-            ? json['pagination'] as Map<String, dynamic>
-            : null;
+    final paginationJson = SafeConverters.toMapOrNull(resultMap['pagination']) ??
+        SafeConverters.toMapOrNull(json['pagination']);
 
     return ChatMessagesPage(
       data: messages,

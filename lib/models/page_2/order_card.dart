@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class Order {
   final int id;
@@ -66,70 +67,57 @@ class Order {
     try {
       final deliveryAddressRaw = json['delivery_address'];
       final branchRaw = json['branch'];
-      final isDelivery = json['delivery'] is bool
-          ? json['delivery'] as bool
-          : json['deliveryType'] == 'delivery';
+      final isDelivery = SafeConverters.toBoolOrNull(json['delivery']) ??
+          (json['deliveryType'] == 'delivery');
 
       return Order(
-        id: json['id'] ?? 0,
-        phone: (json['phone'] ?? '').toString(),
-        orderNumber: json['order_number']?.toString() ?? '',
+        id: SafeConverters.toInt(json['id']),
+        phone: SafeConverters.toSafeString(json['phone']),
+        orderNumber: SafeConverters.toSafeString(json['order_number']),
         delivery: isDelivery,
-        deliveryAddress: deliveryAddressRaw is Map<String, dynamic>
-            ? deliveryAddressRaw['address']?.toString()
-            : deliveryAddressRaw?.toString(),
-        deliveryAddressId: json['delivery_address_id'] != null
-            ? int.tryParse(json['delivery_address_id'].toString())
+        deliveryAddress: deliveryAddressRaw is Map
+            ? SafeConverters.toStringOrNull(
+                SafeConverters.toMap(deliveryAddressRaw)['address'])
+            : SafeConverters.toStringOrNull(deliveryAddressRaw),
+        deliveryAddressId: SafeConverters.toIntOrNull(json['delivery_address_id']),
+        branchName: branchRaw is Map
+            ? SafeConverters.toStringOrNull(SafeConverters.toMap(branchRaw)['name'])
+            : SafeConverters.toStringOrNull(json['branch_name'] ?? branchRaw),
+        branchId: SafeConverters.toIntOrNull(json['branch_id']),
+        lead: OrderLead.fromJson(SafeConverters.toMap(json['lead'])),
+        deal: SafeConverters.toMapOrNull(json['deal']) != null
+            ? OrderDeal.fromJson(SafeConverters.toMap(json['deal']))
             : null,
-        branchName: branchRaw is Map<String, dynamic>
-            ? branchRaw['name']?.toString()
-            : (json['branch_name'] ?? branchRaw)?.toString(),
-        branchId: json['branch_id'] != null
-            ? int.tryParse(json['branch_id'].toString())
-            : null,
-        lead: OrderLead.fromJson(json['lead'] ?? {}),
-        deal: json['deal'] != null
-            ? OrderDeal.fromJson(json['deal'] as Map<String, dynamic>)
-            : null,
-        orderStatus: OrderStatusName.fromJson(json['order_status'] ?? {}),
-        createdAt: json['created_at'] != null
-            ? DateTime.tryParse(json['created_at'])
-            : null,
-        goods: (json['order_goods'] as List? ?? [])
-            .map((g) => Good.fromJson(g))
+        orderStatus: OrderStatusName.fromJson(
+            SafeConverters.toMap(json['order_status'])),
+        createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+        goods: SafeConverters.toList(json['order_goods'])
+            .map((g) => Good.fromJson(SafeConverters.toMap(g)))
             .toList(),
-        organizationId: json['organization_id'] ?? 1,
-        commentToCourier: json['comment_to_courier']?.toString(),
-        sum: double.tryParse(json['sum']?.toString() ?? '0'),
-        paymentMethod: json['payment_type']?.toString(), // Parse payment_type
-        paymentStatus:
-            json['payment_status']?.toString(), // Парсим payment_status
-        integrationId: int.tryParse(json['integration_id']?.toString() ?? ''),
-        manager: json['manager'] != null
-            ? ManagerData.fromJson(json['manager'])
+        organizationId: SafeConverters.toInt(json['organization_id'], defaultValue: 1),
+        commentToCourier: SafeConverters.toStringOrNull(json['comment_to_courier']),
+        sum: SafeConverters.toDoubleOrNull(json['sum']),
+        paymentMethod: SafeConverters.toStringOrNull(json['payment_type']),
+        paymentStatus: SafeConverters.toStringOrNull(json['payment_status']),
+        integrationId: SafeConverters.toIntOrNull(json['integration_id']),
+        manager: SafeConverters.toMapOrNull(json['manager']) != null
+            ? ManagerData.fromJson(SafeConverters.toMap(json['manager']))
             : null,
-        storageId: json['storage_id'] != null
-            ? int.tryParse(json['storage_id'].toString())
-            : null,
-        reasonForRefusalId: json['reason_for_refusal_id'] is int
-            ? json['reason_for_refusal_id'] as int
-            : int.tryParse('${json['reason_for_refusal_id']}'),
-        reasonForRefusalComment: json['reason_for_refusal']?.toString(),
+        storageId: SafeConverters.toIntOrNull(json['storage_id']),
+        reasonForRefusalId: SafeConverters.toIntOrNull(json['reason_for_refusal_id']),
+        reasonForRefusalComment: SafeConverters.toStringOrNull(json['reason_for_refusal']),
         refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
-        // The order API returns this relation as `custom_field_values`.
-        // Keep the camelCase fallback for locally cached/legacy payloads.
-        customFieldValues: ((json['custom_field_values'] ??
-                    json['customFieldValues']) as List<dynamic>? ??
-                [])
-            .whereType<Map<String, dynamic>>()
-            .map(CustomFieldValue.fromJson)
+        customFieldValues: SafeConverters.toList(
+                json['custom_field_values'] ?? json['customFieldValues'])
+            .map((item) =>
+                CustomFieldValue.fromJson(SafeConverters.toMap(item)))
             .toList(),
-        directoryValues: (json['directory_values'] as List<dynamic>? ?? [])
-            .map(
-                (item) => DirectoryValue.fromJson(item as Map<String, dynamic>))
+        directoryValues: SafeConverters.toList(json['directory_values'])
+            .map((item) =>
+                DirectoryValue.fromJson(SafeConverters.toMap(item)))
             .toList(),
-        files: (json['files'] as List<dynamic>? ?? [])
-            .map((item) => OrderFile.fromJson(item as Map<String, dynamic>))
+        files: SafeConverters.toList(json['files'])
+            .map((item) => OrderFile.fromJson(SafeConverters.toMap(item)))
             .toList(),
       );
     } catch (e) {
@@ -242,10 +230,10 @@ class OrderFile {
 
   factory OrderFile.fromJson(Map<String, dynamic> json) {
     return OrderFile(
-      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      name: (json['name'] ?? json['file_name'] ?? '').toString(),
-      path: (json['path'] ?? json['url'] ?? json['file'] ?? '').toString(),
-      size: json['size']?.toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'] ?? json['file_name']),
+      path: SafeConverters.toSafeString(json['path'] ?? json['url'] ?? json['file']),
+      size: SafeConverters.toStringOrNull(json['size']),
     );
   }
 
@@ -284,8 +272,8 @@ class OrderDeal {
 
   factory OrderDeal.fromJson(Map<String, dynamic> json) {
     return OrderDeal(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
     );
   }
 
@@ -336,24 +324,22 @@ class OrderLead {
 
   factory OrderLead.fromJson(Map<String, dynamic> json) {
     return OrderLead(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      facebookLogin: json['facebook_login'],
-      instaLogin: json['insta_login'],
-      tgNick: json['tg_nick'],
-      tgId: json['tg_id']?.toString(),
-      channels: json['channels'] ?? [],
-      position: json['position']?.toString(),
-      waName: json['wa_name'],
-      waPhone: json['wa_phone']?.toString(),
-      address: json['address'],
-      phone: (json['phone'] ?? '').toString(),
-      birthday: json['birthday'],
-      description: json['description'],
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
-          : null,
-      lastUpdate: json['last_update'],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      facebookLogin: SafeConverters.toStringOrNull(json['facebook_login']),
+      instaLogin: SafeConverters.toStringOrNull(json['insta_login']),
+      tgNick: SafeConverters.toStringOrNull(json['tg_nick']),
+      tgId: SafeConverters.toStringOrNull(json['tg_id']),
+      channels: SafeConverters.toList(json['channels']),
+      position: SafeConverters.toStringOrNull(json['position']),
+      waName: SafeConverters.toStringOrNull(json['wa_name']),
+      waPhone: SafeConverters.toStringOrNull(json['wa_phone']),
+      address: SafeConverters.toStringOrNull(json['address']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      birthday: SafeConverters.toStringOrNull(json['birthday']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+      lastUpdate: SafeConverters.toIntOrNull(json['last_update']),
     );
   }
 
@@ -451,65 +437,71 @@ class Good {
 
     final goodRaw = json['good'];
     final variantRaw = json['variant'];
-    final goodItem = goodRaw is Map<String, dynamic>
-        ? GoodItem.fromJson(goodRaw)
+    final goodMap = goodRaw is Map ? SafeConverters.toMap(goodRaw) : null;
+    final variantMap = variantRaw is Map ? SafeConverters.toMap(variantRaw) : null;
+    final goodItem = goodMap != null
+        ? GoodItem.fromJson(goodMap)
         : GoodItem(
-            id: json['good_id'] ?? json['variant_id'] ?? 0,
-            name: json['good_name']?.toString() ?? '',
+            id: SafeConverters.toInt(json['good_id'] != null
+                ? json['good_id']
+                : json['variant_id']),
+            name: SafeConverters.toSafeString(json['good_name']),
             description: '',
-            quantity: json['quantity'] ?? 0,
+            quantity: SafeConverters.toInt(json['quantity']),
             files: const [],
           );
-    final variantGoodItem = variantRaw is Map<String, dynamic> &&
-            variantRaw['good'] is Map<String, dynamic>
-        ? GoodItem.fromJson(variantRaw['good'] as Map<String, dynamic>)
+    final variantGoodMap = variantMap != null &&
+            SafeConverters.toMapOrNull(variantMap['good']) != null
+        ? SafeConverters.toMap(variantMap['good'])
         : null;
-    final cachedGoodName = json['good_name']?.toString();
-    final variantGoodRaw =
-        variantRaw is Map<String, dynamic> ? variantRaw['good'] : null;
+    final variantGoodItem = variantGoodMap != null
+        ? GoodItem.fromJson(variantGoodMap)
+        : null;
+    final cachedGoodName = SafeConverters.toStringOrNull(json['good_name']);
+    final variantGoodRaw = variantMap?['good'];
     final availabilityStatus = parseStatus(json['availability_status']) ??
         parseStatus(json['status_name']) ??
         parseStatus(json['status']) ??
-        (goodRaw is Map
-            ? parseStatus(goodRaw['availability_status']) ??
-                parseStatus(goodRaw['status_name']) ??
-                parseStatus(goodRaw['status'])
+        (goodMap != null
+            ? parseStatus(goodMap['availability_status']) ??
+                parseStatus(goodMap['status_name']) ??
+                parseStatus(goodMap['status'])
             : null) ??
-        (variantRaw is Map
-            ? parseStatus(variantRaw['availability_status']) ??
-                parseStatus(variantRaw['status_name']) ??
-                parseStatus(variantRaw['status'])
+        (variantMap != null
+            ? parseStatus(variantMap['availability_status']) ??
+                parseStatus(variantMap['status_name']) ??
+                parseStatus(variantMap['status'])
             : null) ??
         (variantGoodRaw is Map
-            ? parseStatus(variantGoodRaw['availability_status']) ??
-                parseStatus(variantGoodRaw['status_name']) ??
-                parseStatus(variantGoodRaw['status'])
+            ? parseStatus(SafeConverters.toMap(variantGoodRaw)['availability_status']) ??
+                parseStatus(SafeConverters.toMap(variantGoodRaw)['status_name']) ??
+                parseStatus(SafeConverters.toMap(variantGoodRaw)['status'])
             : null);
+
+    final variantPriceMap = variantMap != null
+        ? SafeConverters.toMapOrNull(variantMap['price'])
+        : null;
+    final goodPriceMap = goodMap != null
+        ? SafeConverters.toMapOrNull(goodMap['good_price'])
+        : null;
 
     return Good(
       good: goodItem,
       variantGood: variantGoodItem,
-      goodId: json['variant_id'] ?? json['good_id'] ?? goodItem.id,
+      goodId: SafeConverters.toInt(json['variant_id'] != null
+          ? json['variant_id']
+          : json['good_id'] != null
+              ? json['good_id']
+              : goodItem.id),
       goodName: cachedGoodName ??
           (goodItem.name.isNotEmpty
               ? goodItem.name
               : (variantGoodItem?.name ?? '')),
-      quantity: json['quantity'] ?? 0,
+      quantity: SafeConverters.toInt(json['quantity']),
       availabilityStatus: availabilityStatus,
-      price: double.tryParse(
-            json['price']?.toString() ??
-                (variantRaw is Map<String, dynamic>
-                    ? ((variantRaw['price'] as Map<String, dynamic>?)?['price'])
-                        ?.toString()
-                    : null) ??
-                (goodRaw is Map<String, dynamic>
-                    ? ((goodRaw['good_price']
-                            as Map<String, dynamic>?)?['price'])
-                        ?.toString()
-                    : null) ??
-                '0',
-          ) ??
-          0.0,
+      price: SafeConverters.toDouble(
+        json['price'] ?? variantPriceMap?['price'] ?? goodPriceMap?['price'],
+      ),
     );
   }
 
@@ -541,12 +533,12 @@ class GoodItem {
 
   factory GoodItem.fromJson(Map<String, dynamic> json) {
     return GoodItem(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      quantity: json['quantity'] ?? 0,
-      files: (json['files'] as List? ?? [])
-          .map((f) => GoodFile.fromJson(f as Map<String, dynamic>))
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      description: SafeConverters.toSafeString(json['description']),
+      quantity: SafeConverters.toInt(json['quantity']),
+      files: SafeConverters.toList(json['files'])
+          .map((f) => GoodFile.fromJson(SafeConverters.toMap(f)))
           .toList(),
     );
   }
@@ -565,9 +557,9 @@ class GoodFile {
 
   factory GoodFile.fromJson(Map<String, dynamic> json) {
     return GoodFile(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      path: json['path'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
     );
   }
 }
@@ -579,21 +571,21 @@ class OrderResponse {
   OrderResponse({required this.data, required this.pagination});
 
   factory OrderResponse.fromJson(Map<String, dynamic> json) {
-    final rawOrders = (json['data'] as List?) ??
-        (json['result'] as List?) ??
-        const <dynamic>[];
+    final rawOrders = SafeConverters.toList(json['data'] ?? json['result']);
     final rawPagination = json['pagination'] ??
         {
           'total': rawOrders.length,
           'count': rawOrders.length,
-          'per_page': rawOrders.length == 0 ? 20 : rawOrders.length,
+          'per_page': rawOrders.isEmpty ? 20 : rawOrders.length,
           'current_page': 1,
           'total_pages': 1,
         };
 
     return OrderResponse(
-      data: rawOrders.map((o) => Order.fromJson(o)).toList(),
-      pagination: Pagination.fromJson(rawPagination),
+      data: rawOrders
+          .map((o) => Order.fromJson(SafeConverters.toMap(o)))
+          .toList(),
+      pagination: Pagination.fromJson(SafeConverters.toMap(rawPagination)),
     );
   }
 }
@@ -615,11 +607,11 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'] ?? 0,
-      count: json['count'] ?? 0,
-      perPage: json['per_page'] ?? 20,
-      currentPage: json['current_page'] ?? 1,
-      totalPages: json['total_pages'] ?? 1,
+      total: SafeConverters.toInt(json['total']),
+      count: SafeConverters.toInt(json['count']),
+      perPage: SafeConverters.toInt(json['per_page'], defaultValue: 20),
+      currentPage: SafeConverters.toInt(json['current_page'], defaultValue: 1),
+      totalPages: SafeConverters.toInt(json['total_pages'], defaultValue: 1),
     );
   }
 }
@@ -632,8 +624,8 @@ class OrderStatusName {
 
   factory OrderStatusName.fromJson(Map<String, dynamic> json) {
     return OrderStatusName(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
     );
   }
 

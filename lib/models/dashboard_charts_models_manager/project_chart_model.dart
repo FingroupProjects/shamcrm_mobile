@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // models/project_chart_model.dart
 class ProjectChart {
   final int id;
@@ -12,9 +14,9 @@ class ProjectChart {
 
   factory ProjectChart.fromJson(Map<String, dynamic> json) {
     return ProjectChart(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      data: List<int>.from(json['data'] as List),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      data: SafeConverters.toIntList(json['data']),
     );
   }
 }
@@ -30,7 +32,8 @@ class ProjectChartResponse {
 
   factory ProjectChartResponse.fromJson(Map<String, dynamic> json) {
     return ProjectChartResponse(
-      result: (json['result'] as List)
+      result: SafeConverters.toList(json['result'])
+          .whereType<Map<String, dynamic>>()
           .map((item) => ProjectChart.fromJson(item))
           .toList(),
       errors: json['errors'],

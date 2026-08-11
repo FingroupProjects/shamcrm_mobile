@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:flutter/material.dart';
 
 class ManagerData {
@@ -14,9 +15,9 @@ class ManagerData {
   });
 
   factory ManagerData.fromJson(Map<String, dynamic> json) => ManagerData(
-    id: json["id"] ?? 0,
-    name: json["name"]?.toString() ?? '', // Безопасное преобразование
-    lastname: json["lastname"]?.toString(), // Безопасное nullable преобразование
+    id: SafeConverters.toInt(json["id"]),
+    name: SafeConverters.toSafeString(json["name"]),
+    lastname: SafeConverters.toStringOrNull(json["lastname"]),
   );
 
   Map<String, dynamic> toJson() => {
@@ -48,12 +49,12 @@ class ManagersDataResponse {
 
   factory ManagersDataResponse.fromJson(Map<String, dynamic> json) {
     try {
+      final resultMap = SafeConverters.toMapOrNull(json["result"]);
+      final dataList = SafeConverters.toList(resultMap?['data']);
       return ManagersDataResponse(
-        result: json["result"] != null && json["result"]["data"] != null
-            ? List<ManagerData>.from(
-                (json["result"]["data"] as List).map((x) => ManagerData.fromJson(x))
-              )
-            : <ManagerData>[], // Пустой список вместо null
+        result: dataList
+            .map((x) => ManagerData.fromJson(SafeConverters.toMap(x)))
+            .toList(),
         errors: json["errors"],
       );
     } catch (e) {

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class Notice {
   final int id;
@@ -36,55 +37,37 @@ class Notice {
   });
 
   factory Notice.fromJson(Map<String, dynamic> json) {
-    List<UserEvent> parseUsers(dynamic usersJson) {
-      if (usersJson == null) return [];
-      if (usersJson is! List) return [];
-
-      return List<UserEvent>.from(
-        (usersJson as List).map((userJson) {
-          if (userJson is Map<String, dynamic>) {
-            return UserEvent.fromJson(userJson);
-          }
-          throw FormatException('Invalid user data format');
-        }),
-      );
-    }
-
     try {
-      final files = (json['files'] as List<dynamic>?)
-              ?.map((item) => NoticeFiles.fromJson(item))
-              .toList() ??
-          []; // Парсим файлы
-      //print('Notice: Parsed files: $files');
+      final files = SafeConverters.toList(json['files'])
+          .map((item) => NoticeFiles.fromJson(SafeConverters.toMap(item)))
+          .toList();
 
       return Notice(
-        id: json['id'] as int? ?? 0,
-        isFinished: json['is_finished'] as bool? ?? false,
-        title: json['title'] as String? ?? '',
-        body: json['body'] as String? ?? '',
-        date: json['date'] != null
-            ? DateTime.parse(json['date'].toString())
+        id: SafeConverters.toInt(json['id']),
+        isFinished: SafeConverters.toBool(json['is_finished']),
+        title: SafeConverters.toSafeString(json['title']),
+        body: SafeConverters.toSafeString(json['body']),
+        date: SafeConverters.toDateTimeOrNull(json['date']),
+        lead: SafeConverters.toMapOrNull(json['lead']) != null
+            ? NoticeLead.fromJson(SafeConverters.toMap(json['lead']))
             : null,
-        lead: json['lead'] != null
-            ? NoticeLead.fromJson(json['lead'] as Map<String, dynamic>)
+        author: SafeConverters.toMapOrNull(json['author']) != null
+            ? NoticeAuthor.fromJson(SafeConverters.toMap(json['author']))
             : null,
-        author: json['author'] != null
-            ? NoticeAuthor.fromJson(json['author'] as Map<String, dynamic>)
+        users: SafeConverters.toList(json['users'])
+            .map((userJson) => UserEvent.fromJson(SafeConverters.toMap(userJson)))
+            .toList(),
+        sendNotification: SafeConverters.toBool(json['send_notification']),
+        sendSms: SafeConverters.toBool(json['send_sms']),
+        createdAt: SafeConverters.toDateTime(json['created_at']),
+        canFinish: SafeConverters.toBool(json['can_finish']),
+        conclusion: SafeConverters.toStringOrNull(json['conclusion']),
+        call: SafeConverters.toMapOrNull(json['call']) != null
+            ? Call.fromJson(SafeConverters.toMap(json['call']))
             : null,
-        users: parseUsers(json['users']),
-        sendNotification: (json['send_notification'] as num?)?.toInt() == 1,
-        sendSms: (json['send_sms'] as num?)?.toInt() == 1 ||
-            json['send_sms'] == true,
-        createdAt: DateTime.parse(json['created_at'].toString()),
-        canFinish: json['can_finish'] as bool? ?? false,
-        conclusion: json['conclusion'] as String?,
-        call: json['call'] != null
-            ? Call.fromJson(json['call'] as Map<String, dynamic>)
-            : null,
-        files: files, // Добавляем файлы
+        files: files.isEmpty ? null : files,
       );
     } catch (e) {
-      //print('Error parsing Notice: $e');
       rethrow;
     }
   }
@@ -129,22 +112,22 @@ class Call {
 
   factory Call.fromJson(Map<String, dynamic> json) {
     return Call(
-      id: json['id'] as int? ?? 0,
-      linkedId: json['linked_id'] as String? ?? '',
-      caller: json['caller'] as String? ?? '',
-      trunk: json['trunk'] as String? ?? '',
-      organizationId: json['organization_id'] as int? ?? 0,
-      leadId: json['lead_id'] as int? ?? 0,
-      callRecordPath: json['call_record_path'] as String? ?? '',
-      callRecordUrl: json['call_record_url'] as String?, // Парсим новое поле
-      userId: json['user_id'] as int?,
-      internalNumber: json['internal_number']?.toString(),
-      callDuration: json['call_duration'] as int?,
-      callRingingDuration: json['call_ringing_duration'] as int?,
-      missed: json['missed'] as bool? ?? false,
-      incoming: json['incoming'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'].toString()),
-      updatedAt: DateTime.parse(json['updated_at'].toString()),
+      id: SafeConverters.toInt(json['id']),
+      linkedId: SafeConverters.toSafeString(json['linked_id']),
+      caller: SafeConverters.toSafeString(json['caller']),
+      trunk: SafeConverters.toSafeString(json['trunk']),
+      organizationId: SafeConverters.toInt(json['organization_id']),
+      leadId: SafeConverters.toInt(json['lead_id']),
+      callRecordPath: SafeConverters.toSafeString(json['call_record_path']),
+      callRecordUrl: SafeConverters.toStringOrNull(json['call_record_url']),
+      userId: SafeConverters.toIntOrNull(json['user_id']),
+      internalNumber: SafeConverters.toStringOrNull(json['internal_number']),
+      callDuration: SafeConverters.toIntOrNull(json['call_duration']),
+      callRingingDuration: SafeConverters.toIntOrNull(json['call_ringing_duration']),
+      missed: SafeConverters.toBool(json['missed']),
+      incoming: SafeConverters.toBool(json['incoming']),
+      createdAt: SafeConverters.toDateTime(json['created_at']),
+      updatedAt: SafeConverters.toDateTime(json['updated_at']),
     );
   }
 }
@@ -180,32 +163,20 @@ class UserEvent {
   });
 
   factory UserEvent.fromJson(Map<String, dynamic> json) {
-    bool parseBool(dynamic value) {
-      if (value is bool) return value;
-      if (value is int) return value == 1;
-      if (value is String) {
-        return value == '1' || value.toLowerCase() == 'true';
-      }
-      return false;
-    }
-
     return UserEvent(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
-      name: (json['name'] ?? '').toString(),
-      lastname: (json['lastname'] ?? '').toString(),
-      login: (json['login'] ?? '').toString(),
-      email: (json['email'] ?? '').toString(),
-      phone: (json['phone'] ?? '').toString(),
-      image: (json['image'] ?? '').toString(),
-      lastSeen:
-          json['last_seen'] != null ? DateTime.tryParse(json['last_seen'].toString()) : null,
-      deletedAt: json['deleted_at'] != null
-          ? DateTime.tryParse(json['deleted_at'].toString())
-          : null,
-      telegramUserId: json['telegram_user_id']?.toString(),
-      jobTitle: json['job_title']?.toString(),
-      online: parseBool(json['online']),
-      fullName: (json['full_name'] ?? '').toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      lastname: SafeConverters.toSafeString(json['lastname']),
+      login: SafeConverters.toSafeString(json['login']),
+      email: SafeConverters.toSafeString(json['email']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      image: SafeConverters.toSafeString(json['image']),
+      lastSeen: SafeConverters.toDateTimeOrNull(json['last_seen']),
+      deletedAt: SafeConverters.toDateTimeOrNull(json['deleted_at']),
+      telegramUserId: SafeConverters.toStringOrNull(json['telegram_user_id']),
+      jobTitle: SafeConverters.toStringOrNull(json['job_title']),
+      online: SafeConverters.toBool(json['online']),
+      fullName: SafeConverters.toSafeString(json['full_name']),
     );
   }
 }
@@ -221,13 +192,10 @@ class NoticeFiles {
   });
 
   factory NoticeFiles.fromJson(Map<String, dynamic> json) {
-    //print('NoticeFiles: Parsing JSON for file ID: ${json['id']}');
-    final file = NoticeFiles(
-      id: json['id'] is int ? json['id'] : 0,
-      name: json['name'] is String ? json['name'] : '',
-      path: json['path'] is String ? json['path'] : '',
+    return NoticeFiles(
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      path: SafeConverters.toSafeString(json['path']),
     );
-    //print('NoticeFiles: File created: id=${file.id}, name=${file.name}, path=${file.path}');
-    return file;
   }
 }

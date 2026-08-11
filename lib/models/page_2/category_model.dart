@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class CategoryResponse {
   final List<CategoryDetail>? result;
   final dynamic errors;
@@ -9,11 +11,12 @@ class CategoryResponse {
 
   factory CategoryResponse.fromJson(Map<String, dynamic> json) {
     return CategoryResponse(
-      result: json['result'] != null
-          ? (json['result'] as List)
+      result: SafeConverters.toList(json['result']).isEmpty
+          ? null
+          : SafeConverters.toList(json['result'])
+              .whereType<Map<String, dynamic>>()
               .map((i) => CategoryDetail.fromJson(i))
-              .toList()
-          : null,
+              .toList(),
       errors: json['errors'],
     );
   }
@@ -37,19 +40,17 @@ class SubCategoryResponse {
 
   factory SubCategoryResponse.fromJson(Map<String, dynamic> json) {
     return SubCategoryResponse(
-      id: json['id'],
-      name: json['name'] ?? '',
-      image: json['image'],
-      subcategories: json['subcategories'] != null
-          ? (json['subcategories'] as List)
-              .map((i) => SubCategoryResponse.fromJson(i))
-              .toList()
-          : [],
-      attributes: json['attributes'] != null
-          ? (json['attributes'] as List)
-              .map((i) => Attribute.fromJson(i))
-              .toList()
-          : [],
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      subcategories: SafeConverters.toList(json['subcategories'])
+          .whereType<Map<String, dynamic>>()
+          .map((i) => SubCategoryResponse.fromJson(i))
+          .toList(),
+      attributes: SafeConverters.toList(json['attributes'])
+          .whereType<Map<String, dynamic>>()
+          .map((i) => Attribute.fromJson(i))
+          .toList(),
     );
   }
 }
@@ -65,8 +66,8 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
     );
   }
 }
@@ -86,14 +87,13 @@ class CategoryData {
 
   factory CategoryData.fromJson(Map<String, dynamic> json) {
     return CategoryData(
-      name: json['name'] ?? '',
-      id: json['id'],
-      image: json['image'],
-      subcategories: json['subcategories'] != null
-          ? (json['subcategories'] as List)
-              .map((i) => SubCategoryResponse.fromJson(i))
-              .toList()
-          : [],
+      name: SafeConverters.toSafeString(json['name']),
+      id: SafeConverters.toInt(json['id']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      subcategories: SafeConverters.toList(json['subcategories'])
+          .whereType<Map<String, dynamic>>()
+          .map((i) => SubCategoryResponse.fromJson(i))
+          .toList(),
     );
   }
 
@@ -122,14 +122,15 @@ class CategoryDetail {
 
   factory CategoryDetail.fromJson(Map<String, dynamic> json) {
     return CategoryDetail(
-      id: json['id'],
-      name: json['name'] ?? '',
-      image: json['image'],
-      subcategories: json['subcategories'] != null
-          ? (json['subcategories'] as List)
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      image: SafeConverters.toStringOrNull(json['image']),
+      subcategories: SafeConverters.toList(json['subcategories']).isEmpty
+          ? null
+          : SafeConverters.toList(json['subcategories'])
+              .whereType<Map<String, dynamic>>()
               .map((i) => SubCategoryResponse.fromJson(i))
-              .toList()
-          : null,
+              .toList(),
     );
   }
 }

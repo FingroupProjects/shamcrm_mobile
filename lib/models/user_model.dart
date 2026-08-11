@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class UserTask {
   final int id;
   final String name;
@@ -24,15 +26,15 @@ class UserTask {
 
   factory UserTask.fromJson(Map<String, dynamic> json) {
     return UserTask(
-      id: json['id'] as int,
-      name: json['name']?.toString() ?? '',
-      lastname: json['lastname']?.toString() ?? '',
-      login: json['login']?.toString(),
-      startDate: json['startDate']?.toString(),
-      endDate: json['endDate']?.toString(),
-      phone: json['phone']?.toString(),
-      email: json['email']?.toString(),
-      image: json['image']?.toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      lastname: SafeConverters.toSafeString(json['lastname']),
+      login: SafeConverters.toStringOrNull(json['login']),
+      startDate: SafeConverters.toStringOrNull(json['startDate']),
+      endDate: SafeConverters.toStringOrNull(json['endDate']),
+      phone: SafeConverters.toStringOrNull(json['phone']),
+      email: SafeConverters.toStringOrNull(json['email']),
+      image: SafeConverters.toStringOrNull(json['image']),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class LeadOrderData {
   final int id;
   final String name;
@@ -55,33 +57,32 @@ class LeadOrderData {
 
   factory LeadOrderData.fromJson(Map<String, dynamic> json) {
     return LeadOrderData(
-      id: json['id'] as int? ?? 0,
-      name: json['name'] as String? ?? '',
-      facebookLogin: json['facebook_login'] as String?,
-      instaLogin: json['insta_login'] as String?,
-      tgNick: json['tg_nick'] as String?,
-      tgId: json['tg_id'] as String?,
-      position: json['position'] as String?,
-      manager: json['manager'] as String?,
-      region: json['region'] as String?,
-      waName: json['wa_name'] as String?,
-      waPhone: json['wa_phone'] as String?,
-      address: json['address'] as String?,
-      phone: json['phone'] as String? ?? '',
-      birthday: json['birthday'] as String?,
-      description: json['description'] as String?,
-      createdAt: json['created_at'] as String? ?? '',
-      dealsCount: json['deals_count'] as int? ?? 0,
-      author: json['author'] as String?,
-      email: json['email'] as String?,
-      inProgressDealsCount: json['in_progress_deals_count'] as int? ?? 0,
-      successfulDealsCount: json['successful_deals_count'] as int? ?? 0,
-      failedDealsCount: json['failed_deals_count'] as int? ?? 0,
-      sentTo1c: json['sent_to_1c'] as bool? ?? false,
-      lastUpdate: json['last_update'] as int? ?? 0,
-      messageStatus: json['messageStatus'] as String? ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      facebookLogin: SafeConverters.toStringOrNull(json['facebook_login']),
+      instaLogin: SafeConverters.toStringOrNull(json['insta_login']),
+      tgNick: SafeConverters.toStringOrNull(json['tg_nick']),
+      tgId: SafeConverters.toStringOrNull(json['tg_id']),
+      position: SafeConverters.toStringOrNull(json['position']),
+      manager: SafeConverters.toStringOrNull(json['manager']),
+      region: SafeConverters.toStringOrNull(json['region']),
+      waName: SafeConverters.toStringOrNull(json['wa_name']),
+      waPhone: SafeConverters.toStringOrNull(json['wa_phone']),
+      address: SafeConverters.toStringOrNull(json['address']),
+      phone: SafeConverters.toSafeString(json['phone']),
+      birthday: SafeConverters.toStringOrNull(json['birthday']),
+      description: SafeConverters.toStringOrNull(json['description']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      dealsCount: SafeConverters.toInt(json['deals_count']),
+      author: SafeConverters.toStringOrNull(json['author']),
+      email: SafeConverters.toStringOrNull(json['email']),
+      inProgressDealsCount: SafeConverters.toInt(json['in_progress_deals_count']),
+      successfulDealsCount: SafeConverters.toInt(json['successful_deals_count']),
+      failedDealsCount: SafeConverters.toInt(json['failed_deals_count']),
+      sentTo1c: SafeConverters.toBool(json['sent_to_1c']),
+      lastUpdate: SafeConverters.toInt(json['last_update']),
+      messageStatus: SafeConverters.toSafeString(json['messageStatus']),
     );
   }
 }
-
 

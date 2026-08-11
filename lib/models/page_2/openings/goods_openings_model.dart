@@ -1,9 +1,4 @@
-// Вспомогательная функция для безопасного преобразования в String?
-String? _toStringOrNull(dynamic value) {
-  if (value == null) return null;
-  if (value is String) return value.isEmpty ? null : value;
-  return value.toString();
-}
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class GoodsOpeningsResponse {
   final List<GoodsOpeningDocument>? result;
@@ -18,7 +13,7 @@ class GoodsOpeningsResponse {
     // API возвращает массив напрямую, а не обернутый в result
     if (json is List) {
       return GoodsOpeningsResponse(
-        result: json.map((i) => GoodsOpeningDocument.fromJson(i)).toList(),
+        result: json.whereType<Map<String, dynamic>>().map((i) => GoodsOpeningDocument.fromJson(i)).toList(),
         errors: null,
       );
     } else if (json is Map<String, dynamic>) {
@@ -28,15 +23,19 @@ class GoodsOpeningsResponse {
         if (resultData is Map<String, dynamic> && resultData["data"] != null) {
           // Формат: {"result": {"data": [...]}}
           return GoodsOpeningsResponse(
-            result: (resultData["data"] as List?)
-                ?.map((x) => GoodsOpeningDocument.fromJson(x as Map<String, dynamic>))
-                .toList() ?? [],
+            result: SafeConverters.toList(resultData["data"])
+                .whereType<Map<String, dynamic>>()
+                .map((x) => GoodsOpeningDocument.fromJson(x))
+                .toList(),
             errors: json["errors"],
           );
         } else if (resultData is List) {
           // Формат: {"result": [...]}
       return GoodsOpeningsResponse(
-            result: resultData.map((x) => GoodsOpeningDocument.fromJson(x as Map<String, dynamic>)).toList(),
+            result: resultData
+                .whereType<Map<String, dynamic>>()
+                .map((x) => GoodsOpeningDocument.fromJson(x))
+                .toList(),
         errors: json["errors"],
       );
         }
@@ -100,38 +99,37 @@ class GoodsOpeningDocument {
 
   factory GoodsOpeningDocument.fromJson(Map<String, dynamic> json) {
     return GoodsOpeningDocument(
-      id: json['id'],
-      date: _toStringOrNull(json['date']),
-      docNumber: _toStringOrNull(json['doc_number']),
-      modelType: _toStringOrNull(json['model_type']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      date: SafeConverters.toStringOrNull(json['date'], emptyAsNull: true),
+      docNumber: SafeConverters.toStringOrNull(json['doc_number'], emptyAsNull: true),
+      modelType: SafeConverters.toStringOrNull(json['model_type'], emptyAsNull: true),
       modelId: json['model_id'],
       counterpartyAgreementId: json['counterparty_agreement_id'],
       organizationId: json['organization_id'],
       storageId: json['storage_id'],
-      comment: _toStringOrNull(json['comment']),
+      comment: SafeConverters.toStringOrNull(json['comment'], emptyAsNull: true),
       currencyId: json['currency_id'],
-      deletedAt: _toStringOrNull(json['deleted_at']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
-      type: _toStringOrNull(json['type']),
-      approved: json['approved'],
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
+      type: SafeConverters.toStringOrNull(json['type'], emptyAsNull: true),
+      approved: SafeConverters.toIntOrNull(json['approved']),
       authorId: json['author_id'],
-      checkBySuppliers: json['checkBySuppliers'],
+      checkBySuppliers: SafeConverters.toIntOrNull(json['checkBySuppliers']),
       articleId: json['article_id'],
       isInitialBalance: json['is_initial_balance'],
-      documentGoods: (json['document_goods'] as List?)
-              ?.map((i) => DocumentGood.fromJson(i))
+      documentGoods: SafeConverters.toList(json['document_goods']).whereType<Map<String, dynamic>>().map((i) => DocumentGood.fromJson(i))
               .toList() ??
           [],
       model: json['model'] == null
           ? null
-          : Counterparty.fromJson(json['model'] as Map<String, dynamic>),
+          : Counterparty.fromJson(SafeConverters.toMap(json['model'])),
       storage: json['storage'] == null
           ? null
-          : Storage.fromJson(json['storage'] as Map<String, dynamic>),
+          : Storage.fromJson(SafeConverters.toMap(json['storage'])),
       author: json['author'] == null
           ? null
-          : Author.fromJson(json['author'] as Map<String, dynamic>),
+          : Author.fromJson(SafeConverters.toMap(json['author'])),
     );
   }
 }
@@ -165,21 +163,21 @@ class DocumentGood {
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
     return DocumentGood(
-      id: json['id'],
+      id: SafeConverters.toIntOrNull(json['id']),
       documentId: json['document_id'],
       goodVariantId: json['good_variant_id'],
-      quantity: _toStringOrNull(json['quantity']),
-      price: _toStringOrNull(json['price']),
+      quantity: SafeConverters.toStringOrNull(json['quantity'], emptyAsNull: true),
+      price: SafeConverters.toStringOrNull(json['price'], emptyAsNull: true),
       unitId: json['unit_id'],
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
-      sum: _toStringOrNull(json['sum']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
+      sum: SafeConverters.toStringOrNull(json['sum'], emptyAsNull: true),
       goodVariant: json['good_variant'] == null
           ? null
-          : GoodVariant.fromJson(json['good_variant'] as Map<String, dynamic>),
+          : GoodVariant.fromJson(SafeConverters.toMap(json['good_variant'])),
       unit: json['unit'] == null
           ? null
-          : Unit.fromJson(json['unit'] as Map<String, dynamic>),
+          : Unit.fromJson(SafeConverters.toMap(json['unit'])),
     );
   }
 }
@@ -211,19 +209,18 @@ class GoodVariant {
 
   factory GoodVariant.fromJson(Map<String, dynamic> json) {
     return GoodVariant(
-      id: json['id'],
+      id: SafeConverters.toIntOrNull(json['id']),
       goodId: json['good_id'],
       isActive: json['is_active'],
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
-      oneCUid: _toStringOrNull(json['one_c_uid']),
-      barcode: _toStringOrNull(json['barcode']),
-      fullName: _toStringOrNull(json['full_name']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
+      oneCUid: SafeConverters.toStringOrNull(json['one_c_uid'], emptyAsNull: true),
+      barcode: SafeConverters.toStringOrNull(json['barcode'], emptyAsNull: true),
+      fullName: SafeConverters.toStringOrNull(json['full_name'], emptyAsNull: true),
       good: json['good'] == null
           ? null
-          : Good.fromJson(json['good'] as Map<String, dynamic>),
-      attributeValues: (json['attribute_values'] as List?)
-              ?.map((i) => AttributeValue.fromJson(i))
+          : Good.fromJson(SafeConverters.toMap(json['good'])),
+      attributeValues: SafeConverters.toList(json['attribute_values']).whereType<Map<String, dynamic>>().map((i) => AttributeValue.fromJson(i))
               .toList() ??
           [],
     );
@@ -277,29 +274,29 @@ class Good {
 
   factory Good.fromJson(Map<String, dynamic> json) {
     return Good(
-      id: json['id'],
-      oneCId: _toStringOrNull(json['one_c_id']),
-      name: _toStringOrNull(json['name']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      oneCId: SafeConverters.toStringOrNull(json['one_c_id'], emptyAsNull: true),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
       categoryId: json['category_id'],
-      description: _toStringOrNull(json['description']),
-      price: _toStringOrNull(json['price']),
+      description: SafeConverters.toStringOrNull(json['description'], emptyAsNull: true),
+      price: SafeConverters.toStringOrNull(json['price'], emptyAsNull: true),
       unitId: json['unit_id'],
-      quantity: json['quantity'],
-      deletedAt: _toStringOrNull(json['deleted_at']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
+      quantity: SafeConverters.toIntOrNull(json['quantity']),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
       isActive: json['is_active'],
-      article: _toStringOrNull(json['article']),
+      article: SafeConverters.toStringOrNull(json['article'], emptyAsNull: true),
       labelId: json['label_id'],
       getImage: json['get_image'],
-      cip: _toStringOrNull(json['cip']),
-      packageCode: _toStringOrNull(json['package_code']),
+      cip: SafeConverters.toStringOrNull(json['cip'], emptyAsNull: true),
+      packageCode: SafeConverters.toStringOrNull(json['package_code'], emptyAsNull: true),
       category: json['category'] == null
           ? null
-          : Category.fromJson(json['category'] as Map<String, dynamic>),
+          : Category.fromJson(SafeConverters.toMap(json['category'])),
       unit: json['unit'] == null
           ? null
-          : Unit.fromJson(json['unit'] as Map<String, dynamic>),
+          : Unit.fromJson(SafeConverters.toMap(json['unit'])),
       measurements: json['measurements'],
     );
   }
@@ -332,15 +329,15 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['id'],
-      name: _toStringOrNull(json['name']),
-      image: _toStringOrNull(json['image']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
+      image: SafeConverters.toStringOrNull(json['image'], emptyAsNull: true),
       parentId: json['parent_id'],
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
       isActive: json['is_active'],
       hasPriceCharacteristics: json['has_price_characteristics'],
-      displayType: _toStringOrNull(json['display_type']),
+      displayType: SafeConverters.toStringOrNull(json['display_type'], emptyAsNull: true),
       isParent: json['is_parent'],
     );
   }
@@ -363,11 +360,11 @@ class Unit {
 
   factory Unit.fromJson(Map<String, dynamic> json) {
     return Unit(
-      id: json['id'],
-      name: _toStringOrNull(json['name']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
-      shortName: _toStringOrNull(json['short_name']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
+      shortName: SafeConverters.toStringOrNull(json['short_name'], emptyAsNull: true),
     );
   }
 }
@@ -397,17 +394,18 @@ class AttributeValue {
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
     return AttributeValue(
-      id: json['id'],
+      id: SafeConverters.toIntOrNull(json['id']),
       categoryAttributeId: json['category_attribute_id'],
-      value: _toStringOrNull(json['value']),
+      value: SafeConverters.toStringOrNull(json['value'], emptyAsNull: true),
       unitId: json['unit_id'],
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
       variantAttributeId: json['variant_attribute_id'],
       variantId: json['variant_id'],
       categoryAttribute: json['category_attribute'] == null
           ? null
-          : CategoryAttribute.fromJson(json['category_attribute'] as Map<String, dynamic>),
+          : CategoryAttribute.fromJson(
+              SafeConverters.toMap(json['category_attribute'])),
     );
   }
 }
@@ -435,7 +433,7 @@ class CategoryAttribute {
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
     return CategoryAttribute(
-      id: json['id'],
+      id: SafeConverters.toIntOrNull(json['id']),
       categoryId: json['category_id'],
       attributeId: json['attribute_id'],
       createdAt: json['created_at'],
@@ -444,7 +442,7 @@ class CategoryAttribute {
       showToSite: json['show_to_site'],
       attribute: json['attribute'] == null
           ? null
-          : Attribute.fromJson(json['attribute'] as Map<String, dynamic>),
+          : Attribute.fromJson(SafeConverters.toMap(json['attribute'])),
     );
   }
 }
@@ -464,10 +462,10 @@ class Attribute {
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
     return Attribute(
-      id: json['id'],
-      name: _toStringOrNull(json['name']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
     );
   }
 }
@@ -493,13 +491,13 @@ class Counterparty {
 
   factory Counterparty.fromJson(Map<String, dynamic> json) {
     return Counterparty(
-      id: json['id'],
-      name: _toStringOrNull(json['name']),
-      phone: _toStringOrNull(json['phone']),
-      inn: json['inn'] is int ? json['inn'] : (json['inn'] is String ? int.tryParse(json['inn']) : json['inn']),
-      note: _toStringOrNull(json['note']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
+      phone: SafeConverters.toStringOrNull(json['phone'], emptyAsNull: true),
+      inn: SafeConverters.toIntOrNull(json['inn']),
+      note: SafeConverters.toStringOrNull(json['note'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
     );
   }
 }
@@ -529,15 +527,15 @@ class Storage {
 
   factory Storage.fromJson(Map<String, dynamic> json) {
     return Storage(
-      id: json['id'],
-      name: _toStringOrNull(json['name']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
-      address: _toStringOrNull(json['address']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
+      address: SafeConverters.toStringOrNull(json['address'], emptyAsNull: true),
       isActive: json['is_active'],
       deliveryServiceId: json['delivery_service_id'],
       showOnSite: json['show_on_site'],
-      coordinates: json['coordinates'] is int ? json['coordinates'] : (json['coordinates'] is String ? int.tryParse(json['coordinates']) : json['coordinates']),
+      coordinates: SafeConverters.toIntOrNull(json['coordinates']),
     );
   }
 }
@@ -597,30 +595,30 @@ class Author {
 
   factory Author.fromJson(Map<String, dynamic> json) {
     return Author(
-      id: json['id'],
-      name: _toStringOrNull(json['name']),
-      lastname: _toStringOrNull(json['lastname']),
-      login: _toStringOrNull(json['login']),
-      email: _toStringOrNull(json['email']),
-      phone: _toStringOrNull(json['phone']),
-      telegramUserId: _toStringOrNull(json['telegram_user_id']),
-      emailVerifiedAt: _toStringOrNull(json['email_verified_at']),
-      image: _toStringOrNull(json['image']),
-      lastSeen: _toStringOrNull(json['last_seen']),
-      deletedAt: _toStringOrNull(json['deleted_at']),
-      createdAt: _toStringOrNull(json['created_at']),
-      updatedAt: _toStringOrNull(json['updated_at']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toStringOrNull(json['name'], emptyAsNull: true),
+      lastname: SafeConverters.toStringOrNull(json['lastname'], emptyAsNull: true),
+      login: SafeConverters.toStringOrNull(json['login'], emptyAsNull: true),
+      email: SafeConverters.toStringOrNull(json['email'], emptyAsNull: true),
+      phone: SafeConverters.toStringOrNull(json['phone'], emptyAsNull: true),
+      telegramUserId: SafeConverters.toStringOrNull(json['telegram_user_id'], emptyAsNull: true),
+      emailVerifiedAt: SafeConverters.toStringOrNull(json['email_verified_at'], emptyAsNull: true),
+      image: SafeConverters.toStringOrNull(json['image'], emptyAsNull: true),
+      lastSeen: SafeConverters.toStringOrNull(json['last_seen'], emptyAsNull: true),
+      deletedAt: SafeConverters.toStringOrNull(json['deleted_at'], emptyAsNull: true),
+      createdAt: SafeConverters.toStringOrNull(json['created_at'], emptyAsNull: true),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at'], emptyAsNull: true),
       managerId: json['manager_id'],
-      jobTitle: _toStringOrNull(json['job_title']),
+      jobTitle: SafeConverters.toStringOrNull(json['job_title'], emptyAsNull: true),
       hasImage: json['has_image'],
       isFirstLogin: json['is_first_login'],
-      internalNumber: _toStringOrNull(json['internal_number']),
+      internalNumber: SafeConverters.toStringOrNull(json['internal_number'], emptyAsNull: true),
       departmentId: json['department_id'],
-      uniqueId: _toStringOrNull(json['unique_id']),
+      uniqueId: SafeConverters.toStringOrNull(json['unique_id'], emptyAsNull: true),
       shiftId: json['shift_id'],
       weekendPatternId: json['weekend_pattern_id'],
       workBreakId: json['work_break_id'],
-      oneCId: _toStringOrNull(json['one_c_id']),
+      oneCId: SafeConverters.toStringOrNull(json['one_c_id'], emptyAsNull: true),
     );
   }
 }

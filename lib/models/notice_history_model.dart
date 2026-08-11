@@ -1,5 +1,6 @@
 // models/changes.dart
 import 'package:crm_task_manager/models/lead_history_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class NoticeHistory {
   final int id;
@@ -9,14 +10,14 @@ class NoticeHistory {
   NoticeHistory({required this.id, required this.title, required this.history});
 
   factory NoticeHistory.fromJson(Map<String, dynamic> json) {
-    final historyJson = json['history'] as List<dynamic>? ?? [];
-    final history = historyJson
-        .map((e) => HistoryItem.fromJson(e as Map<String, dynamic>))
+    final history = SafeConverters.toList(json['history'])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => HistoryItem.fromJson(e))
         .toList();
 
     return NoticeHistory(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? 'Без названия',
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title'], defaultValue: 'Без названия'),
       history: history,
     );
   }
@@ -39,19 +40,20 @@ class HistoryItem {
 
   factory HistoryItem.fromJson(Map<String, dynamic> json) {
     final userJson = json['user'];
-    final user = userJson != null ? User.fromJson(userJson) : null;
+    final user = SafeConverters.toMapOrNull(userJson) != null
+        ? User.fromJson(SafeConverters.toMap(userJson))
+        : null;
 
-    final changesJson = json['changes'] as List<dynamic>? ?? [];
-    // Убрали фильтрацию - сохраняем все changes
-    final changes = changesJson
-        .map((e) => ChangeItem.fromJson(e as Map<String, dynamic>))
+    final changes = SafeConverters.toList(json['changes'])
+        .whereType<Map<String, dynamic>>()
+        .map((e) => ChangeItem.fromJson(e))
         .toList();
 
     return HistoryItem(
-      id: json['id'] ?? 0,
+      id: SafeConverters.toInt(json['id']),
       user: user,
-      status: json['status'] ?? '',
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      status: SafeConverters.toSafeString(json['status']),
+      date: SafeConverters.toDateTimeOrNull(json['date']) ?? DateTime.now(),
       changes: changes,
     );
   }

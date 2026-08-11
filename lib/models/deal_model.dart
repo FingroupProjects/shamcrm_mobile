@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/lead_model.dart';
 import 'package:crm_task_manager/models/manager_model.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class Deal {
   final int id;
@@ -38,13 +39,11 @@ class Deal {
   });
 
   factory Deal.fromJson(Map<String, dynamic> json, int dealStatusId) {
-    final parsedDealStatuses = (json['deal_statuses'] as List<dynamic>?)
-            ?.map(
-                (status) => DealStatus.fromJson(status as Map<String, dynamic>))
-            .toList() ??
-        [];
-    final statusFromDealStatus = json['deal_status'] != null
-        ? DealStatus.fromJson(json['deal_status'] as Map<String, dynamic>)
+    final parsedDealStatuses = SafeConverters.toList(json['deal_statuses'])
+        .map((status) => DealStatus.fromJson(SafeConverters.toMap(status)))
+        .toList();
+    final statusFromDealStatus = SafeConverters.toMapOrNull(json['deal_status']) != null
+        ? DealStatus.fromJson(SafeConverters.toMap(json['deal_status']))
         : null;
     final matchingStatuses = dealStatusId > 0
         ? parsedDealStatuses.where((status) => status.id == dealStatusId).toList()
@@ -55,43 +54,40 @@ class Deal {
     final primaryStatus = statusMatchingRequestedColumn ??
         statusFromDealStatus ??
         (parsedDealStatuses.isNotEmpty ? parsedDealStatuses.first : null);
-    final parsedStatusId = json['deal_status_id'] is int
-        ? json['deal_status_id'] as int
-        : int.tryParse(json['deal_status_id']?.toString() ?? '') ??
-            (json['status_id'] is int
-                ? json['status_id'] as int
-                : int.tryParse(json['status_id']?.toString() ?? '')) ??
-            statusMatchingRequestedColumn?.id ??
-            statusFromDealStatus?.id ??
-            primaryStatus?.id ??
-            dealStatusId;
+    final parsedStatusId = SafeConverters.toIntOrNull(json['deal_status_id']) ??
+        SafeConverters.toIntOrNull(json['status_id']) ??
+        statusMatchingRequestedColumn?.id ??
+        statusFromDealStatus?.id ??
+        primaryStatus?.id ??
+        dealStatusId;
 
     return Deal(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Без имени',
-      startDate: json['start_date'],
-      endDate: json['end_date'],
-      description: json['description'] ?? '',
-      sum: json['sum'] ?? '0.00',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name'], defaultValue: 'Без имени'),
+      startDate: SafeConverters.toStringOrNull(json['start_date']),
+      endDate: SafeConverters.toStringOrNull(json['end_date']),
+      description: SafeConverters.toSafeString(json['description']),
+      sum: SafeConverters.toSafeString(json['sum'], defaultValue: '0.00'),
       statusId: parsedStatusId,
       dealStatus: primaryStatus,
       dealStatuses: parsedDealStatuses,
-      manager: json['manager'] != null
-          ? ManagerData.fromJson(json['manager'] as Map<String, dynamic>)
+      manager: SafeConverters.toMapOrNull(json['manager']) != null
+          ? ManagerData.fromJson(SafeConverters.toMap(json['manager']))
           : null,
-      lead: json['lead'] != null
-          ? Lead.fromJson(json['lead'] as Map<String, dynamic>,
-              (json['lead'] as Map<String, dynamic>)['status_id'] ?? 0)
+      lead: SafeConverters.toMapOrNull(json['lead']) != null
+          ? Lead.fromJson(
+              SafeConverters.toMap(json['lead']),
+              SafeConverters.toInt(SafeConverters.toMap(json['lead'])['status_id']),
+            )
           : null,
-      dealCustomFields: (json['deal_custom_fields'] as List<dynamic>?)
-              ?.map((field) =>
-                  DealCustomField.fromJson(field as Map<String, dynamic>))
-              .toList() ??
-          [],
-      outDated: json['out_dated'] ?? false,
-      needsAttention:
-          json['needsAttention'] == true || json['needs_attention'] == true,
-      createdAt: json['created_at'],
+      dealCustomFields: SafeConverters.toList(json['deal_custom_fields'])
+          .map((field) =>
+              DealCustomField.fromJson(SafeConverters.toMap(field)))
+          .toList(),
+      outDated: SafeConverters.toBool(json['out_dated']),
+      needsAttention: SafeConverters.toBool(json['needsAttention']) ||
+          SafeConverters.toBool(json['needs_attention']),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
     );
   }
 
@@ -130,9 +126,9 @@ class DealCustomField {
 
   factory DealCustomField.fromJson(Map<String, dynamic> json) {
     return DealCustomField(
-      id: json['id'] ?? 0,
-      key: json['key'] ?? '',
-      value: json['value'] ?? '',
+      id: SafeConverters.toInt(json['id']),
+      key: SafeConverters.toSafeString(json['key']),
+      value: SafeConverters.toSafeString(json['value']),
     );
   }
 
@@ -164,14 +160,14 @@ class DealStatusUser {
 
   factory DealStatusUser.fromJson(Map<String, dynamic> json) {
     return DealStatusUser(
-      id: json['id'] as int? ?? 0,
-      userId: json['user_id'] as int? ?? 0,
-      dealStatusId: json['deal_status_id'] as int? ?? 0,
-      createdAt: json['created_at'] as String? ?? '',
-      updatedAt: json['updated_at'] as String? ?? '',
-      user: json['user'] != null
-          ? UserData.fromJson(json['user'] as Map<String, dynamic>)
-          : null, // You'll need to create an empty constructor
+      id: SafeConverters.toInt(json['id']),
+      userId: SafeConverters.toInt(json['user_id']),
+      dealStatusId: SafeConverters.toInt(json['deal_status_id']),
+      createdAt: SafeConverters.toSafeString(json['created_at']),
+      updatedAt: SafeConverters.toSafeString(json['updated_at']),
+      user: SafeConverters.toMapOrNull(json['user']) != null
+          ? UserData.fromJson(SafeConverters.toMap(json['user']))
+          : null,
     );
   }
 
@@ -223,44 +219,39 @@ class DealStatus {
   });
 
   factory DealStatus.fromJson(Map<String, dynamic> json) {
-    // Parse users list (просмотр сделок)
     List<DealStatusUser>? usersList;
-    if (json['users'] != null && json['users'] is List) {
-      usersList = (json['users'] as List)
+    if (json['users'] != null) {
+      usersList = SafeConverters.toList(json['users'])
           .where((item) => item != null)
           .map((userJson) =>
-              DealStatusUser.fromJson(userJson as Map<String, dynamic>))
+              DealStatusUser.fromJson(SafeConverters.toMap(userJson)))
           .toList();
     }
 
-    // ✅ НОВОЕ: Parse change_status_users list (изменение статуса)
     List<DealStatusUser>? changeStatusUsersList;
-    if (json['change_status_users'] != null &&
-        json['change_status_users'] is List) {
-      changeStatusUsersList = (json['change_status_users'] as List)
+    if (json['change_status_users'] != null) {
+      changeStatusUsersList = SafeConverters.toList(json['change_status_users'])
           .where((item) => item != null)
           .map((userJson) =>
-              DealStatusUser.fromJson(userJson as Map<String, dynamic>))
+              DealStatusUser.fromJson(SafeConverters.toMap(userJson)))
           .toList();
     }
 
     return DealStatus(
-      id: json['id'] as int? ?? 0,
-      title: json['title'] as String? ?? 'Без имени',
-      color: json['color'] as String? ?? '#000',
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      day: json['day'] as int?,
-      dealsCount: json['deals_count'] as int? ?? 0,
-      isSuccess: json['is_success'] == 1 || json['is_success'] == true,
-      isFailure: json['is_failure'] == 1 || json['is_failure'] == true,
-      isUnassembled:
-          json['is_unassembled'] == 1 || json['is_unassembled'] == true,
-      notificationMessage: json['notification_message'] as String?,
-      showOnMainPage:
-          json['show_on_main_page'] == 1 || json['show_on_main_page'] == true,
+      id: SafeConverters.toInt(json['id']),
+      title: SafeConverters.toSafeString(json['title'], defaultValue: 'Без имени'),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000'),
+      createdAt: SafeConverters.toStringOrNull(json['created_at']),
+      updatedAt: SafeConverters.toStringOrNull(json['updated_at']),
+      day: SafeConverters.toIntOrNull(json['day']),
+      dealsCount: SafeConverters.toInt(json['deals_count']),
+      isSuccess: SafeConverters.toBool(json['is_success']),
+      isFailure: SafeConverters.toBool(json['is_failure']),
+      isUnassembled: SafeConverters.toBool(json['is_unassembled']),
+      notificationMessage: SafeConverters.toStringOrNull(json['notification_message']),
+      showOnMainPage: SafeConverters.toBool(json['show_on_main_page']),
       users: usersList,
-      changeStatusUsers: changeStatusUsersList, // ✅ НОВОЕ
+      changeStatusUsers: changeStatusUsersList,
     );
   }
 

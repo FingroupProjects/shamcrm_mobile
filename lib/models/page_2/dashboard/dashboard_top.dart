@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class DashboardTopPart {
   final Result? result;
@@ -10,8 +11,10 @@ class DashboardTopPart {
 
   factory DashboardTopPart.fromJson(Map<String, dynamic> json) {
     return DashboardTopPart(
-      result: json['result'] != null ? Result.fromJson(json['result']) : null,
-      errors: json['errors'] as String?,
+      result: SafeConverters.toMapOrNull(json['result']) != null
+          ? Result.fromJson(SafeConverters.toMap(json['result']))
+          : null,
+      errors: SafeConverters.toStringOrNull(json['errors']),
     );
   }
 
@@ -38,16 +41,16 @@ class Result {
 
   factory Result.fromJson(Map<String, dynamic> json) {
     return Result(
-      cashBalance: json['cash_balance'] != null
-          ? CashBalance.fromJson(json['cash_balance'])
+      cashBalance: SafeConverters.toMapOrNull(json['cash_balance']) != null
+          ? CashBalance.fromJson(SafeConverters.toMap(json['cash_balance']))
           : null,
-      ourDebts: json['our_debts'] != null
-          ? OurDebts.fromJson(json['our_debts'])
+      ourDebts: SafeConverters.toMapOrNull(json['our_debts']) != null
+          ? OurDebts.fromJson(SafeConverters.toMap(json['our_debts']))
           : null,
-      debtsToUs: json['debts_to_us'] != null
-          ? DebtsToUs.fromJson(json['debts_to_us'])
+      debtsToUs: SafeConverters.toMapOrNull(json['debts_to_us']) != null
+          ? DebtsToUs.fromJson(SafeConverters.toMap(json['debts_to_us']))
           : null,
-      filters: json['filters'] as List<dynamic>? ?? [], // Safe cast, default to empty list
+      filters: SafeConverters.toList(json['filters']),
     );
   }
 
@@ -86,21 +89,21 @@ class CashBalance {
 
   factory CashBalance.fromJson(Map<String, dynamic> json) {
     return CashBalance(
-      totalBalance: (json['total_balance'] as num?)?.toDouble() ?? 0.0,
-      previousBalance: (json['previous_balance'] as num?)?.toDouble() ?? 0.0,
-      percentageChange: (json['percentage_change'] as num?)?.toDouble() ?? 0.0,
-      isPositiveChange: json['is_positive_change'] as bool? ?? false,
-      currency: json['currency'] as String?,
-      cashRegisters: (json['cash_registers'] as List<dynamic>?)
-          ?.map((v) => CashRegisterData.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
-      movements: (json['movements'] as List<dynamic>?)
-          ?.map((v) => IncomingDocument.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
-      comparisonPeriod: json['comparison_period'] as String? ?? '',
-      period: json['period'] != null ? Period.fromJson(json['period']) : null,
+      totalBalance: SafeConverters.toNum(json['total_balance']),
+      previousBalance: SafeConverters.toNum(json['previous_balance']),
+      percentageChange: SafeConverters.toNum(json['percentage_change']),
+      isPositiveChange: SafeConverters.toBool(json['is_positive_change']),
+      currency: SafeConverters.toStringOrNull(json['currency']),
+      cashRegisters: SafeConverters.toList(json['cash_registers'])
+          .map((v) => CashRegisterData.fromJson(SafeConverters.toMap(v)))
+          .toList(),
+      movements: SafeConverters.toList(json['movements'])
+          .map((v) => IncomingDocument.fromJson(SafeConverters.toMap(v)))
+          .toList(),
+      comparisonPeriod: SafeConverters.toSafeString(json['comparison_period']),
+      period: SafeConverters.toMapOrNull(json['period']) != null
+          ? Period.fromJson(SafeConverters.toMap(json['period']))
+          : null,
     );
   }
 
@@ -127,9 +130,12 @@ class Period {
 
   factory Period.fromJson(Map<String, dynamic> json) {
     return Period(
-      current: json['current'] != null ? Current.fromJson(json['current']) : null,
-      previous:
-      json['previous'] != null ? Current.fromJson(json['previous']) : null,
+      current: SafeConverters.toMapOrNull(json['current']) != null
+          ? Current.fromJson(SafeConverters.toMap(json['current']))
+          : null,
+      previous: SafeConverters.toMapOrNull(json['previous']) != null
+          ? Current.fromJson(SafeConverters.toMap(json['previous']))
+          : null,
     );
   }
 
@@ -149,8 +155,8 @@ class Current {
 
   factory Current.fromJson(Map<String, dynamic> json) {
     return Current(
-      from: json['from'] as String?,
-      to: json['to'] as String?,
+      from: SafeConverters.toStringOrNull(json['from']),
+      to: SafeConverters.toStringOrNull(json['to']),
     );
   }
 
@@ -185,17 +191,18 @@ class OurDebts {
 
   factory OurDebts.fromJson(Map<String, dynamic> json) {
     return OurDebts(
-      currentDebts: (json['current_debts'] as num?)?.toDouble() ?? 0.0,
-      previousDebts: (json['previous_debts'] as num?)?.toDouble() ?? 0.0,
-      percentageChange: (json['percentage_change'] as num?)?.toDouble() ?? 0.0,
-      isPositiveChange: json['is_positive_change'] as bool? ?? false,
-      currency: json['currency'] as String?,
-      suppliersList: (json['suppliers_list'] as List<dynamic>?)
-          ?.map((v) => SupplierData.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
-      comparisonPeriod: json['comparison_period'] as String? ?? '',
-      period: json['period'] != null ? Period.fromJson(json['period']) : null,
+      currentDebts: SafeConverters.toNum(json['current_debts']),
+      previousDebts: SafeConverters.toNum(json['previous_debts']),
+      percentageChange: SafeConverters.toNum(json['percentage_change']),
+      isPositiveChange: SafeConverters.toBool(json['is_positive_change']),
+      currency: SafeConverters.toStringOrNull(json['currency']),
+      suppliersList: SafeConverters.toList(json['suppliers_list'])
+          .map((v) => SupplierData.fromJson(SafeConverters.toMap(v)))
+          .toList(),
+      comparisonPeriod: SafeConverters.toSafeString(json['comparison_period']),
+      period: SafeConverters.toMapOrNull(json['period']) != null
+          ? Period.fromJson(SafeConverters.toMap(json['period']))
+          : null,
     );
   }
 
@@ -236,18 +243,18 @@ class DebtsToUs {
 
   factory DebtsToUs.fromJson(Map<String, dynamic> json) {
     return DebtsToUs(
-      totalDebtsToUs: (json['total_debts_to_us'] as num?)?.toDouble() ?? 0.0,
-      previousDebtsToUs:
-      (json['previous_debts_to_us'] as num?)?.toDouble() ?? 0.0,
-      percentageChange: (json['percentage_change'] as num?)?.toDouble() ?? 0.0,
-      isPositiveChange: json['is_positive_change'] as bool? ?? false,
-      currency: json['currency'] as String?,
-      debtorsList: (json['debtors_list'] as List<dynamic>?)
-          ?.map((v) => Debtors.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
-      comparisonPeriod: json['comparison_period'] as String? ?? '',
-      period: json['period'] != null ? Period.fromJson(json['period']) : null,
+      totalDebtsToUs: SafeConverters.toNum(json['total_debts_to_us']),
+      previousDebtsToUs: SafeConverters.toNum(json['previous_debts_to_us']),
+      percentageChange: SafeConverters.toNum(json['percentage_change']),
+      isPositiveChange: SafeConverters.toBool(json['is_positive_change']),
+      currency: SafeConverters.toStringOrNull(json['currency']),
+      debtorsList: SafeConverters.toList(json['debtors_list'])
+          .map((v) => Debtors.fromJson(SafeConverters.toMap(v)))
+          .toList(),
+      comparisonPeriod: SafeConverters.toSafeString(json['comparison_period']),
+      period: SafeConverters.toMapOrNull(json['period']) != null
+          ? Period.fromJson(SafeConverters.toMap(json['period']))
+          : null,
     );
   }
 
@@ -275,9 +282,9 @@ class Filters {
 
   factory Filters.fromJson(Map<String, dynamic> json) {
     return Filters(
-      period: json['period'] as String?,
-      dateFrom: json['date_from'] as String?,
-      dateTo: json['date_to'] as String?,
+      period: SafeConverters.toStringOrNull(json['period']),
+      dateFrom: SafeConverters.toStringOrNull(json['date_from']),
+      dateTo: SafeConverters.toStringOrNull(json['date_to']),
     );
   }
 
@@ -300,11 +307,11 @@ class Debtors {
   Debtors({this.id, this.name, this.type, this.phone, this.debtAmount});
 
   Debtors.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    type = json['type'];
-    phone = json['phone'];
-    debtAmount = json['debt_amount'];
+    id = SafeConverters.toIntOrNull(json['id']);
+    name = SafeConverters.toStringOrNull(json['name']);
+    type = SafeConverters.toStringOrNull(json['type']);
+    phone = SafeConverters.toStringOrNull(json['phone']);
+    debtAmount = SafeConverters.toNumOrNull(json['debt_amount']);
   }
 
   Map<String, dynamic> toJson() {

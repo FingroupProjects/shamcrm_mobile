@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // ============================================
 // expense_article_dashboard_warehouse_model.dart
 // ============================================
@@ -14,9 +16,9 @@ class ExpenseArticleDashboardWarehouse {
 
   factory ExpenseArticleDashboardWarehouse.fromJson(Map<String, dynamic> json) {
     return ExpenseArticleDashboardWarehouse(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      type: json['type'] as String,
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      type: SafeConverters.toSafeString(json['type']),
     );
   }
 

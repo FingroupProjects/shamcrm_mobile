@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 // Enum for net profit period types
 enum NetProfitPeriod {
   last_year,
@@ -29,7 +31,7 @@ class NetProfitDashboard {
 
   factory NetProfitDashboard.fromJson(Map<String, dynamic> json) {
     return NetProfitDashboard(
-      result: NetProfitResult.fromJson(json['result']),
+      result: NetProfitResult.fromJson(SafeConverters.toMap(json['result'])),
       errors: json['errors'],
     );
   }
@@ -55,11 +57,12 @@ class NetProfitResult {
 
   factory NetProfitResult.fromJson(Map<String, dynamic> json) {
     return NetProfitResult(
-      year: json['year'],
-      months: (json['months'] as List)
+      year: SafeConverters.toInt(json['year']),
+      months: SafeConverters.toList(json['months'])
+          .whereType<Map<String, dynamic>>()
           .map((e) => NetProfitMonth.fromJson(e))
           .toList(),
-      totalNetProfit: json['total_net_profit'],
+      totalNetProfit: SafeConverters.toNum(json['total_net_profit']),
     );
   }
 
@@ -84,19 +87,10 @@ class NetProfitMonth {
   });
 
   factory NetProfitMonth.fromJson(Map<String, dynamic> json) {
-
-    String netProfit = '0';
-
-    if (json['net_profit'] is String) {
-      netProfit = json['net_profit'];
-    } else if (json['net_profit'] is num) {
-      netProfit = (json['net_profit'] as num).toString();
-    }
-
     return NetProfitMonth(
-      month: json['month'],
-      monthName: json['month_name'],
-      netProfit: netProfit,
+      month: SafeConverters.toInt(json['month']),
+      monthName: SafeConverters.toSafeString(json['month_name']),
+      netProfit: SafeConverters.toSafeString(json['net_profit'], defaultValue: '0'),
     );
   }
 

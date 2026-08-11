@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class ChartDataManager {
   final String label;
   final List<double> data;
@@ -11,11 +13,9 @@ class ChartDataManager {
 
   factory ChartDataManager.fromJson(Map<String, dynamic> json) {
     return ChartDataManager(
-      label: json['label'] ?? json['status'] ?? '',
-      data: (json['data'] as List<dynamic>)
-          .map((x) => (x as num).toDouble())
-          .toList(),
-      color: json['color'] ?? '#000000',
+      label: SafeConverters.toSafeString(json['label'] ?? json['status']),
+      data: SafeConverters.toList(json['data']).map(SafeConverters.toDouble).toList(),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
     );
   }
 

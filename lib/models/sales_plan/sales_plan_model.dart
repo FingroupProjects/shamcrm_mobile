@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 enum SalesPlanType {
   sum,
   count;
@@ -165,17 +167,17 @@ class SalesPlanUser {
   });
 
   factory SalesPlanUser.fromJson(Map<String, dynamic> json) {
-    final name = json['name']?.toString() ?? '';
-    final lastname = json['lastname']?.toString();
-    final fullName = json['full_name']?.toString() ??
+    final name = SafeConverters.toSafeString(json['name']);
+    final lastname = SafeConverters.toStringOrNull(json['lastname']);
+    final fullName = SafeConverters.toStringOrNull(json['full_name']) ??
         [name, lastname].where((e) => e != null && e.isNotEmpty).join(' ');
     return SalesPlanUser(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id: SafeConverters.toInt(json['id']),
       name: name,
       lastname: lastname,
       fullName: fullName.isEmpty ? name : fullName,
-      actualValue: _toDouble(json['actual_value']),
-      percent: _toDouble(json['percent']),
+      actualValue: SafeConverters.toDoubleOrNull(json['actual_value']),
+      percent: SafeConverters.toDoubleOrNull(json['percent']),
     );
   }
 
@@ -237,15 +239,11 @@ class SalesPlanFilterItem {
 
   factory SalesPlanFilterItem.fromJson(Map<String, dynamic> json) {
     return SalesPlanFilterItem(
-      field: json['field']?.toString() ?? '',
-      operator: json['operator']?.toString() ?? '=',
-      value: json['value']?.toString() ?? '',
-      customFieldId: json['custom_field_id'] is int
-          ? json['custom_field_id'] as int
-          : int.tryParse('${json['custom_field_id'] ?? ''}'),
-      directoryId: json['directory_id'] is int
-          ? json['directory_id'] as int
-          : int.tryParse('${json['directory_id'] ?? ''}'),
+      field: SafeConverters.toSafeString(json['field']),
+      operator: SafeConverters.toSafeString(json['operator'], defaultValue: '='),
+      value: SafeConverters.toSafeString(json['value']),
+      customFieldId: SafeConverters.toIntOrNull(json['custom_field_id']),
+      directoryId: SafeConverters.toIntOrNull(json['directory_id']),
     );
   }
 
@@ -269,8 +267,8 @@ class SalesPlanCreator {
 
   factory SalesPlanCreator.fromJson(Map<String, dynamic> json) {
     return SalesPlanCreator(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
-      name: json['name']?.toString() ?? '',
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
     );
   }
 }
@@ -292,22 +290,15 @@ class SalesPlanChild {
 
   factory SalesPlanChild.fromJson(Map<String, dynamic> json) {
     return SalesPlanChild(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id'] ?? ''}'),
-      name: json['name']?.toString() ??
-          json['full_name']?.toString() ??
-          json['user_name']?.toString() ??
-          '',
-      targetValue: _toDouble(json['target_value']),
-      actualValue: _toDouble(json['actual_value']),
-      percent: _toDouble(json['percent']),
+      id: SafeConverters.toIntOrNull(json['id']),
+      name: SafeConverters.toSafeString(
+        json['name'] ?? json['full_name'] ?? json['user_name'],
+      ),
+      targetValue: SafeConverters.toDoubleOrNull(json['target_value']),
+      actualValue: SafeConverters.toDoubleOrNull(json['actual_value']),
+      percent: SafeConverters.toDoubleOrNull(json['percent']),
     );
   }
-}
-
-double? _toDouble(dynamic value) {
-  if (value == null) return null;
-  if (value is num) return value.toDouble();
-  return double.tryParse(value.toString());
 }
 
 class SalesPlan {
@@ -372,21 +363,14 @@ class SalesPlan {
     final filtersJson = json['filters'];
     final childrenJson = json['children'] ?? json['hierarchy'] ?? json['child_plans'];
 
-    final users = usersJson is List
-        ? usersJson
-            .whereType<Map>()
-            .map((e) => SalesPlanUser.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
-        : <SalesPlanUser>[];
+    final users = SafeConverters.toList(usersJson)
+        .map((e) => SalesPlanUser.fromJson(SafeConverters.toMap(e)))
+        .toList();
 
-    List<SalesPlanChild> children = childrenJson is List
-        ? childrenJson
-            .whereType<Map>()
-            .map((e) => SalesPlanChild.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
-        : <SalesPlanChild>[];
+    List<SalesPlanChild> children = SafeConverters.toList(childrenJson)
+        .map((e) => SalesPlanChild.fromJson(SafeConverters.toMap(e)))
+        .toList();
 
-    // Backend often returns per-user fact/% inside users[] instead of children[].
     if (children.isEmpty && users.any((u) => u.percent != null || u.actualValue != null)) {
       children = users
           .map((u) => SalesPlanChild(
@@ -399,50 +383,37 @@ class SalesPlan {
     }
 
     return SalesPlan(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
-      name: json['name']?.toString() ?? '',
-      planType: SalesPlanType.fromString(json['plan_type']?.toString()),
-      objectType: SalesPlanObjectType.fromString(json['object_type']?.toString()),
-      aggregation: SalesPlanAggregation.fromString(json['aggregation']?.toString()),
-      aggregationField: json['aggregation_field']?.toString(),
-      targetValue: _toDouble(json['target_value']) ?? 0,
-      actualValue: _toDouble(json['actual_value']) ?? 0,
-      percent: _toDouble(json['percent']) ?? 0,
-      status: SalesPlanStatus.fromString(json['status']?.toString()),
-      periodType: SalesPlanPeriodType.fromString(json['period_type']?.toString()),
-      periodStart: _parseDate(json['period_start']),
-      periodEnd: _parseDate(json['period_end']),
-      daysLeft: json['days_left'] is int
-          ? json['days_left'] as int
-          : int.tryParse('${json['days_left'] ?? ''}'),
-      daysTotal: json['days_total'] is int
-          ? json['days_total'] as int
-          : int.tryParse('${json['days_total'] ?? ''}'),
-      dailyAverage: _toDouble(json['daily_average']),
-      dailyNeed: _toDouble(json['daily_need']),
-      forecast: _toDouble(json['forecast']),
-      forecastPercent: _toDouble(json['forecast_percent']),
-      recurrence: SalesPlanRecurrence.fromString(json['recurrence']?.toString()),
-      comment: json['comment']?.toString(),
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      planType: SalesPlanType.fromString(SafeConverters.toStringOrNull(json['plan_type'])),
+      objectType: SalesPlanObjectType.fromString(SafeConverters.toStringOrNull(json['object_type'])),
+      aggregation: SalesPlanAggregation.fromString(SafeConverters.toStringOrNull(json['aggregation'])),
+      aggregationField: SafeConverters.toStringOrNull(json['aggregation_field']),
+      targetValue: SafeConverters.toDoubleOrNull(json['target_value']) ?? 0,
+      actualValue: SafeConverters.toDoubleOrNull(json['actual_value']) ?? 0,
+      percent: SafeConverters.toDoubleOrNull(json['percent']) ?? 0,
+      status: SalesPlanStatus.fromString(SafeConverters.toStringOrNull(json['status'])),
+      periodType: SalesPlanPeriodType.fromString(SafeConverters.toStringOrNull(json['period_type'])),
+      periodStart: SafeConverters.toDateTimeOrNull(json['period_start']),
+      periodEnd: SafeConverters.toDateTimeOrNull(json['period_end']),
+      daysLeft: SafeConverters.toIntOrNull(json['days_left']),
+      daysTotal: SafeConverters.toIntOrNull(json['days_total']),
+      dailyAverage: SafeConverters.toDoubleOrNull(json['daily_average']),
+      dailyNeed: SafeConverters.toDoubleOrNull(json['daily_need']),
+      forecast: SafeConverters.toDoubleOrNull(json['forecast']),
+      forecastPercent: SafeConverters.toDoubleOrNull(json['forecast_percent']),
+      recurrence: SalesPlanRecurrence.fromString(SafeConverters.toStringOrNull(json['recurrence'])),
+      comment: SafeConverters.toStringOrNull(json['comment']),
       users: users,
-      filters: filtersJson is List
-          ? filtersJson
-              .whereType<Map>()
-              .map((e) =>
-                  SalesPlanFilterItem.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
-          : const [],
-      creator: json['creator'] is Map
-          ? SalesPlanCreator.fromJson(Map<String, dynamic>.from(json['creator']))
+      filters: SafeConverters.toList(filtersJson)
+          .map((e) => SalesPlanFilterItem.fromJson(SafeConverters.toMap(e)))
+          .toList(),
+      creator: SafeConverters.toMapOrNull(json['creator']) != null
+          ? SalesPlanCreator.fromJson(SafeConverters.toMap(json['creator']))
           : null,
-      createdAt: _parseDate(json['created_at']),
+      createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
       children: children,
     );
-  }
-
-  static DateTime? _parseDate(dynamic value) {
-    if (value == null) return null;
-    return DateTime.tryParse(value.toString());
   }
 
   String get ownersLabel {
@@ -474,20 +445,13 @@ class SalesPlanListResponse {
     final meta = extractSalesPlanPagination(json);
     return SalesPlanListResponse(
       data: dataJson != null
-          ? dataJson
-              .whereType<Map>()
-              .map((e) => SalesPlan.fromJson(Map<String, dynamic>.from(e)))
+          ? SafeConverters.toList(dataJson)
+              .map((e) => SalesPlan.fromJson(SafeConverters.toMap(e)))
               .toList()
           : const [],
-      currentPage: meta['current_page'] is int
-          ? meta['current_page'] as int
-          : int.tryParse('${meta['current_page'] ?? 1}') ?? 1,
-      perPage: meta['per_page'] is int
-          ? meta['per_page'] as int
-          : int.tryParse('${meta['per_page'] ?? 20}') ?? 20,
-      total: meta['total'] is int
-          ? meta['total'] as int
-          : int.tryParse('${meta['total'] ?? 0}') ?? 0,
+      currentPage: SafeConverters.toInt(meta['current_page'], defaultValue: 1),
+      perPage: SafeConverters.toInt(meta['per_page'], defaultValue: 20),
+      total: SafeConverters.toInt(meta['total']),
     );
   }
 }

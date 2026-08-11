@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class CashBalanceResponse {
   Result? result;
   String? errors;
@@ -5,8 +7,8 @@ class CashBalanceResponse {
   CashBalanceResponse({this.result, this.errors});
 
   CashBalanceResponse.fromJson(Map<String, dynamic> json) {
-    result = json['result'] != null ? Result.fromJson(json['result']) : null;
-    errors = json['errors'];
+    result = SafeConverters.toMapOrNull(json['result']) != null ? Result.fromJson(SafeConverters.toMap(json['result'])) : null;
+    errors = SafeConverters.toStringOrNull(json['errors']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -22,12 +24,8 @@ class Result {
   Result({this.cashBalanceSummary, this.checkingAccounts});
 
   Result.fromJson(Map<String, dynamic> json) {
-    cashBalanceSummary = json['cash_balance_summary'] != null
-        ? CashBalanceSummary.fromJson(json['cash_balance_summary'])
-        : null;
-    checkingAccounts = json['checking_accounts'] != null
-        ? CheckingAccounts.fromJson(json['checking_accounts'])
-        : null;
+    cashBalanceSummary = SafeConverters.toMapOrNull(json['cash_balance_summary']) != null ? CashBalanceSummary.fromJson(SafeConverters.toMap(json['cash_balance_summary'])) : null;
+    checkingAccounts = SafeConverters.toMapOrNull(json['checking_accounts']) != null ? CheckingAccounts.fromJson(SafeConverters.toMap(json['checking_accounts'])) : null;
   }
 
   Map<String, dynamic> toJson() => {
@@ -60,22 +58,18 @@ class CashBalanceSummary {
   });
 
   CashBalanceSummary.fromJson(Map<String, dynamic> json) {
-    totalBalance = json['total_balance'];
-    previousBalance = json['previous_balance'];
-    percentageChange = json['percentage_change'];
-    isPositiveChange = json['is_positive_change'];
+    totalBalance = SafeConverters.toNumOrNull(json['total_balance']);
+    previousBalance = SafeConverters.toNumOrNull(json['previous_balance']);
+    percentageChange = SafeConverters.toNumOrNull(json['percentage_change']);
+    isPositiveChange = SafeConverters.toBoolOrNull(json['is_positive_change']);
     if (json['cash_registers'] != null) {
-      cashRegisters = (json['cash_registers'] as List)
-          .map((v) => CashRegisters.fromJson(v))
-          .toList();
+      cashRegisters = SafeConverters.toList(json['cash_registers']).whereType<Map<String, dynamic>>().map((v) => CashRegisters.fromJson(v)).toList();
     }
     if (json['movements'] != null) {
-      movements = (json['movements'] as List)
-          .map((v) => Movements.fromJson(v))
-          .toList();
+      movements = SafeConverters.toList(json['movements']).whereType<Map<String, dynamic>>().map((v) => Movements.fromJson(v)).toList();
     }
-    comparisonPeriod = json['comparison_period'];
-    period = json['period'] != null ? Period.fromJson(json['period']) : null;
+    comparisonPeriod = SafeConverters.toStringOrNull(json['comparison_period']);
+    period = SafeConverters.toMapOrNull(json['period']) != null ? Period.fromJson(SafeConverters.toMap(json['period'])) : null;
   }
 
   Map<String, dynamic> toJson() => {
@@ -108,13 +102,11 @@ class CashRegisters {
   });
 
   CashRegisters.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    balance = json['balance'];
-    updatedAt = json['updated_at'];
-    currencyName = json['currency'] is Map<String, dynamic>
-        ? json['currency']['name']?.toString()
-        : null;
+    id = SafeConverters.toIntOrNull(json['id']);
+    name = SafeConverters.toStringOrNull(json['name']);
+    balance = SafeConverters.toNumOrNull(json['balance']);
+    updatedAt = SafeConverters.toStringOrNull(json['updated_at']);
+    currencyName = SafeConverters.toMapOrNull(json['currency']) != null ? SafeConverters.toStringOrNull(SafeConverters.toMap(json['currency'])['name']) : null;
   }
 
   Map<String, dynamic> toJson() => {
@@ -152,16 +144,16 @@ class Movements {
   });
 
   Movements.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    date = json['date'];
-    time = json['time'];
-    operation = json['operation'];
-    counterparty = json['counterparty'];
-    amount = json['amount'];
-    formattedAmount = json['formatted_amount'];
-    method = json['method'];
-    operationType = json['operation_type'];
-    isIncome = json['is_income'];
+    id = SafeConverters.toIntOrNull(json['id']);
+    date = SafeConverters.toStringOrNull(json['date']);
+    time = SafeConverters.toStringOrNull(json['time']);
+    operation = SafeConverters.toStringOrNull(json['operation']);
+    counterparty = SafeConverters.toStringOrNull(json['counterparty']);
+    amount = SafeConverters.toNumOrNull(json['amount']);
+    formattedAmount = SafeConverters.toStringOrNull(json['formatted_amount']);
+    method = SafeConverters.toStringOrNull(json['method']);
+    operationType = SafeConverters.toStringOrNull(json['operation_type']);
+    isIncome = SafeConverters.toBoolOrNull(json['is_income']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -185,10 +177,8 @@ class Period {
   Period({this.current, this.previous});
 
   Period.fromJson(Map<String, dynamic> json) {
-    current =
-        json['current'] != null ? Current.fromJson(json['current']) : null;
-    previous =
-        json['previous'] != null ? Current.fromJson(json['previous']) : null;
+    current = SafeConverters.toMapOrNull(json['current']) != null ? Current.fromJson(SafeConverters.toMap(json['current'])) : null;
+    previous = SafeConverters.toMapOrNull(json['previous']) != null ? Current.fromJson(SafeConverters.toMap(json['previous'])) : null;
   }
 
   Map<String, dynamic> toJson() => {
@@ -204,7 +194,7 @@ class Current {
   Current({this.from, this.to});
 
   Current.fromJson(Map<String, dynamic> json) {
-    from = json['from'];
+    from = SafeConverters.toStringOrNull(json['from']);
     to = json['to'];
   }
 
@@ -246,23 +236,23 @@ class CheckingAccounts {
   });
 
   CheckingAccounts.fromJson(Map<String, dynamic> json) {
-    currentPage = json['current_page'];
+    currentPage = SafeConverters.toIntOrNull(json['current_page']);
     if (json['data'] != null) {
-      data = (json['data'] as List).map((v) => Data.fromJson(v)).toList();
+      data = SafeConverters.toList(json['data']).whereType<Map<String, dynamic>>().map((v) => Data.fromJson(v)).toList();
     }
-    firstPageUrl = json['first_page_url'];
-    from = json['from'];
-    lastPage = json['last_page'];
-    lastPageUrl = json['last_page_url'];
+    firstPageUrl = SafeConverters.toStringOrNull(json['first_page_url']);
+    from = SafeConverters.toIntOrNull(json['from']);
+    lastPage = SafeConverters.toIntOrNull(json['last_page']);
+    lastPageUrl = SafeConverters.toStringOrNull(json['last_page_url']);
     if (json['links'] != null) {
-      links = (json['links'] as List).map((v) => Links.fromJson(v)).toList();
+      links = SafeConverters.toList(json['links']).whereType<Map<String, dynamic>>().map((v) => Links.fromJson(v)).toList();
     }
-    nextPageUrl = json['next_page_url'];
-    path = json['path'];
-    perPage = json['per_page'];
-    prevPageUrl = json['prev_page_url'];
-    to = json['to'];
-    total = json['total'];
+    nextPageUrl = SafeConverters.toStringOrNull(json['next_page_url']);
+    path = SafeConverters.toStringOrNull(json['path']);
+    perPage = SafeConverters.toIntOrNull(json['per_page']);
+    prevPageUrl = SafeConverters.toStringOrNull(json['prev_page_url']);
+    to = SafeConverters.toNumOrNull(json['to']);
+    total = SafeConverters.toNumOrNull(json['total']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -290,8 +280,8 @@ class Article {
   Article({this.id, this.name});
 
   Article.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
+    id = SafeConverters.toIntOrNull(json['id']);
+    name = SafeConverters.toStringOrNull(json['name']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -333,25 +323,19 @@ class Data {
   });
 
   Data.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    docNumber = json['doc_number'];
-    date = json['date'];
-    amount = json['amount'];
-    formattedAmount = json['formatted_amount'];
-    operationType = json['operation_type'];
-    comment = json['comment'];
-    approved = json['approved'];
-    createdAt = json['created_at'];
-    cashRegister = json['cash_register'] != null
-        ? CashRegister.fromJson(json['cash_register'])
-        : null;
-    article = json['article'] != null
-        ? Article.fromJson(json['article']) // Changed parsing logic
-        : null;
-    counterparty = json['counterparty'] != null
-        ? Counterparty.fromJson(json['counterparty'])
-        : null;
-    isIncome = json['is_income'];
+    id = SafeConverters.toIntOrNull(json['id']);
+    docNumber = SafeConverters.toStringOrNull(json['doc_number']);
+    date = SafeConverters.toStringOrNull(json['date']);
+    amount = SafeConverters.toStringOrNull(json['amount']);
+    formattedAmount = SafeConverters.toStringOrNull(json['formatted_amount']);
+    operationType = SafeConverters.toStringOrNull(json['operation_type']);
+    comment = SafeConverters.toStringOrNull(json['comment']);
+    approved = SafeConverters.toBoolOrNull(json['approved']);
+    createdAt = SafeConverters.toStringOrNull(json['created_at']);
+    cashRegister = SafeConverters.toMapOrNull(json['cash_register']) != null ? CashRegister.fromJson(SafeConverters.toMap(json['cash_register'])) : null;
+    article = SafeConverters.toMapOrNull(json['article']) != null ? Article.fromJson(SafeConverters.toMap(json['article'])) : null;
+    counterparty = SafeConverters.toMapOrNull(json['counterparty']) != null ? Counterparty.fromJson(SafeConverters.toMap(json['counterparty'])) : null;
+    isIncome = SafeConverters.toBoolOrNull(json['is_income']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -380,9 +364,9 @@ class CashRegister {
   CashRegister({this.id, this.name, this.type});
 
   CashRegister.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    name = json['name'];
-    type = json['type'];
+    id = SafeConverters.toIntOrNull(json['id']);
+    name = SafeConverters.toStringOrNull(json['name']);
+    type = SafeConverters.toStringOrNull(json['type']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -402,11 +386,11 @@ class Counterparty {
   Counterparty({this.type, this.id, this.name, this.phone, this.inn});
 
   Counterparty.fromJson(Map<String, dynamic> json) {
-    type = json['type'];
-    id = json['id'];
-    name = json['name'];
-    phone = json['phone'];
-    inn = json['inn'];
+    type = SafeConverters.toStringOrNull(json['type']);
+    id = SafeConverters.toIntOrNull(json['id']);
+    name = SafeConverters.toStringOrNull(json['name']);
+    phone = SafeConverters.toStringOrNull(json['phone']);
+    inn = SafeConverters.toIntOrNull(json['inn']);
   }
 
   Map<String, dynamic> toJson() => {
@@ -426,9 +410,9 @@ class Links {
   Links({this.url, this.label, this.active});
 
   Links.fromJson(Map<String, dynamic> json) {
-    url = json['url'];
-    label = json['label'];
-    active = json['active'];
+    url = SafeConverters.toStringOrNull(json['url']);
+    label = SafeConverters.toStringOrNull(json['label']);
+    active = SafeConverters.toBoolOrNull(json['active']);
   }
 
   Map<String, dynamic> toJson() => {

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class ChartData {
   final String label;
   final List<double> data;
@@ -21,11 +23,9 @@ class ChartData {
   // Создание объекта ChartData из JSON
   factory ChartData.fromJson(Map<String, dynamic> json) {
     return ChartData(
-      label: json['label'] ?? json['status'] ?? '',
-      data: (json['data'] as List<dynamic>)
-          .map((x) => (x as num).toDouble())
-          .toList(),
-      color: json['color'] ?? '#000000',
+      label: SafeConverters.toSafeString(json['label'] ?? json['status']),
+      data: SafeConverters.toList(json['data']).map(SafeConverters.toDouble).toList(),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
     );
   }
 }
