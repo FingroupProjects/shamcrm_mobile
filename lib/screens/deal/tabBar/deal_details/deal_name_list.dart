@@ -312,23 +312,27 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderSide: BorderSide(
+                        color: context.appColors.borderSubtle,
+                        width: 1,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color:
-                            widget.hasError ? Colors.red : Colors.transparent,
-                        width: 1.5,
+                        color: widget.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
+                        width: 1,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
                         color: widget.hasError
-                            ? Colors.red
+                            ? context.appColors.error
                             : context.appColors.buttonPrimaryBg,
-                        width: 1.5,
+                        width: 1,
                       ),
                     ),
                     suffixIcon: IconButton(

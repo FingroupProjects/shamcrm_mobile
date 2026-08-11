@@ -2,6 +2,8 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_event.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_lists_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/models/deal_name_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -27,13 +29,6 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
   List<DealNameData> selectedDealNamesData = [];
   bool allSelected = false;
 
-  final TextStyle dealNameTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -54,6 +49,16 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: colors.textPrimary,
+    );
+    final hintStyle = textStyle.copyWith(
+      fontSize: 14,
+      color: colors.textSecondary,
+    );
+
     return FormField<List<DealNameData>>(
       validator: (value) {
         if (selectedDealNamesData.isEmpty) {
@@ -68,7 +73,7 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
           children: [
             Text(
               AppLocalizations.of(context)!.translate('deal_name'),
-              style: dealNameTextStyle.copyWith(
+              style: textStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
@@ -76,13 +81,11 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError
-                      ? Colors.red
-                      : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.fieldBorder,
                 ),
               ),
               child: BlocBuilder<GetAllDealNameBloc, GetAllDealNameState>(
@@ -107,18 +110,50 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: const Color(0xffF4F7FD),
-                      expandedFillColor: Colors.white,
+                      closedFillColor: colors.fieldBg,
+                      expandedFillColor: colors.fieldBg,
                       closedBorder: Border.all(
                         color: Colors.transparent,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                        color: colors.fieldBorder,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
+                      hintStyle: hintStyle,
+                      headerStyle: textStyle,
+                      listItemStyle: textStyle,
+                      listItemDecoration: ListItemDecoration(
+                        selectedColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.14),
+                        highlightColor:
+                            colors.buttonPrimaryBg.withValues(alpha: 0.08),
+                        splashColor: Colors.transparent,
+                      ),
+                      searchFieldDecoration: SearchFieldDecoration(
+                        fillColor: colors.surfaceElevated,
+                        textStyle: textStyle,
+                        hintStyle: hintStyle,
+                        prefixIcon:
+                            Icon(Icons.search, color: colors.iconSecondary),
+                        suffixIcon: (onClear) => IconButton(
+                          onPressed: onClear,
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: colors.iconSecondary,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: colors.fieldBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                        ),
+                      ),
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       if (dealNameList.indexOf(item) == 0) {
@@ -133,32 +168,13 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
                                 onTap: _toggleSelectAll,
                                 child: Row(
                                   children: [
-                                    Container(
-                                      width: 18,
-                                      height: 18,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                            color: const Color(0xff1E2E52),
-                                            width: 1),
-                                        borderRadius: BorderRadius.circular(4),
-                                        color: allSelected
-                                            ? const Color(0xff1E2E52)
-                                            : Colors.transparent,
-                                      ),
-                                      child: allSelected
-                                          ? const Icon(
-                                              Icons.check,
-                                              color: Colors.white,
-                                              size: 14,
-                                            )
-                                          : null,
-                                    ),
+                                    _buildCheckbox(allSelected, colors),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         AppLocalizations.of(context)!
                                             .translate('select_all'),
-                                        style: dealNameTextStyle,
+                                        style: textStyle,
                                       ),
                                     ),
                                   ],
@@ -167,16 +183,18 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
                             ),
                             Divider(
                               height: 20,
-                              color: const Color(0xFFE5E7EB),
+                              color: colors.borderSubtle,
                             ),
-                            _buildListItem(item, isSelected, onItemSelect),
+                            _buildListItem(
+                                item, isSelected, onItemSelect, textStyle, colors),
                           ],
                         );
                       }
-                      return _buildListItem(item, isSelected, onItemSelect);
+                      return _buildListItem(
+                          item, isSelected, onItemSelect, textStyle, colors);
                     },
                     headerListBuilder: (context, hint, enabled) {
-                      String selectedDealNamesText =
+                      final selectedDealNamesText =
                           selectedDealNamesData.isEmpty
                               ? AppLocalizations.of(context)!
                                   .translate('select_deal_name')
@@ -185,16 +203,17 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
                                   .join(', ');
                       return Text(
                         selectedDealNamesText,
-                        style: dealNameTextStyle,
+                        style: selectedDealNamesData.isEmpty
+                            ? hintStyle
+                            : textStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!.translate('select_deal_name'),
-                      style: dealNameTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      AppLocalizations.of(context)!
+                          .translate('select_deal_name'),
+                      style: hintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectDealNames(values);
@@ -213,10 +232,8 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: colors.error,
                   ),
                 ),
               ),
@@ -226,38 +243,47 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
     );
   }
 
+  Widget _buildCheckbox(bool isChecked, AppThemeColors colors) {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: colors.textPrimary,
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(4),
+        color: isChecked ? colors.buttonPrimaryBg : Colors.transparent,
+      ),
+      child: isChecked
+          ? Icon(
+              Icons.check,
+              color: colors.buttonPrimaryFg,
+              size: 14,
+            )
+          : null,
+    );
+  }
+
   Widget _buildListItem(
-      DealNameData item, bool isSelected, Function() onItemSelect) {
+    DealNameData item,
+    bool isSelected,
+    Function() onItemSelect,
+    TextStyle textStyle,
+    AppThemeColors colors,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: GestureDetector(
         onTap: onItemSelect,
         child: Row(
           children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xff1E2E52),
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(4),
-                color: isSelected ? const Color(0xff1E2E52) : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    )
-                  : null,
-            ),
+            _buildCheckbox(isSelected, colors),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 item.title,
-                style: dealNameTextStyle,
+                style: textStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

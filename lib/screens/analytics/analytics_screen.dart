@@ -25,6 +25,7 @@ import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart'
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sales_planning/widgets/sales_plan_dashboard_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1008,6 +1009,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final viewportHeight = MediaQuery.of(context).size.height;
 
           final showStatsSection = widget.showStatistics;
+          const salesPlanSlot = 1;
+          final statsSlot = showStatsSection ? 1 : 0;
 
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -1018,9 +1021,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               horizontalPadding,
             ),
             cacheExtent: viewportHeight * 1.2,
-            itemCount: (showStatsSection ? 1 : 0) + chartWidgets.length,
+            itemCount: salesPlanSlot + statsSlot + chartWidgets.length,
             itemBuilder: (context, index) {
-              if (showStatsSection && index == 0) {
+              if (index == 0) {
+                return const Padding(
+                  padding: EdgeInsets.only(bottom: 8, top: 4),
+                  child: SalesPlanDashboardWidget(),
+                );
+              }
+              final contentIndex = index - salesPlanSlot;
+              if (showStatsSection && contentIndex == 0) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1099,12 +1109,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 );
               }
 
-              final chartIndex = index - 1;
-              final resolvedChartIndex = showStatsSection ? chartIndex : index;
-              final isLast = resolvedChartIndex == chartWidgets.length - 1;
+              final chartIndex = contentIndex - statsSlot;
+              final isLast = chartIndex == chartWidgets.length - 1;
               return Padding(
                 padding: EdgeInsets.only(bottom: isLast ? 0 : chartSpacing),
-                child: chartWidgets[resolvedChartIndex],
+                child: chartWidgets[chartIndex],
               );
             },
           );

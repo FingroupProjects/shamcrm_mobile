@@ -2,6 +2,8 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
 import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -26,18 +28,10 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
   List<DealStatus> statusList = [];
   DealStatus? selectedStatusData;
 
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
 
-    // Проверяем, есть ли уже загруженные статусы в блоке
     final currentState = context.read<DealBloc>().state;
     if (currentState is DealLoaded) {
       setState(() {
@@ -53,7 +47,6 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
   void didUpdateWidget(DealStatusRadioGroupWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Если selectedStatus изменился, обновляем selectedStatusData
     if (oldWidget.selectedStatus != widget.selectedStatus) {
       _updateSelectedStatus();
     }
@@ -63,7 +56,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
     if (widget.selectedStatus != null && statusList.isNotEmpty) {
       try {
         final foundStatus = statusList.firstWhere(
-              (status) => status.id.toString() == widget.selectedStatus,
+          (status) => status.id.toString() == widget.selectedStatus,
         );
         setState(() {
           selectedStatusData = foundStatus;
@@ -74,12 +67,13 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
         });
       }
     } else {
-      // Если selectedStatus null, сбрасываем выбранный статус
       if (widget.selectedStatus == null && selectedStatusData != null) {
         setState(() {
           selectedStatusData = null;
         });
-      } else if (statusList.length == 1 && selectedStatusData == null && widget.selectedStatus == null) {
+      } else if (statusList.length == 1 &&
+          selectedStatusData == null &&
+          widget.selectedStatus == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           widget.onSelectStatus(statusList[0]);
           setState(() {
@@ -90,14 +84,79 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
     }
   }
 
+  CustomDropdownDecoration _dropdownDecoration(
+    AppThemeColors colors,
+    TextStyle textStyle,
+    TextStyle hintStyle,
+  ) {
+    return CustomDropdownDecoration(
+      closedFillColor: colors.fieldBg,
+      expandedFillColor: colors.fieldBg,
+      closedBorder: Border.all(color: Colors.transparent, width: 1),
+      closedBorderRadius: BorderRadius.circular(12),
+      expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
+      expandedBorderRadius: BorderRadius.circular(12),
+      hintStyle: hintStyle,
+      headerStyle: textStyle,
+      listItemStyle: textStyle,
+      noResultFoundStyle: hintStyle,
+      listItemDecoration: ListItemDecoration(
+        selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        splashColor: Colors.transparent,
+      ),
+      searchFieldDecoration: SearchFieldDecoration(
+        fillColor: colors.surfaceElevated,
+        textStyle: textStyle,
+        hintStyle: hintStyle,
+        prefixIcon: Icon(Icons.search, color: colors.iconSecondary),
+        suffixIcon: (onClear) => IconButton(
+          onPressed: onClear,
+          icon: Icon(Icons.close_rounded, color: colors.iconSecondary),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.fieldBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoading(AppThemeColors colors) {
+    return Center(
+      child: SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: colors.textPrimary,
+    );
+    final hintStyle = textStyle.copyWith(
+      fontSize: 14,
+      color: colors.textSecondary,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('deal_statuses'),
-          style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
+          style: textStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 4),
         BlocListener<DealBloc, DealState>(
@@ -115,7 +174,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                   SnackBar(
                     content: Text(
                       AppLocalizations.of(context)!.translate(state.message),
-                      style: statusTextStyle.copyWith(color: Colors.white),
+                      style: textStyle.copyWith(color: colors.buttonPrimaryFg),
                     ),
                     behavior: SnackBarBehavior.floating,
                     margin: const EdgeInsets.symmetric(
@@ -123,7 +182,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: colors.error,
                     elevation: 3,
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 16),
@@ -135,11 +194,11 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
           },
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FD),
+              color: colors.fieldBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 width: 1,
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBorder,
               ),
             ),
             child: CustomDropdown<DealStatus>.search(
@@ -148,65 +207,35 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
               items: statusList,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
-                  width: 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
-              listItemBuilder:
-                  (context, item, isSelected, onItemSelect) {
+              decoration: _dropdownDecoration(colors, textStyle, hintStyle),
+              listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.title,
-                  style: statusTextStyle,
+                  style: textStyle,
                 );
               },
               headerBuilder: (context, selectedItem, enabled) {
                 if (statusList.isEmpty) {
-                  return const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                      ),
-                    ),
-                  );
+                  return _buildLoading(colors);
                 }
                 return Text(
                   selectedItem.title,
-                  style: statusTextStyle,
+                  style: textStyle,
                 );
               },
               hintBuilder: (context, hint, enabled) {
                 if (statusList.isEmpty) {
-                  return const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
-                      ),
-                    ),
-                  );
+                  return _buildLoading(colors);
                 }
                 return Text(
                   AppLocalizations.of(context)!.translate('select_status'),
-                  style: statusTextStyle.copyWith(fontSize: 14),
+                  style: hintStyle,
                 );
               },
               excludeSelected: false,
-              initialItem: statusList.contains(selectedStatusData) ? selectedStatusData : null,
+              initialItem: statusList.contains(selectedStatusData)
+                  ? selectedStatusData
+                  : null,
               onChanged: (value) {
                 if (value != null) {
                   widget.onSelectStatus(value);

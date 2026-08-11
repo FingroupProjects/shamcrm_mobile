@@ -618,11 +618,12 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   }
 
   CustomDropdownDecoration _buildDropdownDecoration() {
+    final colors = context.appColors;
     return CustomDropdownDecoration(
-      closedFillColor: context.appColors.fieldBg,
-      expandedFillColor: context.appColors.surfacePrimary,
-      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
-      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      closedFillColor: colors.fieldBg,
+      expandedFillColor: colors.surfacePrimary,
+      closedBorder: Border.all(color: colors.fieldBorder, width: 1),
+      expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
       closedBorderRadius: BorderRadius.circular(12),
       expandedBorderRadius: BorderRadius.circular(12),
     );

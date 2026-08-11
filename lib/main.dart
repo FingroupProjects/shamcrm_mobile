@@ -40,6 +40,10 @@ import 'package:crm_task_manager/bloc/deal_task/deal_task_bloc.dart';
 import 'package:crm_task_manager/bloc/directory_bloc/directory_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/eventByID/event_byId_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_plan/sales_plan_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_plan/sales_plan_dashboard_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_plan/sales_plan_detail_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_plan/sales_plan_leaderboard_bloc.dart';
 import 'package:crm_task_manager/bloc/expense/expense_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
@@ -1429,6 +1433,13 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(
             create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
         BlocProvider(create: (context) => EventBloc(widget.apiService)),
+        BlocProvider(create: (context) => SalesPlanBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => SalesPlanDetailBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => SalesPlanDashboardBloc(widget.apiService)),
+        BlocProvider(
+            create: (context) => SalesPlanLeaderboardBloc(widget.apiService)),
         BlocProvider(create: (context) => NoticeBloc(widget.apiService)),
         BlocProvider(create: (context) => GetAllSubjectBloc()),
         BlocProvider(create: (context) => GetAllDealNameBloc()),

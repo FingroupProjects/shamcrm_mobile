@@ -2,6 +2,8 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/lead_status_for_filter/lead_status_for_filter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_status_for_filter/lead_status_for_filter_event.dart';
 import 'package:crm_task_manager/bloc/lead_status_for_filter/lead_status_for_filter_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -28,13 +30,6 @@ class _DealLeadStatusMultiSelectWidgetState
   List<LeadStatusForFilter> selectedStatusesData = [];
   bool allSelected = false;
 
-  final TextStyle statusTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -49,14 +44,66 @@ class _DealLeadStatusMultiSelectWidgetState
     });
   }
 
+  CustomDropdownDecoration _dropdownDecoration(
+    AppThemeColors colors,
+    TextStyle textStyle,
+    TextStyle hintStyle,
+  ) {
+    return CustomDropdownDecoration(
+      closedFillColor: colors.fieldBg,
+      expandedFillColor: colors.fieldBg,
+      closedBorder: Border.all(color: Colors.transparent, width: 1),
+      closedBorderRadius: BorderRadius.circular(12),
+      expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
+      expandedBorderRadius: BorderRadius.circular(12),
+      hintStyle: hintStyle,
+      headerStyle: textStyle,
+      listItemStyle: textStyle,
+      noResultFoundStyle: hintStyle,
+      listItemDecoration: ListItemDecoration(
+        selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        splashColor: Colors.transparent,
+      ),
+      searchFieldDecoration: SearchFieldDecoration(
+        fillColor: colors.surfaceElevated,
+        textStyle: textStyle,
+        hintStyle: hintStyle,
+        prefixIcon: Icon(Icons.search, color: colors.iconSecondary),
+        suffixIcon: (onClear) => IconButton(
+          onPressed: onClear,
+          icon: Icon(Icons.close_rounded, color: colors.iconSecondary),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.fieldBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: colors.textPrimary,
+    );
+    final hintStyle = textStyle.copyWith(
+      fontSize: 14,
+      color: colors.textSecondary,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppLocalizations.of(context)!.translate('lead_statuses'),
-          style: statusTextStyle.copyWith(
+          style: textStyle.copyWith(
             fontWeight: FontWeight.w400,
             fontSize: 16,
           ),
@@ -64,11 +111,11 @@ class _DealLeadStatusMultiSelectWidgetState
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+            color: colors.fieldBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: const Color(0xFFE5E7EB),
+              color: colors.fieldBorder,
             ),
           ),
           child: BlocBuilder<LeadStatusForFilterBloc, LeadStatusForFilterState>(
@@ -94,20 +141,7 @@ class _DealLeadStatusMultiSelectWidgetState
                 searchHintText:
                     AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: const Color(0xffF4F7FD),
-                  expandedFillColor: Colors.white,
-                  closedBorder: Border.all(
-                    color: Colors.transparent,
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: const Color(0xFFE5E7EB),
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
+                decoration: _dropdownDecoration(colors, textStyle, hintStyle),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   if (statusList.indexOf(item) == 0) {
                     return Column(
@@ -121,45 +155,37 @@ class _DealLeadStatusMultiSelectWidgetState
                             onTap: _toggleSelectAll,
                             child: Row(
                               children: [
-                                Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: const Color(0xff1E2E52),
-                                      width: 1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(4),
-                                    color: allSelected
-                                        ? const Color(0xff1E2E52)
-                                        : Colors.transparent,
-                                  ),
-                                  child: allSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 14,
-                                        )
-                                      : null,
-                                ),
+                                _buildCheckbox(allSelected, colors),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     AppLocalizations.of(context)!
                                         .translate('select_all'),
-                                    style: statusTextStyle,
+                                    style: textStyle,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        const Divider(height: 20, color: Color(0xFFE5E7EB)),
-                        _buildListItem(item, isSelected, onItemSelect),
+                        Divider(height: 20, color: colors.borderSubtle),
+                        _buildListItem(
+                          item,
+                          isSelected,
+                          onItemSelect,
+                          textStyle,
+                          colors,
+                        ),
                       ],
                     );
                   }
-                  return _buildListItem(item, isSelected, onItemSelect);
+                  return _buildListItem(
+                    item,
+                    isSelected,
+                    onItemSelect,
+                    textStyle,
+                    colors,
+                  );
                 },
                 headerListBuilder: (context, hint, enabled) {
                   final selectedStatusesNames = selectedStatusesData.isEmpty
@@ -167,14 +193,14 @@ class _DealLeadStatusMultiSelectWidgetState
                       : selectedStatusesData.map((e) => e.title).join(', ');
                   return Text(
                     selectedStatusesNames,
-                    style: statusTextStyle,
+                    style: selectedStatusesData.isEmpty ? hintStyle : textStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   );
                 },
                 hintBuilder: (context, hint, enabled) => Text(
                   AppLocalizations.of(context)!.translate('select_status'),
-                  style: statusTextStyle.copyWith(fontSize: 14),
+                  style: hintStyle,
                 ),
                 onListChanged: (values) {
                   widget.onSelectStatuses(values);
@@ -191,10 +217,31 @@ class _DealLeadStatusMultiSelectWidgetState
     );
   }
 
+  Widget _buildCheckbox(bool isChecked, AppThemeColors colors) {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.textPrimary, width: 1),
+        borderRadius: BorderRadius.circular(4),
+        color: isChecked ? colors.buttonPrimaryBg : Colors.transparent,
+      ),
+      child: isChecked
+          ? Icon(
+              Icons.check,
+              color: colors.buttonPrimaryFg,
+              size: 14,
+            )
+          : null,
+    );
+  }
+
   Widget _buildListItem(
     LeadStatusForFilter item,
     bool isSelected,
     Function() onItemSelect,
+    TextStyle textStyle,
+    AppThemeColors colors,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -202,31 +249,12 @@ class _DealLeadStatusMultiSelectWidgetState
         onTap: onItemSelect,
         child: Row(
           children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xff1E2E52),
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(4),
-                color:
-                    isSelected ? const Color(0xff1E2E52) : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    )
-                  : null,
-            ),
+            _buildCheckbox(isSelected, colors),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 item.title,
-                style: statusTextStyle,
+                style: textStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

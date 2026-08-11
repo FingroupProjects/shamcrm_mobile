@@ -751,7 +751,11 @@ class _OrderScreenState extends State<OrderScreen>
                     },
                     child: BlocBuilder<OrderBloc, OrderState>(
                       builder: (context, state) {
-                        if (_isInitialLoad || state is OrderLoading) {
+                        // Полный лоадер только при первой загрузке статусов.
+                        // При смене таба OrderLoading не должен прятать чипы статусов
+                        // (как в лидах/задачах).
+                        if (_statuses.isEmpty &&
+                            (_isInitialLoad || state is OrderLoading)) {
                           return const Center(
                             child: PlayStoreImageLoading(
                               size: 80.0,

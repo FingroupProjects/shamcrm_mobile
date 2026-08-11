@@ -20,6 +20,7 @@ import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sales_planning/sales_planning_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -385,6 +386,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadCalendar = false;
   bool _canReadGps = false; // Новая переменная для GPS®
   bool _canOpenTimesheet = false;
+  bool _canReadSalesPlanning = false;
   // DEAL custom fields were moved to filter screen
 
   late Timer _timer;
@@ -670,6 +672,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadGps =
         await _apiService.hasPermission('call-center'); // Проверка прав для GPS
     final canReadTimesheet = await _apiService.canReadTimesheet();
+    final canReadSalesPlanning =
+        await _apiService.hasPermission('planning.read');
     if (!mounted) return;
     setState(() {
       _canReadNotice = canReadNotice;
@@ -678,6 +682,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadCallCenter = canReadCallCenter;
       _canReadGps = canReadGps;
       _canOpenTimesheet = canReadTimesheet;
+      _canReadSalesPlanning = canReadSalesPlanning;
     });
   }
 
@@ -1582,6 +1587,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     ),
                                   );
                                   break;
+                                case 'sales_planning':
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SalesPlanningScreen(),
+                                    ),
+                                  );
+                                  break;
                                 case 'projects':
                                   widget.onProjectsPressed?.call();
                                   break;
@@ -1818,6 +1832,20 @@ class _CustomAppBarState extends State<CustomAppBar>
                                           const SizedBox(width: 8),
                                           Text(AppLocalizations.of(context)!
                                               .translate('appbar_sip')),
+                                        ],
+                                      ),
+                                    ),
+                                  if (kShowSalesPlanning &&
+                                      _canReadSalesPlanning)
+                                    PopupMenuItem<String>(
+                                      value: 'sales_planning',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.flag_outlined,
+                                              color: inactiveIconColor),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate('sales_planning')),
                                         ],
                                       ),
                                     ),

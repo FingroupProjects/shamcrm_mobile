@@ -174,161 +174,128 @@ extension _SipMainViewsExtension on _SipScreenState {
 
   Future<void> _showTelephonyMenu(BuildContext anchorContext) async {
     final colors = anchorContext.appColors;
-    final overlay = Navigator.of(anchorContext).overlay;
-    if (overlay == null) return;
-    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
-    if (overlayBox == null) return;
-
-    final selected = await showMenu<String>(
+    final l10n = AppLocalizations.of(anchorContext)!;
+    final result = await showGeneralDialog<_TelephonyMenuAction>(
       context: anchorContext,
-      position: RelativeRect.fromLTRB(
-        overlayBox.size.width - 250,
-        70,
-        14,
-        0,
-      ),
-      color: colors.surfacePrimary,
-      surfaceTintColor: colors.surfacePrimary,
-      elevation: 10,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      items: [
-        _telephonyMenuItem(
-          value: 'settings',
-          icon: CupertinoIcons.gear_alt_fill,
-          label: AppLocalizations.of(anchorContext)!.translate('sip_settings'),
-        ),
-        _telephonyMenuItem(
-          value: 'funnels',
-          icon: CupertinoIcons.chart_bar_alt_fill,
-          label: AppLocalizations.of(anchorContext)!.translate('sales_funnel'),
-        ),
-      ],
-    );
-
-    if (!mounted || selected == null) return;
-    if (selected == 'settings') {
-      await _showSettingsSheet();
-    } else if (selected == 'funnels') {
-      await _showSalesFunnelsMenu(anchorContext);
-    }
-  }
-
-  PopupMenuItem<String> _telephonyMenuItem({
-    required String value,
-    required IconData icon,
-    required String label,
-  }) {
-    final colors = context.appColors;
-    return PopupMenuItem<String>(
-      value: value,
-      height: 46,
-      child: Row(
-        children: [
-          Icon(icon, size: 19, color: colors.iconSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            CupertinoIcons.chevron_right,
-            size: 16,
-            color: colors.textSecondary,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showSalesFunnelsMenu(BuildContext anchorContext) async {
-    final colors = anchorContext.appColors;
-    final overlay = Navigator.of(anchorContext).overlay;
-    if (overlay == null) return;
-    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
-    if (overlayBox == null) return;
-
-    try {
-      List<SalesFunnel> funnels;
-      try {
-        funnels = await _apiService.getSalesFunnels();
-      } catch (_) {
-        funnels = await _apiService.getCachedSalesFunnels();
-      }
-      if (!mounted || funnels.isEmpty) return;
-
-      final selectedId =
-          int.tryParse(await _apiService.getSelectedSalesFunnel() ?? '');
-      if (!mounted) return;
-      final selected = await showMenu<SalesFunnel>(
-        context: anchorContext,
-        position: RelativeRect.fromLTRB(
-          overlayBox.size.width - 278,
-          70,
-          14,
-          0,
-        ),
-        color: colors.surfacePrimary,
-        surfaceTintColor: colors.surfacePrimary,
-        elevation: 10,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        items: funnels
-            .map(
-              (funnel) => PopupMenuItem<SalesFunnel>(
-                value: funnel,
-                height: 46,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        funnel.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
+      barrierDismissible: true,
+      barrierLabel: 'telephony_menu',
+      barrierColor: Colors.black.withValues(alpha: 0.12),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return SafeArea(
+          child: Stack(
+            children: [
+              Positioned(
+                top: 58,
+                right: 14,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.96, end: 1).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    ),
+                    alignment: Alignment.topRight,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 236,
+                          maxWidth: 278,
+                        ),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: colors.borderSubtle.withValues(alpha: 0.55),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.shadow.withValues(alpha: 0.18),
+                                blurRadius: 22,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: _TelephonyOverflowMenuPanel(
+                            settingsLabel: l10n.translate('sip_settings'),
+                            funnelsLabel: l10n.translate('sales_funnel'),
+                            loadFunnels: () async {
+                              try {
+                                return await _apiService.getSalesFunnels();
+                              } catch (_) {
+                                return _apiService.getCachedSalesFunnels();
+                              }
+                            },
+                            loadSelectedFunnelId: () async {
+                              return int.tryParse(
+                                await _apiService.getSelectedSalesFunnel() ??
+                                    '',
+                              );
+                            },
+                            onSettingsSelected: () {
+                              Navigator.of(dialogContext).pop(
+                                const _TelephonyMenuAction.settings(),
+                              );
+                            },
+                            onFunnelSelected: (funnel) {
+                              Navigator.of(dialogContext).pop(
+                                _TelephonyMenuAction.funnel(funnel),
+                              );
+                            },
+                            onLoadError: () {
+                              Navigator.of(dialogContext).pop(
+                                const _TelephonyMenuAction.loadError(),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
-                    if (selectedId == funnel.id)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        size: 18,
-                        color: colors.buttonPrimaryBg,
-                      ),
-                  ],
+                  ),
                 ),
               ),
-            )
-            .toList(),
-      );
+            ],
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return child;
+      },
+    );
 
-      if (selected == null || selected.id == selectedId) return;
-      await _apiService.saveSelectedSalesFunnel(selected.id.toString());
-      await LeadCache.clearAllLeads();
-      await LeadCache.clearCache();
-      if (!mounted) return;
-      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(selected));
-    } catch (_) {
-      if (!mounted) return;
+    if (!mounted || result == null) return;
+
+    if (result.isSettings) {
+      await _showSettingsSheet();
+      return;
+    }
+
+    if (result.isLoadError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Не удалось загрузить список воронок'),
           backgroundColor: context.appColors.error,
         ),
       );
+      return;
     }
+
+    final selected = result.funnel;
+    if (selected == null) return;
+
+    final selectedId =
+        int.tryParse(await _apiService.getSelectedSalesFunnel() ?? '');
+    if (selected.id == selectedId) return;
+
+    await _apiService.saveSelectedSalesFunnel(selected.id.toString());
+    await LeadCache.clearAllLeads();
+    await LeadCache.clearCache();
+    if (!mounted) return;
+    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(selected));
   }
 
   Widget _buildRegisteredIndicator() {
@@ -1973,4 +1940,241 @@ extension _SipMainViewsExtension on _SipScreenState {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
+}
+
+class _TelephonyMenuAction {
+  const _TelephonyMenuAction.settings()
+      : isSettings = true,
+        isLoadError = false,
+        funnel = null;
+
+  const _TelephonyMenuAction.loadError()
+      : isSettings = false,
+        isLoadError = true,
+        funnel = null;
+
+  const _TelephonyMenuAction.funnel(this.funnel)
+      : isSettings = false,
+        isLoadError = false;
+
+  final bool isSettings;
+  final bool isLoadError;
+  final SalesFunnel? funnel;
+}
+
+class _TelephonyOverflowMenuPanel extends StatefulWidget {
+  const _TelephonyOverflowMenuPanel({
+    required this.settingsLabel,
+    required this.funnelsLabel,
+    required this.loadFunnels,
+    required this.loadSelectedFunnelId,
+    required this.onSettingsSelected,
+    required this.onFunnelSelected,
+    required this.onLoadError,
+  });
+
+  final String settingsLabel;
+  final String funnelsLabel;
+  final Future<List<SalesFunnel>> Function() loadFunnels;
+  final Future<int?> Function() loadSelectedFunnelId;
+  final VoidCallback onSettingsSelected;
+  final ValueChanged<SalesFunnel> onFunnelSelected;
+  final VoidCallback onLoadError;
+
+  @override
+  State<_TelephonyOverflowMenuPanel> createState() =>
+      _TelephonyOverflowMenuPanelState();
+}
+
+class _TelephonyOverflowMenuPanelState
+    extends State<_TelephonyOverflowMenuPanel> {
+  bool _funnelsExpanded = false;
+  bool _isLoadingFunnels = false;
+  List<SalesFunnel> _funnels = const [];
+  int? _selectedFunnelId;
+
+  Future<void> _toggleFunnels() async {
+    if (_funnelsExpanded) {
+      setState(() => _funnelsExpanded = false);
+      return;
+    }
+
+    if (_funnels.isNotEmpty) {
+      setState(() => _funnelsExpanded = true);
+      return;
+    }
+
+    setState(() {
+      _funnelsExpanded = true;
+      _isLoadingFunnels = true;
+    });
+
+    try {
+      final results = await Future.wait([
+        widget.loadFunnels(),
+        widget.loadSelectedFunnelId(),
+      ]);
+      if (!mounted) return;
+      final funnels = results[0] as List<SalesFunnel>;
+      final selectedId = results[1] as int?;
+      setState(() {
+        _funnels = funnels;
+        _selectedFunnelId = selectedId;
+        _isLoadingFunnels = false;
+        _funnelsExpanded = funnels.isNotEmpty;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingFunnels = false;
+        _funnelsExpanded = false;
+      });
+      widget.onLoadError();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 6),
+              _buildMenuRow(
+                icon: CupertinoIcons.gear_alt_fill,
+                label: widget.settingsLabel,
+                trailing: CupertinoIcons.chevron_right,
+                onTap: widget.onSettingsSelected,
+              ),
+              _buildMenuRow(
+                icon: CupertinoIcons.chart_bar_alt_fill,
+                label: widget.funnelsLabel,
+                trailing: _funnelsExpanded
+                    ? CupertinoIcons.chevron_down
+                    : CupertinoIcons.chevron_right,
+                onTap: _toggleFunnels,
+              ),
+              if (_funnelsExpanded) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: colors.borderSubtle.withValues(alpha: 0.55),
+                  ),
+                ),
+                if (_isLoadingFunnels)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 18),
+                    child: Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.2),
+                      ),
+                    ),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 260),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: _funnels.map(_buildFunnelRow).toList(),
+                      ),
+                    ),
+                  ),
+              ],
+              if (!_funnelsExpanded) const SizedBox(height: 6),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuRow({
+    required IconData icon,
+    required String label,
+    required IconData trailing,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.appColors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 19, color: colors.iconSecondary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              trailing,
+              size: 16,
+              color: colors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFunnelRow(SalesFunnel funnel) {
+    final colors = context.appColors;
+    final isSelected = _selectedFunnelId == funnel.id;
+    return InkWell(
+      onTap: () => widget.onFunnelSelected(funnel),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            const SizedBox(width: 31),
+            Expanded(
+              child: Text(
+                funnel.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: colors.buttonPrimaryBg,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

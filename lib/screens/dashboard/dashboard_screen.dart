@@ -25,6 +25,8 @@ import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/task_chart/ta
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard_for_manager/charts/user_task/user_task_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_plan/sales_plan_dashboard_bloc.dart';
+import 'package:crm_task_manager/bloc/sales_plan/sales_plan_dashboard_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
@@ -39,6 +41,7 @@ import 'package:crm_task_manager/screens/dashboard/process_speed.dart';
 import 'package:crm_task_manager/screens/dashboard/task_chart.dart';
 import 'package:crm_task_manager/screens/dashboard/lead_conversion.dart';
 import 'package:crm_task_manager/screens/dashboard/graphic_dashboard.dart';
+import 'package:crm_task_manager/screens/sales_planning/widgets/sales_plan_dashboard_widget.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/deal_stats.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/graphic_dashboard.dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/lead_conversion.dart';
@@ -604,6 +607,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         if (_activeDashboard == DashboardType.crm) {
           // Reload CRM dashboard
+          context
+              .read<SalesPlanDashboardBloc>()
+              .add(const FetchSalesPlanDashboard());
           context.read<TaskCompletionBloc>().add(LoadTaskCompletionData());
           context.read<DashboardChartBloc>().add(LoadLeadChartData());
           context
@@ -789,6 +795,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Widget> _buildDashboardContent() {
     if (userRoles.contains('admin')) {
       return [
+        const SalesPlanDashboardWidget(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         LeadConversionChart(key: keyAdminLeadConversion),
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskCompletionChart(key: keyAdminTaskComplietion),
@@ -803,6 +811,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     } else if (userRoles.contains('manager')) {
       return [
+        const SalesPlanDashboardWidget(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         LeadConversionChartManager(key: keyAdminLeadConversion),
         Divider(thickness: 1, color: Colors.grey[300]),
         GoalCompletionChart(key: keyManagerGoalComplietion),
@@ -817,6 +827,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ];
     } else {
       return [
+        const SalesPlanDashboardWidget(),
+        Divider(thickness: 1, color: Colors.grey[300]),
         GoalCompletionChart(key: keyManagerGoalComplietion),
         Divider(thickness: 1, color: Colors.grey[300]),
         TaskChartWidgetManager(key: keyAdminTaskChart),

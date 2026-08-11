@@ -1509,36 +1509,36 @@ class _AppBarSearchField extends StatelessWidget {
     return SizedBox(
       height: 42,
       child: TextSelectionTheme(
-        data: const TextSelectionThemeData(
-          cursorColor: Color(0xff1E2E52),
-          selectionColor: Color(0x331E2E52),
-          selectionHandleColor: Color(0xff1E2E52),
+        data: TextSelectionThemeData(
+          cursorColor: colors.buttonPrimaryBg,
+          selectionColor: colors.buttonPrimaryBg.withValues(alpha: 0.2),
+          selectionHandleColor: colors.buttonPrimaryBg,
         ),
         child: TextField(
           controller: controller,
           focusNode: focusNode,
           onChanged: onChanged,
           autofocus: true,
-          cursorColor: const Color(0xff1E2E52),
+          cursorColor: colors.buttonPrimaryBg,
           textInputAction: TextInputAction.search,
-          style: const TextStyle(
-            color: Color(0xff1E2E52),
+          style: TextStyle(
+            color: colors.textPrimary,
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             hintText: 'Поиск',
-            hintStyle: const TextStyle(
-              color: Color(0xff99A4BA),
+            hintStyle: TextStyle(
+              color: colors.textSecondary,
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
             ),
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.search,
               size: 21,
-              color: Color(0xff99A4BA),
+              color: colors.iconSecondary,
             ),
             prefixIconConstraints: const BoxConstraints(
               minWidth: 42,

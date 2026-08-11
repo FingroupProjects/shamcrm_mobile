@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+
 import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_NamesMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_status_list.dart';
@@ -426,7 +427,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: DealNamesMultiSelectWidget(
@@ -444,7 +445,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: ManagerMultiSelectWidget(
@@ -463,7 +464,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: StateSingleSelectWidget(
@@ -482,7 +483,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: CityMultiSelectWidget(
@@ -502,7 +503,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: DealExecutorsMultiSelectWidget(
@@ -520,7 +521,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: LeadMultiSelectWidget(
@@ -540,7 +541,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: DealLeadStatusMultiSelectWidget(
@@ -561,7 +562,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: DealStatusRadioGroupWidget(
@@ -580,7 +581,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         return Card(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          color: Colors.white,
+          color: context.appColors.surfacePrimary,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: ReasonForRefusalMultiSelectWidget(
@@ -604,7 +605,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           return Card(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: Colors.white,
+            color: context.appColors.surfacePrimary,
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: CustomFieldMultiSelect(
@@ -634,7 +635,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             return Card(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
-              color: Colors.white,
+              color: context.appColors.surfacePrimary,
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: MultiDirectoryDropdownWidget(
@@ -662,7 +663,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Widget _buildLeadStatusFilterCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: DealLeadStatusMultiSelectWidget(
@@ -683,7 +684,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
   Widget _buildSourceFilterCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white,
+      color: context.appColors.surfacePrimary,
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: SourcesMultiSelectWidget(
@@ -703,19 +704,28 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     return SwitchListTile(
       title: Text(
         title,
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black54,
-          fontFamily: 'Gilroy',
+        style: context.appTextStyles.bodyLg.copyWith(
+          color: context.appColors.textSecondary,
         ),
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: const Color.fromARGB(255, 255, 255, 255),
-      inactiveTrackColor:
-          const Color.fromARGB(255, 179, 179, 179).withOpacity(0.5),
-      activeTrackColor: ChatSmsStyles.messageBubbleSenderColor,
-      inactiveThumbColor: const Color.fromARGB(255, 255, 255, 255),
+      activeThumbColor: context.appColors.buttonPrimaryFg,
+      inactiveTrackColor: context.appColors.textMuted.withValues(alpha: 0.5),
+      activeTrackColor: context.appColors.buttonPrimaryBg,
+      inactiveThumbColor: context.appColors.buttonPrimaryFg,
+    );
+  }
+
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
     );
   }
 
@@ -728,21 +738,93 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           ? DateTimeRange(start: _fromDate!, end: _toDate!)
           : null,
       builder: (BuildContext context, Widget? child) {
+        final colors = context.appColors;
         return Theme(
-          data: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: Colors.white,
-            dialogBackgroundColor: Colors.white,
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-              secondary: Colors.blue.withOpacity(0.1),
+          data: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: colors.surfacePrimary,
+            canvasColor: colors.surfacePrimary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.buttonPrimaryBg,
+              onPrimary: colors.buttonPrimaryFg,
+              surface: colors.surfacePrimary,
+              onSurface: colors.textPrimary,
+              secondary: colors.buttonSecondaryBg.withValues(alpha: 0.16),
+              onSecondary: colors.textPrimary,
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: colors.surfacePrimary,
+            ),
+            appBarTheme: AppBarTheme(
+              backgroundColor: colors.surfacePrimary,
+              foregroundColor: colors.textPrimary,
+              surfaceTintColor: colors.surfacePrimary,
+              elevation: 0,
+            ),
+            dividerColor: colors.borderSubtle,
+            textTheme: ThemeData.dark().textTheme.apply(
+                  bodyColor: colors.textPrimary,
+                  displayColor: colors.textPrimary,
+                ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: colors.surfacePrimary,
+              headerBackgroundColor: colors.surfacePrimary,
+              headerForegroundColor: colors.textPrimary,
+              weekdayStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+              dayStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+              yearStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+              rangePickerHeaderForegroundColor: colors.textPrimary,
+              rangePickerBackgroundColor: colors.surfacePrimary,
+              rangeSelectionBackgroundColor:
+                  colors.buttonPrimaryBg.withValues(alpha: 0.18),
+              rangeSelectionOverlayColor: WidgetStatePropertyAll(
+                  colors.buttonPrimaryBg.withValues(alpha: 0.10)),
+              todayForegroundColor:
+                  WidgetStatePropertyAll(colors.buttonPrimaryBg),
+              todayBackgroundColor: WidgetStatePropertyAll(
+                colors.buttonPrimaryBg.withValues(alpha: 0.12),
+              ),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryFg;
+                }
+                return colors.textPrimary;
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return colors.buttonPrimaryBg;
+                }
+                return null;
+              }),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: colors.textSecondary,
+              ),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: colors.buttonPrimaryBg,
+              ),
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+              style: TextButton.styleFrom(
+                foregroundColor: colors.buttonPrimaryBg,
+              ),
             ),
           ),
-          child: child!,
+          child: ColoredBox(
+            color: colors.surfacePrimary,
+            child: child!,
+          ),
         );
       },
     );
@@ -777,7 +859,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Color(0xffF4F7FD),
+      backgroundColor: context.appColors.backgroundSecondary,
       appBar: AppBar(
         titleSpacing: 0,
         title: Text(
@@ -785,11 +867,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: context.appColors.textPrimary,
             fontFamily: 'Gilroy',
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surfacePrimary,
         forceMaterialTransparency: true,
         elevation: 1,
         actions: [
@@ -822,21 +904,12 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                 _initializeCustomFieldSelections(const {});
               });
             },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('reset'),
-              style: TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.labelLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -917,21 +990,12 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
               }
               Navigator.pop(context);
             },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              backgroundColor: Colors.blueAccent.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: BorderSide(color: Colors.blueAccent, width: 0.5),
-            ),
+            style: _buildActionButtonStyle(),
             child: Text(
               AppLocalizations.of(context)!.translate('apply'),
-              style: TextStyle(
-                fontSize: 16,
+              style: context.appTextStyles.labelLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
-                fontFamily: 'Gilroy',
+                color: context.appColors.buttonPrimaryBg,
               ),
             ),
           ),
@@ -956,11 +1020,11 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                       const SizedBox(height: 12),
                       Text(
                         AppLocalizations.of(context)!.translate('loading'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Gilroy',
-                          color: Color(0xff1E2E52),
+                          color: context.appColors.textPrimary,
                         ),
                       ),
                     ],
@@ -972,14 +1036,19 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
+                      color: context.appColors.surfacePrimary,
+                      shadowColor: context.appColors.shadowColor,
                       child: GestureDetector(
                         onTap: _selectDateRange,
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.appColors.fieldBg,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: context.appColors.fieldBorder,
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -989,10 +1058,14 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                     ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
                                     : AppLocalizations.of(context)!
                                         .translate('select_date_range'),
-                                style: TextStyle(
-                                    color: Colors.black54, fontSize: 14),
+                                style: context.appTextStyles.bodyMd.copyWith(
+                                  color: context.appColors.textSecondary,
+                                ),
                               ),
-                              Icon(Icons.calendar_today, color: Colors.black54),
+                              Icon(
+                                Icons.calendar_today,
+                                color: context.appColors.iconSecondary,
+                              ),
                             ],
                           ),
                         ),
@@ -1022,7 +1095,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                 child: Card(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
-                                  color: Colors.white,
+                                  color: context.appColors.surfacePrimary,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: StateSingleSelectWidget(
@@ -1045,7 +1118,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                 child: Card(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
-                                  color: Colors.white,
+                                  color: context.appColors.surfacePrimary,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: CityMultiSelectWidget(
@@ -1071,7 +1144,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                 child: Card(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
-                                  color: Colors.white,
+                                  color: context.appColors.surfacePrimary,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: DealExecutorsMultiSelectWidget(
@@ -1105,7 +1178,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                 child: Card(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
-                                  color: Colors.white,
+                                  color: context.appColors.surfacePrimary,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: ReasonForRefusalMultiSelectWidget(
@@ -1142,7 +1215,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: SourcesMultiSelectWidget(
@@ -1162,7 +1235,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: DealNamesMultiSelectWidget(
@@ -1186,7 +1259,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                 Card(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
-                                  color: Colors.white,
+                                  color: context.appColors.surfacePrimary,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: ReasonForRefusalMultiSelectWidget(
@@ -1209,7 +1282,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: ManagerMultiSelectWidget(
@@ -1229,7 +1302,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: LeadMultiSelectWidget(
@@ -1249,7 +1322,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: DealStatusRadioGroupWidget(
@@ -1272,7 +1345,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(12)),
-                                    color: Colors.white,
+                                    color: context.appColors.surfacePrimary,
                                     child: Padding(
                                       padding: const EdgeInsets.all(8),
                                       child: CustomFieldMultiSelect(
@@ -1301,7 +1374,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(12)),
-                                    color: Colors.white,
+                                    color: context.appColors.surfacePrimary,
                                     child: Padding(
                                       padding: const EdgeInsets.all(8),
                                       child: MultiDirectoryDropdownWidget(
@@ -1327,7 +1400,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: StateSingleSelectWidget(
@@ -1345,7 +1418,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: CityMultiSelectWidget(
@@ -1366,7 +1439,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8),
                                   child: DealExecutorsMultiSelectWidget(
@@ -1388,7 +1461,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                             Card(
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                              color: context.appColors.surfacePrimary,
                               child: Column(
                                 children: [
                                   _buildSwitchTile(
@@ -1407,7 +1480,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: _buildSwitchTile(
                                   AppLocalizations.of(context)!
                                       .translate('deals_without_next_stage'),
@@ -1423,7 +1496,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                               Card(
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
-                                color: Colors.white,
+                                color: context.appColors.surfacePrimary,
                                 child: _buildSwitchTile(
                                   AppLocalizations.of(context)!
                                       .translate('deals_with_overdue_tasks'),
@@ -1438,7 +1511,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                             Card(
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
-                              color: Colors.white,
+                              color: context.appColors.surfacePrimary,
                               child: Padding(
                                 padding: const EdgeInsets.only(
                                     left: 12, right: 12, top: 4, bottom: 0),
@@ -1452,7 +1525,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                         fontFamily: 'Gilroy',
-                                        color: Color(0xff1E2E52),
+                                        color: context.appColors.textPrimary,
                                       ),
                                     ),
                                     Slider(
@@ -1467,11 +1540,9 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                           _daysWithoutActivity = value.toInt();
                                         });
                                       },
-                                      activeColor: ChatSmsStyles
-                                          .messageBubbleSenderColor,
-                                      inactiveColor:
-                                          Color.fromARGB(255, 179, 179, 179)
-                                              .withOpacity(0.5),
+                                      activeColor: context.appColors.buttonPrimaryBg,
+                                      inactiveColor: context.appColors.textMuted
+                                          .withValues(alpha: 0.5),
                                     ),
                                     Center(
                                       child: Text(
@@ -1480,7 +1551,7 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                           fontSize: 20, 
                                           fontWeight: FontWeight.w500,
                                           fontFamily: 'Gilroy',
-                                          color: Color(0xff1E2E52),
+                                          color: context.appColors.textPrimary,
                                         ),
                                         textAlign: TextAlign.center,
                                       ),

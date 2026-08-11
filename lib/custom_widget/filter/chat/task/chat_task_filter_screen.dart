@@ -421,21 +421,20 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
   }
 
   Widget _buildSectionCard({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.88),
+    final colors = context.appColors;
+    // Material (not colored DecoratedBox) so SwitchListTile/ListTile ink
+    // is not hidden — avoids "background color or ink splashes may be invisible".
+    return Material(
+      color: colors.surfacePrimary.withValues(alpha: 0.88),
+      elevation: 2,
+      shadowColor: colors.shadow.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: context.appColors.borderSubtle.withValues(alpha: 0.38),
+        side: BorderSide(
+          color: colors.borderSubtle.withValues(alpha: 0.38),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: context.appColors.shadow.withValues(alpha: 0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: child,
     );
   }

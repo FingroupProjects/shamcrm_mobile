@@ -1,5 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/models/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -29,13 +31,6 @@ class _DealExecutorsMultiSelectWidgetState
   bool allSelected = false;
   bool isLoading = false;
 
-  final TextStyle executorTextStyle = const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    fontFamily: 'Gilroy',
-    color: Color(0xff1E2E52),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -64,16 +59,10 @@ class _DealExecutorsMultiSelectWidgetState
     setState(() => isLoading = true);
     try {
       await _apiService.ensureInitialized();
-      debugPrint(
-        'DealExecutorsMultiSelectWidget: loading executors from /department/get/users',
-      );
       final response = await _apiService.getDealExecutors();
       if (!mounted) return;
 
       final loadedExecutors = response.result ?? [];
-      debugPrint(
-        'DealExecutorsMultiSelectWidget: loaded ${loadedExecutors.length} executors',
-      );
       setState(() {
         executorsList = loadedExecutors;
         selectedExecutorsData = loadedExecutors
@@ -86,9 +75,6 @@ class _DealExecutorsMultiSelectWidgetState
       });
     } catch (error) {
       if (!mounted) return;
-      debugPrint(
-        'DealExecutorsMultiSelectWidget: failed to load executors: $error',
-      );
       setState(() {
         executorsList = [];
         selectedExecutorsData = [];
@@ -106,8 +92,60 @@ class _DealExecutorsMultiSelectWidgetState
     });
   }
 
+  CustomDropdownDecoration _dropdownDecoration(
+    AppThemeColors colors,
+    TextStyle textStyle,
+    TextStyle hintStyle,
+  ) {
+    return CustomDropdownDecoration(
+      closedFillColor: colors.fieldBg,
+      expandedFillColor: colors.fieldBg,
+      closedBorder: Border.all(color: Colors.transparent, width: 1),
+      closedBorderRadius: BorderRadius.circular(12),
+      expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
+      expandedBorderRadius: BorderRadius.circular(12),
+      hintStyle: hintStyle,
+      headerStyle: textStyle,
+      listItemStyle: textStyle,
+      noResultFoundStyle: hintStyle,
+      listItemDecoration: ListItemDecoration(
+        selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+        highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.08),
+        splashColor: Colors.transparent,
+      ),
+      searchFieldDecoration: SearchFieldDecoration(
+        fillColor: colors.surfaceElevated,
+        textStyle: textStyle,
+        hintStyle: hintStyle,
+        prefixIcon: Icon(Icons.search, color: colors.iconSecondary),
+        suffixIcon: (onClear) => IconButton(
+          onPressed: onClear,
+          icon: Icon(Icons.close_rounded, color: colors.iconSecondary),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.fieldBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: colors.buttonPrimaryBg),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyle = context.appTextStyles.bodyLg.copyWith(
+      fontWeight: FontWeight.w500,
+      color: colors.textPrimary,
+    );
+    final hintStyle = textStyle.copyWith(
+      fontSize: 14,
+      color: colors.textSecondary,
+    );
+
     return FormField<List<UserData>>(
       validator: (value) {
         if (selectedExecutorsData.isEmpty) {
@@ -122,7 +160,7 @@ class _DealExecutorsMultiSelectWidgetState
           children: [
             Text(
               AppLocalizations.of(context)!.translate('executors'),
-              style: executorTextStyle.copyWith(
+              style: textStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
@@ -130,17 +168,22 @@ class _DealExecutorsMultiSelectWidgetState
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F7FD),
+                color: colors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : const Color(0xFFE5E7EB),
+                  color: field.hasError ? colors.error : colors.fieldBorder,
                 ),
               ),
               child: isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Center(child: CircularProgressIndicator()),
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.buttonPrimaryBg,
+                        ),
+                      ),
                     )
                   : CustomDropdown<UserData>.multiSelectSearch(
                       items: executorsList,
@@ -148,15 +191,8 @@ class _DealExecutorsMultiSelectWidgetState
                       searchHintText:
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(color: Colors.transparent),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder:
-                            Border.all(color: const Color(0xFFE5E7EB)),
-                        expandedBorderRadius: BorderRadius.circular(12),
-                      ),
+                      decoration:
+                          _dropdownDecoration(colors, textStyle, hintStyle),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         if (executorsList.indexOf(item) == 0) {
@@ -169,26 +205,37 @@ class _DealExecutorsMultiSelectWidgetState
                                   onTap: _toggleSelectAll,
                                   child: Row(
                                     children: [
-                                      _buildCheckbox(allSelected),
+                                      _buildCheckbox(allSelected, colors),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           AppLocalizations.of(context)!
                                               .translate('select_all'),
-                                          style: executorTextStyle,
+                                          style: textStyle,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                              const Divider(
-                                  height: 20, color: Color(0xFFE5E7EB)),
-                              _buildListItem(item, isSelected, onItemSelect),
+                              Divider(height: 20, color: colors.borderSubtle),
+                              _buildListItem(
+                                item,
+                                isSelected,
+                                onItemSelect,
+                                textStyle,
+                                colors,
+                              ),
                             ],
                           );
                         }
-                        return _buildListItem(item, isSelected, onItemSelect);
+                        return _buildListItem(
+                          item,
+                          isSelected,
+                          onItemSelect,
+                          textStyle,
+                          colors,
+                        );
                       },
                       headerListBuilder: (context, hint, enabled) {
                         final selectedExecutorsNames =
@@ -200,7 +247,9 @@ class _DealExecutorsMultiSelectWidgetState
                                     .join(', ');
                         return Text(
                           selectedExecutorsNames,
-                          style: executorTextStyle,
+                          style: selectedExecutorsData.isEmpty
+                              ? hintStyle
+                              : textStyle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         );
@@ -208,7 +257,7 @@ class _DealExecutorsMultiSelectWidgetState
                       hintBuilder: (context, hint, enabled) => Text(
                         AppLocalizations.of(context)!
                             .translate('select_assignees_list'),
-                        style: executorTextStyle.copyWith(fontSize: 14),
+                        style: hintStyle,
                       ),
                       onListChanged: (values) {
                         widget.onSelectExecutors(values);
@@ -225,10 +274,8 @@ class _DealExecutorsMultiSelectWidgetState
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+                  style: context.appTextStyles.bodyMd.copyWith(
+                    color: colors.error,
                   ),
                 ),
               ),
@@ -238,19 +285,19 @@ class _DealExecutorsMultiSelectWidgetState
     );
   }
 
-  Widget _buildCheckbox(bool isChecked) {
+  Widget _buildCheckbox(bool isChecked, AppThemeColors colors) {
     return Container(
       width: 18,
       height: 18,
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xff1E2E52), width: 1),
+        border: Border.all(color: colors.textPrimary, width: 1),
         borderRadius: BorderRadius.circular(4),
-        color: isChecked ? const Color(0xff1E2E52) : Colors.transparent,
+        color: isChecked ? colors.buttonPrimaryBg : Colors.transparent,
       ),
       child: isChecked
-          ? const Icon(
+          ? Icon(
               Icons.check,
-              color: Colors.white,
+              color: colors.buttonPrimaryFg,
               size: 14,
             )
           : null,
@@ -261,6 +308,8 @@ class _DealExecutorsMultiSelectWidgetState
     UserData item,
     bool isSelected,
     VoidCallback onItemSelect,
+    TextStyle textStyle,
+    AppThemeColors colors,
   ) {
     return InkWell(
       onTap: onItemSelect,
@@ -268,12 +317,12 @@ class _DealExecutorsMultiSelectWidgetState
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            _buildCheckbox(isSelected),
+            _buildCheckbox(isSelected, colors),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 '${item.name} ${item.lastname}',
-                style: executorTextStyle,
+                style: textStyle,
               ),
             ),
           ],

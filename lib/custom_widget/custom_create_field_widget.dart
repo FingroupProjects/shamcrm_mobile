@@ -32,7 +32,7 @@ class CustomFieldWidget extends StatelessWidget {
     this.keyboardTypeOverride,
     this.inputFormattersOverride,
     this.maxLength,
-    this.showBorder = false,
+    this.showBorder = true,
     this.autovalidateMode,
     this.readOnlyOverride,
     this.onChanged,
@@ -196,13 +196,13 @@ class CustomFieldWidget extends StatelessWidget {
                     border: OutlineInputBorder(
                       borderRadius: context.appRadius.input,
                       borderSide: showBorder
-                          ? BorderSide(color: colors.borderPrimary, width: 0.5)
+                          ? BorderSide(color: colors.borderSubtle, width: 1)
                           : BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: context.appRadius.input,
                       borderSide: showBorder
-                          ? BorderSide(color: colors.borderPrimary, width: 0.5)
+                          ? BorderSide(color: colors.borderSubtle, width: 1)
                           : BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -231,6 +231,9 @@ class CustomFieldWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: fieldFill,
                     borderRadius: context.appRadius.input,
+                    border: showBorder
+                        ? Border.all(color: colors.borderSubtle, width: 1)
+                        : null,
                   ),
                   child: Text(
                     fieldName,

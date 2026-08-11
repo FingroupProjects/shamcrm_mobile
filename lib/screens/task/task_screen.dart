@@ -2027,7 +2027,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       debugPrint(
                           'TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
 
-                      // ИСПРАВЛЕНО: Устанавливаем флаг загрузки при переключении табов
                       setState(() {
                         _currentTabIndex = _tabController.index;
                         _isFilterLoading = true;
@@ -2037,6 +2036,60 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       if (_tabScrollController.hasClients) {
                         _scrollToActiveTab();
                       }
+
+                      if (_tabTitles.isEmpty ||
+                          _currentTabIndex >= _tabTitles.length) {
+                        return;
+                      }
+
+                      final currentStatusId =
+                          _tabTitles[_currentTabIndex]['id'];
+                      final hasActiveFilters = _hasActiveFilters();
+
+                      context.read<TaskBloc>().add(FetchTasks(
+                            currentStatusId,
+                            query: _lastSearchQuery.isNotEmpty
+                                ? _lastSearchQuery
+                                : null,
+                            userIds:
+                                hasActiveFilters && _selectedUsers.isNotEmpty
+                                    ? _selectedUsers
+                                        .map((user) => user.id)
+                                        .toList()
+                                    : null,
+                            statusIds:
+                                hasActiveFilters ? currentStatusId : null,
+                            fromDate: hasActiveFilters ? _fromDate : null,
+                            toDate: hasActiveFilters ? _toDate : null,
+                            overdue: hasActiveFilters ? _isOverdue : null,
+                            hasFile: hasActiveFilters ? _hasFile : null,
+                            hasDeal: hasActiveFilters ? _hasDeal : null,
+                            urgent: hasActiveFilters ? _isUrgent : null,
+                            reasonForRefusalIds: hasActiveFilters &&
+                                    _selectedReasonForRefusalIds.isNotEmpty
+                                ? _selectedReasonForRefusalIds
+                                : null,
+                            deadlinefromDate:
+                                hasActiveFilters ? _deadlinefromDate : null,
+                            deadlinetoDate:
+                                hasActiveFilters ? _deadlinetoDate : null,
+                            completedFromDate:
+                                hasActiveFilters ? _completedFromDate : null,
+                            completedToDate:
+                                hasActiveFilters ? _completedToDate : null,
+                            projectIds: _projectFilterIds(),
+                            projectId: _projectContextId,
+                            authors: hasActiveFilters &&
+                                    _selectedAuthors.isNotEmpty
+                                ? _selectedAuthors
+                                : null,
+                            department:
+                                hasActiveFilters ? _selectedDepartment : null,
+                            directoryValues: hasActiveFilters &&
+                                    _selectedDirectoryValues.isNotEmpty
+                                ? _selectedDirectoryValues
+                                : null,
+                          ));
 
                       debugPrint(
                           'TaskScreen: tab changed to index ${_tabController.index}');
@@ -2265,24 +2318,24 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 duration: Duration(milliseconds: 1000),
               ),
             )
-          : Builder(
-              builder: (context) {
-                final int safeIndex =
-                    _currentTabIndex < _tabTitles.length ? _currentTabIndex : 0;
-                final status = _tabTitles[safeIndex];
-
+          : TabBarView(
+              controller: _tabController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: List.generate(_tabTitles.length, (index) {
+                final status = _tabTitles[index];
                 return TaskColumn(
-                  isTaskScreenTutorialCompleted: _isTaskScreenTutorialCompleted,
+                  isTaskScreenTutorialCompleted:
+                      _isTaskScreenTutorialCompleted,
                   statusId: status['id'],
                   name: status['title'],
                   userId: _selectedUserId,
                   projectId: _projectContextId,
-                  isActive: true,
+                  isActive: index == _tabController.index,
                   onStatusId: (newStatusId) {
                     _hardRefreshAfterTaskChange(newStatusId);
                   },
                 );
-              },
+              }),
             ),
     );
   }
