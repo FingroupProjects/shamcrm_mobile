@@ -48,6 +48,7 @@ class _SalesPlanLeaderboardScreenState
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: DropdownButtonFormField<String>(
               value: _periodType,
+              isExpanded: true,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: colors.surfaceElevated,

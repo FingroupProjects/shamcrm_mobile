@@ -288,7 +288,7 @@ class SipService extends ChangeNotifier
       _sipEnabled = enabledRaw == 'true' && hasStoredCredentials;
       _persistentSipEnabled = _sipEnabled;
       if (enabledRaw == 'true' && !hasStoredCredentials) {
-        unawaited(_storage.write(key: _enabledKey, value: 'false'));
+        unawaited(_writeSecureStorage(key: _enabledKey, value: 'false'));
       }
       final transport = switch (transportRaw) {
         'tcp' => SipTransportUi.tcp,
@@ -421,7 +421,7 @@ class SipService extends ChangeNotifier
     };
     for (final entry in values.entries) {
       try {
-        await _storage.write(key: entry.key, value: entry.value);
+        await _writeSecureStorage(key: entry.key, value: entry.value);
       } catch (error) {
         debugPrint(
           'SipService native config mirror failed for ${entry.key}: $error',
@@ -436,6 +436,56 @@ class SipService extends ChangeNotifier
     return message.contains('BAD_DECRYPT') ||
         message.contains('BAD PADDING') ||
         message.contains('BADPADDINGEXCEPTION');
+  }
+
+  bool _isKeychainDuplicateItemError(PlatformException error) {
+    final message =
+        '${error.code} ${error.message} ${error.details}'.toLowerCase();
+    return message.contains('-25299') ||
+        message.contains('already exists in the keychain') ||
+        message.contains('errsecduplicateitem');
+  }
+
+  /// iOS keychain can throw -25299 (duplicate item) on write races / stale
+  /// accessibility attrs. Delete+retry so unawaited writes never crash the zone.
+  Future<void> _writeSecureStorage({
+    required String key,
+    required String value,
+  }) async {
+    try {
+      await _storage.write(key: key, value: value);
+      return;
+    } on PlatformException catch (error) {
+      if (_isSecureStorageDecryptError(error)) {
+        debugPrint(
+          'SipService secure write decrypt error for $key, resetting storage',
+        );
+        await _resetCorruptedSipStorage();
+      } else if (_isKeychainDuplicateItemError(error)) {
+        debugPrint(
+          'SipService keychain duplicate for $key, deleting and rewriting',
+        );
+        try {
+          await _storage.delete(key: key);
+        } catch (deleteError) {
+          debugPrint(
+            'SipService secure delete before rewrite failed for $key: $deleteError',
+          );
+        }
+      } else {
+        debugPrint('SipService secure write failed for $key: $error');
+        return;
+      }
+    } catch (error) {
+      debugPrint('SipService secure write failed for $key: $error');
+      return;
+    }
+
+    try {
+      await _storage.write(key: key, value: value);
+    } catch (retryError) {
+      debugPrint('SipService secure rewrite failed for $key: $retryError');
+    }
   }
 
   Future<void> _resetCorruptedSipStorage() async {
@@ -807,7 +857,7 @@ class SipService extends ChangeNotifier
 
     _state = _state.copyWith(outboundNumber: normalized);
     try {
-      await _storage.write(key: _outboundNumberKey, value: normalized);
+      await _writeSecureStorage(key: _outboundNumberKey, value: normalized);
     } catch (error) {
       debugPrint('SipService failed to persist outbound number: $error');
     }
@@ -849,7 +899,7 @@ class SipService extends ChangeNotifier
 
     _state = _state.copyWith(internalNumber: normalized);
     try {
-      await _storage.write(key: _internalNumberKey, value: normalized);
+      await _writeSecureStorage(key: _internalNumberKey, value: normalized);
     } catch (error) {
       debugPrint('SipService failed to persist internal number: $error');
     }
@@ -999,7 +1049,7 @@ class SipService extends ChangeNotifier
     final nativeToken =
         await _invokeNativeSipMethod<String>('getVoipPushToken');
     if (nativeToken != null && nativeToken.trim().isNotEmpty) {
-      await _storage.write(key: _voipPushTokenKey, value: nativeToken.trim());
+      await _writeSecureStorage(key: _voipPushTokenKey, value: nativeToken.trim());
       return nativeToken.trim();
     }
 
@@ -1301,25 +1351,25 @@ class SipService extends ChangeNotifier
       clearError: true,
     );
 
-    await _storage.write(key: _serverKey, value: _state.server);
-    await _storage.write(key: _loginKey, value: _state.login);
-    await _storage.write(key: _passwordKey, value: _state.password);
+    await _writeSecureStorage(key: _serverKey, value: _state.server);
+    await _writeSecureStorage(key: _loginKey, value: _state.login);
+    await _writeSecureStorage(key: _passwordKey, value: _state.password);
     if (credentialsChanged) {
       await _storage.delete(key: _outboundNumberKey);
     }
     if (_state.sipId.isEmpty) {
       await _storage.delete(key: _sipIdKey);
     } else {
-      await _storage.write(key: _sipIdKey, value: _state.sipId);
+      await _writeSecureStorage(key: _sipIdKey, value: _state.sipId);
     }
-    await _storage.write(
+    await _writeSecureStorage(
         key: _transportKey,
         value: switch (_state.transport) {
           SipTransportUi.tcp => 'tcp',
           SipTransportUi.udp => 'udp',
           SipTransportUi.ws => 'ws',
         });
-    await _storage.write(key: _portKey, value: _state.port.toString());
+    await _writeSecureStorage(key: _portKey, value: _state.port.toString());
 
     if (notifyUi) {
       _notifyListenersSafely();
@@ -1398,7 +1448,7 @@ class SipService extends ChangeNotifier
       _shouldStayConnected = true;
       _persistentSipEnabled = true;
       _sipEnabled = true;
-      await _storage.write(key: _enabledKey, value: 'true');
+      await _writeSecureStorage(key: _enabledKey, value: 'true');
       unawaited(_syncIncomingCallPushPreference(true));
 
       if (_shouldUseNativeSip()) {
@@ -1677,7 +1727,7 @@ class SipService extends ChangeNotifier
             ) ??
             false;
         if (opened) {
-          await _storage.write(
+          await _writeSecureStorage(
             key: _fullScreenIncomingCallPromptedKey,
             value: 'true',
           );
@@ -1698,7 +1748,7 @@ class SipService extends ChangeNotifier
             ) ??
             false;
         if (opened) {
-          await _storage.write(
+          await _writeSecureStorage(
             key: _backgroundReliabilityPromptedKey,
             value: 'true',
           );
@@ -1715,7 +1765,7 @@ class SipService extends ChangeNotifier
             ) ??
             false;
         if (opened) {
-          await _storage.write(
+          await _writeSecureStorage(
             key: _xiaomiAutoStartPromptedKey,
             value: 'true',
           );
@@ -1766,7 +1816,7 @@ class SipService extends ChangeNotifier
     _persistentSipEnabled = true;
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
-    await _storage.write(key: _enabledKey, value: 'true');
+    await _writeSecureStorage(key: _enabledKey, value: 'true');
     unawaited(_syncIncomingCallPushPreference(true));
     if (Platform.isIOS) {
       // VoIP token belongs to an active SIP connection. Do not register it
@@ -1879,7 +1929,7 @@ class SipService extends ChangeNotifier
     _sipEnabled = false;
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
-    await _storage.write(key: _enabledKey, value: 'false');
+    await _writeSecureStorage(key: _enabledKey, value: 'false');
     unawaited(_syncIncomingCallPushPreference(false));
     unawaited(revokeVoipTokenAndClearLocal());
     _cancelReconnect();
@@ -2572,7 +2622,7 @@ class SipService extends ChangeNotifier
     debugPrint(
       'SipService native push token event -> provider=${payload['provider']}, token=${normalizedToken.length > 20 ? '${normalizedToken.substring(0, 20)}...' : normalizedToken}',
     );
-    unawaited(_storage.write(key: _voipPushTokenKey, value: normalizedToken));
+    unawaited(_writeSecureStorage(key: _voipPushTokenKey, value: normalizedToken));
     // PushKit can issue a token even for users who never enabled SIP. Keep it
     // locally and sync it only after the user explicitly connects SIP.
     if (_shouldStayConnected && _sipEnabled) {
@@ -3634,7 +3684,7 @@ class SipService extends ChangeNotifier
         _persistentSipEnabled = true;
         _shouldStayConnected = true;
         _cancelReconnect();
-        unawaited(_storage.write(key: _enabledKey, value: 'true'));
+        unawaited(_writeSecureStorage(key: _enabledKey, value: 'true'));
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,
@@ -4441,7 +4491,7 @@ class SipService extends ChangeNotifier
     );
     _hardTransportFailure = false;
     _hardTransportFailureEndpoint = null;
-    unawaited(_storage.write(key: _transportKey, value: 'udp'));
+    unawaited(_writeSecureStorage(key: _transportKey, value: 'udp'));
     _notifyListenersSafely();
 
     Future<void>.delayed(const Duration(milliseconds: 250), () {
@@ -4460,7 +4510,7 @@ class SipService extends ChangeNotifier
     _sipEnabled = false;
     _hardTransportFailure = true;
     _hardTransportFailureEndpoint = _currentEndpointKey();
-    unawaited(_storage.write(key: _enabledKey, value: 'false'));
+    unawaited(_writeSecureStorage(key: _enabledKey, value: 'false'));
     _cancelReconnect();
     _stopKeepAlive();
 
@@ -4483,7 +4533,7 @@ class SipService extends ChangeNotifier
     _sipEnabled = false;
     _cancelReconnect();
     _stopKeepAlive();
-    unawaited(_storage.write(key: _enabledKey, value: 'false'));
+    unawaited(_writeSecureStorage(key: _enabledKey, value: 'false'));
 
     _state = _state.copyWith(
       registrationStatus: SipRegistrationUiStatus.failed,
@@ -4505,7 +4555,7 @@ class SipService extends ChangeNotifier
         _persistentSipEnabled = true;
         _shouldStayConnected = true;
         _sipEnabled = true;
-        unawaited(_storage.write(key: _enabledKey, value: 'true'));
+        unawaited(_writeSecureStorage(key: _enabledKey, value: 'true'));
         _state = _state.copyWith(
           registrationStatus: SipRegistrationUiStatus.registered,
           clearError: true,

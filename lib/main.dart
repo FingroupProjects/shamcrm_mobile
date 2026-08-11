@@ -508,6 +508,23 @@ Future<void> _initializeCrashlytics() async {
   if (Firebase.apps.isEmpty) return;
 
   FlutterError.onError = (errorDetails) {
+    // Layout overflows are UI bugs, not process-killing crashes.
+    final isLayoutOverflow = errorDetails.exceptionAsString().toLowerCase().contains(
+          'renderflex overflowed',
+        );
+    if (isLayoutOverflow) {
+      FirebaseCrashlytics.instance.recordFlutterError(errorDetails);
+      unawaited(
+        _reportIssue(
+          source: 'flutter_error',
+          error: errorDetails.exception,
+          stackTrace: errorDetails.stack,
+          fatal: false,
+        ),
+      );
+      return;
+    }
+
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
     unawaited(
       _reportIssue(
@@ -803,6 +820,15 @@ _CrashSeverity _classifyIssueSeverity({
     );
   }
 
+  if (errorText.contains('renderflex overflowed') ||
+      errorText.contains('listtile background color or ink splashes')) {
+    return const _CrashSeverity(
+      emoji: '🟡',
+      title: 'UI layout issue',
+      priority: 3,
+    );
+  }
+
   final criticalPatterns = <String>[
     'missingpluginexception',
     'lateinitializationerror',
@@ -810,7 +836,6 @@ _CrashSeverity _classifyIssueSeverity({
     'setstate() called after dispose()',
     'typeerror',
     'rangeerror',
-    'renderflex overflowed',
     'bad state: no element',
     'no such method',
   ];

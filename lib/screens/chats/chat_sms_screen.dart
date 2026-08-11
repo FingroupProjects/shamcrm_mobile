@@ -106,7 +106,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
   late PusherChannelsClient socketClient;
   final ApiService apiService = ApiService();
-  late String baseUrl;
+  // Empty until async init finishes; cached messages may render first.
+  String baseUrl = '';
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
   int? _highlightedMessageId;

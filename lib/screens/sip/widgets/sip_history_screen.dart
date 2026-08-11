@@ -225,29 +225,30 @@ class _SipCallHistoryScreenState extends State<_SipCallHistoryScreen> {
                                         ? 'Исходящий'
                                         : 'Входящий';
 
-                                return Material(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(22),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      color: colors.surfacePrimary.withValues(
-                                        alpha: isDark ? 0.68 : 0.88,
+                                return DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.shadow.withValues(
+                                          alpha: isDark ? 0.18 : 0.06,
+                                        ),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 6),
                                       ),
+                                    ],
+                                  ),
+                                  child: Material(
+                                    color: colors.surfacePrimary.withValues(
+                                      alpha: isDark ? 0.68 : 0.88,
+                                    ),
+                                    shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(22),
-                                      border: Border.all(
+                                      side: BorderSide(
                                         color: colors.borderSubtle,
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colors.shadow.withValues(
-                                            alpha: isDark ? 0.18 : 0.06,
-                                          ),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                      ],
                                     ),
+                                    clipBehavior: Clip.antiAlias,
                                     child: ListTile(
                                       contentPadding:
                                           const EdgeInsets.symmetric(

@@ -112,11 +112,17 @@ class SalesPlanCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text(
-                    SalesPlanLabels.formatPeriod(plan),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colors.textSecondary,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      SalesPlanLabels.formatPeriod(plan),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
                     ),
                   ),
                 ],
@@ -131,25 +137,40 @@ class SalesPlanCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text(
-                    SalesPlanLabels.formatNumber(plan.targetValue),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                  Flexible(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: SalesPlanLabels.formatNumber(plan.targetValue),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          ),
+                          TextSpan(
+                            text:
+                                ' / ${SalesPlanLabels.formatNumber(plan.actualValue)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: colors.textSecondary,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text(
-                    ' / ${SalesPlanLabels.formatNumber(plan.actualValue)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   Text(
                     SalesPlanLabels.formatPercent(plan.percent),
                     style: TextStyle(

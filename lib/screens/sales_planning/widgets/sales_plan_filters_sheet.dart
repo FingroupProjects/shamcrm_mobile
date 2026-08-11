@@ -108,13 +108,17 @@ class _SalesPlanFiltersSheetState extends State<SalesPlanFiltersSheet> {
             _label(t.translate('sp_filter_status')),
             DropdownButtonFormField<SalesPlanStatus?>(
               value: _status,
+              isExpanded: true,
               decoration: _decoration(),
               items: [
                 DropdownMenuItem(value: null, child: Text(t.translate('sp_any'))),
                 ...SalesPlanStatus.values.map(
                   (s) => DropdownMenuItem(
                     value: s,
-                    child: Text(SalesPlanLabels.status(context, s)),
+                    child: Text(
+                      SalesPlanLabels.status(context, s),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -124,13 +128,17 @@ class _SalesPlanFiltersSheetState extends State<SalesPlanFiltersSheet> {
             _label(t.translate('sp_filter_type')),
             DropdownButtonFormField<SalesPlanType?>(
               value: _planType,
+              isExpanded: true,
               decoration: _decoration(),
               items: [
                 DropdownMenuItem(value: null, child: Text(t.translate('sp_any'))),
                 ...SalesPlanType.values.map(
                   (s) => DropdownMenuItem(
                     value: s,
-                    child: Text(SalesPlanLabels.planType(context, s)),
+                    child: Text(
+                      SalesPlanLabels.planType(context, s),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -140,6 +148,7 @@ class _SalesPlanFiltersSheetState extends State<SalesPlanFiltersSheet> {
             _label(t.translate('sp_filter_percent')),
             DropdownButtonFormField<SalesPlanPercentRange>(
               value: _percentRange,
+              isExpanded: true,
               decoration: _decoration(),
               items: [
                 DropdownMenuItem(
@@ -168,6 +177,7 @@ class _SalesPlanFiltersSheetState extends State<SalesPlanFiltersSheet> {
               _label(t.translate('sp_filter_manager')),
               DropdownButtonFormField<int?>(
                 value: _userId,
+                isExpanded: true,
                 decoration: _decoration(),
                 items: [
                   DropdownMenuItem(
@@ -177,6 +187,7 @@ class _SalesPlanFiltersSheetState extends State<SalesPlanFiltersSheet> {
                       value: m.id,
                       child: Text(
                         '${m.name} ${m.lastname ?? ''}'.trim(),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),

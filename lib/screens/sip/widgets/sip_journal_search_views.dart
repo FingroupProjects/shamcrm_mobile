@@ -568,23 +568,24 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
             ),
     );
 
-    final card = Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(22),
-      clipBehavior: Clip.antiAlias,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary.withValues(alpha: isDark ? 0.66 : 0.88),
+    final card = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: isDark ? 0.18 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.66 : 0.88),
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: colors.borderSubtle),
-          boxShadow: [
-            BoxShadow(
-              color: colors.shadow.withValues(alpha: isDark ? 0.18 : 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          side: BorderSide(color: colors.borderSubtle),
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             tile,
@@ -1009,23 +1010,24 @@ extension _SipJournalSearchViewsExtension on _SipScreenState {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final phone = (lead.phone ?? '').trim();
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(22),
-      clipBehavior: Clip.antiAlias,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary.withValues(alpha: isDark ? 0.66 : 0.88),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: isDark ? 0.18 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: colors.surfacePrimary.withValues(alpha: isDark ? 0.66 : 0.88),
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: colors.borderSubtle),
-          boxShadow: [
-            BoxShadow(
-              color: colors.shadow.withValues(alpha: isDark ? 0.18 : 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          side: BorderSide(color: colors.borderSubtle),
         ),
+        clipBehavior: Clip.antiAlias,
         child: ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 4),

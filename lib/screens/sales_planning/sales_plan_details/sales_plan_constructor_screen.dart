@@ -637,11 +637,15 @@ class _SalesPlanConstructorScreenState
             _fieldLabel('${t.translate('sp_period')} *'),
             DropdownButtonFormField<SalesPlanPeriodType>(
               value: _periodType,
+              isExpanded: true,
               decoration: _inputDecoration(),
               items: SalesPlanPeriodType.values
                   .map((p) => DropdownMenuItem(
                         value: p,
-                        child: Text(SalesPlanLabels.periodType(context, p)),
+                        child: Text(
+                          SalesPlanLabels.periodType(context, p),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ))
                   .toList(),
               onChanged: (v) {
@@ -692,11 +696,15 @@ class _SalesPlanConstructorScreenState
             _fieldLabel('${t.translate('sp_recurrence')} *'),
             DropdownButtonFormField<SalesPlanRecurrence>(
               value: _recurrence,
+              isExpanded: true,
               decoration: _inputDecoration(),
               items: SalesPlanRecurrence.values
                   .map((r) => DropdownMenuItem(
                         value: r,
-                        child: Text(SalesPlanLabels.recurrence(context, r)),
+                        child: Text(
+                          SalesPlanLabels.recurrence(context, r),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ))
                   .toList(),
               onChanged: (v) {
@@ -810,17 +818,25 @@ class _SalesPlanConstructorScreenState
                 ),
               ),
               const SizedBox(height: 6),
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary)),
-              Text(sub,
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: active ? accent : colors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
+                ),
+              ),
+              Text(
+                sub,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: active ? accent : colors.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),
